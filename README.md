@@ -1,3 +1,3 @@
 # pwn++
 
-A rewrite of my [PwnLib](/hugsy/pwnlib) DLL for Windows, written in C++/17
+A rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL for Windows, written in C++/17
