@@ -1,6 +1,3 @@
-#include <windows.h>
-
-
 #include "pwn.h"
 
 using namespace pwn::log;

@@ -12,18 +12,7 @@ namespace pwn::globals
 }
 
 
-
-/*++
-
-Logging functions
-
---*/
+#include "context.h"
 #include "log.h"
-
-
-/*++
-
-System info functions
-
---*/
 #include "system.h"
+#include "disasm.h"
