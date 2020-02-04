@@ -166,7 +166,10 @@
     <ClInclude Include="disasm.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="log.h" />
+    <ClInclude Include="nt.h" />
+    <ClInclude Include="process.h" />
     <ClInclude Include="pwn.h" />
+    <ClInclude Include="registry.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
@@ -176,7 +179,9 @@
     <ClCompile Include="disasm.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="log.cpp" />
+    <ClCompile Include="process.cpp" />
     <ClCompile Include="pwn.cpp" />
+    <ClCompile Include="registry.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>

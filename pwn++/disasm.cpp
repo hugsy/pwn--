@@ -9,119 +9,134 @@ using namespace pwn::log;
 
 namespace pwn::disasm
 {
-	// private
-	namespace
-	{
-		BOOL __disassemble(_In_ cs_arch arch, _In_ cs_mode mode, _In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<BYTE> insns)
-		{
-			csh handle;
-			cs_insn* insn;
-			size_t count;
-			BOOL res = TRUE;
+    // private
+    namespace
+    {
+        _Success_(return) 
+        BOOL __build_insn(_In_ cs_insn _cs_insn, _Out_ insn_t& insn)
+        {
+            insn.address = _cs_insn.address;
+            insn.size = _cs_insn.size;
+            ::RtlCopyMemory(insn.bytes, _cs_insn.bytes, _cs_insn.size);
+            insn.mnemonic = pwn::utils::to_widestring(_cs_insn.mnemonic);
+            insn.operands = pwn::utils::to_widestring(_cs_insn.op_str); 
+            return TRUE;
+        }
 
-			if (cs_open(arch, mode, &handle) != CS_ERR_OK)
-			{
-				err(L"cs_open() failed\n");
-				return FALSE;
-			}
+        _Success_(return) 
+        BOOL __disassemble(_In_ cs_arch arch, _In_ cs_mode mode, _In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
+        {
+            csh handle;
+            if (cs_open(arch, mode, &handle) != CS_ERR_OK)
+            {
+                err(L"cs_open() failed\n");
+                return FALSE;
+            }
 
-			count = cs_disasm(handle, code, code_size, CS_DEFAULT_BASE_ADDRESS, 0, &insn);
-			if (count > 0)
-			{
-				size_t i;
-				for (i = 0; i < count; i++)
-				{
-					ok(L"0x%08x:\t%S\t\t%S\n", insn[i].address, insn[i].mnemonic, insn[i].op_str);
-				}
+            cs_insn* cs_insns;
+            BOOL res = TRUE;
+            size_t count = cs_disasm(handle, code, code_size, CS_DEFAULT_BASE_ADDRESS, 0, &cs_insns);
+            if (count > 0)
+            {
+                for (size_t i = 0; i < count; i++)
+                {
+                    insn_t insn = { 0, };
+                    if (__build_insn(cs_insns[i], insn))
+                        insns.push_back(insn);
+                    else
+                        break;
+                }
 
-				cs_free(insn, count);
-				res = TRUE;
-			}
-			else
-			{
-				err(L"Failed to disassemble given code!\n");
-				res = FALSE;
-			}
+                cs_free(cs_insns, count);
+                res = TRUE;
+            }
+            else
+            {
+                err(L"Failed to disassemble given code!\n");
+                res = FALSE;
+            }
 
-			cs_close(&handle);
-			return res;
-		}
-	}
-
-
-	/*++
-	Description:
-
-		x86 specific disassembly function
-
-	Arguments:
-
-		- code the code to disassemble
-		- code_size is the size of code
-		- insns is a vector of instructions
-
-	Returns:
-
-		TRUE on success, else FALSE
-	--*/
-	BOOL x86(_In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<BYTE> insns)
-	{
-		return __disassemble(CS_ARCH_X86, CS_MODE_32, code, code_size, insns);
-	}
+            cs_close(&handle);
+            return res;
+        }
+    }
 
 
-	/*++
-	Description:
+    /*++
+    Description:
 
-		x64 specific disassembly function
+        x86 specific disassembly function
 
-	Arguments:
+    Arguments:
 
-		- code the code to disassemble
-		- code_size is the size of code
-		- insns is a vector of instructions
+        - code the code to disassemble
+        - code_size is the size of code
+        - insns is a vector of instructions
 
-	Returns:
+    Returns:
 
-		TRUE on success, else FALSE
-	--*/
-	BOOL x64(_In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<BYTE> insns)
-	{
-		return __disassemble(CS_ARCH_X86, CS_MODE_64, code, code_size, insns);
-	}
+        TRUE on success, else FALSE
+    --*/
+    _Success_(return) 
+    BOOL x86(_In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
+    {
+        return __disassemble(CS_ARCH_X86, CS_MODE_32, code, code_size, insns);
+    }
 
 
-	/*++
-	Description:
+    /*++
+    Description:
 
-		Generic function for disassemble code based on the context
+        x64 specific disassembly function
 
-	Arguments:
+    Arguments:
 
-		- code the code to disassemble
-		- code_size is the size of code
-		- insns is a vector of instructions
+        - code the code to disassemble
+        - code_size is the size of code
+        - insns is a vector of instructions
 
-	Returns:
+    Returns:
 
-		TRUE on success, else FALSE
-	--*/
-	BOOL disassemble(_In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<BYTE> insns)
-	{
-		switch (pwn::context::arch)
-		{
-		case pwn::context::arch_t::x86:
-			return x86(code, code_size, insns);
+        TRUE on success, else FALSE
+    --*/
+    _Success_(return) 
+    BOOL x64(_In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
+    {
+        return __disassemble(CS_ARCH_X86, CS_MODE_64, code, code_size, insns);
+    }
 
-		case pwn::context::arch_t::x64:
-			return x64(code, code_size, insns);
 
-		default:
-			err(L"unsupported architecture\n");
-			return FALSE;
-		}
+    /*++
+    Description:
 
-		err(L"UNREACHABLE\n");
-		return FALSE;
-	}
+        Generic function for disassemble code based on the context
+
+    Arguments:
+
+        - code the code to disassemble
+        - code_size is the size of code
+        - insns is a vector of instructions
+
+    Returns:
+
+        TRUE on success, else FALSE
+    --*/
+    _Success_(return) 
+    BOOL disassemble(_In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
+    {
+        switch (pwn::context::arch)
+        {
+        case pwn::context::arch_t::x86:
+            return x86(code, code_size, insns);
+
+        case pwn::context::arch_t::x64:
+            return x64(code, code_size, insns);
+
+        default:
+            err(L"unsupported architecture\n");
+            break;
+        }
+
+        return FALSE;
+    }
 }

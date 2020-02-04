@@ -5,15 +5,15 @@
 
 namespace pwn::context
 {
-	enum class arch_t 
-	{
-		x86,
-		x64,
-		arm,
-		arm_thumb,
-		arm64,
-		mips
-	};
+    enum class arch_t 
+    {
+        x86,
+        x64,
+        arm,
+        arm_thumb,
+        arm64,
+        mips
+    };
 
-	extern PWNAPI arch_t arch;
+    extern PWNAPI arch_t arch;
 }

@@ -18,3 +18,5 @@ namespace pwn::globals
 #include "system.h"
 #include "disasm.h"
 #include "asm.h"
+#include "process.h"
+#include "registry.h"
