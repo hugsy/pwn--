@@ -1,29 +1,34 @@
 #include <windows.h>
 
 
-namespace pwn::globals
-{
-    extern HANDLE g_ConsoleMutex;
-}
+#include "pwn.h"
+
+using namespace pwn::log;
 
 
 void OnAttachRoutine()
 {
-    pwn::globals::g_ConsoleMutex = CreateMutex(NULL, FALSE, NULL);
+    g_ConsoleMutex = CreateMutex(NULL, FALSE, NULL);
 }
 
 
 void OnDetachRoutine()
 {
-    CloseHandle(pwn::globals::g_ConsoleMutex);
+    CloseHandle(g_ConsoleMutex);
 }
 
 
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-                     )
+BOOL
+APIENTRY
+DllMain( 
+    _In_ HMODULE hModule,
+    _In_ DWORD  ul_reason_for_call,
+    _In_ LPVOID lpReserved
+)
 {
+    UNREFERENCED_PARAMETER(hModule);
+    UNREFERENCED_PARAMETER(lpReserved);
+
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:

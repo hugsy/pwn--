@@ -1,30 +1,29 @@
 #pragma once
-#include <Windows.h>
 
-#ifndef PWNAPI
-#define PWNAPI __declspec(dllexport)
-#endif
-
-
-
-#ifndef __countof
-#define __countof(x) (sizeof(x)/x[0])
-#endif 
-
+#include "common.h"
 
 /*++
 
 Base namespace
 
 --*/
-namespace pwn
+namespace pwn::globals
 {
-	namespace globals
-	{
-		HANDLE g_ConsoleMutex;
-	}
-
 }
 
 
+
+/*++
+
+Logging functions
+
+--*/
 #include "log.h"
+
+
+/*++
+
+System info functions
+
+--*/
+#include "system.h"

@@ -1,12 +1,14 @@
 #pragma once
 
-#include <Windows.h>
+#include "common.h"
 
 #include <string>
 
 
 namespace pwn::log
 {
+	extern PWNAPI HANDLE g_ConsoleMutex;
+
 	enum class log_level_t
 	{
 		LOG_DEBUG = 0,
@@ -20,16 +22,13 @@ namespace pwn::log
 		LOG_CRITICAL = 5
 	};
 
-
-	template<typename... Args>
-	void xlog(_In_ log_level_t level, _In_ Args... args);
-
-	template<typename... Args>
-	void ok(_In_ const Args&... args);
-
-	template<typename... Args>
-	void err(_In_ const Args&... args);
-
-	void perror(_In_ const std::wstring& prefix);
-
+	void PWNAPI xlog(_In_ log_level_t level, _In_ const wchar_t* args_list, ...);
+	void PWNAPI perror(_In_ const std::wstring& prefix);
+	void PWNAPI perror(_In_ const wchar_t* prefix);
 }
+
+#define dbg(fmt, ...)  xlog(log_level_t::LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define info(fmt, ...) xlog(log_level_t::LOG_INFO, fmt, ##__VA_ARGS__)
+#define ok(fmt, ...)   xlog(log_level_t::LOG_SUCCESS, fmt, ##__VA_ARGS__)
+#define warn(fmt, ...) xlog(log_level_t::LOG_WARNING, fmt, ##__VA_ARGS__)
+#define err(fmt, ...)  xlog(log_level_t::LOG_ERROR, fmt, ##__VA_ARGS__)

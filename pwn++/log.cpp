@@ -1,47 +1,29 @@
-#include "log.h"
-
 #include <stdio.h>
-
 #include <string>
-#include <iostream>
-#include <sstream>
 #include <vector>
-#include <initializer_list>
+#include <cassert>
 
-
-namespace pwn::globals 
-{
-    extern HANDLE g_ConsoleMutex;
-}
+#include "log.h"
 
 
 namespace pwn::log
 {
-    namespace
-    {
-        template <typename T>
-        void _xlog(T t)
-        {
-            std::wcerr << t;
-        }
+    PWNAPI HANDLE g_ConsoleMutex = INVALID_HANDLE_VALUE;
 
-        template <typename T, typename... Args>
-        void _xlog(_In_ T t, _In_ Args... args)
-        {
-            std::wcerr << t;
-            _xlog(args...);
-            std::wcerr << std::endl;
-        }
-    }
+    /*++
+    
+    Generic logging function
 
-    template<typename... Args>
-    void xlog(_In_ log_level_t level, _In_ Args... args)
+    --*/
+    void PWNAPI xlog(_In_ log_level_t level, _In_ const wchar_t* args_list, ...)
     {
 #ifdef DEBUG
         if (level == LOG_DEBUG)
             return;
 #endif    
-    
+
+        assert(g_ConsoleMutex != INVALID_HANDLE_VALUE);
+
         const wchar_t* prio;
         switch (level)
         {
@@ -53,42 +35,46 @@ namespace pwn::log
         case log_level_t::LOG_CRITICAL:   prio = L"/!\\ "; break;
         default:                          return;
         }
-   
-        if (::WaitForSingleObject(pwn::globals::g_ConsoleMutex, INFINITE) == WAIT_OBJECT_0)
+
+        size_t fmt_len = wcslen(args_list) + wcslen(prio) + 2;
+        size_t total_sz = 2 * fmt_len + 2;
+        PWCHAR fmt = (PWCHAR)LocalAlloc(LPTR, total_sz);
+        if (!fmt)
+            return;
+
+        ZeroMemory(fmt, 2 * fmt_len + 2);
+
+        va_list args;
+        va_start(args, args_list);
+
+        _snwprintf_s(fmt, fmt_len, _TRUNCATE, L"%s %s", prio, args_list);
+        if (::WaitForSingleObject(g_ConsoleMutex, INFINITE) == WAIT_OBJECT_0)
         {
-            std::wcerr << prio << L" ";
-            _xlog(args...);
-            ::ReleaseMutex(pwn::globals::g_ConsoleMutex);
+            ::vfwprintf(stderr, fmt, args);
+            ::fflush(stderr);
         }
-    }
-    
-    template<typename... Args>
-    void ok(_In_ const Args&... args)
-    {
-        pwn::log::xlog(log_level_t::LOG_OK, args);
+
+        va_end(args);
+        ::ReleaseMutex(g_ConsoleMutex);
+        ::LocalFree(fmt);
     }
 
 
-    template<typename... Args>
-    void err(_In_ const Args&... args)
-    {
-        pwn::log::xlog(log_level_t::LOG_ERR, args);
-    }
 
 
     /*++
-    
+
     perror() style of function for Windows
-    
+
     --*/
-    void perror(_In_ const std::wstring& prefix)
+    void PWNAPI perror(_In_ const wchar_t* prefix)
     {
         auto sysMsg = std::vector<wchar_t>(1024);
         DWORD eNum = ::GetLastError(), sysMsgSz = (DWORD)sysMsg.size();
 
         ::FormatMessage(
             FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-            NULL, 
+            NULL,
             eNum,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
             sysMsg.data(),
@@ -96,13 +82,13 @@ namespace pwn::log
             NULL
         );
 
-        std::wstringstream wsstream;
-        wsstream << prefix;
-        wsstream << L", errcode=0x" << std::hex << eNum << L": ";
-        wsstream << std::wstring(sysMsg.begin(), sysMsg.end());
-        std::wstring msg = wsstream.str();
-
-        //err(msg);
+        auto sysMsgStr = std::wstring(sysMsg.begin(), sysMsg.end());
+        xlog(log_level_t::LOG_ERR, L"%s, errcode=0x%x : %s", prefix, eNum, sysMsgStr.c_str());
     }
 
+
+    void PWNAPI perror(_In_ const std::wstring& prefix)
+    {
+        perror(prefix.c_str());
+    }
 }
