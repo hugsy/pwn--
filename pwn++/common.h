@@ -9,3 +9,7 @@
 #ifndef __countof
 #define __countof(x) (sizeof(x)/x[0])
 #endif 
+
+
+#include <array>
+#include <vector>
