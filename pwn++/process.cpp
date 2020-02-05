@@ -87,7 +87,7 @@ DWORD pwn::process::get_integrity_level(_In_ DWORD dwProcessId, _Out_ std::wstri
     if (hProcessHandle)
         ::CloseHandle(hProcessHandle);
 
-    return ERROR_SUCCESS;
+    return dwRes;
 }
 
 

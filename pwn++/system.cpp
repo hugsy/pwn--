@@ -113,7 +113,7 @@ DWORD PWNAPI pwn::system::pidof(_In_ const wchar_t* lpwProcessName)
 
         do
         {
-            HANDLE hProcess = ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, pe32.th32ProcessID);
+            HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pe32.th32ProcessID);
             if (!hProcess)
                 continue;
 
@@ -177,7 +177,6 @@ BOOL PWNAPI pwn::system::is_elevated()
     
     ::CloseHandle(hProcess);
     return TRUE;
-    
 }
 
 
