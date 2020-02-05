@@ -5,6 +5,7 @@
 using namespace pwn::log;
 
 #define CS_DEFAULT_BASE_ADDRESS 0x40000
+#pragma warning(disable: 26812 ) // because of cs_arch & cs_mode,  TODO: fix
 
 
 namespace pwn::disasm
@@ -44,11 +45,13 @@ namespace pwn::disasm
                     if (__build_insn(cs_insns[i], insn))
                         insns.push_back(insn);
                     else
+                    {
+                        res = FALSE;
                         break;
+                    }
                 }
 
                 cs_free(cs_insns, count);
-                res = TRUE;
             }
             else
             {

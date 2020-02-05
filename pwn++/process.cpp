@@ -1,4 +1,7 @@
 #include "process.h"
+#include "log.h"
+
+using namespace pwn::log;
 
 
 
@@ -95,4 +98,28 @@ _Success_(return == ERROR_SUCCESS)
 DWORD pwn::process::get_integrity_level(_Out_ std::wstring & IntegrityLevelName)
 {
     return get_integrity_level(::GetCurrentProcessId(), IntegrityLevelName);
+}
+
+
+_Success_(return)
+BOOL pwn::process::execve(_In_ const wchar_t* lpCommandLine, _Out_opt_ LPHANDLE lpNewProcessHandle)
+{
+    STARTUPINFO si = { 0, };
+    PROCESS_INFORMATION pi = { 0, };
+
+    si.cb = sizeof(si);
+
+    dbg(L"Spawning '%s'...\n", lpCommandLine);
+
+    if (!::CreateProcess(NULL, (LPWSTR)lpCommandLine, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi))
+    {
+        perror(L"CreateProcess()");
+        return FALSE;
+    }
+
+    ok(L"'%s' spawned with PID %d\n", lpCommandLine, pi.dwProcessId);
+    if(lpNewProcessHandle)
+        *lpNewProcessHandle = pi.hProcess;
+
+    return TRUE;
 }

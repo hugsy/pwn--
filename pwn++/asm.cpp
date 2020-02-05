@@ -4,7 +4,8 @@
 
 using namespace pwn::log;
 
-#define CS_DEFAULT_BASE_ADDRESS 0x40000
+
+#pragma warning(disable: 26812 ) // because of ks_arch & ks_mode,  TODO: fix
 
 
 namespace pwn::assm
@@ -36,8 +37,15 @@ namespace pwn::assm
                     break;
                 }
 
-                for (size_t i = 0; i < size; i++)
-                    bytes.push_back(assembled[i]);
+                if (size == 0)
+                {
+                    res = FALSE;
+                }
+                else
+                {
+                    for (size_t i = 0; i < size; i++)
+                        bytes.push_back(assembled[i]);
+                }
 
                 ks_free(assembled);
             } 

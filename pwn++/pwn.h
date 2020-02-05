@@ -7,7 +7,7 @@
 Base namespace
 
 --*/
-namespace pwn::globals
+namespace pwn::types
 {
 }
 
