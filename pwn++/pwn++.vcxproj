@@ -166,6 +166,7 @@
     <ClInclude Include="cpu.h" />
     <ClInclude Include="disasm.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="job.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="nt.h" />
     <ClInclude Include="process.h" />
@@ -180,6 +181,7 @@
     <ClCompile Include="cpu.cpp" />
     <ClCompile Include="disasm.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="job.cpp" />
     <ClCompile Include="log.cpp" />
     <ClCompile Include="process.cpp" />
     <ClCompile Include="pwn.cpp" />

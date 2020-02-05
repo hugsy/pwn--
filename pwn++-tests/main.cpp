@@ -2,10 +2,11 @@
 
 using namespace pwn::log;
 
+
 #define BOOL_AS_STR(x) ((x)==TRUE ? L"TRUE" : L"FALSE")
 
-#define CODE1 "\x55\x48\x8b\x05\xb8\x13\x00\x00"
-#define CODE2 "\x90\x48\x31\xc0\xcc\xc3"
+#define CODE1 "\x9c\xc3" // x86
+#define CODE2 "\x90\x48\x31\xc0\xcc\xc3" // x64
 #define CODE3 "xor rax, rax; inc rax; nop; ret"
 
 
@@ -13,14 +14,24 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 {
 	HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
 
-	// test logging module
-	xlog(log_level_t::LOG_OK, L"hello %s\n", L"world");
-	ok(L"hello %s\n", L"world");
-	::SetLastError(ERROR_ACPI_ERROR);
-	perror(std::wstring(L"test perror(ERROR_ACPI_ERROR)"));
 
+	// change the context architecture to x64
+	pwn::context::set_arch(pwn::context::arch_t::x64);
+
+
+	// make context at debug level for max verbosity
+	pwn::context::set_log_level(pwn::log::log_level_t::LOG_DEBUG);
+
+
+	// test logging module
+	{
+		::SetLastError(ERROR_ACPI_ERROR);
+		perror(std::wstring(L"test perror(ERROR_ACPI_ERROR)"));
+		::SetLastError(ERROR_SUCCESS);
+	}
 
 	// test system module
+	info(L"computer_name=%s\n", pwn::system::name().c_str());
 	info(L"pagesize=0x%x\n", pwn::system::pagesize());
 	info(L"pid=%d\n", pwn::system::pid());
 	info(L"ppid=%d\n", pwn::system::ppid());
@@ -31,7 +42,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	// test disasm
 	{
 		std::vector<pwn::disasm::insn_t> insns;
-		if (pwn::disasm::x64((uint8_t*)CODE1, sizeof(CODE1) - 1, insns))
+		if (pwn::disasm::x86((uint8_t*)CODE1, sizeof(CODE1) - 1, insns))
 			for (auto insn : insns)
 				ok(L"0x%08x:\t%s\t\t%s\n", insn.address, insn.mnemonic.c_str(), insn.operands.c_str());
 
@@ -62,9 +73,9 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	{
 		std::wstring sub_key(L"SYSTEM\\Software\\Microsoft");
 		std::wstring reg_sz(L"BuildLab");
-		std::wstring buildLabStr;
-		if(pwn::reg::read_wstring(pwn::reg::hklm(), sub_key, reg_sz, buildLabStr)==ERROR_SUCCESS)
-			ok(L"BuildLab=%s\n", buildLabStr.c_str());
+		std::wstring BuildLab;
+		if(pwn::reg::read_wstring(pwn::reg::hklm(), sub_key, reg_sz, BuildLab)==ERROR_SUCCESS)
+			ok(L"BuildLab=%s\n", BuildLab.c_str());
 	}
 
 	/// binary
@@ -82,8 +93,32 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 		if (pwn::process::get_integrity_level(integrity) == ERROR_SUCCESS)
 			ok(L"integrity=%s\n", integrity.c_str());
 
-		pwn::process::execve(L"c:\\windows\\system32\\notepad.exe");
+		HANDLE hProcess;
+		if ( pwn::process::execv(L"c:\\windows\\system32\\notepad.exe hello.txt", &hProcess) )
+			pwn::process::kill(hProcess);
 	}
+
+
+	// test cpu
+	{
+		DWORD nb_cores = pwn::cpu::nb_cores();
+		ok(L"nb_cores=%ld\n", nb_cores);
+	}
+
+
+	// test job
+	{
+		/// create a process and add it to an anonymous job
+		HANDLE hProcess;
+		auto ppid = pwn::system::ppid();
+		pwn::process::execv(L"notepad.exe", ppid, &hProcess);
+		auto hJob = pwn::job::create();
+		auto pid = pwn::system::pid(hProcess);
+		pwn::job::add_process(hJob, pid);
+		::WaitForSingleObject(hProcess, INFINITE);
+		pwn::job::close(hJob);
+	}
+
 
 	ok(L"Done...\n");
 	return 0;

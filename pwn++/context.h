@@ -5,7 +5,7 @@
 
 namespace pwn::context
 {
-    enum class arch_t 
+    enum class PWNAPI arch_t
     {
         x86,
         x64,
@@ -16,5 +16,8 @@ namespace pwn::context
     };
 
     extern PWNAPI arch_t arch;
-    extern PWNAPI pwn::log::log_level_t log_level = pwn::log::log_level_t::LOG_INFO;
+    PWNAPI BOOL set_arch(_In_ arch_t new_arch);
+
+    extern PWNAPI pwn::log::log_level_t log_level;
+    PWNAPI BOOL set_log_level(_In_ pwn::log::log_level_t new_level);
 }

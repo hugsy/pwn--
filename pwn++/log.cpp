@@ -4,6 +4,7 @@
 #include <cassert>
 
 #include "log.h"
+#include "context.h"
 
 
 namespace pwn::log
@@ -17,12 +18,10 @@ namespace pwn::log
     --*/
     void PWNAPI xlog(_In_ log_level_t level, _In_ const wchar_t* args_list, ...)
     {
-#ifdef DEBUG
-        if (level == LOG_DEBUG)
-            return;
-#endif    
-
         assert(g_ConsoleMutex != INVALID_HANDLE_VALUE);
+
+        if ( level < pwn::context::log_level )
+            return;
 
         const wchar_t* prio;
         switch (level)

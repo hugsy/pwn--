@@ -9,7 +9,7 @@ namespace pwn::log
 {
 	extern PWNAPI HANDLE g_ConsoleMutex;
 
-	enum class log_level_t
+	enum class PWNAPI log_level_t
 	{
 		LOG_DEBUG = 0,
 		LOG_INFO = 1,
@@ -27,8 +27,8 @@ namespace pwn::log
 	void PWNAPI perror(_In_ const wchar_t* prefix);
 }
 
-#define dbg(fmt, ...)  xlog(log_level_t::LOG_DEBUG, fmt, ##__VA_ARGS__)
-#define info(fmt, ...) xlog(log_level_t::LOG_INFO, fmt, ##__VA_ARGS__)
-#define ok(fmt, ...)   xlog(log_level_t::LOG_SUCCESS, fmt, ##__VA_ARGS__)
-#define warn(fmt, ...) xlog(log_level_t::LOG_WARNING, fmt, ##__VA_ARGS__)
-#define err(fmt, ...)  xlog(log_level_t::LOG_ERROR, fmt, ##__VA_ARGS__)
+#define dbg(fmt, ...)  pwn::log::xlog(pwn::log::log_level_t::LOG_DEBUG, fmt, ##__VA_ARGS__)
+#define info(fmt, ...) pwn::log::xlog(pwn::log::log_level_t::LOG_INFO, fmt, ##__VA_ARGS__)
+#define ok(fmt, ...)   pwn::log::xlog(pwn::log::log_level_t::LOG_SUCCESS, fmt, ##__VA_ARGS__)
+#define warn(fmt, ...) pwn::log::xlog(pwn::log::log_level_t::LOG_WARNING, fmt, ##__VA_ARGS__)
+#define err(fmt, ...)  pwn::log::xlog(pwn::log::log_level_t::LOG_ERROR, fmt, ##__VA_ARGS__)

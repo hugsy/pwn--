@@ -28,6 +28,12 @@ DWORD pwn::system::pagesize()
 
 
 
+DWORD pwn::system::pid(_In_ HANDLE hProcess)
+{
+    return ::GetProcessId(hProcess);
+}
+
+
 DWORD pwn::system::pid()
 {
     return ::GetCurrentProcessId();
@@ -177,6 +183,16 @@ BOOL PWNAPI pwn::system::is_elevated()
     
     ::CloseHandle(hProcess);
     return TRUE;
+}
+
+
+const std::wstring pwn::system::name()
+{
+    DWORD dwBufLen = MAX_COMPUTERNAME_LENGTH;
+    WCHAR lpszBuf[MAX_COMPUTERNAME_LENGTH + 1] = { 0, };
+    if(!::GetComputerName(lpszBuf, &dwBufLen))
+        throw std::runtime_error("GetComputerName() failed");
+    return std::wstring(lpszBuf);
 }
 
 

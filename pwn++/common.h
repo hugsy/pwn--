@@ -2,6 +2,7 @@
 
 #include "framework.h"
 
+
 #ifndef PWNAPI
 #define PWNAPI __declspec(dllexport)
 #endif
@@ -13,3 +14,5 @@
 
 #include <array>
 #include <vector>
+#include <string>
+#include <memory>

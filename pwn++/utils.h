@@ -5,6 +5,7 @@
 
 namespace pwn::utils
 {
+    DWORD PWNAPI rand(void);
     void PWNAPI hexdump(_In_ const PBYTE Buffer, _In_ SIZE_T BufferSize);
     void PWNAPI hexdump(_In_ const std::vector<BYTE>& bytes);
     std::vector<BYTE> PWNAPI base64_decode(_In_ std::string const& encoded_string);

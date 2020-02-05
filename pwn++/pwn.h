@@ -20,3 +20,6 @@ namespace pwn::types
 #include "asm.h"
 #include "process.h"
 #include "registry.h"
+#include "cpu.h"
+#include "job.h"
+
