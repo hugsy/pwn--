@@ -37,6 +37,8 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	info(L"ppid=%d\n", pwn::system::ppid());
 	info(L"pidof('explorer.exe')=%d\n", pwn::system::pidof(std::wstring(L"explorer.exe")));
 	info(L"is_elevated()=%s\n", BOOL_AS_STR(pwn::system::is_elevated()));
+	info(L"peb()=%p\n", pwn::process::peb());
+	info(L"teb()=%p\n", pwn::process::teb());
 
 
 	// test disasm
@@ -90,8 +92,10 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	// test process
 	{
 		std::wstring integrity;
-		if (pwn::process::get_integrity_level(integrity) == ERROR_SUCCESS)
+		if ( pwn::process::get_integrity_level(integrity) == ERROR_SUCCESS )
 			ok(L"integrity=%s\n", integrity.c_str());
+		else
+			perror(L"pwn::process::get_integrity_level()");
 
 		HANDLE hProcess;
 		if ( pwn::process::execv(L"c:\\windows\\system32\\notepad.exe hello.txt", &hProcess) )
@@ -117,6 +121,18 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 		pwn::job::add_process(hJob, pid);
 		::WaitForSingleObject(hProcess, INFINITE);
 		pwn::job::close(hJob);
+	}
+
+	{
+		DWORD i = 0;
+		for ( auto p : pwn::process::list() )
+		{
+			std::wstring integrity;
+			pwn::process::get_integrity_level(p.pid, integrity);
+			ok(L"%d -> %s (i=%s)\n", p.pid, p.name.c_str(), integrity.c_str());
+			if ( ++i > 10 )	break;
+		}
+
 	}
 
 

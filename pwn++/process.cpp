@@ -1,7 +1,63 @@
 #include "process.h"
 #include "log.h"
-
 using namespace pwn::log;
+
+#include <Psapi.h>
+
+#ifdef _WIN64
+extern "C" ULONG_PTR __asm__get_teb_x64();
+#define PEB_OFFSET 0x60
+#define __asm__get_teb __asm__get_teb_x64
+#else
+extern "C" ULONG_PTR __asm__get_teb_x86();
+#define PEB_OFFSET 0x30
+#define __asm__get_teb __asm__get_teb_x86
+#endif
+
+
+
+std::vector<pwn::process::process_t> pwn::process::list()
+{
+	int maxCount = 256; 
+	std::unique_ptr<DWORD[]> pids; 
+	int count = 0; 
+	std::vector<pwn::process::process_t> processes;
+
+	for (;;) 
+	{
+		pids = std::make_unique<DWORD[]>(maxCount); 
+		DWORD actualSize; 
+		if ( !::EnumProcesses(pids.get(), maxCount * sizeof(DWORD), &actualSize) )
+			break; 
+		
+		count = actualSize / sizeof(DWORD); 
+		
+		if ( count < maxCount )
+			break;// need to resize
+		
+		maxCount*=2;
+	}
+	
+	for ( int i = 0; i < count; i++ )
+	{
+		DWORD pid = pids[i];
+		HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+		if ( !hProcess )
+			continue;
+
+		WCHAR exeName[MAX_PATH];
+		DWORD size = MAX_PATH;
+		DWORD count = ::QueryFullProcessImageName(hProcess, 0, exeName, &size);
+
+		pwn::process::process_t p;
+		p.name = std::wstring(exeName);
+		p.pid = pid;
+		processes.push_back(p);
+		::CloseHandle(hProcess);
+	}
+
+	return processes;
+}
 
 
 
@@ -16,7 +72,7 @@ DWORD pwn::process::get_integrity_level(_In_ DWORD dwProcessId, _Out_ std::wstri
 
 	do
 	{
-		hProcessHandle = ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwProcessId);
+		hProcessHandle = ::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, dwProcessId);
 		if (hProcessHandle == NULL)
 		{
 			dwRes = ::GetLastError();
@@ -82,6 +138,8 @@ DWORD pwn::process::get_integrity_level(_In_ DWORD dwProcessId, _Out_ std::wstri
 		else
 			IntegrityLevelName = L"Unknown";
 
+		dwRes = ERROR_SUCCESS;
+
 	} while (0);
 
 	if (hProcessToken != INVALID_HANDLE_VALUE)
@@ -104,7 +162,7 @@ DWORD pwn::process::get_integrity_level(_Out_ std::wstring & IntegrityLevelName)
 _Success_(return)
 BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwParentPid, _Out_opt_ LPHANDLE lpNewProcessHandle)
 {
-	HANDLE hParentProcess = INVALID_HANDLE_VALUE;
+	HANDLE hParentProcess = NULL;
 	STARTUPINFOEX si = { 0, };
 	PROCESS_INFORMATION pi = { 0, };
 	DWORD dwFlags = DETACHED_PROCESS | EXTENDED_STARTUPINFO_PRESENT;
@@ -120,12 +178,15 @@ BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwPar
 		hParentProcess = ::OpenProcess(PROCESS_CREATE_PROCESS, FALSE, dwParentPid);
 		if ( hParentProcess )
 		{
-			SIZE_T AttrListSize;
+			SIZE_T AttrListSize = 0;
 			::InitializeProcThreadAttributeList(nullptr, 1, 0, &AttrListSize);
 			si.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)::HeapAlloc(::GetProcessHeap(), 0, AttrListSize);
-			::InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0, &AttrListSize);
-			::UpdateProcThreadAttribute(si.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &hParentProcess, sizeof(HANDLE), nullptr, nullptr);
-			dbg(L"Spawning '%s' with PPID=%d...\n", cmd.get(), dwParentPid);
+			if ( si.lpAttributeList )
+			{
+				::InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0, &AttrListSize);
+				::UpdateProcThreadAttribute(si.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &hParentProcess, sizeof(HANDLE), nullptr, nullptr);
+				dbg(L"Spawning '%s' with PPID=%d...\n", cmd.get(), dwParentPid);
+			}
 		}
 	}
 	else
@@ -140,11 +201,16 @@ BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwPar
 	}
 
 	::CloseHandle(pi.hThread);
-	if ( dwParentPid && hParentProcess != INVALID_HANDLE_VALUE)
+	if ( dwParentPid)
 	{
-		::DeleteProcThreadAttributeList(si.lpAttributeList);
-		::HeapFree(::GetProcessHeap(), 0, si.lpAttributeList);
-		::CloseHandle(hParentProcess);
+		if ( si.lpAttributeList )
+		{
+			::DeleteProcThreadAttributeList(si.lpAttributeList);
+			::HeapFree(::GetProcessHeap(), 0, si.lpAttributeList);
+		}
+
+		if (hParentProcess)
+			::CloseHandle(hParentProcess);
 	}
 
 	dbg(L"'%s' spawned with PID %d\n", lpCommandLine, pi.dwProcessId);
@@ -181,4 +247,27 @@ BOOL pwn::process::kill(_In_ HANDLE hProcess)
 	BOOL res = ::TerminateProcess(hProcess, EXIT_FAILURE);
 	::CloseHandle(hProcess);
 	return res;
+}
+
+
+/*++
+
+Get the TEB address of the current process
+
+--*/
+ULONG_PTR pwn::process::teb()
+{
+	return __asm__get_teb();
+}
+
+
+/*++
+
+Get the PEB address of the current process
+
+--*/
+ULONG_PTR pwn::process::peb()
+{
+	PULONG_PTR peb_address = (PULONG_PTR)(pwn::process::teb() + PEB_OFFSET);
+	return *peb_address;
 }
