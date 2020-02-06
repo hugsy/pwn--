@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "log.h"
+#include "context.h"
 
 #include <stdio.h>
 
@@ -58,6 +59,10 @@ namespace pwn::utils
 			return (isalnum(c) || (c == '+') || (c == '/'));
 		}
 
+
+		//
+		// better rand() using xorshift, stolen from gamozo
+		//
 		QWORD xorshift64(void)
 		{
 			g_seed ^= g_seed << 13;
@@ -66,7 +71,9 @@ namespace pwn::utils
 			return g_seed;
 		}
 
-
+		//
+		// found on SO
+		// 
 		DWORD xorshift128(void)
 		{
 			static DWORD x = 123456789;
@@ -80,12 +87,56 @@ namespace pwn::utils
 			z = w;
 			return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
 		}
-    }
+    
+	
+		/*++
 
+		C version of the algorithm implemented in GEF
 
-	//
-	// better rand() using xorshift, stolen from gamozo
-	//
+		--*/
+		void __create_cyclic_buffer(
+			_In_ DWORD t,
+			_In_ DWORD p,
+			_In_ SIZE_T dwSize,
+			_In_ const std::string& Alphabet,
+			_In_ DWORD period,
+			_In_ PDWORD aIndex,
+			_Inout_ std::vector<BYTE>& lpResult
+		)
+		{
+			SIZE_T dwAlphabetLen = Alphabet.size();
+
+			if ( lpResult.size() == dwSize )
+				return;
+
+			if ( t > period )
+			{
+				if ( (period % p) == 0 )
+				{
+					for ( uint32_t j = 1; j < p + 1; j++ )
+					{
+						lpResult.push_back(Alphabet[aIndex[j]]);
+						if ( lpResult.size() == dwSize )
+							return;
+					}
+				}
+			}
+			else
+			{
+				aIndex[t] = aIndex[t - p];
+				__create_cyclic_buffer(t + 1, p, dwSize, Alphabet, period, aIndex, lpResult);
+				for ( uint32_t j = aIndex[t - p] + 1; j < dwAlphabetLen; j++ )
+				{
+					aIndex[t] = j;
+					__create_cyclic_buffer(t + 1, t, dwSize, Alphabet, period, aIndex, lpResult);
+				}
+			}
+			return;
+		}
+
+	}
+	
+
 	QWORD rand(void)
 	{
 		return xorshift64();
@@ -224,48 +275,6 @@ namespace pwn::utils
 	}
 
 
-	/**
-	 * C version of the algorithm implemented in GEF
-	 */
-	void __create_cyclic_buffer(
-		_In_ DWORD t,
-		_In_ DWORD p,
-		_In_ SIZE_T dwSize,
-		_In_ const std::string& Alphabet,
-		_In_ DWORD period,
-		_In_ PDWORD aIndex,
-		_Inout_ std::vector<BYTE>& lpResult
-	)
-	{
-		SIZE_T dwAlphabetLen = Alphabet.size();
-
-		if ( lpResult.size() == dwSize )
-			return;
-
-		if ( t > period )
-		{
-			if ( (period % p) == 0 )
-			{
-				for ( uint32_t j = 1; j < p + 1; j++ )
-				{
-					lpResult.push_back(Alphabet[aIndex[j]]);
-					if ( lpResult.size() == dwSize )
-						return;
-				}
-			}
-		}
-		else
-		{
-			aIndex[t] = aIndex[t - p];
-			__create_cyclic_buffer(t + 1, p, dwSize, Alphabet, period, aIndex, lpResult);
-			for ( uint32_t j = aIndex[t - p] + 1; j < dwAlphabetLen; j++ )
-			{
-				aIndex[t] = j;
-				__create_cyclic_buffer(t + 1, t, dwSize, Alphabet, period, aIndex, lpResult);
-			}
-		}
-		return;
-	}
 
 
 	/*++
@@ -281,6 +290,12 @@ namespace pwn::utils
 		auto aIndex = std::make_unique<DWORD[]>(lpAlphabet.size() * dwPeriod);
 		__create_cyclic_buffer(1, 1, dwSize, lpAlphabet, dwPeriod, aIndex.get(), buffer);
 		return TRUE;
+	}
+
+
+	BOOL cyclic(_In_ DWORD dwSize, _Out_ std::vector<BYTE>& buffer)
+	{
+		return cyclic(dwSize, pwn::context::ptrsize, buffer);
 	}
 
 

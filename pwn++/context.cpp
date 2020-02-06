@@ -4,6 +4,22 @@
 
 namespace pwn::context
 {
+	namespace
+	{
+		DWORD __update_ptrsize()
+		{
+			switch ( arch )
+			{
+			case arch_t::x64: ptrsize = 8; break;
+			case arch_t::arm64: ptrsize = 8; break;
+			default: ptrsize = 4; break;
+			}
+
+			return ptrsize;
+		}
+	}
+
+
 	PWNAPI arch_t arch = arch_t::x64;
 	
 	BOOL set_arch(_In_ arch_t new_arch)
@@ -13,7 +29,8 @@ namespace pwn::context
 			return FALSE;
 
 		arch = new_arch;
-		dbg(L"new architecture set to %d\n", new_arch);
+		__update_ptrsize();
+		dbg(L"new architecture set to %d (ptrsz=%d)\n", new_arch, ptrsize);
 		// TODO: add hooks that triggers on arch change
 		return TRUE;
 	}
@@ -27,4 +44,8 @@ namespace pwn::context
 		dbg(L"log_level set to %d\n", new_level);
 		return TRUE;
 	}
+
+
+	PWNAPI DWORD ptrsize = __update_ptrsize();
+
 }

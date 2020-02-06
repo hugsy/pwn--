@@ -271,3 +271,56 @@ ULONG_PTR pwn::process::peb()
 	PULONG_PTR peb_address = (PULONG_PTR)(pwn::process::teb() + PEB_OFFSET);
 	return *peb_address;
 }
+
+
+/*++
+
+Memory writes
+
+--*/
+SIZE_T pwn::process::mem::write(_In_ HANDLE hProcess, _In_ ULONG_PTR Address, _In_ PBYTE Data, _In_ SIZE_T DataLength)
+{
+	size_t dwNbWritten;
+	if ( ::WriteProcessMemory(hProcess, reinterpret_cast<LPVOID>(Address), Data, DataLength, &dwNbWritten) )
+		return dwNbWritten;
+	return -1;
+}
+
+SIZE_T pwn::process::mem::write(_In_ ULONG_PTR Address, _In_ PBYTE Data, _In_ SIZE_T DataLength)
+{
+	return pwn::process::mem::write(::GetCurrentProcess(), Address, Data, DataLength);
+}
+
+SIZE_T pwn::process::mem::write(_In_ HANDLE hProcess, _In_ ULONG_PTR Address, _In_ std::vector<BYTE>& Data)
+{
+	return pwn::process::mem::write(hProcess, Address, Data.data(), Data.size());
+}
+
+SIZE_T pwn::process::mem::write(_In_ ULONG_PTR Address, _In_ std::vector<BYTE>& Data)
+{
+	return pwn::process::mem::write(::GetCurrentProcess(), Address, Data.data(), Data.size());
+}
+
+
+/*++
+
+Memory read functions
+
+--*/
+
+std::vector<BYTE> pwn::process::mem::read(_In_ HANDLE hProcess, _In_ ULONG_PTR Address, _In_ SIZE_T DataLength)
+{
+	auto tmp = std::make_unique<BYTE[]>(DataLength);
+	std::vector<BYTE> out;
+	size_t dwNbRead;
+	::ReadProcessMemory(hProcess, reinterpret_cast<LPVOID>(Address), tmp.get(), DataLength, &dwNbRead);
+	for ( size_t i = 0; i < dwNbRead; i++ ) out.push_back(tmp[i]);
+	return out;
+}
+
+
+std::vector<BYTE> pwn::process::mem::read(_In_ ULONG_PTR Address, _In_ SIZE_T DataLength)
+{
+	return pwn::process::mem::read(::GetCurrentProcess(), Address, DataLength);
+}
+

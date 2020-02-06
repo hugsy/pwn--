@@ -23,16 +23,27 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	pwn::context::set_log_level(pwn::log::log_level_t::LOG_DEBUG);
 
 
-	// test logging module
-	if (1)
+	// test logging & utils module
+	if (0)
 	{
 		::SetLastError(ERROR_ACPI_ERROR);
 		perror(std::wstring(L"test perror(ERROR_ACPI_ERROR)"));
 		::SetLastError(ERROR_SUCCESS);
+
+		std::vector<BYTE> buf;
+		if ( pwn::utils::cyclic(0x20, 4, buf) )
+		{
+			pwn::utils::hexdump(buf);
+		}
+
+		if ( pwn::utils::cyclic(0x30, buf) )
+		{
+			pwn::utils::hexdump(buf);
+		}
 	}
 
 	// test system module
-	if (1)
+	if (0)
 	{
 		info(L"computer_name=%s\n", pwn::system::name().c_str());
 		info(L"pagesize=0x%x\n", pwn::system::pagesize());
@@ -45,7 +56,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	}
 
 	// test disasm
-	if(1)
+	if(0)
 	{
 		std::vector<pwn::disasm::insn_t> insns;
 		if (pwn::disasm::x86((uint8_t*)CODE1, sizeof(CODE1) - 1, insns))
@@ -60,7 +71,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 
 	// test asm
-	if (1)
+	if (0)
 	{
 		std::vector<BYTE> bytes;
 		pwn::assm::x64(CODE3, sizeof(CODE3) - 1, bytes);
@@ -70,7 +81,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 	// test reg
 	/// dword
-	if (1)
+	if (0)
 	{
 		std::wstring sub_key(L"Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon");
 		std::wstring reg_dword(L"FirstLogon");
@@ -80,7 +91,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	}
 
 	/// string
-	if (1)
+	if (0)
 	{
 		std::wstring sub_key(L"SYSTEM\\Software\\Microsoft");
 		std::wstring reg_sz(L"BuildLab");
@@ -90,7 +101,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	}
 
 	/// binary
-	if (1)
+	if (0)
 	{
 		std::wstring sub_key(L"SYSTEM\\RNG");
 		std::wstring reg_sz(L"Seed");
@@ -100,22 +111,33 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	}
 
 	// test process
-	if (1)
+	if (0)
 	{
+		/// integrity
 		std::wstring integrity;
 		if ( pwn::process::get_integrity_level(integrity) == ERROR_SUCCESS )
 			ok(L"integrity=%s\n", integrity.c_str());
 		else
 			perror(L"pwn::process::get_integrity_level()");
 
+		/// spawn new process
 		HANDLE hProcess;
 		if ( pwn::process::execv(L"c:\\windows\\system32\\notepad.exe hello.txt", &hProcess) )
 			pwn::process::kill(hProcess);
+
+		/// mem write & read
+		auto peb_loc = pwn::process::peb();
+		auto peb_cnt = pwn::process::mem::read(peb_loc, 0x10);
+		pwn::utils::hexdump(peb_cnt);
+		std::vector<BYTE> new_peb = { 0x13, 0x37, 0x13, 0x37 };
+		pwn::process::mem::write(peb_loc, new_peb);
+		peb_cnt = pwn::process::mem::read(peb_loc, 0x10);
+		pwn::utils::hexdump(peb_cnt);
 	}
 
 
 	// test cpu
-	if (1)
+	if (0)
 	{
 		DWORD nb_cores = pwn::cpu::nb_cores();
 		ok(L"nb_cores=%ld\n", nb_cores);
@@ -136,15 +158,15 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 		pwn::job::close(hJob);
 	}
 
-	if (1)
+	if (0)
 	{
-		DWORD i = 0;
+		DWORD i = 10;
 		for ( auto p : pwn::process::list() )
 		{
 			std::wstring integrity;
 			pwn::process::get_integrity_level(p.pid, integrity);
 			ok(L"%d -> %s (i=%s)\n", p.pid, p.name.c_str(), integrity.c_str());
-			if ( ++i > 10 )	break;
+			if ( !--i  ) break;
 		}
 
 	}

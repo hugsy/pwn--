@@ -20,4 +20,6 @@ namespace pwn::context
 
     extern PWNAPI pwn::log::log_level_t log_level;
     PWNAPI BOOL set_log_level(_In_ pwn::log::log_level_t new_level);
+
+    extern PWNAPI DWORD ptrsize;
 }
