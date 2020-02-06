@@ -324,3 +324,39 @@ std::vector<BYTE> pwn::process::mem::read(_In_ ULONG_PTR Address, _In_ SIZE_T Da
 	return pwn::process::mem::read(::GetCurrentProcess(), Address, DataLength);
 }
 
+
+/*++
+
+Memory allocate functions
+
+--*/
+ULONG_PTR pwn::process::mem::alloc(_In_ HANDLE hProcess, _In_ SIZE_T Size, _In_ const wchar_t Permission[3], _In_opt_ ULONG_PTR Address)
+{
+	auto flProtect = 0;
+	if( !wcscmp(Permission, L"r") ) flProtect |= PAGE_READONLY;
+	if( !wcscmp(Permission, L"rx") ) flProtect |= PAGE_EXECUTE_READ;
+	if( !wcscmp(Permission, L"rw") ) flProtect |= PAGE_READWRITE;
+	if( !wcscmp(Permission, L"rwx") ) flProtect |= PAGE_EXECUTE_READWRITE;
+	return (ULONG_PTR)::VirtualAllocEx(hProcess, reinterpret_cast<LPVOID>(Address), Size, MEM_COMMIT, flProtect);
+}
+
+ULONG_PTR pwn::process::mem::alloc(_In_ SIZE_T Size, _In_ const wchar_t Permission[3], _In_opt_ ULONG_PTR Address)
+{
+	return  pwn::process::mem::alloc(::GetCurrentProcess(), Size, Permission, Address);
+}
+
+
+/*++
+
+Memory free functions
+
+--*/
+ULONG_PTR pwn::process::mem::free(_In_ HANDLE hProcess, _In_ ULONG_PTR Address, _In_ SIZE_T Size)
+{
+	return (ULONG_PTR)::VirtualFreeEx(hProcess, reinterpret_cast<LPVOID>(Address), Size, MEM_DECOMMIT);
+}
+
+ULONG_PTR pwn::process::mem::free(_In_ ULONG_PTR Address, _In_ SIZE_T Size)
+{
+	return  pwn::process::mem::free(::GetCurrentProcess(), Address, Size);
+}

@@ -171,6 +171,17 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 	}
 
+	auto p = pwn::process::mem::alloc(0x100, L"rwx");
+	ok(L"allocated(rwx) at %p\n", p);
+	pwn::process::mem::free(p, 0x100);
+	p = pwn::process::mem::alloc(0x100, L"rx");
+	ok(L"allocated(rx) at %p\n", p);
+	pwn::process::mem::free(p, 0x100);
+	p = pwn::process::mem::alloc(0x100, L"rw");
+	ok(L"allocated(rw) at %p\n", p);
+	pwn::process::mem::free(p, 0x100);
+
+	::getchar();
 
 	ok(L"Done...\n");
 	return 0;

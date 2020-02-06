@@ -31,5 +31,11 @@ namespace pwn::process
 
 		PWNAPI std::vector<BYTE> read(_In_ HANDLE hProcess, _In_ ULONG_PTR Address, _In_ SIZE_T DataLength);
 		PWNAPI std::vector<BYTE> read(_In_ ULONG_PTR Address, _In_ SIZE_T DataLength);
+
+		PWNAPI ULONG_PTR alloc(_In_ HANDLE hProcess, _In_ SIZE_T Size, _In_ const wchar_t* Permission, _In_opt_ ULONG_PTR Address = NULL);
+		PWNAPI ULONG_PTR alloc(_In_ SIZE_T Size, _In_ const wchar_t Permission[3], _In_opt_ ULONG_PTR Address = NULL);
+
+		PWNAPI ULONG_PTR free(_In_ HANDLE hProcess, _In_ ULONG_PTR Address, _In_ SIZE_T Size);
+		PWNAPI ULONG_PTR free(_In_ ULONG_PTR Address, _In_ SIZE_T Size);
 	}
 }
