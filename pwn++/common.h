@@ -11,6 +11,8 @@
 #define __countof(x) (sizeof(x)/x[0])
 #endif 
 
+typedef DWORD64 QWORD;
+
 
 #include <array>
 #include <vector>

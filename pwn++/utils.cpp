@@ -6,6 +6,8 @@
 
 extern HANDLE pwn::log::g_ConsoleMutex;
 
+QWORD g_seed = 0;
+
 
 namespace pwn::utils
 {
@@ -55,25 +57,42 @@ namespace pwn::utils
 		{
 			return (isalnum(c) || (c == '+') || (c == '/'));
 		}
+
+		QWORD xorshift64(void)
+		{
+			g_seed ^= g_seed << 13;
+			g_seed ^= g_seed >> 17;
+			g_seed ^= g_seed << 43;
+			return g_seed;
+		}
+
+
+		DWORD xorshift128(void)
+		{
+			static DWORD x = 123456789;
+			static DWORD y = 362436069;
+			static DWORD z = 521288629;
+			static DWORD w = 88675123;
+			DWORD t;
+			t = x ^ (x << 11);
+			x = y;
+			y = z;
+			z = w;
+			return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
+		}
     }
 
 
 	//
-	// better rand() using xorshift128, stolen from gamozo
+	// better rand() using xorshift, stolen from gamozo
 	//
-	DWORD rand(void)
+	QWORD rand(void)
 	{
-		static DWORD x = 123456789;
-		static DWORD y = 362436069;
-		static DWORD z = 521288629;
-		static DWORD w = 88675123;
-		DWORD t;
-		t = x ^ (x << 11);
-		x = y; 
-		y = z; 
-		z = w;
-		return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
+		return xorshift64();
 	}
+
+
+
 
 
     void hexdump(_In_ const PBYTE Buffer, _In_ SIZE_T BufferSize)
