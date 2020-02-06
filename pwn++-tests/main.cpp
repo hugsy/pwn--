@@ -24,6 +24,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 
 	// test logging module
+	if (1)
 	{
 		::SetLastError(ERROR_ACPI_ERROR);
 		perror(std::wstring(L"test perror(ERROR_ACPI_ERROR)"));
@@ -31,17 +32,20 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	}
 
 	// test system module
-	info(L"computer_name=%s\n", pwn::system::name().c_str());
-	info(L"pagesize=0x%x\n", pwn::system::pagesize());
-	info(L"pid=%d\n", pwn::system::pid());
-	info(L"ppid=%d\n", pwn::system::ppid());
-	info(L"pidof('explorer.exe')=%d\n", pwn::system::pidof(std::wstring(L"explorer.exe")));
-	info(L"is_elevated()=%s\n", BOOL_AS_STR(pwn::system::is_elevated()));
-	info(L"peb()=%p\n", pwn::process::peb());
-	info(L"teb()=%p\n", pwn::process::teb());
-
+	if (1)
+	{
+		info(L"computer_name=%s\n", pwn::system::name().c_str());
+		info(L"pagesize=0x%x\n", pwn::system::pagesize());
+		info(L"pid=%d\n", pwn::system::pid());
+		info(L"ppid=%d\n", pwn::system::ppid());
+		info(L"pidof('explorer.exe')=%d\n", pwn::system::pidof(std::wstring(L"explorer.exe")));
+		info(L"is_elevated()=%s\n", BOOL_AS_STR(pwn::system::is_elevated()));
+		info(L"peb()=%p\n", pwn::process::peb());
+		info(L"teb()=%p\n", pwn::process::teb());
+	}
 
 	// test disasm
+	if(1)
 	{
 		std::vector<pwn::disasm::insn_t> insns;
 		if (pwn::disasm::x86((uint8_t*)CODE1, sizeof(CODE1) - 1, insns))
@@ -54,15 +58,19 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 				ok(L"0x%08x:\t%s\t\t%s\n", insn.address, insn.mnemonic.c_str(), insn.operands.c_str());
 	}
 
+
 	// test asm
+	if (1)
 	{
 		std::vector<BYTE> bytes;
 		pwn::assm::x64(CODE3, sizeof(CODE3) - 1, bytes);
 		pwn::utils::hexdump(bytes);
 	}
 
+
 	// test reg
 	/// dword
+	if (1)
 	{
 		std::wstring sub_key(L"Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon");
 		std::wstring reg_dword(L"FirstLogon");
@@ -72,6 +80,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	}
 
 	/// string
+	if (1)
 	{
 		std::wstring sub_key(L"SYSTEM\\Software\\Microsoft");
 		std::wstring reg_sz(L"BuildLab");
@@ -81,6 +90,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	}
 
 	/// binary
+	if (1)
 	{
 		std::wstring sub_key(L"SYSTEM\\RNG");
 		std::wstring reg_sz(L"Seed");
@@ -90,6 +100,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	}
 
 	// test process
+	if (1)
 	{
 		std::wstring integrity;
 		if ( pwn::process::get_integrity_level(integrity) == ERROR_SUCCESS )
@@ -104,6 +115,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 
 	// test cpu
+	if (1)
 	{
 		DWORD nb_cores = pwn::cpu::nb_cores();
 		ok(L"nb_cores=%ld\n", nb_cores);
@@ -111,6 +123,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 
 	// test job
+	if (0)
 	{
 		/// create a process and add it to an anonymous job
 		HANDLE hProcess;
@@ -123,6 +136,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 		pwn::job::close(hJob);
 	}
 
+	if (1)
 	{
 		DWORD i = 0;
 		for ( auto p : pwn::process::list() )
