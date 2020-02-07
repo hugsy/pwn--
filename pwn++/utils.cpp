@@ -3,6 +3,8 @@
 #include "context.h"
 
 #include <stdio.h>
+#include <type_traits>
+#include <iostream>
 
 
 extern HANDLE pwn::log::g_ConsoleMutex;
@@ -12,45 +14,45 @@ QWORD g_seed = 0;
 
 namespace pwn::utils
 {
-    namespace
-    {
-        // home-made ugly hexdump
-        // TODO: improve at some point       
-        void __hexdump(_In_ const PBYTE data, _In_ SIZE_T size)
-        {
-            WCHAR ascii[17] = { 0, };
-            SIZE_T i, j;
+	namespace
+	{
+		// home-made ugly hexdump
+		// TODO: improve at some point       
+		void __hexdump(_In_ const PBYTE data, _In_ SIZE_T size)
+		{
+			WCHAR ascii[17] = { 0, };
+			SIZE_T i, j;
 
-            for (i = 0; i < size; ++i) {
-                BYTE c = *((PCHAR)data + i);
+			for (i = 0; i < size; ++i) {
+				BYTE c = *((PCHAR)data + i);
 
-                if (!ascii[0])
-                    ::wprintf(L"%04llx   ", i);
+				if (!ascii[0])
+					::wprintf(L"%04llx   ", i);
 
-                ::wprintf(L"%02X ", c);
-                ascii[i % 16] = (c >= 0x20 && c <= 0x7e) ? c : '.';
+				::wprintf(L"%02X ", c);
+				ascii[i % 16] = (c >= 0x20 && c <= 0x7e) ? c : '.';
 
-                if ((i + 1) % 8 == 0 || i + 1 == size) {
-                    ::wprintf(L" ");
-                    if ((i + 1) % 16 == 0)
-                    {
-                        ::wprintf(L"|  %s \n", ascii);
-                        ::ZeroMemory(ascii, sizeof(ascii));
-                    }
-                    else if (i + 1 == size)
-                    {
-                        ascii[(i + 1) % 16] = '\0';
-                        if ((i + 1) % 16 <= 8)
-                            ::wprintf(L" ");
+				if ((i + 1) % 8 == 0 || i + 1 == size) {
+					::wprintf(L" ");
+					if ((i + 1) % 16 == 0)
+					{
+						::wprintf(L"|  %s \n", ascii);
+						::ZeroMemory(ascii, sizeof(ascii));
+					}
+					else if (i + 1 == size)
+					{
+						ascii[(i + 1) % 16] = '\0';
+						if ((i + 1) % 16 <= 8)
+							::wprintf(L" ");
 
-                        for (j = (i + 1) % 16; j < 16; ++j)
-                            ::wprintf(L"   ");
+						for (j = (i + 1) % 16; j < 16; ++j)
+							::wprintf(L"   ");
 
-                        ::wprintf(L"|  %s \n", ascii);
-                    }
-                }
-            }
-        }
+						::wprintf(L"|  %s \n", ascii);
+					}
+				}
+			}
+		}
 
 		static const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -87,7 +89,7 @@ namespace pwn::utils
 			z = w;
 			return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
 		}
-    
+	
 	
 		/*++
 
@@ -146,20 +148,20 @@ namespace pwn::utils
 
 
 
-    void hexdump(_In_ const PBYTE Buffer, _In_ SIZE_T BufferSize)
-    {
-        if (::WaitForSingleObject(pwn::log::g_ConsoleMutex, INFINITE) == WAIT_OBJECT_0)
-        {
-            __hexdump(Buffer, BufferSize);
-            ::ReleaseMutex(pwn::log::g_ConsoleMutex);
-        }
-    }
+	void hexdump(_In_ const PBYTE Buffer, _In_ SIZE_T BufferSize)
+	{
+		if (::WaitForSingleObject(pwn::log::g_ConsoleMutex, INFINITE) == WAIT_OBJECT_0)
+		{
+			__hexdump(Buffer, BufferSize);
+			::ReleaseMutex(pwn::log::g_ConsoleMutex);
+		}
+	}
 
 
-    void hexdump(_In_ const std::vector<BYTE>& bytes)
-    {
-        hexdump((const PBYTE)bytes.data(), bytes.size());
-    }
+	void hexdump(_In_ const std::vector<BYTE>& bytes)
+	{
+		hexdump((const PBYTE)bytes.data(), bytes.size());
+	}
 
 
 	std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len)
@@ -299,4 +301,71 @@ namespace pwn::utils
 	}
 
 
+	/*++
+	
+	C++17 port of flat() from pwnlib
+
+	--*/
+	/*
+	template<typename T>
+	std::vector<BYTE> flat(T v)
+	{
+		if constexpr (std::is_same_v<T, std::string>)
+			return std::vector<BYTE>(v.begin(), v.end());
+
+		throw std::runtime_error("Unknown type to flatten");
+	}
+
+
+	template<typename T, typename... Args>
+	std::vector<BYTE> flat(T first, Args... args)
+	{
+		std::vector<BYTE> head = flat(first);
+		std::vector<BYTE> tail = flat(args);
+		head.insert(head.end(), tail.begin(), tail.end());
+		return head;
+	}
+	*/
+	template<typename T>
+	std::vector<BYTE> __pack(_In_ T v)
+	{
+		std::vector<BYTE> out;
+		for (int i = sizeof(T) - 1; i >= 0; i--)
+			out.push_back((v >> (8 * i)) & 0xff);
+		return out;
+	}
+
+	std::vector<BYTE> p16(_In_  WORD v) { return __pack(v); }
+	std::vector<BYTE> p32(_In_ DWORD v) { return __pack(v); }
+	std::vector<BYTE> p64(_In_ QWORD v) { return __pack(v); }
+
+
+	template<typename T>
+	std::vector<BYTE> __flatten(_In_ T v)
+	{
+		if constexpr (std::is_same_v<T, std::string>)
+			return std::vector<BYTE>(v.begin(), v.end());
+
+		if constexpr (std::is_same_v<T, DWORD>)
+			return p32(v);
+
+		if constexpr (std::is_same_v<T, QWORD>)
+			return p64(v);
+
+		return std::vector<BYTE>();
+		//throw std::runtime_error("Unknown type to flatten");
+	}
+
+
+	std::vector<BYTE> flatten(_In_ std::vector<flattenable_t>& args)
+	{
+		std::vector<BYTE> flat;
+		for (const auto& arg: args)
+		{
+			auto tmp = __flatten(arg);
+			flat.insert(flat.end(), tmp.begin(), tmp.end());
+		}
+
+		return flat;
+	}
 }

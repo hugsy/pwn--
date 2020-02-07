@@ -161,28 +161,34 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	if (0)
 	{
 		DWORD i = 10;
-		for ( auto p : pwn::process::list() )
+		for (auto p : pwn::process::list())
 		{
 			std::wstring integrity;
 			pwn::process::get_integrity_level(p.pid, integrity);
 			ok(L"%d -> %s (i=%s)\n", p.pid, p.name.c_str(), integrity.c_str());
-			if ( !--i  ) break;
+			if (!--i) break;
 		}
 
+		auto p = pwn::process::mem::alloc(0x100, L"rwx");
+		ok(L"allocated(rwx) at %p\n", p);
+		pwn::process::mem::free(p, 0x100);
+		p = pwn::process::mem::alloc(0x100, L"rx");
+		ok(L"allocated(rx) at %p\n", p);
+		pwn::process::mem::free(p, 0x100);
+		p = pwn::process::mem::alloc(0x100, L"rw");
+		ok(L"allocated(rw) at %p\n", p);
+		pwn::process::mem::free(p, 0x100);
 	}
 
-	auto p = pwn::process::mem::alloc(0x100, L"rwx");
-	ok(L"allocated(rwx) at %p\n", p);
-	pwn::process::mem::free(p, 0x100);
-	p = pwn::process::mem::alloc(0x100, L"rx");
-	ok(L"allocated(rx) at %p\n", p);
-	pwn::process::mem::free(p, 0x100);
-	p = pwn::process::mem::alloc(0x100, L"rw");
-	ok(L"allocated(rw) at %p\n", p);
-	pwn::process::mem::free(p, 0x100);
+	std::string a("a");
+	std::string b("b");
+	auto args = std::vector<flattenable_t>{ a, b, (DWORD)1, (QWORD)1337 };
+	auto out = pwn::utils::flatten(args);
+	pwn::utils::hexdump(out);
 
+	
+	ok(L"Done...\n");
 	::getchar();
 
-	ok(L"Done...\n");
 	return 0;
 }
