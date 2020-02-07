@@ -165,7 +165,7 @@ BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwPar
 	HANDLE hParentProcess = NULL;
 	STARTUPINFOEX si = { 0, };
 	PROCESS_INFORMATION pi = { 0, };
-	DWORD dwFlags = DETACHED_PROCESS | EXTENDED_STARTUPINFO_PRESENT;
+	DWORD dwFlags = EXTENDED_STARTUPINFO_PRESENT;
 	si.StartupInfo.cb = sizeof(STARTUPINFOEX);
 	
 	size_t cmd_len = ::wcslen(lpCommandLine);
@@ -247,6 +247,15 @@ BOOL pwn::process::kill(_In_ HANDLE hProcess)
 	BOOL res = ::TerminateProcess(hProcess, EXIT_FAILURE);
 	::CloseHandle(hProcess);
 	return res;
+}
+
+
+_Success_(return != nullptr)
+HANDLE pwn::process::cmd(void)
+{
+	HANDLE hProcess = nullptr;
+	pwn::process::execv(L"cmd.exe", &hProcess);
+	return hProcess;
 }
 
 

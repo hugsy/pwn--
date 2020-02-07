@@ -185,7 +185,6 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	auto args = std::vector<flattenable_t>{ a, b, (DWORD)1, (QWORD)1337 };
 	auto out = pwn::utils::flatten(args);
 	pwn::utils::hexdump(out);
-
 	
 	ok(L"Done...\n");
 	::getchar();
