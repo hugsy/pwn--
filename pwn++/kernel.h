@@ -142,7 +142,7 @@ namespace pwn::kernel
 {
 	namespace shellcode
 	{
-		PWNAPI std::vector<BOOL> steal_system_token(void);
+		PWNAPI std::vector<BYTE> steal_system_token(void);
 	}
 }
 

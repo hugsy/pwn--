@@ -2,15 +2,13 @@
 
 #include "common.h"
 
-/*++
 
-Base namespace
-
---*/
-namespace pwn::types
+namespace pwn
 {
-}
+	PWNAPI const wchar_t* version();
+	PWNAPI const std::tuple<WORD, WORD> version_info();
 
+}
 
 #include "utils.h"
 #include "context.h"
@@ -22,4 +20,5 @@ namespace pwn::types
 #include "registry.h"
 #include "cpu.h"
 #include "job.h"
+#include "kernel.h"
 

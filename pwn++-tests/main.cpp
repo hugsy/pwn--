@@ -14,7 +14,12 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 {
 	HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
 
+	if (1)
+	{
+		auto version = pwn::version_info();
+		ok(L"running pwn++ v%d.%02d\n", std::get<0>(version), std::get<1>(version));
 
+	}
 	// change the context architecture to x64
 	pwn::context::set_arch(pwn::context::arch_t::x64);
 
@@ -180,12 +185,27 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 		pwn::process::mem::free(p, 0x100);
 	}
 
+/*
 	std::string a("a");
 	std::string b("b");
 	auto args = std::vector<flattenable_t>{ a, b, (DWORD)1, (QWORD)1337 };
 	auto out = pwn::utils::flatten(args);
 	pwn::utils::hexdump(out);
-	
+*/
+
+	auto out = pwn::kernel::shellcode::steal_system_token();
+	ok(L"compiled sc:\n");
+	pwn::utils::hexdump(out);
+
+	auto mem = pwn::process::mem::alloc(0x1000, L"rwx");
+	ok(L"allocated %p\n", mem);
+
+	pwn::process::mem::write(mem, out);
+	ok(L"written sc at %p\n", mem);
+	::getchar();
+
+	pwn::process::mem::free(mem, 0x1000);
+
 	ok(L"Done...\n");
 	::getchar();
 
