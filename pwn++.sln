@@ -10,6 +10,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pwn++-tests", "pwn++-tests\
 		{EE35BB9D-CB25-481E-9D7F-0E361058D4EB} = {EE35BB9D-CB25-481E-9D7F-0E361058D4EB}
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{9881F2A2-25E0-4B8B-A5B5-BC7799CE91F3}"
+	ProjectSection(SolutionItems) = preProject
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
