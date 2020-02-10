@@ -165,7 +165,7 @@ BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwPar
 	HANDLE hParentProcess = NULL;
 	STARTUPINFOEX si = { 0, };
 	PROCESS_INFORMATION pi = { 0, };
-	DWORD dwFlags = EXTENDED_STARTUPINFO_PRESENT;
+	DWORD dwFlags = EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE;
 	si.StartupInfo.cb = sizeof(STARTUPINFOEX);
 	
 	size_t cmd_len = ::wcslen(lpCommandLine);
@@ -187,6 +187,10 @@ BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwPar
 				::UpdateProcThreadAttribute(si.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &hParentProcess, sizeof(HANDLE), nullptr, nullptr);
 				dbg(L"Spawning '%s' with PPID=%d...\n", cmd.get(), dwParentPid);
 			}
+		}
+		else
+		{
+			perror(L"OpenProcess()");
 		}
 	}
 	else
@@ -346,7 +350,10 @@ ULONG_PTR pwn::process::mem::alloc(_In_ HANDLE hProcess, _In_ SIZE_T Size, _In_ 
 	if( !wcscmp(Permission, L"rx") ) flProtect |= PAGE_EXECUTE_READ;
 	if( !wcscmp(Permission, L"rw") ) flProtect |= PAGE_READWRITE;
 	if( !wcscmp(Permission, L"rwx") ) flProtect |= PAGE_EXECUTE_READWRITE;
-	return (ULONG_PTR)::VirtualAllocEx(hProcess, reinterpret_cast<LPVOID>(Address), Size, MEM_COMMIT, flProtect);
+	auto buf = (ULONG_PTR)::VirtualAllocEx(hProcess, reinterpret_cast<LPVOID>(Address), Size, MEM_COMMIT, flProtect);
+	if ( buf )
+		::ZeroMemory(reinterpret_cast<LPVOID>(buf), Size);
+	return buf;
 }
 
 ULONG_PTR pwn::process::mem::alloc(_In_ SIZE_T Size, _In_ const wchar_t Permission[3], _In_opt_ ULONG_PTR Address)
@@ -360,12 +367,12 @@ ULONG_PTR pwn::process::mem::alloc(_In_ SIZE_T Size, _In_ const wchar_t Permissi
 Memory free functions
 
 --*/
-ULONG_PTR pwn::process::mem::free(_In_ HANDLE hProcess, _In_ ULONG_PTR Address, _In_ SIZE_T Size)
+ULONG_PTR pwn::process::mem::free(_In_ HANDLE hProcess, _In_ ULONG_PTR Address)
 {
-	return (ULONG_PTR)::VirtualFreeEx(hProcess, reinterpret_cast<LPVOID>(Address), Size, MEM_DECOMMIT);
+	return (ULONG_PTR)::VirtualFreeEx(hProcess, reinterpret_cast<LPVOID>(Address), 0, MEM_RELEASE);
 }
 
-ULONG_PTR pwn::process::mem::free(_In_ ULONG_PTR Address, _In_ SIZE_T Size)
+ULONG_PTR pwn::process::mem::free(_In_ ULONG_PTR Address)
 {
-	return  pwn::process::mem::free(::GetCurrentProcess(), Address, Size);
+	return  pwn::process::mem::free(::GetCurrentProcess(), Address);
 }

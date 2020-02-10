@@ -14,7 +14,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 {
 	HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
 
-	if (0)
+	if ( 0 )
 	{
 		auto version = pwn::version_info();
 		ok(L"running pwn++ v%d.%02d\n", std::get<0>(version), std::get<1>(version));
@@ -29,7 +29,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 
 	// test logging & utils module
-	if (0)
+	if ( 0 )
 	{
 		::SetLastError(ERROR_ACPI_ERROR);
 		perror(std::wstring(L"test perror(ERROR_ACPI_ERROR)"));
@@ -48,7 +48,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	}
 
 	// test system module
-	if (0)
+	if ( 0 )
 	{
 		info(L"computer_name=%s\n", pwn::system::name().c_str());
 		info(L"pagesize=0x%x\n", pwn::system::pagesize());
@@ -61,22 +61,22 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	}
 
 	// test disasm
-	if(0)
+	if ( 0 )
 	{
 		std::vector<pwn::disasm::insn_t> insns;
-		if (pwn::disasm::x86((uint8_t*)CODE1, sizeof(CODE1) - 1, insns))
-			for (auto insn : insns)
+		if ( pwn::disasm::x86((uint8_t*)CODE1, sizeof(CODE1) - 1, insns) )
+			for ( auto insn : insns )
 				ok(L"0x%08x:\t%s\t\t%s\n", insn.address, insn.mnemonic.c_str(), insn.operands.c_str());
 
 		insns.clear();
-		if (pwn::disasm::disassemble((uint8_t*)CODE2, sizeof(CODE2) - 1, insns))
-			for (auto insn : insns)
+		if ( pwn::disasm::disassemble((uint8_t*)CODE2, sizeof(CODE2) - 1, insns) )
+			for ( auto insn : insns )
 				ok(L"0x%08x:\t%s\t\t%s\n", insn.address, insn.mnemonic.c_str(), insn.operands.c_str());
 	}
 
 
 	// test asm
-	if (0)
+	if ( 0 )
 	{
 		std::vector<BYTE> bytes;
 		pwn::assm::x64(CODE3, sizeof(CODE3) - 1, bytes);
@@ -86,37 +86,37 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 	// test reg
 	/// dword
-	if (0)
+	if ( 0 )
 	{
 		std::wstring sub_key(L"Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon");
 		std::wstring reg_dword(L"FirstLogon");
 		DWORD value = -1;
-		if(pwn::reg::read_dword(pwn::reg::hkcu(), sub_key, reg_dword, &value) == ERROR_SUCCESS)
+		if ( pwn::reg::read_dword(pwn::reg::hkcu(), sub_key, reg_dword, &value) == ERROR_SUCCESS )
 			ok(L"FirstLogon=%d\n", value);
 	}
 
 	/// string
-	if (0)
+	if ( 0 )
 	{
 		std::wstring sub_key(L"SYSTEM\\Software\\Microsoft");
 		std::wstring reg_sz(L"BuildLab");
 		std::wstring BuildLab;
-		if(pwn::reg::read_wstring(pwn::reg::hklm(), sub_key, reg_sz, BuildLab)==ERROR_SUCCESS)
+		if ( pwn::reg::read_wstring(pwn::reg::hklm(), sub_key, reg_sz, BuildLab) == ERROR_SUCCESS )
 			ok(L"BuildLab=%s\n", BuildLab.c_str());
 	}
 
 	/// binary
-	if (0)
+	if ( 0 )
 	{
 		std::wstring sub_key(L"SYSTEM\\RNG");
 		std::wstring reg_sz(L"Seed");
 		std::vector<BYTE> Seed;
-		if(pwn::reg::read_binary(pwn::reg::hklm(), sub_key, reg_sz, Seed) == ERROR_SUCCESS)
+		if ( pwn::reg::read_binary(pwn::reg::hklm(), sub_key, reg_sz, Seed) == ERROR_SUCCESS )
 			pwn::utils::hexdump(Seed);
 	}
 
 	// test process
-	if (0)
+	if ( 0 )
 	{
 		/// integrity
 		std::wstring integrity;
@@ -142,7 +142,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 
 	// test cpu
-	if (0)
+	if ( 0 )
 	{
 		DWORD nb_cores = pwn::cpu::nb_cores();
 		ok(L"nb_cores=%ld\n", nb_cores);
@@ -150,7 +150,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 
 	// test job
-	if (0)
+	if ( 0 )
 	{
 		/// create a process and add it to an anonymous job
 		HANDLE hProcess;
@@ -163,31 +163,31 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 		pwn::job::close(hJob);
 	}
 
-	if (0)
+	if ( 0 )
 	{
 		DWORD i = 10;
-		for (auto p : pwn::process::list())
+		for ( auto p : pwn::process::list() )
 		{
 			std::wstring integrity;
 			pwn::process::get_integrity_level(p.pid, integrity);
 			ok(L"%d -> %s (i=%s)\n", p.pid, p.name.c_str(), integrity.c_str());
-			if (!--i) break;
+			if ( !--i ) break;
 		}
 
 		auto p = pwn::process::mem::alloc(0x100, L"rwx");
 		ok(L"allocated(rwx) at %p\n", p);
-		pwn::process::mem::free(p, 0x100);
+		pwn::process::mem::free(p);
 		p = pwn::process::mem::alloc(0x100, L"rx");
 		ok(L"allocated(rx) at %p\n", p);
-		pwn::process::mem::free(p, 0x100);
+		pwn::process::mem::free(p);
 		p = pwn::process::mem::alloc(0x100, L"rw");
 		ok(L"allocated(rw) at %p\n", p);
-		pwn::process::mem::free(p, 0x100);
+		pwn::process::mem::free(p);
 	}
 
 
 	// test kernel::shellcode
-	if (0)
+	if ( 0 )
 	{
 		auto out = pwn::kernel::shellcode::steal_system_token();
 		ok(L"compiled sc:\n");
@@ -199,16 +199,30 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 		pwn::process::mem::write(mem, out);
 		ok(L"written sc at %p\n", mem);
 		::getchar();
-		pwn::process::mem::free(mem, 0x1000);
+		pwn::process::mem::free(mem);
 	}
 
 
+	if ( 0 )
+	{
+		std::string a("a");
+		std::string b("b");
+		auto args = std::vector<flattenable_t>{ a, b, (DWORD)1, (QWORD)1337 };
+		auto out = pwn::utils::flatten(args);
+		pwn::utils::hexdump(out);
+	}
 
-	std::string a("a");
-	std::string b("b");
-	auto args = std::vector<flattenable_t>{ a, b, (DWORD)1, (QWORD)1337 };
-	auto out = pwn::utils::flatten(args);
-	pwn::utils::hexdump(out);
+
+	if ( 0 )
+	{
+		// variant 1 of getsystem("notepad.exe") -> handle inheritance
+		HANDLE hProcess;
+		auto ppid = pwn::system::pidof(L"winlogon.exe");
+		info(L"found winlogon pid=%lu\n", ppid);
+		pwn::process::execv(L"cmd.exe", ppid, &hProcess);
+		::WaitForSingleObject(hProcess, INFINITE);
+		::CloseHandle(hProcess);
+	}
 
 
 	ok(L"Done...\n");

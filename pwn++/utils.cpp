@@ -306,26 +306,6 @@ namespace pwn::utils
 	C++17 port of flat() from pwnlib
 
 	--*/
-	/*
-	template<typename T>
-	std::vector<BYTE> flat(T v)
-	{
-		if constexpr (std::is_same_v<T, std::string>)
-			return std::vector<BYTE>(v.begin(), v.end());
-
-		throw std::runtime_error("Unknown type to flatten");
-	}
-
-
-	template<typename T, typename... Args>
-	std::vector<BYTE> flat(T first, Args... args)
-	{
-		std::vector<BYTE> head = flat(first);
-		std::vector<BYTE> tail = flat(args);
-		head.insert(head.end(), tail.begin(), tail.end());
-		return head;
-	}
-	*/
 	template<typename T>
 	std::vector<BYTE> __pack(_In_ T v)
 	{
