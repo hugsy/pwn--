@@ -175,6 +175,7 @@
     <ClInclude Include="process.h" />
     <ClInclude Include="pwn.h" />
     <ClInclude Include="registry.h" />
+    <ClInclude Include="service.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
@@ -190,6 +191,7 @@
     <ClCompile Include="process.cpp" />
     <ClCompile Include="pwn.cpp" />
     <ClCompile Include="registry.cpp" />
+    <ClCompile Include="service.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>

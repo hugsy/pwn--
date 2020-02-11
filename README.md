@@ -2,7 +2,11 @@
 
 A C++ 14/17 rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL for Windows.
 
-The idea is to provide in C on Windows the same kind of functionalities than [pwntools]() does in Python on Linux.
+The idea is to provide in C on Windows the same kind of functionalities than [pwntools](https://github.com/Gallopsled/pwntools) does in Python on Linux.
+It's also a library meant for exploring Windows in a more friendly way.
+
+_Note_: this library is **not** performance friendly. Performance is massively sacrified for convenience and simplicity. So don't this library on 
+production^W^Wever!
 
 
 ## Examples

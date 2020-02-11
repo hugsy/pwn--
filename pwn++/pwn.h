@@ -21,4 +21,5 @@ namespace pwn
 #include "cpu.h"
 #include "job.h"
 #include "kernel.h"
+#include "service.h"
 

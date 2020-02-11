@@ -225,6 +225,20 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	}
 
 
+	// test services
+	if ( 1 )
+	{
+		for ( auto service : pwn::service::list() )
+		{
+			ok(L"[+] Name='%s' Display='%s' Type=%d Status=%d\n", 
+				service.Name.c_str(),
+				service.DisplayName.c_str(),
+				service.Type,
+				service.Status
+			);
+		}
+	}
+
 	ok(L"Done...\n");
 	::getchar();
 
