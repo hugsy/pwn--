@@ -226,11 +226,11 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 
 	// test services
-	if ( 1 )
+	if ( 0 )
 	{
 		for ( auto service : pwn::service::list() )
 		{
-			ok(L"[+] Name='%s' Display='%s' Type=%d Status=%d\n", 
+			ok(L"Name='%s' Display='%s' Type=%d Status=%d\n", 
 				service.Name.c_str(),
 				service.DisplayName.c_str(),
 				service.Type,
@@ -239,6 +239,17 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 		}
 	}
 
+	// test utils
+	if (1)
+	{
+		for ( auto mod : pwn::kernel::modules() )
+		{
+			auto name = std::get<0>(mod);
+			auto addr = std::get<1>(mod);
+			ok(L"%s -> %p\n", name.c_str(), addr);
+		}
+		
+	}
 	ok(L"Done...\n");
 	::getchar();
 

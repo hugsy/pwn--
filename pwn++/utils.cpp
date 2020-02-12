@@ -277,6 +277,31 @@ namespace pwn::utils
 	}
 
 
+	BOOL startswith(_In_ const std::string& str, _In_ const std::string& pattern)
+	{
+		return (str.size() >= pattern.size() && str.compare(0, pattern.size(), pattern) == 0);
+	}
+
+
+	BOOL startswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern)
+	{
+		return (str.size() >= pattern.size() && str.compare(0, pattern.size(), pattern) == 0);
+	}
+
+
+	BOOL endswith(_In_ const std::string& str, _In_ const std::string& pattern)
+	{
+		return (str.size() >= pattern.size() && str.compare(str.size() - pattern.size(), pattern.size(), pattern) == 0);
+	}
+
+
+	PWNAPI BOOL endswith(const std::wstring& str, const std::wstring& pattern)
+	{
+		return (str.size() >= pattern.size() && str.compare(str.size() - pattern.size(), pattern.size(), pattern) == 0);
+	}
+
+
+
 
 
 	/*++

@@ -30,7 +30,7 @@ Or better, use Visual Studio and add it via the GUI (this approach has the huge 
 ### Context
 
 ```cpp
-#include <pwn.h>
+#include <pwn++\pwn.h>
 int wmain()
 {
 	auto version = pwn::version_info();
@@ -54,7 +54,7 @@ PS C:\Users\User> .\test.exe
 ### Utils
 
 ```cpp
-#include <pwn.h>
+#include <pwn++\pwn.h>
 int wmain()
 {
 	std::vector<BYTE> buf;
@@ -88,7 +88,7 @@ nice, now with period=sizeof(PTR)
 Powered by [capstone-engine](http://www.capstone-engine.org/)
 
 ```cpp
-#include <pwn.h>
+#include <pwn++\pwn.h>
 int wmain()
 {
 	const uint8_t* code = "\x90\x48\x31\xc0\xcc\xc3";
@@ -114,7 +114,7 @@ Outputs
 Powered by [keystone-engine](http://www.keystone-engine.org/)
 
 ```cpp
-#include <pwn.h>
+#include <pwn++\pwn.h>
 int wmain()
 {
 	const uint8_t* code = "xor rax, rax; inc rax; nop; ret";
@@ -154,7 +154,7 @@ Outputs
 ```
 REM In Prompt
 PS C:\> whoami
-win10-wilhelm\chris
+Win10Eval2019\hugsy
 PS C:\> .\pwn++-tests.exe
 [DEBUG]  log_level set to 0
 [*]  found winlogon pid=684
