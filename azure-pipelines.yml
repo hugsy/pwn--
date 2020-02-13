@@ -18,10 +18,11 @@ resources:
   - repository: capstone
     type: github
     name: aquynh/capstone
+    endpoint: hugsy
   - repository: keystone
     type: github
     name: keystone-engine/keystone
- 
+    endpoint: hugsy
  
 jobs:
 - job: 'build_pwnlib_win10'
