@@ -25,9 +25,9 @@ resources:
     endpoint: hugsy
  
 jobs:
-- job: 'build_pwnlib_win10'
+- job: 'build_pwnlib_win10_x64'
   pool:
-    vmImage: 'windows-latest'
+    vmImage: 'windows-2019'
   steps:
   - checkout: self
   - checkout: capstone
@@ -39,8 +39,11 @@ jobs:
       targetType: 'inline'
       script: |
         set
-        cd "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Tools\MSVC\"
-        cd \..\IDE & .\devenv.exe /Upgrade'
+        cd "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\IDE"
+        dir        
+        cd "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE"
+        dir
+        .\devenv.exe /Upgrade'
       workingDirectory: capstone\msvc
       
   - task: VSBuild@1
