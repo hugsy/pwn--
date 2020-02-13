@@ -1,0 +1,6 @@
+[submodule "libs/keystone"]
+	path = libs/keystone
+	url = https://github.com/keystone-engine/keystone.git
+[submodule "libs/capstone"]
+	path = libs/capstone
+	url = https://github.com/aquynh/capstone.git
