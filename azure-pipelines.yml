@@ -27,7 +27,7 @@ resources:
 jobs:
 - job: 'build_pwnlib_win10'
   pool:
-    vmImage: 'windows-2019'
+    vmImage: 'windows-latest'
   steps:
   - checkout: self
   - checkout: capstone
@@ -37,7 +37,7 @@ jobs:
     displayName: 'Prepare Capstone build'
     inputs:
       targetType: 'inline'
-      script: "set"
+      script: "C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\devenv.exe /upgrade"
       workingDirectory: capstone\msvc
       
   - task: VSBuild@1
@@ -45,7 +45,8 @@ jobs:
     inputs: 
       configuration: 'Release'
       platform: 'x64'
-      solution: capstone\msvc\capstone.sln
+      //solution: capstone\msvc\capstone.sln
+      solution: capstone\msvc\capstone_static\capstone_static.vcxproj
       
       
   - task: MSBuild@1
