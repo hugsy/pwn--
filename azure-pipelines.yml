@@ -31,38 +31,22 @@ jobs:
   steps:
   - checkout: self
   - checkout: capstone
-  - checkout: keystone
 
 
   - task: CmdLine@2
     displayName: 'Prepare Capstone build'
     inputs:
       targetType: 'inline'
-      script: "devenv.exe capstone.sln /upgrade"
+      script: "echo foo"
       workingDirectory: capstone\msvc
       
   - task: MSBuild@1
     displayName: 'Build Capstone'
     inputs: 
       platform: 'x64'
-      msbuildVersion: 'latest'
+      msbuildVersion: '12.0'
       configuration: 'Release'
       solution: capstone\msvc\capstone.sln
-      
-      
-  - task: Bash@3
-    displayName: 'Prepare Keystone build'
-    inputs:
-      targetType: 'inline'
-      script: "echo done"
-      workingDirectory: keystone
-      
-  - task: MSBuild@1
-    displayName: 'Build Keystone'
-    inputs: 
-      msbuildVersion: 'latest'
-      msbuildArguments: '-nologo /m /p:Configuration=Release'
-      solution: keystone\keystone.sln
       
       
   - task: MSBuild@1
