@@ -37,7 +37,7 @@ jobs:
     displayName: 'Prepare Capstone build'
     inputs:
       targetType: 'inline'
-      script: "echo foo"
+      script: "set"
       workingDirectory: capstone\msvc
       
   - task: VSBuild@1
