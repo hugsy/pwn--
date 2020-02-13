@@ -39,9 +39,9 @@ jobs:
       targetType: 'inline'
       script: |
         set
-        cd "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\IDE"
+        cd "C:\Program Files (x86)"
         dir        
-        cd "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE"
+        cd "C:\Program Files (x86)\Microsoft Visual Studio"
         dir
         .\devenv.exe /Upgrade'
       workingDirectory: capstone\msvc
