@@ -13,13 +13,24 @@ variables:
   buildConfiguration: 'Release'
 
 
+resources:
+  repositories:
+  - repository: capstone
+    type: github
+    name: aquynh/capstone
+  - repository: keystone
+    type: github
+    name: keystone-engine/keystone
+ 
+ 
 jobs:
 - job: 'build_pwnlib_win10'
   pool:
     vmImage: 'windows-2019'
   steps:
-  - checkout: git://github.com/aquynh/capstone.git
-  - checkout: git://github.com/keystone-engine/keystone.git
+  - checkout: self
+  - checkout: capstone
+  - checkout: keystone
   - task: MSBuild@1
     displayName: 'Build Pwn++'
     inputs: 
