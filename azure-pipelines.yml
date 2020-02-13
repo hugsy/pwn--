@@ -33,6 +33,23 @@ jobs:
   - checkout: capstone
   - checkout: keystone
   - task: MSBuild@1
+    displayName: 'Build Capstone'
+    inputs: 
+      msbuildVersion: 'latest'
+      msbuildArguments: '-nologo /m /p:Configuration=Release'
+      solution: mvsc\capstone.sln
+  - task: Bash@3
+    displayName: 'Prepare Keystone build'
+    inputs:
+      script: "cmake ."
+      workingDirectory: keystone
+  - task: MSBuild@1
+    displayName: 'Build Keystone'
+    inputs: 
+      msbuildVersion: 'latest'
+      msbuildArguments: '-nologo /m /p:Configuration=Release'
+      solution: keystone.sln 
+  - task: MSBuild@1
     displayName: 'Build Pwn++'
     inputs: 
       msbuildArguments: '-nologo /m /p:Configuration=Release'
