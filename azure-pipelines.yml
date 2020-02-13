@@ -35,8 +35,9 @@ jobs:
   - task: MSBuild@1
     displayName: 'Build Capstone'
     inputs: 
+      platform: 'x64'
       msbuildVersion: 'latest'
-      msbuildArguments: '-nologo /m /p:Configuration=Release'
+      configuration: 'Release'
       solution: capstone\msvc\capstone.sln
   - task: Bash@3
     displayName: 'Prepare Keystone build'
