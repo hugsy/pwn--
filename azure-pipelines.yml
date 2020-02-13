@@ -37,7 +37,7 @@ jobs:
     displayName: 'Prepare Capstone build'
     inputs:
       targetType: 'inline'
-      script: 'cmd /c "%VS140COMNTOOLS%"\..\IDE\devenv.exe /Upgrade'
+      script: 'cd %VS140COMNTOOLS% & cd \..\IDE & .\devenv.exe /Upgrade'
       workingDirectory: capstone\msvc
       
   - task: VSBuild@1
