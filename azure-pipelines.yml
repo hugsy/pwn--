@@ -34,12 +34,12 @@ jobs:
   - checkout: keystone
 
 
-  - task: Bash@3
+  - task: CmdLine@2
     displayName: 'Prepare Capstone build'
     inputs:
       targetType: 'inline'
       script: "devenv.exe capstone.sln /upgrade"
-      workingDirectory: capstone/msvc
+      workingDirectory: capstone\msvc
       
   - task: MSBuild@1
     displayName: 'Build Capstone'
