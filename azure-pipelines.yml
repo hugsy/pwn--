@@ -40,12 +40,11 @@ jobs:
       script: "echo foo"
       workingDirectory: capstone\msvc
       
-  - task: MSBuild@1
+  - task: VSBuild@1
     displayName: 'Build Capstone'
     inputs: 
-      platform: 'x64'
-      msbuildVersion: '12.0'
       configuration: 'Release'
+      platform: 'x64'
       solution: capstone\msvc\capstone.sln
       
       
