@@ -37,7 +37,7 @@ jobs:
     inputs: 
       msbuildVersion: 'latest'
       msbuildArguments: '-nologo /m /p:Configuration=Release'
-      solution: capstone\mvsc\capstone.sln
+      solution: capstone\msvc\capstone.sln
   - task: Bash@3
     displayName: 'Prepare Keystone build'
     inputs:
