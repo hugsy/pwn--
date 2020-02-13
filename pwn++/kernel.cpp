@@ -163,7 +163,7 @@ namespace pwn::kernel
 		ULONG_PTR uKernelBase = (ULONG_PTR)-1;
 		std::wstring pattern(lpwszModuleName);
 
-		for ( auto mod : modules() )
+		for ( auto& mod : modules() )
 		{
 			auto name = std::get<0>(mod);
 			auto addr = std::get<1>(mod);

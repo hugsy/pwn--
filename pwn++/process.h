@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-
+#include "nt.h"
 
 namespace pwn::process
 {
@@ -20,8 +20,8 @@ namespace pwn::process
 	_Success_(return) PWNAPI BOOL kill(_In_ HANDLE hProcess);
 	_Success_(return) PWNAPI HANDLE cmd(void);
 
-	PWNAPI ULONG_PTR peb();
-	PWNAPI ULONG_PTR teb();
+	PWNAPI PPEB peb();
+	PWNAPI PTEB teb();
 
 	namespace mem
 	{

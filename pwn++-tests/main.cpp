@@ -131,7 +131,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 			pwn::process::kill(hProcess);
 
 		/// mem write & read
-		auto peb_loc = pwn::process::peb();
+		auto peb_loc = (ULONG_PTR)pwn::process::peb();
 		auto peb_cnt = pwn::process::mem::read(peb_loc, 0x10);
 		pwn::utils::hexdump(peb_cnt);
 		std::vector<BYTE> new_peb = { 0x13, 0x37, 0x13, 0x37 };
@@ -239,10 +239,10 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 		}
 	}
 
-	// test utils
-	if (1)
+	// test utils - list drivers
+	if (0)
 	{
-		for ( auto mod : pwn::kernel::modules() )
+		for ( auto& mod : pwn::kernel::modules() )
 		{
 			auto name = std::get<0>(mod);
 			auto addr = std::get<1>(mod);
@@ -250,6 +250,26 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 		}
 		
 	}
+
+
+	// test - alpc
+	if ( 1 )
+	{
+		auto alpc_server_name = L"\\rpc control\\lotzofun";
+
+		// create an arbitrary alpc server
+
+		// create a client, connect & send some data
+		auto client = pwn::windows::alpc::client::connect(alpc_server_name);
+		if(client)
+			pwn::windows::alpc::client::send_and_receive(client, { 0x41, 0x41, 0x41, 0x41 });
+
+
+		// close everything
+		
+	}
+
+
 	ok(L"Done...\n");
 	::getchar();
 

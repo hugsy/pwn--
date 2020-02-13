@@ -268,9 +268,9 @@ HANDLE pwn::process::cmd(void)
 Get the TEB address of the current process
 
 --*/
-ULONG_PTR pwn::process::teb()
+PTEB pwn::process::teb()
 {
-	return __asm__get_teb();
+	return (PTEB)__asm__get_teb();
 }
 
 
@@ -279,10 +279,9 @@ ULONG_PTR pwn::process::teb()
 Get the PEB address of the current process
 
 --*/
-ULONG_PTR pwn::process::peb()
+PPEB pwn::process::peb()
 {
-	PULONG_PTR peb_address = (PULONG_PTR)(pwn::process::teb() + PEB_OFFSET);
-	return *peb_address;
+	return pwn::process::teb()->ProcessEnvironmentBlock;
 }
 
 
