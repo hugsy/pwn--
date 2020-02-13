@@ -18,6 +18,10 @@ jobs:
   pool:
     vmImage: 'windows-2019'
   steps:
+  - checkout: self
+    clean: true
+    submodules: recursive
+    persistCredentials: true  
   - task: MSBuild@1
     displayName: 'Build Pwn++ 64-bit'
     inputs: 
