@@ -255,18 +255,24 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	// test - alpc
 	if ( 1 )
 	{
-		auto alpc_server_name = L"\\rpc control\\lotzofun";
-
-		// create an arbitrary alpc server
-
-		// create a client, connect & send some data
-		auto client = pwn::windows::alpc::client::connect(alpc_server_name);
-		if(client)
-			pwn::windows::alpc::client::send_and_receive(client, { 0x41, 0x41, 0x41, 0x41 });
-
-
-		// close everything
+		// server
+		auto server = pwn::windows::alpc::server::listen(L"\\RPC Control\\lotzofun");
+		if ( server != INVALID_HANDLE_VALUE )
+		{
+			ok(L"server created port (handle=%p)\n", server);
+			pwn::windows::alpc::close(server);
+		}
+		::getchar();
 		
+		// create 
+		auto client = pwn::windows::alpc::client::connect(L"\\RPC Control\\epmapper");
+		if ( client != INVALID_HANDLE_VALUE )
+		{
+			ok(L"client connected to epmapper (handle=%p)\n", client);
+			//pwn::windows::alpc::send_and_receive(client, { 0x41, 0x41, 0x41, 0x41 });
+			pwn::windows::alpc::close(client);
+		}
+
 	}
 
 

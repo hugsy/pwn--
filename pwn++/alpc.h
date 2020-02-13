@@ -8,12 +8,24 @@
 
 /********************************************************************************
  *
- * ALPC internals
+ * ALPC structures & definitions
  *
  * ref:
  * https://github.com/hugsy/ldos-ionescu007/blob/master/src/ldos/alpc.h
- * processhacker
+ * https://github.com/processhacker/processhacker/blob/master/phnt/include/ntlpcapi.h
+ *
  ********************************************************************************/
+
+#define LPC_REQUEST 1
+#define LPC_REPLY 2
+#define LPC_DATAGRAM 3
+#define LPC_LOST_REPLY 4
+#define LPC_PORT_CLOSED 5
+#define LPC_CLIENT_DIED 6
+#define LPC_EXCEPTION 7
+#define LPC_DEBUG_EVENT 8
+#define LPC_ERROR_EVENT 9
+#define LPC_CONNECTION_REQUEST 10
 
 #define ALPC_MSGFLG_SYNC_REQUEST 0x20000 
 
@@ -90,7 +102,7 @@ NtAlpcConnectPort(
 	__in_opt PALPC_PORT_ATTRIBUTES PortAttributes,
 	__in ULONG Flags,
 	__in_opt PSID RequiredServerSid,
-	__inout PPORT_MESSAGE ConnectionMessage,
+	__inout_opt PPORT_MESSAGE ConnectionMessage,
 	__inout_opt PULONG BufferLength,
 	__inout_opt PALPC_MESSAGE_ATTRIBUTES OutMessageAttributes,
 	__inout_opt PALPC_MESSAGE_ATTRIBUTES InMessageAttributes,
@@ -124,22 +136,58 @@ NtAlpcDisconnectPort(
 );
 
 
+extern "C"
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtAlpcCreatePort(
+	_Out_ PHANDLE PortHandle,
+	_In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
+	_In_opt_ PALPC_PORT_ATTRIBUTES PortAttributes
+);
+
+
+extern "C"
+NTSYSCALLAPI
+NTSTATUS
+NTAPI
+NtAlpcAcceptConnectPort(
+	_Out_ PHANDLE PortHandle,
+	_In_ HANDLE ConnectionPortHandle,
+	_In_ ULONG Flags,
+	_In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
+	_In_opt_ PALPC_PORT_ATTRIBUTES PortAttributes,
+	_In_opt_ PVOID PortContext,
+	_In_reads_bytes_(ConnectionRequest->u1.s1.TotalLength) PPORT_MESSAGE ConnectionRequest,
+	_Inout_opt_ PALPC_MESSAGE_ATTRIBUTES ConnectionMessageAttributes,
+	_In_ BOOLEAN AcceptConnection
+);
+
+
+#ifdef _WIN64
+#define ALPC_PORT_MAXIMUM_MESSAGE_LENGTH 512
+#else
+#define ALPC_PORT_MAXIMUM_MESSAGE_LENGTH 256
+#endif
+
+
 namespace pwn::windows::alpc
 {
-	PWNAPI PPORT_MESSAGE create_alpc_message(_In_ const std::vector<BYTE>& data);
-	PWNAPI BOOL delete_alpc_message(_In_ PPORT_MESSAGE AlpcMessage);
+	_Success_(return != nullptr) PWNAPI PPORT_MESSAGE create_alpc_message(_In_ const std::vector<BYTE>& data);
+	_Success_(return) PWNAPI BOOL delete_alpc_message(_In_ PPORT_MESSAGE AlpcMessage);
 
+	PWNAPI std::vector<BYTE> send_and_receive(_In_ HANDLE hSocket, _In_opt_ const std::vector<BYTE>message);
+	_Success_(return) PWNAPI BOOL close(_In_ HANDLE hSocket);
 
 	namespace client
 	{
-		PWNAPI HANDLE connect(_In_ const wchar_t* lpwszServerName);
-		PWNAPI std::vector<BYTE> send_and_receive(_In_ HANDLE hSocket, _In_opt_ const std::vector<BYTE>message);
-		PWNAPI BOOL close(_In_ HANDLE hSocket);
+		_Success_(return != INVALID_HANDLE_VALUE) PWNAPI HANDLE connect(_In_ const wchar_t* lpwszServerName);
 	}
 
 
 	namespace server
 	{
-		PWNAPI HANDLE listen(_In_ const std::wstring& lpwszServerName);
+		_Success_(return != INVALID_HANDLE_VALUE) PWNAPI HANDLE listen(_In_ const wchar_t* lpwszServerName);
+		_Success_(return != INVALID_HANDLE_VALUE) PWNAPI HANDLE accept(_In_ HANDLE hAlpcServerSocket);
 	}
 }

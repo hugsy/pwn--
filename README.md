@@ -1,12 +1,13 @@
 # pwn++
 
-A C++ 14/17 rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL for Windows.
+A (bad) C++ 14/17 rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL for Windows.
 
 The idea is to provide in C on Windows the same kind of functionalities than [pwntools](https://github.com/Gallopsled/pwntools) does in Python on Linux.
-It's also a library meant for exploring Windows in a more friendly way.
+It's also a toy library meant for exploring Windows in a more friendly way. So if you're looking for years of poorly written C/C++ tangled with performant
+inefficient ways to explore Windows at low-level, go no further friend this library is for you.
 
-_Note_: this library is **not** performance friendly. Performance is massively sacrified for convenience and simplicity. So don't this library on 
-production^W^Wever!
+_Note_: my old original pwnlib was written around Windows 7 for feature testing. This is 100% Windows 10 focused, so expect things to go wrong if you use any
+other Windows version. It's by design.
 
 
 ## Examples
