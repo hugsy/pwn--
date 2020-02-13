@@ -1,10 +1,11 @@
+#include "context.h"
 #include "utils.h"
 #include "log.h"
-#include "context.h"
 
 #include <stdio.h>
 #include <type_traits>
 #include <iostream>
+
 
 
 extern HANDLE pwn::log::g_ConsoleMutex;

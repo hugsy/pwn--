@@ -12,10 +12,13 @@ Sources:
  - https://www.vergiliusproject.com/
 --*/
 
+
+
 #include <windows.h>
 #include <winternl.h>
-#include <ntstatus.h>
 
+
+#pragma comment(lib, "ntdll.lib")
 
 
 /*++

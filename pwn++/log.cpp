@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <string>
 #include <vector>
@@ -5,6 +6,7 @@
 
 #include "log.h"
 #include "context.h"
+
 
 
 namespace pwn::log

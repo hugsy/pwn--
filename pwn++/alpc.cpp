@@ -14,8 +14,8 @@ PPORT_MESSAGE pwn::windows::alpc::create_alpc_message(_In_ const std::vector<BYT
     // copy header
     //
     auto p = (PPORT_MESSAGE)lpMsg;
-    p->u1.s1.DataLength = data.size();
-    p->u1.s1.TotalLength = data.size() + sizeof(PORT_MESSAGE);
+    p->u1.s1.DataLength = (data.size() & 0xffff);
+    p->u1.s1.TotalLength = p->u1.s1.DataLength + sizeof(PORT_MESSAGE);
 
 
     //
@@ -85,3 +85,11 @@ BOOL pwn::windows::alpc::client::close(_In_ HANDLE hSocket)
 {
     return NT_SUCCESS(::NtAlpcDisconnectPort(hSocket, 0));
 }
+
+
+HANDLE pwn::windows::alpc::server::listen(_In_ const std::wstring& lpwszServerName)
+{
+    return INVALID_HANDLE_VALUE;
+}
+
+

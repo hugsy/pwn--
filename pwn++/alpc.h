@@ -1,6 +1,9 @@
 #pragma once
 
 #include "common.h"
+#include "nt.h"
+
+
 
 
 /********************************************************************************
@@ -75,6 +78,8 @@ typedef struct _ALPC_PORT_ATTRIBUTES
 #endif
 } ALPC_PORT_ATTRIBUTES, * PALPC_PORT_ATTRIBUTES;
 
+
+extern "C"
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
@@ -92,6 +97,8 @@ NtAlpcConnectPort(
 	__in_opt PLARGE_INTEGER Timeout
 );
 
+
+extern "C"
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
@@ -107,6 +114,7 @@ NtAlpcSendWaitReceivePort(
 );
 
 
+extern "C"
 NTSYSCALLAPI
 NTSTATUS
 NTAPI
@@ -124,15 +132,14 @@ namespace pwn::windows::alpc
 
 	namespace client
 	{
-		PWNAPI HANDLE connect(_In_ const const wchar_t* lpwszServerName);
+		PWNAPI HANDLE connect(_In_ const wchar_t* lpwszServerName);
 		PWNAPI std::vector<BYTE> send_and_receive(_In_ HANDLE hSocket, _In_opt_ const std::vector<BYTE>message);
-		PWNAPI BOOL pwn::windows::alpc::client::close(_In_ HANDLE hSocket);
+		PWNAPI BOOL close(_In_ HANDLE hSocket);
 	}
 
 
 	namespace server
 	{
-		PWNAPI HANDLE create(_In_ const std::wstring& lpwszServerName);
-		PWNAPI std::vector<BYTE> recv();
+		PWNAPI HANDLE listen(_In_ const std::wstring& lpwszServerName);
 	}
 }
