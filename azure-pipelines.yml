@@ -1,0 +1,30 @@
+# https://aka.ms/yaml
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+
+
+variables:
+  solution: 'pwn++.sln'
+  buildPlatform: 'x86|x64'
+  buildConfiguration: 'Release|Debug'
+
+
+jobs:
+- job: 'Build_pwnlib_Windows64'
+  pool:
+    vmImage: 'windows-2019'
+  steps:
+  - task: MSBuild@1
+    displayName: 'Build Pwn++ 64-bit'
+    inputs: 
+      msbuildArguments: '-nologo /m /p:Configuration=Release'
+      solution: $(solution)
+  - task: PublishBuildArtifacts@1
+    condition: ne(variables['Build.Reason'], 'PullRequest')
+    inputs:
+      pathtoPublish: './build'
+      artifactName: win64build
