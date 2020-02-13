@@ -18,8 +18,8 @@ jobs:
   pool:
     vmImage: 'windows-2019'
   steps:
-  - checkout: https://github.com/aquynh/capstone.git
-  - checkout: https://github.com/keystone-engine/keystone.git
+  - checkout: git://github.com/aquynh/capstone.git
+  - checkout: git://github.com/keystone-engine/keystone.git
   - task: MSBuild@1
     displayName: 'Build Pwn++'
     inputs: 
