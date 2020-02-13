@@ -32,6 +32,15 @@ jobs:
   - checkout: self
   - checkout: capstone
   - checkout: keystone
+
+
+  - task: Bash@3
+    displayName: 'Prepare Capstone build'
+    inputs:
+      targetType: 'inline'
+      script: "devenv.exe capstone.sln /upgrade"
+      workingDirectory: capstone/msvc
+      
   - task: MSBuild@1
     displayName: 'Build Capstone'
     inputs: 
@@ -39,17 +48,23 @@ jobs:
       msbuildVersion: 'latest'
       configuration: 'Release'
       solution: capstone\msvc\capstone.sln
+      
+      
   - task: Bash@3
     displayName: 'Prepare Keystone build'
     inputs:
-      script: "cmake ."
+      targetType: 'inline'
+      script: "echo done"
       workingDirectory: keystone
+      
   - task: MSBuild@1
     displayName: 'Build Keystone'
     inputs: 
       msbuildVersion: 'latest'
       msbuildArguments: '-nologo /m /p:Configuration=Release'
       solution: keystone\keystone.sln
+      
+      
   - task: MSBuild@1
     displayName: 'Build Pwn++'
     inputs: 
