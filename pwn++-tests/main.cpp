@@ -2,12 +2,20 @@
 
 using namespace pwn::log;
 
-
 #define BOOL_AS_STR(x) ((x)==TRUE ? L"TRUE" : L"FALSE")
 
 #define CODE1 "\x9c\xc3" // x86
 #define CODE2 "\x90\x48\x31\xc0\xcc\xc3" // x64
 #define CODE3 "xor rax, rax; inc rax; nop; ret"
+
+
+static inline void pause()
+{
+#pragma warning(disable: 6031)
+	ok(L"press enter to continue..."); 
+	::getchar();
+#pragma warning(default: 6031)
+}
 
 
 int wmain(_In_ int argc, _In_ const wchar_t** argv)
@@ -198,7 +206,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 		pwn::process::mem::write(mem, out);
 		ok(L"written sc at %p\n", mem);
-		::getchar();
+		pause();
 		pwn::process::mem::free(mem);
 	}
 
@@ -262,7 +270,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 			ok(L"server created port (handle=%p)\n", server);
 			pwn::windows::alpc::close(server);
 		}
-		::getchar();
+		pause();
 		
 		// create 
 		auto client = pwn::windows::alpc::client::connect(L"\\RPC Control\\epmapper");
@@ -277,7 +285,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 
 	ok(L"Done...\n");
-	::getchar();
+	pause();
 
 	return 0;
 }
