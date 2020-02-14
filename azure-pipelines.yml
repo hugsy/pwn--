@@ -38,7 +38,8 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\devenv.exe" capstone.sln /upgrade
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
+        devenv.exe capstone.sln /upgrade
       workingDirectory: capstone\msvc
       
   - task: VSBuild@1
