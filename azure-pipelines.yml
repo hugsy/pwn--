@@ -38,7 +38,7 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
-        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\devenv.exe" /Upgrade .\capstone.sln
+        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\IDE\devenv.exe" capstone.sln /upgrade
       workingDirectory: capstone\msvc
       
   - task: VSBuild@1
