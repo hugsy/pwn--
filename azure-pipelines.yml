@@ -1,7 +1,6 @@
 # https://aka.ms/yaml
 
 trigger:
-  batch: true
   branches:
     include:
     - master
@@ -39,7 +38,9 @@ jobs:
       targetType: 'inline'
       script: |
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
+        devenv.exe /resetsettings
         devenv.exe capstone.sln /upgrade
+        devenv capstone.sln /build Release /project capstone_static /projectconfig Release
       workingDirectory: capstone\msvc
       
   - task: VSBuild@1
