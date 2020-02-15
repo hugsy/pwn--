@@ -7,8 +7,8 @@ namespace pwn
 {
 	PWNAPI const wchar_t* version();
 	PWNAPI const std::tuple<WORD, WORD> version_info();
-
 }
+
 
 #include "utils.h"
 #include "context.h"

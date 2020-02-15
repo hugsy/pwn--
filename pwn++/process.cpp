@@ -255,7 +255,7 @@ BOOL pwn::process::kill(_In_ HANDLE hProcess)
 
 
 _Success_(return != nullptr)
-HANDLE pwn::process::cmd(void)
+HANDLE pwn::process::cmd()
 {
 	HANDLE hProcess = nullptr;
 	pwn::process::execv(L"cmd.exe", &hProcess);
@@ -374,4 +374,181 @@ ULONG_PTR pwn::process::mem::free(_In_ HANDLE hProcess, _In_ ULONG_PTR Address)
 ULONG_PTR pwn::process::mem::free(_In_ ULONG_PTR Address)
 {
 	return  pwn::process::mem::free(::GetCurrentProcess(), Address);
+}
+
+
+
+/*++
+
+
+
+--*/
+_Success_(return)
+BOOL pwn::process::is_elevated( _In_opt_ DWORD dwPid)
+{
+	HANDLE hProcessToken = nullptr;
+	BOOL bRes = FALSE;
+
+	HANDLE hProcess = dwPid ? ::OpenProcess(PROCESS_QUERY_INFORMATION, false, dwPid) : ::GetCurrentProcess();
+	if ( hProcess == nullptr )
+	{
+		perror(L"OpenProcess()");
+		return FALSE;
+	}
+
+	do
+	{
+		if ( !::OpenProcessToken(hProcess, TOKEN_QUERY, &hProcessToken) )
+		{
+			perror(L"OpenProcessToken()");
+			break;
+		}
+
+		TOKEN_ELEVATION TokenInfo = { 0 };
+		DWORD dwReturnLength = 0;
+		if ( !::GetTokenInformation(hProcessToken, TokenElevation, &TokenInfo, sizeof(TOKEN_ELEVATION), &dwReturnLength) )
+		{
+			perror(L"GetTokenInformation()");
+			break;
+		}
+
+		bRes = TokenInfo.TokenIsElevated;
+	}
+	while ( 0 );
+
+
+	if( hProcessToken != nullptr )
+		::CloseHandle(hProcessToken);
+
+	return bRes;
+}
+
+
+
+
+_Success_(return)
+BOOL pwn::process::add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_ DWORD dwPid)
+{
+	HANDLE hToken = INVALID_HANDLE_VALUE;
+	BOOL bRes = FALSE;
+
+	HANDLE hProcess = dwPid ? ::OpenProcess(PROCESS_QUERY_INFORMATION, false, dwPid) : ::GetCurrentProcess();
+	if ( hProcess == nullptr )
+	{
+		perror(L"OpenProcess()");
+		return FALSE;
+	}
+
+	bRes = ::OpenProcessToken(hProcess, TOKEN_QUERY, &hToken);
+	if ( bRes )
+	{
+		LUID Luid = { 0, };
+
+		bRes = ::LookupPrivilegeValue(NULL, lpszPrivilegeName, &Luid);
+		if ( bRes )
+		{
+			size_t nBufferSize = sizeof(TOKEN_PRIVILEGES) + 1 * sizeof(LUID_AND_ATTRIBUTES);
+			PTOKEN_PRIVILEGES NewState = (PTOKEN_PRIVILEGES)LocalAlloc(LPTR, nBufferSize);
+			if ( NewState )
+			{
+				NewState->PrivilegeCount = 1;
+				NewState->Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+				NewState->Privileges[0].Luid = Luid;
+
+				bRes = ::AdjustTokenPrivileges(
+					hToken,
+					FALSE,
+					NewState,
+					0,
+					(PTOKEN_PRIVILEGES)NULL,
+					(PDWORD)NULL
+				) != 0;
+
+				if ( bRes )
+					bRes = GetLastError() != ERROR_NOT_ALL_ASSIGNED;
+
+				LocalFree(NewState);
+			}
+		}
+
+		CloseHandle(hToken);
+	}
+
+	if ( hProcess != nullptr )
+		::CloseHandle(hProcess);
+
+	return bRes;
+}
+
+
+/*++
+Routine Description:
+	Simple helper function to check a privilege by name on the current process.
+
+Arguments:
+	lpszPrivilegeName - the name (as a wide string) of the privilege
+	dwPid - opt - the pid of the process to query (if not provided, use current process)
+
+Return Value:
+	Returns TRUE if the current has the privilege
+--*/
+_Success_(return)
+BOOL pwn::process::has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt_ DWORD dwPid)
+{
+	LUID Luid = { 0, };
+	BOOL bRes = FALSE, bHasPriv = FALSE;
+	HANDLE hToken = INVALID_HANDLE_VALUE;
+
+	HANDLE hProcess = dwPid ? ::OpenProcess(PROCESS_QUERY_INFORMATION, false, dwPid) : ::GetCurrentProcess();
+	if ( hProcess == nullptr )
+	{
+		perror(L"OpenProcess()");
+		return FALSE;
+	}
+
+	do
+	{
+		dbg(L"Checking for '%s' for PID=%d...\n", lpwszPrivilegeName, dwPid ? dwPid : ::GetCurrentProcessId());
+
+		bRes = LookupPrivilegeValue(NULL, lpwszPrivilegeName, &Luid);
+		if ( !bRes )
+		{
+			perror(L"LookupPrivilegeValue");
+			break;
+		}
+
+		LUID_AND_ATTRIBUTES PrivAttr = { 0 };
+		PrivAttr.Luid = Luid;
+		PrivAttr.Attributes = SE_PRIVILEGE_ENABLED | SE_PRIVILEGE_ENABLED_BY_DEFAULT;
+
+		PRIVILEGE_SET PrivSet = { 0, };
+		PrivSet.PrivilegeCount = 1;
+		PrivSet.Privilege[0] = PrivAttr;
+
+		bRes = ::OpenProcessToken(hProcess, TOKEN_QUERY, &hToken);
+		if ( !bRes )
+		{
+			perror(L"OpenProcessToken");
+			break;
+		}
+
+		bRes = ::PrivilegeCheck(hToken, &PrivSet, &bHasPriv);
+		if ( !bRes )
+		{
+			perror(L"PrivilegeCheck");
+			break;
+		}
+
+		bRes = bHasPriv;
+	}
+	while ( 0 );
+
+
+	if ( hToken != nullptr )
+		::CloseHandle(hToken);
+
+	if (hProcess != nullptr)
+		::CloseHandle(hProcess);
+
+	return bRes;
 }

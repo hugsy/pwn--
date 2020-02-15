@@ -63,7 +63,6 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 		info(L"pid=%d\n", pwn::system::pid());
 		info(L"ppid=%d\n", pwn::system::ppid());
 		info(L"pidof('explorer.exe')=%d\n", pwn::system::pidof(std::wstring(L"explorer.exe")));
-		info(L"is_elevated()=%s\n", BOOL_AS_STR(pwn::system::is_elevated()));
 		info(L"peb()=%p\n", pwn::process::peb());
 		info(L"teb()=%p\n", pwn::process::teb());
 	}
@@ -261,7 +260,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 
 	// test - alpc
-	if ( 1 )
+	if ( 0)
 	{
 		// server
 		auto server = pwn::windows::alpc::server::listen(L"\\RPC Control\\lotzofun");
@@ -283,6 +282,14 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 
 	}
 
+	// test - process privilege
+	if ( 0 )
+	{
+		auto pid = pwn::system::pidof(L"explorer.exe");
+		ok(L"is_elevated: %s\n", BOOL_AS_STR(pwn::process::is_elevated(pid)));
+		ok(L"has_privilege(SeDebugPrivilege): %s\n", BOOL_AS_STR(pwn::process::has_privilege(L"SeDebugPrivilege", pid)));
+		ok(L"has_privilege(SeChangeNotifyPrivilege): %s\n", BOOL_AS_STR(pwn::process::has_privilege(L"SeChangeNotifyPrivilege", pid)));
+	}
 
 	ok(L"Done...\n");
 	pause();

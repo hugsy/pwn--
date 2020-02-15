@@ -12,7 +12,7 @@ other Windows version. It's by design.
 
 ## Examples
 
-PS: you might need [vc_redist_x64](https://aka.ms/vs/16/release/vc_redist.x64.exe) and/or [vc_redist_x86](https://aka.ms/vs/16/release/vc_redist.x86.exe]
+PS: you might need [vc_redist_x64](https://aka.ms/vs/16/release/vc_redist.x64.exe) and/or [vc_redist_x86](https://aka.ms/vs/16/release/vc_redist.x86.exe)
 
 Very small samples of what the library offers:
 

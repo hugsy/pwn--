@@ -151,39 +151,7 @@ DWORD pwn::system::pidof(_In_ const std::wstring& name)
 }
 
 
-/*++
 
-
-
---*/
-BOOL PWNAPI pwn::system::is_elevated()
-{
-    HANDLE hProcess;
-    int32_t dwCrssPid;
-    
-    dwCrssPid = pidof(CSRSS_PROCESS_NAME);
-    if (dwCrssPid == -1)
-    {
-        auto msg = std::wstring(L"pidof('");
-        msg += CSRSS_PROCESS_NAME;
-        msg += L"')";
-        perror(msg);
-        return FALSE;
-    }
-    
-    hProcess = ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwCrssPid);
-    if (hProcess == NULL)
-    {
-        auto msg = std::wstring(L"OpenProcess('");
-        msg += CSRSS_PROCESS_NAME;
-        msg += L"')";
-        perror(msg);
-        return FALSE;
-    }
-    
-    ::CloseHandle(hProcess);
-    return TRUE;
-}
 
 
 const std::wstring pwn::system::name()

@@ -18,7 +18,10 @@ namespace pwn::process
 	_Success_(return) PWNAPI BOOL execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwParentPid = 0, _Out_opt_ LPHANDLE lpNewProcessHandle = nullptr);
 	_Success_(return) PWNAPI BOOL kill(_In_ DWORD dwProcessPid);
 	_Success_(return) PWNAPI BOOL kill(_In_ HANDLE hProcess);
-	_Success_(return) PWNAPI HANDLE cmd(void);
+	_Success_(return != nullptr) PWNAPI HANDLE cmd();
+	_Success_(return) PWNAPI BOOL is_elevated(_In_opt_ DWORD dwPid = 0);
+	_Success_(return) PWNAPI BOOL add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_ DWORD dwPid = 0);
+	_Success_(return) PWNAPI BOOL has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt_ DWORD dwPid = 0);
 
 	PWNAPI PPEB peb();
 	PWNAPI PTEB teb();
