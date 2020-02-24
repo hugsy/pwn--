@@ -13,7 +13,5 @@ namespace pwn::system
 	PWNAPI DWORD ppid(); 
 	PWNAPI DWORD pidof(_In_ const wchar_t* lpwProcessName);
 	PWNAPI DWORD pidof(_In_ const std::wstring& name);
-	PWNAPI BOOL is_elevated();
 	PWNAPI const std::wstring name();
-	
 }
