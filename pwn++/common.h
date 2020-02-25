@@ -15,6 +15,8 @@
 
 typedef DWORD64 QWORD;
 
+// comment below to not show log output colorized
+#define PWN_LOG_USE_COLOR
 
 #include <array>
 #include <vector>

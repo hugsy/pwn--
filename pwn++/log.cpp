@@ -28,12 +28,12 @@ namespace pwn::log
 		const wchar_t* prio;
 		switch (level)
 		{
-		case log_level_t::LOG_DEBUG:      prio = L"[DEBUG] "; break;
-		case log_level_t::LOG_INFO:       prio = L"[*] "; break;
-		case log_level_t::LOG_SUCCESS:    prio = L"[+] "; break;
-		case log_level_t::LOG_WARNING:    prio = L"[!] "; break;
-		case log_level_t::LOG_ERROR:      prio = L"[-] "; break;
-		case log_level_t::LOG_CRITICAL:   prio = L"/!\\ "; break;
+		case log_level_t::LOG_DEBUG:      prio = COLOR_BOLD                    L"[DEBUG] " COLOR_RESET; break;
+		case log_level_t::LOG_INFO:       prio = COLOR_BOLD COLOR_FG_CYAN      L"[*] "     COLOR_RESET; break;
+		case log_level_t::LOG_SUCCESS:    prio = COLOR_BOLD COLOR_FG_GREEN     L"[+] "     COLOR_RESET; break;
+		case log_level_t::LOG_WARNING:    prio = COLOR_BOLD COLOR_FG_YELLOW    L"[!] "     COLOR_RESET; break;
+		case log_level_t::LOG_ERROR:      prio = COLOR_BOLD COLOR_FG_RED       L"[-] "     COLOR_RESET; break;
+		case log_level_t::LOG_CRITICAL:   prio = COLOR_BOLD COLOR_FG_MAGENTA   L"/!\\ "    COLOR_RESET; break;
 		default:                          return;
 		}
 
