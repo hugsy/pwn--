@@ -28,6 +28,14 @@ To start using, simply include `pwn.h` and link with `pwn++.dll`.
 Or better, use Visual Studio and add it via the GUI (this approach has the huge advantage that you can rely on IntelliSense for auto-completion).
 
 
+### Compile
+
+The lib is C++17 compliant so make sure to compile your tool(s) accordingly
+
+```bash
+C:\> cl.exe whatever.cc /std:c++17
+```
+
 ### Context
 
 ```cpp
