@@ -60,8 +60,8 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	{
 		info(L"computer_name=%s\n", pwn::system::name().c_str());
 		info(L"pagesize=0x%x\n", pwn::system::pagesize());
-		info(L"pid=%d\n", pwn::system::pid());
-		info(L"ppid=%d\n", pwn::system::ppid());
+		info(L"pid=%d\n", pwn::process::pid());
+		info(L"ppid=%d\n", pwn::process::ppid());
 		info(L"pidof('explorer.exe')=%d\n", pwn::system::pidof(std::wstring(L"explorer.exe")));
 		info(L"peb()=%p\n", pwn::process::peb());
 		info(L"teb()=%p\n", pwn::process::teb());
@@ -161,7 +161,7 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 	{
 		/// create a process and add it to an anonymous job
 		HANDLE hProcess;
-		auto ppid = pwn::system::ppid();
+		auto ppid = pwn::process::ppid();
 		pwn::process::execv(L"notepad.exe", ppid, &hProcess);
 		auto hJob = pwn::job::create();
 		auto pid = pwn::system::pid(hProcess);
@@ -291,6 +291,16 @@ int wmain(_In_ int argc, _In_ const wchar_t** argv)
 		ok(L"has_privilege(SeChangeNotifyPrivilege): %s\n", BOOL_AS_STR(pwn::process::has_privilege(L"SeChangeNotifyPrivilege", pid)));
 	}
 
+
+	if (1)
+	{
+		ok(L"random::byte=%x\n", pwn::utils::random::byte());
+		ok(L"random::word=%x\n", pwn::utils::random::word());
+		ok(L"random::dword=%x\n", pwn::utils::random::dword());
+		ok(L"random::qword=%x\n", pwn::utils::random::qword());
+		pwn::utils::hexdump(pwn::utils::random::buffer(16));
+		ok(L"random::string=%s\n", pwn::utils::random::string(16).c_str());
+	}
 	ok(L"Done...\n");
 	pause();
 

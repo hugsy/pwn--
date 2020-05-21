@@ -1,11 +1,12 @@
 #include "pwn.h"
 
 using namespace pwn::log;
-
+using namespace pwn::utils::random;
 
 void OnAttachRoutine()
 {
     g_ConsoleMutex = CreateMutex(NULL, FALSE, NULL);
+    pwn::utils::random::seed();
 }
 
 

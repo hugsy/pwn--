@@ -8,9 +8,11 @@ namespace pwn::process
 	typedef struct _process_t
 	{
 		std::wstring name;
-		DWORD pid;
+		DWORD pid = -1;
 	} process_t;
 
+	PWNAPI DWORD pid();
+	PWNAPI DWORD ppid();
 	PWNAPI std::vector<process_t> list();
 	_Success_(return == ERROR_SUCCESS) PWNAPI DWORD get_integrity_level(_In_ DWORD dwProcessId, _Out_ std::wstring & IntegrityLevelName);
 	_Success_(return == ERROR_SUCCESS) PWNAPI DWORD get_integrity_level(_Out_ std::wstring & IntegrityLevelName); 

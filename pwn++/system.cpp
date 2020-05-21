@@ -2,6 +2,7 @@
 #include "log.h"
 
 #include <tlhelp32.h>
+#include <stdexcept> 
 
 
 using namespace pwn::log;
@@ -31,12 +32,6 @@ DWORD pwn::system::pagesize()
 DWORD pwn::system::pid(_In_ HANDLE hProcess)
 {
     return ::GetProcessId(hProcess);
-}
-
-
-DWORD pwn::system::pid()
-{
-    return ::GetCurrentProcessId();
 }
 
 
@@ -74,10 +69,7 @@ DWORD pwn::system::ppid(_In_ DWORD dwProcessId)
 }
 
 
-DWORD pwn::system::ppid()
-{
-    return ppid(pid());
-}
+
 
 
 /*++

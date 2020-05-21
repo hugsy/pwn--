@@ -139,13 +139,66 @@ namespace pwn::utils
 
 	}
 	
+	
+	void random::seed(void)
+	{
+		g_seed = 1;
+	}
 
-	QWORD rand(void)
+	
+	QWORD random::rand(void)
 	{
 		return xorshift64();
 	}
 
+	
+	QWORD random::rand(_In_ ULONG min, _In_ ULONG max)
+	{
+		return (xorshift64() + min) % max;
+	}
 
+
+	BYTE random::byte(void)
+	{
+		return random::rand() & 0xff;
+	}
+
+
+	WORD random::word(void) 
+	{
+		return random::rand() & 0xffff;
+	}
+
+
+	DWORD random::dword(void)
+	{
+		return random::rand() & 0xffffffff;
+	}
+
+
+	QWORD random::qword(void)
+	{
+		return random::rand();
+	}
+
+	
+	std::vector<BYTE> random::buffer(_In_ ULONG length)
+	{
+		std::vector<BYTE> buffer;
+		for (ULONG i = 0; i < length; i++)
+			buffer.push_back(random::byte());
+		return buffer;
+	}
+
+
+	std::wstring random::string(_In_ ULONG length)
+	{
+		const std::wstring printable(L"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ ");
+		std::wstring string;
+		for (ULONG i = 0; i < length; i++)
+			string += printable.at( random::rand(0, (ULONG)printable.length()) );
+		return string;
+	}
 
 
 

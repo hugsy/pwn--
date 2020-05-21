@@ -9,7 +9,19 @@ using flattenable_t = std::variant<DWORD, QWORD, std::wstring, std::string>;
 
 namespace pwn::utils
 {
-	PWNAPI QWORD rand(void);
+	namespace random
+	{
+		PWNAPI void seed(void);
+		PWNAPI QWORD rand(void);
+		PWNAPI QWORD rand(_In_ ULONG min, _In_ ULONG max);
+		PWNAPI BYTE byte(void);
+		PWNAPI WORD word(void);
+		PWNAPI DWORD dword(void);
+		PWNAPI QWORD qword(void);
+		PWNAPI std::wstring string(_In_ ULONG length);
+		PWNAPI std::vector<BYTE> buffer(_In_ ULONG length);
+	}
+
 	PWNAPI void hexdump(_In_ const PBYTE Buffer, _In_ SIZE_T BufferSize);
 	PWNAPI void hexdump(_In_ const std::vector<BYTE>& bytes);
 	PWNAPI std::vector<BYTE> base64_decode(_In_ std::string const& encoded_string);

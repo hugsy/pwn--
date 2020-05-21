@@ -1,5 +1,6 @@
 #include "process.h"
 #include "log.h"
+#include "system.h"
 using namespace pwn::log;
 
 #include <Psapi.h>
@@ -14,6 +15,17 @@ extern "C" ULONG_PTR __asm__get_teb_x86();
 #define __asm__get_teb __asm__get_teb_x86
 #endif
 
+
+DWORD pwn::process::pid()
+{
+	return ::GetCurrentProcessId();
+}
+
+
+DWORD pwn::process::ppid()
+{
+	return pwn::system::ppid(pid());
+}
 
 
 std::vector<pwn::process::process_t> pwn::process::list()
