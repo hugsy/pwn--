@@ -1,6 +1,6 @@
 # pwn++
 
-A (bad) C++ 14/17 rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL for Windows.
+A (bad) C++17 rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL for Windows.
 
 The idea is to provide in C on Windows the same kind of functionalities than [pwntools](https://github.com/Gallopsled/pwntools) does in Python on Linux.
 It's also a toy library meant for exploring Windows in a more friendly way. So if you're looking for years of poorly written C/C++ tangled with performant
