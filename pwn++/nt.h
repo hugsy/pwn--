@@ -21,6 +21,7 @@ Sources:
 #pragma comment(lib, "ntdll.lib")
 
 
+
 /*++
 SYSTEM_INFORMATION_CLASS
 https://www.geoffchappell.com/studies/windows/km/ntoskrnl/api/ex/sysinfo/class.htm

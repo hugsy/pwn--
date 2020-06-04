@@ -5,7 +5,7 @@
 
 namespace pwn::context
 {
-	enum class PWNAPI arch_t
+	enum class arch_t
 	{
 		x86,
 		x64,

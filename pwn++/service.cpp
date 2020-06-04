@@ -1,6 +1,7 @@
 #include "service.h"
 
 #include "log.h"
+#include <stdexcept>
 
 using namespace pwn::log;
 

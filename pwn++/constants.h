@@ -13,10 +13,13 @@
 #define __PWNLIB_VERSION__	         L"v" WIDECHAR(__PWNLIB_VERSION_MAJOR__) L"." WIDECHAR(__PWNLIB_VERSION_MINOR__)
 
 
+#ifndef __WIN10__
 #define __WIN10__       TRUE
-//#define __WIN81__       TRUE
-//#define __WIN8__        TRUE
-//#define __WIN7__        TRUE
+#endif
 
+
+#ifndef __x86_64__
 #define __x86_64__      TRUE
-//#define __x86_32__      TRUE
+#endif
+
+

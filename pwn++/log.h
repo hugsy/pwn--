@@ -35,7 +35,7 @@ namespace pwn::log
 {
 	extern PWNAPI HANDLE g_ConsoleMutex;
 
-	enum class PWNAPI log_level_t
+	enum class log_level_t
 	{
 		LOG_DEBUG = 0,
 		LOG_INFO = 1,
