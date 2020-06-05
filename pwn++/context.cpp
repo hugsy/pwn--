@@ -24,9 +24,16 @@ namespace pwn::context
 	
 	BOOL set_arch(_In_ arch_t new_arch)
 	{
-		// for now we just support x64 & x86
-		if ( new_arch != arch_t::x64 && new_arch != arch_t::x86 )
-			return FALSE;
+		switch (new_arch)
+		{
+			// for now we just support x64 & x86
+			case arch_t::x64:
+			case arch_t::x86:
+				break;
+
+			default:
+				return FALSE;
+		}
 
 		arch = new_arch;
 		__update_ptrsize();
@@ -47,5 +54,4 @@ namespace pwn::context
 
 
 	PWNAPI DWORD ptrsize = __update_ptrsize();
-
 }
