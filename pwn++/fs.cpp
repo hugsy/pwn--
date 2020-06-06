@@ -48,14 +48,25 @@ HANDLE pwn::fs::create_symlink(
 }
 
 
+/*++
 
+Create directories recursively.
+
+--*/
 bool pwn::fs::mkdir(const std::wstring& name)
 {
-	bool bRes = false;
+	bool bRes = true;
 
 	for (auto subdir : pwn::utils::split(name, L'\\'))
 	{
-		bRes |= ::CreateDirectory(subdir.c_str(), NULL) ? true : false;
+		if (::CreateDirectory(subdir.c_str(), NULL))
+			continue;
+
+		if (::GetLastError() == ERROR_ALREADY_EXISTS)
+			continue;
+
+		bRes = false;
+		break;
 	}
 	
 	return bRes;
@@ -75,6 +86,7 @@ std::wstring pwn::fs::make_tmpdir()
 	do
 	{
 		name = pwn::utils::random::string(10);
+		name.erase(62);
 	}
 	while (mkdir(name) == false);
 
