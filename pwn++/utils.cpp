@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <type_traits>
 #include <iostream>
+#include <sstream>
 
 
 
@@ -328,6 +329,21 @@ namespace pwn::utils
 	std::wstring to_widestring(_In_ const char* str)
 	{
 		return string_to_widestring(std::string(str));
+	}
+
+
+	std::vector<std::wstring> split(const std::wstring& ws, const wchar_t delim = L' ')
+	{
+		std::vector<std::wstring> out;
+		std::wstringstream wss(ws);
+		std::wstring token;
+		
+		while (std::getline(wss, token, delim)) 
+		{
+			out.push_back(token);
+		}
+
+		return out;
 	}
 
 

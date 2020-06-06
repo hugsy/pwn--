@@ -28,6 +28,7 @@ namespace pwn::utils
 	PWNAPI std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len);
 	PWNAPI std::string widestring_to_string(_In_ const std::wstring& ws);
 	PWNAPI std::wstring to_widestring(_In_ const char* str);
+	PWNAPI std::vector<std::wstring> split(_In_ const std::wstring& ws, const wchar_t delim);
 	PWNAPI BOOL startswith(_In_ const std::string& str, _In_ const std::string& pattern);
 	PWNAPI BOOL startswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern);
 	PWNAPI BOOL endswith(_In_ const std::string& str, _In_ const std::string& pattern);

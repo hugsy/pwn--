@@ -1,42 +1,16 @@
 #pragma once
 
 #include "common.h"
+#include "handle.h"
 
 namespace pwn::service
 {
-	//
-	// straight copy/paste from @zodiacon "Windows 10 System Programming"
-	//
-	class ServiceHandle
+	class ServiceHandle : public pwn::generic::GenericHandle<SC_HANDLE>
 	{
 	public:
-		explicit ServiceHandle(SC_HANDLE h = nullptr) :_h(h) {}
-		~ServiceHandle() { Close(); }
-		ServiceHandle(const ServiceHandle&) = delete;
-		ServiceHandle& operator=(const ServiceHandle&) = delete;
-		ServiceHandle(ServiceHandle&& other) noexcept: _h(other._h) { other._h = nullptr; }
-		ServiceHandle& operator=(ServiceHandle&& other) noexcept
-		{
-			if ( this != &other )
-			{
-				Close();
-				_h = other._h;
-				other._h = nullptr;
-			}
-			return*this;
-		}
+		using GenericHandle<SC_HANDLE>::GenericHandle;
 
-		operator bool() const
-		{
-			return _h != nullptr && _h != INVALID_HANDLE_VALUE;
-		}
-
-		SC_HANDLE Get() const
-		{
-			return _h;
-		}
-
-		void Close()
+		void Close() override
 		{
 			if ( bool(_h) )
 			{
@@ -44,9 +18,6 @@ namespace pwn::service
 				_h = nullptr;
 			}
 		}
-
-	private:
-		SC_HANDLE _h;
 	};
 
 	typedef struct 

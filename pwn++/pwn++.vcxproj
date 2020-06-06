@@ -170,6 +170,7 @@
     <ClInclude Include="disasm.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="fs.h" />
+    <ClInclude Include="handle.h" />
     <ClInclude Include="job.h" />
     <ClInclude Include="kernel.h" />
     <ClInclude Include="log.h" />
@@ -189,6 +190,7 @@
     <ClCompile Include="disasm.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="fs.cpp" />
+    <ClCompile Include="handle.cpp" />
     <ClCompile Include="job.cpp" />
     <ClCompile Include="kernel.cpp" />
     <ClCompile Include="log.cpp" />

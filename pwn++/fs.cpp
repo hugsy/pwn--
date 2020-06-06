@@ -1,7 +1,9 @@
 #include "fs.h"
-
 #include "nt.h"
+#include "utils.h"
+#include "log.h"
 
+#include <sstream>
 
 /*++
 
@@ -19,8 +21,8 @@ do it when the refcount of handles on the object reaches 0.
 --*/
 _Success_ (return != nullptr)
 HANDLE pwn::fs::create_symlink(
-	_In_ const std::wstring link, 
-	_In_ const std::wstring target
+	_In_ const std::wstring& link, 
+	_In_ const std::wstring& target
 )
 {
 	OBJECT_ATTRIBUTES oa = { 0 };
@@ -43,4 +45,46 @@ HANDLE pwn::fs::create_symlink(
 		return hLink;
 
 	return nullptr;
+}
+
+
+
+bool pwn::fs::mkdir(const std::wstring& name)
+{
+	bool bRes = false;
+
+	for (auto subdir : pwn::utils::split(name, L'\\'))
+	{
+		bRes |= ::CreateDirectory(subdir.c_str(), NULL) ? true : false;
+	}
+	
+	return bRes;
+}
+
+
+bool pwn::fs::rmdir(const std::wstring& name)
+{
+	return ::RemoveDirectoryW(name.c_str());
+}
+
+
+std::wstring pwn::fs::make_tmpdir()
+{
+	std::wstring name;
+
+	do
+	{
+		name = pwn::utils::random::string(10);
+	}
+	while (mkdir(name) == false);
+
+	dbg(L"created tmp dir '%s'\n", name.c_str());
+
+	return name;
+}
+
+
+bool pwn::fs::watch_dir(const std::wstring& name)
+{
+	return true;
 }
