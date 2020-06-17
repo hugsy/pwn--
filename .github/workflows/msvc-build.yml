@@ -48,7 +48,7 @@ jobs:
         Invoke-VisualStudio2019x64
         devenv capstone.sln -nologo /resetsettings
         devenv capstone.sln -nologo /upgrade
-        msbuild capstone.sln -nologo /p:Configuration="Release|x64"
+        msbuild capstone.sln -nologo /p:Configuration="Release"
 
        
 
