@@ -31,7 +31,7 @@ jobs:
       uses: actions/checkout@v2
    
     - name: Upgrade Capstone lib
-      shell: cmd
+      shell: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat" /c {0}
       run: |       
         cd libs\
         git clone https://github.com/aquynh/capstone.git
