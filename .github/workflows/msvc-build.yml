@@ -49,6 +49,7 @@ jobs:
       run: |
         Import-Module .\ci\Invoke-VS.ps1
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++"
+        New-Item -ItemType SymbolicLink -Target ".\pwn--" -Path ".\pwn++"
         Invoke-VisualStudio2019x64
         msbuild pwn++.sln -nologo /m /p:Configuration=Release /p:Platform=x64
 
