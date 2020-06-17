@@ -18,6 +18,7 @@ jobs:
       with:
         fetch-depth: 0
         submodules: false
+        path: "pwn++" 
    
     - name: Build Capstone lib
       shell: pwsh
@@ -47,9 +48,7 @@ jobs:
     - name: Build pwn++ DLL
       shell: pwsh
       run: |
-        cd ..
-        Rename-Item pwn-- pwn++
-        cd pwn++
+        New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++"
         Import-Module .\ci\Invoke-VS.ps1
         Invoke-VisualStudio2019x64
         msbuild pwn++.sln -nologo /m /p:Configuration=Release /p:Platform=x64
