@@ -30,8 +30,8 @@ jobs:
         devenv capstone.sln -nologo /resetsettings
         devenv capstone.sln -nologo /upgrade
         msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release" /p:Platform=x64
-        New-Item -Type Directory -Name x64\Release\ -ErrorAction Continue
-        Copy-Item .\capstone_static\x64\Release\capstone.lib x64\Release\
+        #New-Item -Type Directory -Name x64\Release\ -ErrorAction Continue
+        #Copy-Item .\capstone_static\x64\Release\capstone.lib x64\Release\
       
     - name: Build Keystone lib
       shell: pwsh
@@ -43,8 +43,8 @@ jobs:
         mkdir .\keystone\build
         cd .\keystone\build
         ..\nmake-lib.bat
-        New-Type -Type Directory -Path ..\llvm\lib\Release\
-        Copy-Item .\llvm\lib\keystone.lib ..\llvm\lib\Release\
+        #New-Type -Type Directory -Path ..\llvm\lib\Release\
+        #Copy-Item .\llvm\lib\keystone.lib ..\llvm\lib\Release\
 
   
     - name: Build pwn++ DLL
