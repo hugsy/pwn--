@@ -46,8 +46,9 @@ jobs:
         git clone https://github.com/aquynh/capstone.git
         cd capstone\msvc
         Invoke-VisualStudio2019x64
-        devenv capstone.sln /upgrade
-        msbuild capstone.sln /p:Configuration=$ENV{BUILD_TYPE} /p:Platform=$ENV{BUILD_ARCH}
+        devenv capstone.sln -nologo /resetsettings
+        devenv capstone.sln -nologo /upgrade
+        msbuild capstone.sln -nologo /p:Configuration=Release|x64
 
        
 
