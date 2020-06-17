@@ -48,12 +48,9 @@ jobs:
         cd capstone\msvc
         Invoke-VisualStudio2019x64
         devenv capstone.sln /upgrade
-
-    - name: Build Capstone lib
-      shell: cmd
-      run: |
-        cd libs\capstone\msvc
         msbuild capstone.sln -nologo /m /p:Configuration=$ENV{BUILD_TYPE}
+
+       
 
 
     - name: Compile pwn++ DLL
