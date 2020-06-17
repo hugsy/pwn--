@@ -24,20 +24,17 @@ jobs:
    
     - name: Upgrade Capstone lib
       shell: cmd
-      run: |
-        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+      run: |       
         cd libs\
         git clone https://github.com/aquynh/capstone.git
         cd capstone\msvc
-        devenv.exe /resetsettings
-        devenv.exe capstone.sln /upgrade
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat" devenv.exe capstone.sln /upgrade
 
     - name: Build Capstone lib
       shell: cmd
       run: |
         cd libs\capstone\msvc
-        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        msbuild.exe capstone.sln -nologo /m /p:Configuration=$ENV{BUILD_TYPE}
+        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" msbuild.exe capstone.sln -nologo /m /p:Configuration=$ENV{BUILD_TYPE}
 
 
     - name: Compile pwn++ DLL
