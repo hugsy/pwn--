@@ -38,12 +38,34 @@ jobs:
         mkdir libs\keystone\build
         cd libs\keystone\build
         ..\nmake-lib.bat
-#        devenv keystone.sln -nologo /upgrade
-#        msbuild keystone.sln -m -nologo /p:Configuration="Release"
 
+    - name: Cache dependencies
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/libs
+        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+    
     - name: Build pwn++ DLL
-      shell: cmd
+      shell: pwsh
       run: |
         Import-Module .\ci\Invoke-VS.ps1
         Invoke-VisualStudio2019x64
         msbuild pwn++.sln -nologo /m /p:Configuration="Release"
+
+
+    - name: Prepare artifact
+      shell: pwsh
+      run: |
+        mkdir build\
+        cp x64\Release\pwn++.dll build\
+        cp x64\Release\pwn++.pdb build\
+        cp x64\Release\pwn++.lib build\
+        mkdir build\include
+        cp pwn++\*h build\include\
+        
+    - name: Publish artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: latest build
+        path: build\
