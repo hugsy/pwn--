@@ -10,9 +10,14 @@ _Note_: my old original pwnlib was written around Windows 7 for feature testing.
 other Windows version. It's by design.
 
 
-## Examples
+## Requirement
 
-PS: you might need [vc_redist_x64](https://aka.ms/vs/16/release/vc_redist.x64.exe) and/or [vc_redist_x86](https://aka.ms/vs/16/release/vc_redist.x86.exe)
+MS VC 16+ Redistributable:
+ - [x64](https://aka.ms/vs/16/release/vc_redist.x64.exe)
+ - [x86](https://aka.ms/vs/16/release/vc_redist.x86.exe)
+
+
+## Examples
 
 Very small samples of what the library offers:
 
@@ -76,7 +81,7 @@ int wmain()
 	ok(L"pwntools.utils.cyclic() with a period of 4, and a length of 0x20 bytes\n");
 	if ( pwn::utils::cyclic(0x20, 4, buf) )
 		pwn::utils::hexdump(buf);
-	
+
 	ok(L"nice, now with period=sizeof(PTR)\n");
 	if ( pwn::utils::cyclic(0x30, buf) )
 		pwn::utils::hexdump(buf);
