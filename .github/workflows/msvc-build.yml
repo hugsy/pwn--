@@ -29,8 +29,9 @@ jobs:
         Invoke-VisualStudio2019x64
         devenv capstone.sln -nologo /resetsettings
         devenv capstone.sln -nologo /upgrade
-        msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release"
-      
+        msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release" /p:Platform=x64
+        New-Item -Type Directory -Name x64\Release\ -ErrorAction Continue
+        Copy-Item .\capstone_static\x64\Release\capstone.lib x64\Release\
       
     - name: Build Keystone lib
       shell: pwsh
@@ -42,16 +43,20 @@ jobs:
         mkdir .\keystone\build
         cd .\keystone\build
         ..\nmake-lib.bat
+        New-Type -Type Directory -Path ..\llvm\lib\Release\
+        Copy-Item .\llvm\lib\keystone.lib ..\llvm\lib\Release\
 
   
     - name: Build pwn++ DLL
       shell: pwsh
       run: |
         Import-Module .\ci\Invoke-VS.ps1
-        New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++"
+        New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         Invoke-VisualStudio2019x64
+        ls
+        pwd
         msbuild pwn++.sln -nologo /m /p:Configuration=Release /p:Platform=x64
-
+        
 
     - name: Prepare artifact
       shell: pwsh
