@@ -39,13 +39,7 @@ jobs:
         cd libs\keystone\build
         ..\nmake-lib.bat
 
-    - name: Cache dependencies
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/libs
-        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
-    
+  
     - name: Build pwn++ DLL
       shell: pwsh
       run: |
