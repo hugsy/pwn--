@@ -1,0 +1,56 @@
+name: CI Build for MSVC
+
+on: 
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: "Building pwn++"
+    runs-on: [windows-latest]
+    strategy:
+      fail-fast: false
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: true
+   
+    - name: Upgrade Capstone lib
+      shell: pwsh
+      run: |
+        Function Invoke-CmdScript {
+         param(
+             [String] $scriptName
+         )
+         $cmdLine = """$scriptName"" $args & set"
+          & $env:SystemRoot\system32\cmd.exe /c $cmdLine |
+          Select-String '^([^=]*)=(.*)$' | ForEach-Object {
+           $varName = $_.Matches[0].Groups[1].Value
+            $varValue = $_.Matches[0].Groups[2].Value
+            Set-Item Env:$varName $varValue
+         }
+        }
+        Function Invoke-VisualStudio2019x86 {
+          Invoke-CmdScript "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars32.bat"
+        }
+        Function Invoke-VisualStudio2019x64 {
+          Invoke-CmdScript "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        }       
+        cd libs\capstone\msvc
+        Invoke-VisualStudio2019x64
+        devenv capstone.sln -nologo /resetsettings
+        devenv capstone.sln -nologo /upgrade
+        msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release"
+
+       
+
+
+    - name: Compile pwn++ DLL
+      shell: cmd
+      run: |
+        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        msbuild pwn++.sln -nologo /m /p:Configuration=$ENV{BUILD_TYPE}
