@@ -24,15 +24,17 @@ jobs:
 
     - name: Upgrade Capstone lib
       working-directory:  libs\capstone\msvc\
-      run: C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat
-      shell: |
+      shell: cmd
+      run: |
+        C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat
         devenv.exe /resetsettings
         devenv.exe capstone.sln /upgrade
 
     - name: Build Capstone lib
       working-directory:  libs\capstone\msvc\
-      shell: C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat
+      shell: cmd
       run: |
+        C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat
         msbuild.exe capstone.sln -nologo /m /p:Configuration=$ENV{BUILD_TYPE}
 
 
