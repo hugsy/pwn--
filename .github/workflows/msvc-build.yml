@@ -7,16 +7,15 @@ on:
 
 env:
   BUILD_TYPE: Release
+  BUILD_ARCH: x64
 
 
 jobs:
   build:
-    name: "1"
+    name: "Building pwn++"
     runs-on: [windows-latest]
     strategy:
       fail-fast: false
-
-
 
     steps:
     - name: Checkout
@@ -48,7 +47,7 @@ jobs:
         cd capstone\msvc
         Invoke-VisualStudio2019x64
         devenv capstone.sln /upgrade
-        msbuild capstone.sln -nologo /m /p:Configuration=$ENV{BUILD_TYPE}
+        msbuild capstone.sln /p:Configuration=$ENV{BUILD_TYPE} /p:Platform=$ENV{BUILD_ARCH}
 
        
 
