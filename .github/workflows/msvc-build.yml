@@ -33,7 +33,6 @@ jobs:
     - name: Upgrade Keystone lib
       shell: pwsh
       run: |
-        cd libs\keystone\
         Import-Module .\ci\Invoke-VS.ps1
         Invoke-VisualStudio2019x64
         devenv keystone.sln -nologo /resetsettings
