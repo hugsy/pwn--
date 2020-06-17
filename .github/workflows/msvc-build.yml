@@ -22,35 +22,27 @@ jobs:
     - name: Upgrade Capstone lib
       shell: pwsh
       run: |
-        Function Invoke-CmdScript {
-         param(
-             [String] $scriptName
-         )
-         $cmdLine = """$scriptName"" $args & set"
-          & $env:SystemRoot\system32\cmd.exe /c $cmdLine |
-          Select-String '^([^=]*)=(.*)$' | ForEach-Object {
-           $varName = $_.Matches[0].Groups[1].Value
-            $varValue = $_.Matches[0].Groups[2].Value
-            Set-Item Env:$varName $varValue
-         }
-        }
-        Function Invoke-VisualStudio2019x86 {
-          Invoke-CmdScript "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars32.bat"
-        }
-        Function Invoke-VisualStudio2019x64 {
-          Invoke-CmdScript "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        }       
         cd libs\capstone\msvc
+        . ci\Invoke-VS.ps1
         Invoke-VisualStudio2019x64
         devenv capstone.sln -nologo /resetsettings
         devenv capstone.sln -nologo /upgrade
         msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release"
-
-       
-
+      
+      
+    - name: Upgrade Keystone lib
+      shell: pwsh
+      run: |
+        cd libs\keystone\
+        . ci\Invoke-VS.ps1
+        Invoke-VisualStudio2019x64
+        devenv keystone.sln -nologo /resetsettings
+        devenv keystone.sln -nologo /upgrade
+        msbuild keystone.sln -m -nologo /p:Configuration="Release"
 
     - name: Compile pwn++ DLL
       shell: cmd
       run: |
-        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        msbuild pwn++.sln -nologo /m /p:Configuration=$ENV{BUILD_TYPE}
+        . ci\Invoke-VS.ps1
+        Invoke-VisualStudio2019x64
+        msbuild pwn++.sln -nologo /m /p:Configuration="Release"
