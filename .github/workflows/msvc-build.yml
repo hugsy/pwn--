@@ -24,19 +24,19 @@ jobs:
 
     - name: Upgrade Capstone lib
       working-directory:  libs\capstone\msvc\
+      run: C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat
       shell: |
         devenv.exe /resetsettings
         devenv.exe capstone.sln /upgrade
 
     - name: Build Capstone lib
       working-directory:  libs\capstone\msvc\
-      shell: |
+      shell: C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat
+      run: |
         msbuild.exe capstone.sln -nologo /m /p:Configuration=$ENV{BUILD_TYPE}
 
 
-
-
-
     - name: Compile pwn++ DLL
-      shell: |
+      shell: cmd
+      run: |
         msbuild.exe pwn++.sln -nologo /m /p:Configuration=$ENV{BUILD_TYPE}
