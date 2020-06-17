@@ -23,7 +23,7 @@ jobs:
       shell: pwsh
       run: |
         cd libs\capstone\msvc
-        . ci\Invoke-VS.ps1
+        Import-Module .\ci\Invoke-VS.ps1
         Invoke-VisualStudio2019x64
         devenv capstone.sln -nologo /resetsettings
         devenv capstone.sln -nologo /upgrade
@@ -34,7 +34,7 @@ jobs:
       shell: pwsh
       run: |
         cd libs\keystone\
-        . ci\Invoke-VS.ps1
+        Import-Module .\ci\Invoke-VS.ps1
         Invoke-VisualStudio2019x64
         devenv keystone.sln -nologo /resetsettings
         devenv keystone.sln -nologo /upgrade
@@ -43,6 +43,6 @@ jobs:
     - name: Compile pwn++ DLL
       shell: cmd
       run: |
-        . ci\Invoke-VS.ps1
+        Import-Module .\ci\Invoke-VS.ps1
         Invoke-VisualStudio2019x64
         msbuild pwn++.sln -nologo /m /p:Configuration="Release"
