@@ -5,11 +5,6 @@ on:
     branches:
       - master
 
-env:
-  BUILD_TYPE: Release
-  BUILD_ARCH: x64
-
-
 jobs:
   build:
     name: "Building pwn++"
@@ -20,6 +15,9 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: true
    
     - name: Upgrade Capstone lib
       shell: pwsh
@@ -42,13 +40,11 @@ jobs:
         Function Invoke-VisualStudio2019x64 {
           Invoke-CmdScript "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         }       
-        cd libs\
-        git clone https://github.com/aquynh/capstone.git
-        cd capstone\msvc
+        cd libs\capstone\msvc
         Invoke-VisualStudio2019x64
         devenv capstone.sln -nologo /resetsettings
         devenv capstone.sln -nologo /upgrade
-        msbuild capstone.sln -nologo /p:Configuration="Release"
+        msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release"
 
        
 
