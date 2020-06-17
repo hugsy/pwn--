@@ -25,31 +25,24 @@ jobs:
     - name: Upgrade Capstone lib
       shell: pwsh
       run: |
-Function Invoke-CmdScript {
-  param(
-    [String] $scriptName
-  )
-  $cmdLine = """$scriptName"" $args & set"
-  & $env:SystemRoot\system32\cmd.exe /c $cmdLine |
-  Select-String '^([^=]*)=(.*)$' | ForEach-Object {
-    $varName = $_.Matches[0].Groups[1].Value
-    $varValue = $_.Matches[0].Groups[2].Value
-    Set-Item Env:$varName $varValue
-  }
-}
-
-
-Function Invoke-VisualStudio2019x86
-{
-  Invoke-CmdScript "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars32.bat"
-}
-
-
-Function Invoke-VisualStudio2019x64
-{
-  Invoke-CmdScript "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-}       
-
+        Function Invoke-CmdScript {
+         param(
+             [String] $scriptName
+         )
+         $cmdLine = """$scriptName"" $args & set"
+          & $env:SystemRoot\system32\cmd.exe /c $cmdLine |
+          Select-String '^([^=]*)=(.*)$' | ForEach-Object {
+           $varName = $_.Matches[0].Groups[1].Value
+            $varValue = $_.Matches[0].Groups[2].Value
+            Set-Item Env:$varName $varValue
+         }
+        }
+        Function Invoke-VisualStudio2019x86 {
+          Invoke-CmdScript "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars32.bat"
+        }
+        Function Invoke-VisualStudio2019x64 {
+          Invoke-CmdScript "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        }       
         cd libs\
         git clone https://github.com/aquynh/capstone.git
         cd capstone\msvc
