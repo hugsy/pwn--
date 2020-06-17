@@ -17,11 +17,9 @@ MS VC 16+ Redistributable:
  - [x86](https://aka.ms/vs/16/release/vc_redist.x86.exe)
 
 
-## Examples
+## Get started
 
-Very small samples of what the library offers:
-
-### Start
+### Quick Start
 
 To start using, simply include `pwn.h` and link with `pwn++.dll`.
 
@@ -30,21 +28,28 @@ To start using, simply include `pwn.h` and link with `pwn++.dll`.
 #pragma comment(lib, "\path\to\pwn.lib")
 ```
 
-Or better, use Visual Studio and add it via the GUI (this approach has the huge advantage that you can rely on IntelliSense for auto-completion). In VS, go to
-right click on your project in the Solution Explorer -> `Properties, then:
- - add `pwn++` location to `C/C++`->`General`->`Additional Include Directories`
- - add `pwn++` library location to `Linker`->`General`->`Additional Libraries Directories`
- - add `pwn++.lib` to `Linker`->`Input`->`Additional Dependencies`
-
-
-### Compile
-
-The lib is C++17 compliant so make sure to compile your tool(s) accordingly
+Then compile your binary linked with the lib (make sure you're C++17 compliant):
 
 ```bash
 C:\> cl.exe whatever.cc /std:c++17
 C:\> clang.exe whatever.cc -std=++17
 ```
+
+### Better start
+
+Or better, use Visual Studio and add it via the GUI (this approach has the huge advantage that you can rely on IntelliSense for auto-completion). In VS, go to
+right click on your project in the `Solution Explorer` -> `Properties, then:
+ - add `pwn++` location to `C/C++`->`General`->`Additional Include Directories`
+ - add `pwn++` library location to `Linker`->`General`->`Additional Libraries Directories`
+ - add `pwn++.lib` to `Linker`->`Input`->`Additional Dependencies`
+
+To compile, just build your project/solution.
+
+
+## Examples
+
+Basic examples of what the lib offers:
+
 
 ### Context
 
@@ -92,10 +97,10 @@ int wmain()
 
 Outputs
 ```
-pwntools.utils.cyclic() with a period of 4, and a length of 0x20 bytes
+[+] pwntools.utils.cyclic() with a period of 4, and a length of 0x20 bytes
 0000   61 61 61 61 62 61 61 61  63 61 61 61 64 61 61 61  |  aaaabaaacaaadaaa
 0010   65 61 61 61 66 61 61 61  67 61 61 61 68 61 61 61  |  eaaafaaagaaahaaa
-nice, now with period=sizeof(PTR)
+[+] nice, now with period=sizeof(PTR)
 0000   61 61 61 61 61 61 61 61  62 61 61 61 61 61 61 61  |  aaaaaaaabaaaaaaa
 0010   63 61 61 61 61 61 61 61  64 61 61 61 61 61 61 61  |  caaaaaaadaaaaaaa
 0020   65 61 61 61 61 61 61 61  66 61 61 61 61 61 61 61  |  eaaaaaaafaaaaaaa
