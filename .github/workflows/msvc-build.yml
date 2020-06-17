@@ -11,8 +11,8 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.config.name }}
-    runs-on: ${{ matrix.config.os }}
+    name: "Building pwn++"
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
