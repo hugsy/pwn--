@@ -45,7 +45,7 @@ jobs:
       run: |
         Import-Module .\ci\Invoke-VS.ps1
         Invoke-VisualStudio2019x64
-        msbuild pwn++.sln -nologo /m /p:Configuration="Release"
+        msbuild pwn++.sln -nologo /m /p:Configuration=Release /p:Platform=x64
 
 
     - name: Prepare artifact
