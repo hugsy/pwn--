@@ -28,7 +28,6 @@ jobs:
       working-directory:  libs\capstone\msvc\
       shell: cmd
       run: |
-        C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat
         cd libs\
         git clone https://github.com/aquynh/capstone.git
         cd capstone\msvc
