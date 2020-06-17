@@ -18,7 +18,6 @@ jobs:
       with:
         fetch-depth: 0
         submodules: false
-        path: "pwn++" 
    
     - name: Build Capstone lib
       shell: pwsh
