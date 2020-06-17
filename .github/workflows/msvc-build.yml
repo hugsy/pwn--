@@ -35,6 +35,7 @@ jobs:
     - name: Build Capstone lib
       shell: cmd
       run: |
+        cd libs\capstone\msvc
         "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         msbuild.exe capstone.sln -nologo /m /p:Configuration=$ENV{BUILD_TYPE}
 
@@ -42,4 +43,5 @@ jobs:
     - name: Compile pwn++ DLL
       shell: cmd
       run: |
+        "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
         msbuild.exe pwn++.sln -nologo /m /p:Configuration=$ENV{BUILD_TYPE}
