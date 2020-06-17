@@ -21,14 +21,12 @@ jobs:
     steps:
     
     - uses: actions/checkout@v2
-
-    - uses: actions/checkout@v2
-     
+   
     - name: Upgrade Capstone lib
       working-directory:  libs\capstone\msvc\
       shell: cmd
       run: |
-        cd libs\
+        cd pwn--\libs\
         git clone https://github.com/aquynh/capstone.git
         cd capstone\msvc
         devenv.exe /resetsettings
