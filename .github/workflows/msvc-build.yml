@@ -27,6 +27,8 @@ jobs:
       shell: cmd
       run: |
         C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat
+        dir
+        cd libs\capstone\msvc\
         devenv.exe /resetsettings
         devenv.exe capstone.sln /upgrade
 
