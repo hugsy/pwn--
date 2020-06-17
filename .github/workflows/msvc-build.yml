@@ -19,7 +19,7 @@ jobs:
         fetch-depth: 0
         submodules: true
    
-    - name: Upgrade Capstone lib
+    - name: Build Capstone lib
       shell: pwsh
       run: |
         cd libs\capstone\msvc
@@ -30,16 +30,18 @@ jobs:
         msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release"
       
       
-    - name: Upgrade Keystone lib
+    - name: Build Keystone lib
       shell: pwsh
       run: |
         Import-Module .\ci\Invoke-VS.ps1
         Invoke-VisualStudio2019x64
-        devenv keystone.sln -nologo /resetsettings
-        devenv keystone.sln -nologo /upgrade
-        msbuild keystone.sln -m -nologo /p:Configuration="Release"
+        mkdir libs\keystone\build
+        cd libs\keystone\build
+        ..\nmake-lib.bat
+#        devenv keystone.sln -nologo /upgrade
+#        msbuild keystone.sln -m -nologo /p:Configuration="Release"
 
-    - name: Compile pwn++ DLL
+    - name: Build pwn++ DLL
       shell: cmd
       run: |
         Import-Module .\ci\Invoke-VS.ps1
