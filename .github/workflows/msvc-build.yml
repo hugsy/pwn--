@@ -44,7 +44,7 @@ jobs:
         cd .\keystone\build
         ..\nmake-lib.bat
         New-Type -Type Directory -Path ..\llvm\lib\Release\
-        Copy-Item build\llvm\lib\keystone.lib ..\llvm\lib\Release\
+        Copy-Item .\llvm\lib\keystone.lib ..\llvm\lib\Release\
 
   
     - name: Build pwn++ DLL
