@@ -12,12 +12,10 @@ jobs:
     strategy:
       fail-fast: false
 
-    steps:
-    - name: Build Capstone lib
-      uses: actions/checkout@v2
-      with:
-         repository: 'aquynh/capstone'
-   
+    steps:  
+    - uses: actions/checkout@v2
+          
+          
     - name: Build Capstone lib
       shell: pwsh
       run: |
@@ -31,11 +29,6 @@ jobs:
         msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release" /p:Platform=x64
 
 
-    - name: Clone Keystone lib
-      uses: actions/checkout@v2
-      with:
-         repository: 'keystone-engine/keystone'
-
     - name: Build Keystone lib
       shell: pwsh
       run: |
@@ -47,9 +40,7 @@ jobs:
         cd .\keystone\build
         ..\nmake-lib.bat
           
-
-    - uses: actions/checkout@v2
-      
+     
     - name: Build pwn++ DLL
       shell: pwsh
       run: |
