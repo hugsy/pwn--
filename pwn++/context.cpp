@@ -26,9 +26,10 @@ namespace pwn::context
 	{
 		switch (new_arch)
 		{
-			// for now we just support x64 & x86
+			// currently supported architectures
 			case arch_t::x64:
 			case arch_t::x86:
+			case arch_t::arm64:
 				break;
 
 			default:
