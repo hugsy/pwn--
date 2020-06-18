@@ -47,7 +47,7 @@ jobs:
         Import-Module .\.ci\Invoke-VS.ps1
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         Invoke-VisualStudio2019x64
-        msbuild pwn++\pwn++.vcxproj -nologo /m /p:Configuration=Release /p:Platform=x64
+        msbuild pwn++.sln -nologo /m /p:Configuration=Release /p:Platform=x64
 
 
     - name: Prepare artifact
