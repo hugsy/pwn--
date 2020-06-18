@@ -12,13 +12,10 @@ jobs:
     strategy:
       fail-fast: false
 
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-        submodules: false
-   
+    steps:  
+    - uses: actions/checkout@v2
+          
+          
     - name: Build Capstone lib
       shell: pwsh
       run: |
@@ -31,7 +28,7 @@ jobs:
         devenv capstone.sln -nologo /upgrade
         msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release" /p:Platform=x64
 
-      
+
     - name: Build Keystone lib
       shell: pwsh
       run: |
@@ -43,7 +40,7 @@ jobs:
         cd .\keystone\build
         ..\nmake-lib.bat
           
-  
+     
     - name: Build pwn++ DLL
       shell: pwsh
       run: |
@@ -54,16 +51,18 @@ jobs:
 
 
     - name: Prepare artifact
+      id: prepare_artifact
       shell: pwsh
       run: |
         mkdir build\
-        cp x64\Release\pwn++.dll build\
-        cp x64\Release\pwn++.pdb build\
-        cp x64\Release\pwn++.lib build\
-        mkdir build\include
-        cp pwn++\*h build\include\
+        cp pwn++\x64\Release\pwn++.dll build\
+        cp pwn++\x64\Release\pwn++.pdb build\
+        cp pwn++\x64\Release\pwn++.lib build\
+        mkdir build\include\
+        cp pwn++\*.h build\include\
         
     - name: Publish artifact
+      id: publish_artifact
       uses: actions/upload-artifact@v2
       with:
         name: latest build
