@@ -22,7 +22,7 @@ jobs:
     - name: Build Capstone lib
       shell: pwsh
       run: |
-        Import-Module .ci\Invoke-VS.ps1
+        Import-Module .\.ci\Invoke-VS.ps1
         cd ..
         git clone https://github.com/aquynh/capstone
         cd .\capstone\msvc
@@ -35,7 +35,7 @@ jobs:
     - name: Build Keystone lib
       shell: pwsh
       run: |
-        Import-Module .ci\Invoke-VS.ps1
+        Import-Module .\.ci\Invoke-VS.ps1
         cd ..
         git clone https://github.com/keystone-engine/keystone
         Invoke-VisualStudio2019x64
@@ -47,7 +47,7 @@ jobs:
     - name: Build pwn++ DLL
       shell: pwsh
       run: |
-        Import-Module .ci\Invoke-VS.ps1
+        Import-Module .\.ci\Invoke-VS.ps1
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         Invoke-VisualStudio2019x64
         ls
