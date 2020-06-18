@@ -60,8 +60,7 @@ jobs:
         cp x64\Release\pwn++.lib build\
         mkdir build\include\
         cp pwn++\*.h build\include\
-        cp x64\Release\HexdumpFile.exe build\
-        cp x64\Release\ProcessReparent.exe build\
+        cp x64\Release\*.exe build\
         
         
     - name: Publish artifact
