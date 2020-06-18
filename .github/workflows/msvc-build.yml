@@ -54,16 +54,18 @@ jobs:
 
 
     - name: Prepare artifact
+      id: prepare_artifact
       shell: pwsh
       run: |
         mkdir build\
-        cp x64\Release\pwn++.dll build\
-        cp x64\Release\pwn++.pdb build\
-        cp x64\Release\pwn++.lib build\
-        mkdir build\include
-        cp pwn++\*h build\include\
+        cp pwn++\x64\Release\pwn++.dll build\
+        cp pwn++\x64\Release\pwn++.pdb build\
+        cp pwn++\x64\Release\pwn++.lib build\
+        mkdir build\include\
+        cp pwn++\pwn++\*.h build\include\
         
     - name: Publish artifact
+      id: publish_artifact
       uses: actions/upload-artifact@v2
       with:
         name: latest build
