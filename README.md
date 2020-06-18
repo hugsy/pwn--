@@ -1,6 +1,6 @@
 # pwn++
 
-![Last build - MSVC](https://github.com/hugsy/pwn--/workflows/CI%20Build%20for%20MSVC/badge.svg)
+[![CI - MSVC](https://github.com/hugsy/pwn--/workflows/CI%20Build%20for%20MSVC/badge.svg)](https://github.com/hugsy/pwn--/actions?query=workflow%3A%22CI+Build+for+MSVC%22)
 
 A (bad) C++17 rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL for Windows.
 
@@ -40,7 +40,7 @@ C:\> clang.exe whatever.cc -std=++17
 ### Better start
 
 Or better, use Visual Studio and add it via the GUI (this approach has the huge advantage that you can rely on IntelliSense for auto-completion). In VS, go to
-right click on your project in the `Solution Explorer` -> `Properties, then:
+right click on your project in the `Solution Explorer` -> `Properties`, then:
  - add `pwn++` location to `C/C++`->`General`->`Additional Include Directories`
  - add `pwn++` library location to `Linker`->`General`->`Additional Libraries Directories`
  - add `pwn++.lib` to `Linker`->`Input`->`Additional Dependencies`
