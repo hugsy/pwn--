@@ -13,11 +13,10 @@ jobs:
       fail-fast: false
 
     steps:
-    - name: Checkout
+    - name: Build Capstone lib
       uses: actions/checkout@v2
       with:
-        fetch-depth: 0
-        submodules: false
+         repository: 'aquynh/capstone'
    
     - name: Build Capstone lib
       shell: pwsh
@@ -31,7 +30,12 @@ jobs:
         devenv capstone.sln -nologo /upgrade
         msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release" /p:Platform=x64
 
-      
+
+    - name: Clone Keystone lib
+      uses: actions/checkout@v2
+      with:
+         repository: 'keystone-engine/keystone'
+
     - name: Build Keystone lib
       shell: pwsh
       run: |
@@ -43,7 +47,9 @@ jobs:
         cd .\keystone\build
         ..\nmake-lib.bat
           
-  
+
+    - uses: actions/checkout@v2
+      
     - name: Build pwn++ DLL
       shell: pwsh
       run: |
@@ -62,7 +68,7 @@ jobs:
         cp pwn++\x64\Release\pwn++.pdb build\
         cp pwn++\x64\Release\pwn++.lib build\
         mkdir build\include\
-        cp pwn++\pwn++\*.h build\include\
+        cp pwn++\*.h build\include\
         
     - name: Publish artifact
       id: publish_artifact
