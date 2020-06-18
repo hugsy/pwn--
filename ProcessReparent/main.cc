@@ -20,9 +20,11 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 	HANDLE hProcess = INVALID_HANDLE_VALUE;
 	auto ppid = pwn::system::pidof(argv[1]);
 	info(L"found '%s' pid=%lu\n", argv[1], ppid);
-	pwn::process::execv(L"cmd.exe", ppid, &hProcess);
-	::WaitForSingleObject(hProcess, INFINITE);
-	::CloseHandle(hProcess);
-	
+	if (pwn::process::execv(L"cmd.exe", ppid, &hProcess))
+	{
+		auto h = pwn::generic::GenericHandle(hProcess);
+		::WaitForSingleObject(h.Get(), INFINITE);
+	}
+
 	return EXIT_SUCCESS;
 }
