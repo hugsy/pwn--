@@ -78,12 +78,11 @@ auto wmain() -> int
 ```
 
 Outputs
+
 ```
 PS C:\Users\User> .\test.exe
 [+]  running pwn++ v0.01
 [DEBUG]  log_level set to 0
-```
-
 ```
 
 
