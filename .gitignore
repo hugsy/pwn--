@@ -350,3 +350,5 @@ MigrationBackup/
 .ionide/
 
 .vs
+
+.github/workflows/msvc-build.yml
