@@ -18,10 +18,10 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 	auto h = pwn::generic::GenericHandle(::CreateFile(argv[1], GENERIC_READ, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr));
 	if (h)
 	{
-		auto sz = ::GetFileSize(h.Get(), nullptr);
+		auto sz = ::GetFileSize(h.get(), nullptr);
 		std::vector<BYTE> bytes(sz);
 		DWORD dummy;
-		if (::ReadFile(h.Get(), bytes.data(), sz, &dummy, nullptr))
+		if (::ReadFile(h.get(), bytes.data(), sz, &dummy, nullptr))
 			pwn::utils::hexdump(bytes);
 	}
 

@@ -13,7 +13,7 @@ namespace pwn::generic
 		
 		~GenericHandle() 
 		{ 
-			Close(); 
+			close(); 
 		}
 		
 		GenericHandle(const GenericHandle&) = delete;
@@ -29,7 +29,7 @@ namespace pwn::generic
 		{
 			if (this != &other)
 			{
-				Close();
+				close();
 				_h = other._h;
 				other._h = nullptr;
 			}
@@ -41,12 +41,12 @@ namespace pwn::generic
 			return _h != nullptr && _h != INVALID_HANDLE_VALUE;
 		}
 
-		T Get() const
+		T get() const
 		{
 			return _h;
 		}
 
-		virtual void Close()
+		virtual void close()
 		{
 			if (bool(_h))
 			{

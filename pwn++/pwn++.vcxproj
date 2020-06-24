@@ -158,7 +158,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>..\..\capstone\msvc\capstone_static\x64\Release\capstone.lib;..\..\keystone\build\llvm\lib\keystone.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\..\capstone\msvc\capstone_static\x64\Release\capstone.lib;..\..\keystone\build\llvm\lib\keystone.lib;Userenv.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

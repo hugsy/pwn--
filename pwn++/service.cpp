@@ -39,7 +39,7 @@ DWORD pwn::service::create(_In_ const wchar_t* lpwszName, _In_ const wchar_t* lp
 		}
 
 		auto hService = ServiceHandle(::CreateService(
-			hManager.Get(), 
+			hManager.get(), 
 			lpwszName, 
 			nullptr,
 			SERVICE_ALL_ACCESS, 
@@ -105,7 +105,7 @@ DWORD pwn::service::start(_In_ const wchar_t* lpwszName)
 		}
 
 
-		auto hService = ServiceHandle(::OpenService(hManager.Get(), lpwszName, SERVICE_START));
+		auto hService = ServiceHandle(::OpenService(hManager.get(), lpwszName, SERVICE_START));
 		if ( !hService )
 		{
 			perror(L"OpenService()");
@@ -114,7 +114,7 @@ DWORD pwn::service::start(_In_ const wchar_t* lpwszName)
 		}
 
 
-		if ( !StartService(hService.Get(), 0, nullptr) )
+		if ( !::StartService(hService.get(), 0, nullptr) )
 		{
 			perror(L"StartService()");
 			dwResult = ::GetLastError();
@@ -167,7 +167,7 @@ DWORD pwn::service::stop(_In_ const wchar_t* lpwszName, _In_ DWORD dwTimeout)
 			break;
 		}
 
-		auto hService = ServiceHandle(::OpenService(hManager.Get(), lpwszName, SERVICE_STOP | SERVICE_QUERY_STATUS));
+		auto hService = ServiceHandle(::OpenService(hManager.get(), lpwszName, SERVICE_STOP | SERVICE_QUERY_STATUS));
 		if ( !hService )
 		{
 			perror(L"OpenService()");
@@ -176,7 +176,7 @@ DWORD pwn::service::stop(_In_ const wchar_t* lpwszName, _In_ DWORD dwTimeout)
 		}
 
 		SERVICE_STATUS_PROCESS Status = { 0 };
-		if ( !::ControlService(hService.Get(), SERVICE_CONTROL_STOP, (SERVICE_STATUS*)&Status) )
+		if ( !::ControlService(hService.get(), SERVICE_CONTROL_STOP, (SERVICE_STATUS*)&Status) )
 		{
 			perror(L"ControlService()");
 			dwResult = ::GetLastError();
@@ -192,7 +192,7 @@ DWORD pwn::service::stop(_In_ const wchar_t* lpwszName, _In_ DWORD dwTimeout)
 		while ( TRUE )
 		{
 			if ( !::QueryServiceStatusEx(
-				hService.Get(), 
+				hService.get(), 
 				SC_STATUS_PROCESS_INFO, 
 				(LPBYTE)&Status,
 				sizeof(SERVICE_STATUS_PROCESS), 
@@ -263,7 +263,7 @@ DWORD pwn::service::destroy(_In_ const wchar_t* lpwszName)
 			break;
 		}
 
-		auto hService = ServiceHandle(::OpenService(hManager.Get(), lpwszName, DELETE));
+		auto hService = ServiceHandle(::OpenService(hManager.get(), lpwszName, DELETE));
 		if ( !hService )
 		{
 			perror(L"OpenService()");
@@ -271,7 +271,7 @@ DWORD pwn::service::destroy(_In_ const wchar_t* lpwszName)
 			break;
 		}
 
-		if ( !::DeleteService(hService.Get()) )
+		if ( !::DeleteService(hService.get()) )
 		{
 			perror(L"DeleteService()");
 			dwResult = ::GetLastError();
@@ -330,7 +330,7 @@ std::vector<pwn::service::service_info_t> pwn::service::list()
 		DWORD dwBufferSize = 0, dwServiceEntryCount = 0, dwResumeHandle = 0;
 		
 		BOOL bRes = ::EnumServicesStatusEx(
-			hManager.Get(),
+			hManager.get(),
 			SC_ENUM_PROCESS_INFO,
 			SERVICE_KERNEL_DRIVER | SERVICE_FILE_SYSTEM_DRIVER | SERVICE_WIN32_OWN_PROCESS | SERVICE_WIN32_SHARE_PROCESS,
 			SERVICE_STATE_ALL,
@@ -352,7 +352,7 @@ std::vector<pwn::service::service_info_t> pwn::service::list()
 		auto Buffer = std::make_unique<ENUM_SERVICE_STATUS_PROCESS[]>(dwBufferSize);
 
 		if ( !::EnumServicesStatusEx(
-			hManager.Get(),
+			hManager.get(),
 			SC_ENUM_PROCESS_INFO,
 			SERVICE_KERNEL_DRIVER | SERVICE_FILE_SYSTEM_DRIVER | SERVICE_WIN32_OWN_PROCESS | SERVICE_WIN32_SHARE_PROCESS,
 			SERVICE_STATE_ALL,
@@ -427,7 +427,7 @@ BOOL pwn::service::is_running(_In_ const wchar_t* lpwszName)
 			break;
 		}
 
-		auto hService = ServiceHandle(::OpenService(hManager.Get(), lpwszName, SERVICE_QUERY_STATUS));
+		auto hService = ServiceHandle(::OpenService(hManager.get(), lpwszName, SERVICE_QUERY_STATUS));
 		if ( !hService )
 		{
 			perror(L"OpenService()");
@@ -438,7 +438,7 @@ BOOL pwn::service::is_running(_In_ const wchar_t* lpwszName)
 		DWORD dwBytes = 0;
 		SERVICE_STATUS_PROCESS Status = { 0 };
 		if ( !::QueryServiceStatusEx(
-			hService.Get(),
+			hService.get(),
 			SC_STATUS_PROCESS_INFO,
 			(LPBYTE)&Status,
 			sizeof(SERVICE_STATUS_PROCESS),

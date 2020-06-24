@@ -3,6 +3,8 @@
 #include "common.h"
 #include "nt.h"
 
+#include <AccCtrl.h>
+
 namespace pwn::process
 {
 	typedef struct _process_t
@@ -43,5 +45,14 @@ namespace pwn::process
 
 		PWNAPI ULONG_PTR free(_In_ HANDLE hProcess, _In_ ULONG_PTR Address);
 		PWNAPI ULONG_PTR free(_In_ ULONG_PTR Address);
+	}
+
+	/*++/
+	Ref: https://scorpiosoftware.net/2019/01/15/fun-with-appcontainers/
+	--*/
+	namespace appcontainer
+	{
+		PWNAPI BOOL create_appcontainer(_In_ const std::wstring& containerName, _In_ const std::wstring& exePath, _In_ const std::vector<std::wstring>& files_directories_allowed = {}, _In_ const std::vector<std::wstring>& regkeys_allowed = {});
+		PWNAPI BOOL allow_named_object_access(_In_ PSID appContainerSid, _In_ PWSTR name, _In_ SE_OBJECT_TYPE type, _In_ ACCESS_MODE accessMode, _In_ ACCESS_MASK accessMask);
 	}
 }

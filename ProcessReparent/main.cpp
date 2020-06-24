@@ -23,7 +23,7 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 	if (pwn::process::execv(L"cmd.exe", ppid, &hProcess))
 	{
 		auto h = pwn::generic::GenericHandle(hProcess);
-		::WaitForSingleObject(h.Get(), INFINITE);
+		::WaitForSingleObject(h.get(), INFINITE);
 	}
 
 	return EXIT_SUCCESS;

@@ -10,7 +10,7 @@ namespace pwn::service
 	public:
 		using GenericHandle<SC_HANDLE>::GenericHandle;
 
-		void Close() override
+		void close() override
 		{
 			if ( bool(_h) )
 			{
