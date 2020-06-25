@@ -24,6 +24,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pwn++-tests", "pwn++-tests\pwn++-tests.vcxproj", "{D5AF6AE0-92B7-45EE-BA46-0CFC9E35628E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AppContainMe", "AppContainMe\AppContainMe.vcxproj", "{FFED32B7-FA86-4855-AE6B-C7B94D4184EC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{EE35BB9D-CB25-481E-9D7F-0E361058D4EB} = {EE35BB9D-CB25-481E-9D7F-0E361058D4EB}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

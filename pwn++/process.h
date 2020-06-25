@@ -52,7 +52,34 @@ namespace pwn::process
 	--*/
 	namespace appcontainer
 	{
-		PWNAPI BOOL create_appcontainer(_In_ const std::wstring& containerName, _In_ const std::wstring& exePath, _In_ const std::vector<std::wstring>& files_directories_allowed = {}, _In_ const std::vector<std::wstring>& regkeys_allowed = {});
-		PWNAPI BOOL allow_named_object_access(_In_ PSID appContainerSid, _In_ PWSTR name, _In_ SE_OBJECT_TYPE type, _In_ ACCESS_MODE accessMode, _In_ ACCESS_MASK accessMask);
+		class AppContainer
+		{
+		public:
+			PWNAPI AppContainer(_In_ const std::wstring& container_name, _In_ const std::wstring& executable_path);
+			PWNAPI ~AppContainer();
+
+			PWNAPI BOOL allow_file_or_directory(_In_ const wchar_t* file_or_directory_name);
+			PWNAPI BOOL allow_file_or_directory(_In_ const std::wstring& file_or_directory_name);
+
+			PWNAPI BOOL allow_registry_key(_In_ const wchar_t* regkey);
+			PWNAPI BOOL allow_registry_key(_In_ const std::wstring& regkey);
+
+			PWNAPI BOOL spawn();
+			PWNAPI BOOL join(_In_ DWORD dwTimeout = INFINITE);
+
+
+		private:
+			BOOL set_named_object_access(_In_ PWSTR ObjectName, _In_ SE_OBJECT_TYPE ObjectType, _In_ ACCESS_MODE AccessMode, _In_ ACCESS_MASK AccessMask);
+
+			std::wstring m_ContainerName;
+			std::wstring m_ExecutablePath;
+			std::wstring m_SidAsString;
+			std::wstring m_FolderPath;
+
+			PSID m_AppContainerSid = nullptr;
+			STARTUPINFOEX m_StartupInfo = {0};
+			PROCESS_INFORMATION m_ProcessInfo = {0};
+			SECURITY_CAPABILITIES m_SecurityCapabilities = { 0 };
+		};
 	}
 }

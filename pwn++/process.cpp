@@ -8,6 +8,7 @@ using namespace pwn::log;
 #include <accctrl.h>
 #include <aclapi.h>
 #include <sddl.h>
+#include <stdexcept>
 
 
 
@@ -572,125 +573,203 @@ BOOL pwn::process::has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt
 }
 
 
-_Success_(return)
-BOOL pwn::process::appcontainer::allow_named_object_access(
-    _In_ PSID appContainerSid, 
-    _In_ PWSTR name, 
-    _In_ SE_OBJECT_TYPE type,
-    _In_ ACCESS_MODE accessMode,
-    _In_ ACCESS_MASK accessMask
-) 
+
+
+pwn::process::appcontainer::AppContainer::AppContainer(
+    _In_ const std::wstring& container_name, 
+    _In_ const std::wstring& executable_path
+)
+    : 
+    m_ExecutablePath(executable_path),
+    m_ContainerName(container_name)
 {
-    PACL oldAcl, newAcl = nullptr;
-    DWORD status;
-    EXPLICIT_ACCESS access;
-    
-    do 
+
+    auto hRes = ::CreateAppContainerProfile(
+        m_ContainerName.c_str(),
+        m_ContainerName.c_str(),
+        m_ContainerName.c_str(),
+        nullptr,
+        0,
+        &m_AppContainerSid
+    );
+
+    if (FAILED(hRes))
     {
-        access.grfAccessMode = accessMode;
-        access.grfAccessPermissions = accessMask;
-        access.grfInheritance = OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE;
-        access.Trustee.MultipleTrusteeOperation = NO_MULTIPLE_TRUSTEE;
-        access.Trustee.pMultipleTrustee = nullptr;
-        access.Trustee.ptstrName = (PWSTR)appContainerSid;
-        access.Trustee.TrusteeForm = TRUSTEE_IS_SID;
-        access.Trustee.TrusteeType = TRUSTEE_IS_GROUP;
+        hRes = ::DeriveAppContainerSidFromAppContainerName(m_ContainerName.c_str(), &m_AppContainerSid);
+        if (FAILED(hRes))
+            throw std::runtime_error("DeriveAppContainerSidFromAppContainerName() failed");
+    }
 
-        status = GetNamedSecurityInfo(name, type, DACL_SECURITY_INFORMATION, nullptr, nullptr, &oldAcl, nullptr, nullptr);
-        if (status != ERROR_SUCCESS)
-            return false;
+    //
+    // Get the SID
+    //
+    PWSTR str;
+    ::ConvertSidToStringSid(m_AppContainerSid, &str);
+    m_SidAsString = str;
+    ::LocalFree(str);
 
-        status = SetEntriesInAcl(1, &access, oldAcl, &newAcl);
-        if (status != ERROR_SUCCESS)
-            return false;
+    dbg(L"sid=%s\n", m_SidAsString.c_str());
 
-        status = SetNamedSecurityInfo(name, type, DACL_SECURITY_INFORMATION, nullptr, nullptr, newAcl, nullptr);
-        if (status != ERROR_SUCCESS)
-            break;
-    } 
-    while (0);
+    //
+    // Get the folder path
+    //
+    PWSTR path;
+    if (SUCCEEDED(::GetAppContainerFolderPath(m_SidAsString.c_str(), &path)))
+    {
+        m_FolderPath = path;
+        ::CoTaskMemFree(path);
+    }
 
-    if (newAcl)
-        ::LocalFree(newAcl);
+    dbg(L"folder_path=%s\n", m_FolderPath.c_str());
 
-    return status == ERROR_SUCCESS;
+    //
+    // build the startup info
+    //
+
+    m_SecurityCapabilities.AppContainerSid = m_AppContainerSid;
+    SIZE_T size;
+
+    m_StartupInfo.StartupInfo.cb = sizeof(STARTUPINFOEX);
+    ::InitializeProcThreadAttributeList(nullptr, 1, 0, &size);
+
+    m_StartupInfo.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)::LocalAlloc(LHND, size);
+
+    if(!::InitializeProcThreadAttributeList(m_StartupInfo.lpAttributeList, 1, 0, &size))
+        throw std::runtime_error("InitializeProcThreadAttributeList() failed");
+
+    if(!::UpdateProcThreadAttribute(m_StartupInfo.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES, &m_SecurityCapabilities, sizeof(m_SecurityCapabilities), nullptr, nullptr))
+        throw std::runtime_error("UpdateProcThreadAttribute() failed");
+}
+
+
+pwn::process::appcontainer::AppContainer::~AppContainer()
+{
+    dbg(L"freeing container '%s'\n", m_SidAsString.c_str());
+
+    if (m_StartupInfo.lpAttributeList)
+        ::LocalFree(m_StartupInfo.lpAttributeList);
+
+    if (m_AppContainerSid)
+        ::FreeSid(m_AppContainerSid);
+}
+
+
+BOOL pwn::process::appcontainer::AppContainer::allow_file_or_directory(const std::wstring& file_or_directory_name)
+{
+    return allow_file_or_directory(file_or_directory_name.c_str());
+}
+
+BOOL pwn::process::appcontainer::AppContainer::allow_file_or_directory(const wchar_t* file_or_directory_name)
+{
+    return set_named_object_access((PWSTR)file_or_directory_name, SE_FILE_OBJECT, GRANT_ACCESS, FILE_ALL_ACCESS);
+}
+
+
+BOOL pwn::process::appcontainer::AppContainer::allow_registry_key(const std::wstring& regkey)
+{
+    return allow_file_or_directory(regkey.c_str());
+}
+
+BOOL pwn::process::appcontainer::AppContainer::allow_registry_key(const wchar_t* regkey)
+{
+    return set_named_object_access((PWSTR)regkey, SE_REGISTRY_KEY, GRANT_ACCESS, FILE_ALL_ACCESS);
+}
+
+
+BOOL pwn::process::appcontainer::AppContainer::spawn()
+{
+    auto length = m_ExecutablePath.length();
+    auto sz = length * 2;
+    auto lpwCmdLine = std::make_unique<BYTE[]>(sz+2);
+    ::ZeroMemory(lpwCmdLine.get(), sz+2);
+    ::memcpy(lpwCmdLine.get(), m_ExecutablePath.c_str(), sz);
+
+    dbg(L"launching '%s' in container '%s'\n", lpwCmdLine.get(), m_SidAsString.c_str());
+
+    BOOL bRes = ::CreateProcessW(
+        nullptr,
+        (LPWSTR)lpwCmdLine.get(),
+        nullptr,
+        nullptr,
+        FALSE,
+        EXTENDED_STARTUPINFO_PRESENT,
+        nullptr,
+        nullptr,
+        (LPSTARTUPINFO)&m_StartupInfo,
+        &m_ProcessInfo
+    );
+
+    if (m_StartupInfo.lpAttributeList)
+        ::DeleteProcThreadAttributeList(m_StartupInfo.lpAttributeList);
+
+    return bRes;
 }
 
 
 _Success_(return)
-BOOL pwn::process::appcontainer::create_appcontainer(
-    _In_ const std::wstring & containerName,
-    _In_ const std::wstring & exePath,
-    _In_ const std::vector<std::wstring> & files_directories_allowed,
-    _In_ const std::vector<std::wstring>& regkeys_allowed
+BOOL pwn::process::appcontainer::AppContainer::set_named_object_access(
+    _In_ PWSTR ObjectName, 
+    _In_ SE_OBJECT_TYPE ObjectType, 
+    _In_ ACCESS_MODE AccessMode, 
+    _In_ ACCESS_MASK AccessMask
 )
 {
-    PSID appContainerSid;
-    auto hr = ::CreateAppContainerProfile(
-        containerName.c_str(),
-        containerName.c_str(),
-        containerName.c_str(),
-        nullptr,
-        0,
-        &appContainerSid
-    );
+    BOOL bRes = FALSE;
+    PACL pOldAcl = nullptr, pNewAcl = nullptr;
+    DWORD dwRes;
+    EXPLICIT_ACCESS Access;
+    PSECURITY_DESCRIPTOR pSD = nullptr;
 
-    if (FAILED(hr))
+    do
     {
-        hr = ::DeriveAppContainerSidFromAppContainerName(containerName.c_str(), &appContainerSid);
-        if (FAILED(hr))
-            return FALSE;
-    }
+        //
+        // Get the old ACEs
+        //
+        dwRes = ::GetNamedSecurityInfo(ObjectName, ObjectType, DACL_SECURITY_INFORMATION, nullptr, nullptr, &pOldAcl, nullptr, &pSD);
+        if (dwRes != ERROR_SUCCESS)
+            break;
 
-    PWSTR str;
-    ::ConvertSidToStringSid(appContainerSid, &str);
+        //
+        // Build the new one
+        //
+        ZeroMemory(&Access, sizeof(EXPLICIT_ACCESS));
+        Access.grfAccessMode = AccessMode;
+        Access.grfAccessPermissions = AccessMask;
+        Access.grfInheritance = OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE;
+        Access.Trustee.MultipleTrusteeOperation = NO_MULTIPLE_TRUSTEE;
+        Access.Trustee.pMultipleTrustee = nullptr;
+        Access.Trustee.ptstrName = (PWSTR)m_AppContainerSid;
+        Access.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+        Access.Trustee.TrusteeType = TRUSTEE_IS_GROUP;
 
-    PWSTR path;
-    if (SUCCEEDED(::GetAppContainerFolderPath(str, &path)))
-        ::CoTaskMemFree(path);
+        dwRes = ::SetEntriesInAcl(1, &Access, pOldAcl, &pNewAcl);
+        if (dwRes != ERROR_SUCCESS)
+            break;
 
-    ::LocalFree(str);
+        //
+        // Apply to the object
+        //
+        dbg(L"%s access to object '%s' by container '%s'\n", AccessMode==GRANT_ACCESS?L"Allowing":L"Denying", ObjectName, m_SidAsString.c_str());
+        dwRes = ::SetNamedSecurityInfo(ObjectName, ObjectType, DACL_SECURITY_INFORMATION, nullptr, nullptr, pNewAcl, nullptr);
+        if (dwRes != ERROR_SUCCESS)
+            break;
 
+        bRes = TRUE;
+    } 
+    while (0);
 
-    SECURITY_CAPABILITIES sc = { 0 };
-    sc.AppContainerSid = appContainerSid;
+    if (pNewAcl)
+        ::LocalFree(pNewAcl);
 
-    STARTUPINFOEX si = { sizeof(si) };
-    PROCESS_INFORMATION pi;
-    SIZE_T size;
-
-    ::InitializeProcThreadAttributeList(nullptr, 1, 0, &size);
-    auto buffer = std::make_unique<BYTE[]>(size);
-    si.lpAttributeList = reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(buffer.get());
-
-    if (!::InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0, &size))
-        return FALSE;
-
-    if (!::UpdateProcThreadAttribute(si.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES, &sc, sizeof(sc), nullptr, nullptr))
-        return FALSE;
-
-    for(auto &file : files_directories_allowed)
-        allow_named_object_access(appContainerSid, (PWSTR)file.c_str(), SE_FILE_OBJECT, GRANT_ACCESS, FILE_ALL_ACCESS);
-
-
-    for(auto &regkey : regkeys_allowed)
-        allow_named_object_access(appContainerSid, (PWSTR)regkey.c_str(), SE_REGISTRY_WOW64_32KEY, GRANT_ACCESS, KEY_ALL_ACCESS);
-
-
-    BOOL bRes = ::CreateProcessW(
-        nullptr, 
-        (LPWSTR)exePath.c_str(), 
-        nullptr, 
-        nullptr, 
-        FALSE,
-        EXTENDED_STARTUPINFO_PRESENT, 
-        nullptr, 
-        nullptr, 
-        (LPSTARTUPINFO)&si, 
-        &pi
-    );
-
-    ::DeleteProcThreadAttributeList(si.lpAttributeList);
+    if (pSD)
+        ::LocalFree(pSD);
 
     return bRes;
+}
+
+
+_Success_(return)
+BOOL pwn::process::appcontainer::AppContainer::join(_In_ DWORD dwTimeout)
+{
+    return ::WaitForSingleObject(m_ProcessInfo.hProcess, dwTimeout) == WAIT_OBJECT_0 ? TRUE : FALSE;
 }
