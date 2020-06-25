@@ -577,11 +577,13 @@ BOOL pwn::process::has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt
 
 pwn::process::appcontainer::AppContainer::AppContainer(
     _In_ const std::wstring& container_name, 
-    _In_ const std::wstring& executable_path
+    _In_ const std::wstring& executable_path,
+    _In_ const std::vector<WELL_KNOWN_SID_TYPE>& desired_capabilities
 )
     : 
     m_ExecutablePath(executable_path),
-    m_ContainerName(container_name)
+    m_ContainerName(container_name),
+    m_Capabilities(desired_capabilities)
 {
 
     auto hRes = ::CreateAppContainerProfile(
@@ -622,19 +624,58 @@ pwn::process::appcontainer::AppContainer::AppContainer(
 
     dbg(L"folder_path=%s\n", m_FolderPath.c_str());
 
+
+    //
+    // set the capabilities if any
+    //
+    m_SecurityCapabilities.AppContainerSid = m_AppContainerSid;
+    auto dwNumberOfDesiredAttributes = (DWORD)m_Capabilities.size();
+
+    if (dwNumberOfDesiredAttributes)
+    {
+        //
+        // populate the entries
+        //
+        auto dwNumberOfValidDesiredAttributes = 0;
+        auto DesiredAttributes = std::make_unique<SID_AND_ATTRIBUTES[]>(dwNumberOfDesiredAttributes); 
+        for (size_t i = 0; i < dwNumberOfDesiredAttributes; i++)
+        {
+            auto& Attribute = DesiredAttributes[i];
+            auto Sid = std::make_unique<BYTE[]>(SECURITY_MAX_SID_SIZE);
+            DWORD cbSid = SECURITY_MAX_SID_SIZE;
+            if (!::CreateWellKnownSid(m_Capabilities.at(i), nullptr, Sid.get(), &cbSid))
+                continue;
+
+            Attribute.Attributes = SE_GROUP_ENABLED;
+            Attribute.Sid = (PSID) new byte[cbSid];
+            ::RtlCopyMemory(Attribute.Sid, Sid.get(), cbSid);
+            dwNumberOfValidDesiredAttributes++;
+        }
+
+
+        //
+        // fill up the security capabilities
+        //      
+
+        if (dwNumberOfValidDesiredAttributes)
+        {
+            m_SecurityCapabilities.CapabilityCount = dwNumberOfValidDesiredAttributes;
+            m_SecurityCapabilities.Capabilities = (PSID_AND_ATTRIBUTES) new byte[dwNumberOfValidDesiredAttributes * sizeof(SID_AND_ATTRIBUTES)];
+            ::RtlCopyMemory(m_SecurityCapabilities.Capabilities, DesiredAttributes.get(), dwNumberOfValidDesiredAttributes * sizeof(SID_AND_ATTRIBUTES));
+        }
+    }
+
+
     //
     // build the startup info
-    //
-
-    m_SecurityCapabilities.AppContainerSid = m_AppContainerSid;
+    //   
     SIZE_T size;
-
     m_StartupInfo.StartupInfo.cb = sizeof(STARTUPINFOEX);
     ::InitializeProcThreadAttributeList(nullptr, 1, 0, &size);
 
-    m_StartupInfo.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)::LocalAlloc(LHND, size);
+    m_StartupInfo.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)::new byte[size];
 
-    if(!::InitializeProcThreadAttributeList(m_StartupInfo.lpAttributeList, 1, 0, &size))
+    if (!::InitializeProcThreadAttributeList(m_StartupInfo.lpAttributeList, 1, 0, &size))
         throw std::runtime_error("InitializeProcThreadAttributeList() failed");
 
     if(!::UpdateProcThreadAttribute(m_StartupInfo.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES, &m_SecurityCapabilities, sizeof(m_SecurityCapabilities), nullptr, nullptr))
@@ -646,36 +687,46 @@ pwn::process::appcontainer::AppContainer::~AppContainer()
 {
     dbg(L"freeing container '%s'\n", m_SidAsString.c_str());
 
+    if (m_SecurityCapabilities.CapabilityCount)
+    {
+        for (DWORD i = 0; i < m_SecurityCapabilities.CapabilityCount; i++)
+            delete[] m_SecurityCapabilities.Capabilities[i].Sid;
+        delete[] m_SecurityCapabilities.Capabilities;
+    }
+
     if (m_StartupInfo.lpAttributeList)
-        ::LocalFree(m_StartupInfo.lpAttributeList);
+        delete[] m_StartupInfo.lpAttributeList;
 
     if (m_AppContainerSid)
         ::FreeSid(m_AppContainerSid);
 }
 
 
-BOOL pwn::process::appcontainer::AppContainer::allow_file_or_directory(const std::wstring& file_or_directory_name)
+_Success_(return)
+BOOL pwn::process::appcontainer::AppContainer::allow_file_or_directory(_In_ const std::wstring& file_or_directory_name)
 {
     return allow_file_or_directory(file_or_directory_name.c_str());
 }
 
-BOOL pwn::process::appcontainer::AppContainer::allow_file_or_directory(const wchar_t* file_or_directory_name)
+_Success_(return)
+BOOL pwn::process::appcontainer::AppContainer::allow_file_or_directory(_In_ const wchar_t* file_or_directory_name)
 {
     return set_named_object_access((PWSTR)file_or_directory_name, SE_FILE_OBJECT, GRANT_ACCESS, FILE_ALL_ACCESS);
 }
 
-
-BOOL pwn::process::appcontainer::AppContainer::allow_registry_key(const std::wstring& regkey)
+_Success_(return)
+BOOL pwn::process::appcontainer::AppContainer::allow_registry_key(_In_ const std::wstring& regkey)
 {
     return allow_file_or_directory(regkey.c_str());
 }
 
-BOOL pwn::process::appcontainer::AppContainer::allow_registry_key(const wchar_t* regkey)
+_Success_(return)
+BOOL pwn::process::appcontainer::AppContainer::allow_registry_key(_In_ const wchar_t* regkey)
 {
     return set_named_object_access((PWSTR)regkey, SE_REGISTRY_KEY, GRANT_ACCESS, FILE_ALL_ACCESS);
 }
 
-
+_Success_(return)
 BOOL pwn::process::appcontainer::AppContainer::spawn()
 {
     auto length = m_ExecutablePath.length();

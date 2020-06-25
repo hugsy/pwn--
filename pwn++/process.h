@@ -55,7 +55,7 @@ namespace pwn::process
 		class AppContainer
 		{
 		public:
-			PWNAPI AppContainer(_In_ const std::wstring& container_name, _In_ const std::wstring& executable_path);
+			PWNAPI AppContainer(_In_ const std::wstring& container_name, _In_ const std::wstring& executable_path, _In_ const std::vector<WELL_KNOWN_SID_TYPE>& DesiredCapabilities = {});
 			PWNAPI ~AppContainer();
 
 			PWNAPI BOOL allow_file_or_directory(_In_ const wchar_t* file_or_directory_name);
@@ -73,6 +73,7 @@ namespace pwn::process
 
 			std::wstring m_ContainerName;
 			std::wstring m_ExecutablePath;
+			std::vector<WELL_KNOWN_SID_TYPE> m_Capabilities;
 			std::wstring m_SidAsString;
 			std::wstring m_FolderPath;
 

@@ -18,8 +18,14 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
         return EXIT_FAILURE;
     }
 
+    ctx::set_log_level(log_level_t::LOG_DEBUG);
+
     const std::wstring containerName = L"my-awesome-container-1234567";
     const std::wstring processName = argv[1];
+    const std::vector<WELL_KNOWN_SID_TYPE> desiredCapabilities =
+    {
+        //WinCapabilityInternetClientSid,
+    };
 
     try
     {
@@ -28,7 +34,7 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
             //
             // create the appcontainer
             //
-            pwn::process::appcontainer::AppContainer app(containerName, processName);
+            pwn::process::appcontainer::AppContainer app(containerName, processName, desiredCapabilities);
 
             if (argc >= 3)
             {
@@ -42,10 +48,30 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
                         //
                         // appcontainers only allow explicit access to objects
                         //
-                        info(L"trying to add access to '%s'...\n", value.c_str());
+                        info(L"trying to add access to file/directory '%s'...\n", value.c_str());
                         if (!app.allow_file_or_directory(value))
                         {
                             perror(L"allow_file_or_directory()");
+                            break;
+                        }
+                        else
+                        {
+                            ok(L"added!\n");
+                        }
+
+                        continue;
+                    }
+
+                    if (pwn::utils::startswith(arg, std::wstring(L"r:")))
+                    {
+                        std::wstring value(arg.substr(2));
+                        //
+                        // add access to registry
+                        //
+                        info(L"trying to add access to registry '%s'...\n", value.c_str());
+                        if (!app.allow_registry_key(value))
+                        {
+                            perror(L"allow_registry_key()");
                             break;
                         }
                         else

@@ -6,6 +6,7 @@
 #define WIDECHAR(x) __WIDE(x)
 #define __WIDE2(x) L##x
 #define WIDECHAR2(x) __WIDE2(x)
+#define CONCAT(x, y) x##y
 
 #define __PWNLIB_NAME__              L"PwnLib"
 #define __PWNLIB_VERSION_MAJOR__     0
