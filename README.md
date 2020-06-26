@@ -151,6 +151,7 @@ int wmain()
 	ok(L"random::qword=%x\n", pwn::utils::random::qword());
 	pwn::utils::hexdump(pwn::utils::random::buffer(16));
 	ok(L"random::string=%s\n", pwn::utils::random::string(16).c_str());
+	ok(L"random::alnum=%s\n", pwn::utils::random::alnum(16).c_str());
 	return 0;
 }
 ```
