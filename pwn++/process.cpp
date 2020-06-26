@@ -691,11 +691,11 @@ pwn::process::appcontainer::AppContainer::~AppContainer()
     {
         for (DWORD i = 0; i < m_SecurityCapabilities.CapabilityCount; i++)
             delete[] m_SecurityCapabilities.Capabilities[i].Sid;
-        delete[] m_SecurityCapabilities.Capabilities;
+        delete[] (byte*)m_SecurityCapabilities.Capabilities;
     }
 
     if (m_StartupInfo.lpAttributeList)
-        delete[] m_StartupInfo.lpAttributeList;
+        delete[](byte*)m_StartupInfo.lpAttributeList;
 
     if (m_AppContainerSid)
         ::FreeSid(m_AppContainerSid);

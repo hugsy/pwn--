@@ -27,8 +27,21 @@
 #define LPC_ERROR_EVENT 9
 #define LPC_CONNECTION_REQUEST 10
 
-#define ALPC_MSGFLG_SYNC_REQUEST 0x20000 
+#define ALPC_MSGFLG_REPLY_MESSAGE 0x1
+#define ALPC_MSGFLG_LPC_MODE 0x2 // ?
+#define ALPC_MSGFLG_RELEASE_MESSAGE 0x10000 // dbg
+#define ALPC_MSGFLG_SYNC_REQUEST 0x20000 // dbg
+#define ALPC_MSGFLG_WAIT_USER_MODE 0x100000
+#define ALPC_MSGFLG_WAIT_ALERTABLE 0x200000
+#define ALPC_MSGFLG_WOW64_CALL 0x80000000 // dbg
 
+#define ALPC_MESSAGE_SECURITY_ATTRIBUTE 0x80000000
+#define ALPC_MESSAGE_VIEW_ATTRIBUTE 0x40000000
+#define ALPC_MESSAGE_CONTEXT_ATTRIBUTE 0x20000000
+#define ALPC_MESSAGE_HANDLE_ATTRIBUTE 0x10000000
+#define ALPC_MESSAGE_TOKEN_ATTRIBUTE 0x8000000
+#define ALPC_MESSAGE_DIRECT_ATTRIBUT 0x4000000
+#define ALPC_MESSAGE_WORK_ON_BEHALF_ATTRIBUTE 0x2000000
 
 typedef struct _QUAD
 {
@@ -89,6 +102,18 @@ typedef struct _ALPC_PORT_ATTRIBUTES
 	ULONG Reserved;
 #endif
 } ALPC_PORT_ATTRIBUTES, * PALPC_PORT_ATTRIBUTES;
+
+
+extern "C" 
+NTSYSAPI
+NTSTATUS
+NTAPI
+AlpcInitializeMessageAttribute(
+	_In_ ULONG AttributeFlags,
+	_Out_opt_ PALPC_MESSAGE_ATTRIBUTES Buffer,
+	_In_ ULONG BufferSize,
+	_Out_ PULONG RequiredBufferSize
+);
 
 
 extern "C"
@@ -173,21 +198,66 @@ NtAlpcAcceptConnectPort(
 
 namespace pwn::windows::alpc
 {
-	_Success_(return != nullptr) PWNAPI PPORT_MESSAGE create_alpc_message(_In_ const std::vector<BYTE>& data);
-	_Success_(return) PWNAPI BOOL delete_alpc_message(_In_ PPORT_MESSAGE AlpcMessage);
-
-	PWNAPI std::vector<BYTE> send_and_receive(_In_ HANDLE hSocket, _In_opt_ const std::vector<BYTE>message);
-	_Success_(return) PWNAPI BOOL close(_In_ HANDLE hSocket);
-
-	namespace client
+	class Message
 	{
-		_Success_(return != INVALID_HANDLE_VALUE) PWNAPI HANDLE connect(_In_ const wchar_t* lpwszServerName);
-	}
+	public:
+		PWNAPI Message(_In_ const std::vector<BYTE>& data = {});
+		PWNAPI Message(_In_ const PBYTE lpRawData, _In_ DWORD dwRawDataLength);
+		PWNAPI ~Message();
+
+		PWNAPI PPORT_MESSAGE Get();
+		PWNAPI SIZE_T Size() const;
+		PWNAPI std::vector<BYTE> Data() const;
+
+		PORT_MESSAGE m_PortMessage{0};
+
+	private:
+		std::vector<BYTE> m_Data;
+
+		// this represents the ALPC contiguously built with header+data
+		PPORT_MESSAGE m_AlpcRawMessage = nullptr;
+	};
 
 
-	namespace server
+	class Base
 	{
-		_Success_(return != INVALID_HANDLE_VALUE) PWNAPI HANDLE listen(_In_ const wchar_t* lpwszServerName);
-		_Success_(return != INVALID_HANDLE_VALUE) PWNAPI HANDLE accept(_In_ HANDLE hAlpcServerSocket);
-	}
+	public:
+		PWNAPI HANDLE SocketHandle();
+		PWNAPI std::wstring PortName();
+		
+		PWNAPI Message send_and_receive(_In_ HANDLE hSocket, _In_ const std::vector<BYTE>& messageData = {});
+		PWNAPI Message send_and_receive(_In_ HANDLE hSocket, _In_ Message& message);
+
+	protected:
+		Base(_In_ const std::wstring& PortName);
+		~Base();
+
+		HANDLE m_AlpcSocketHandle;
+		std::wstring m_PortName;
+
+	private:
+		_Success_(return) BOOL close();
+	};
+
+	
+	class Server : public Base
+	{
+	public:
+		PWNAPI Server(_In_ const std::wstring& PortName);
+		PWNAPI ~Server();
+
+		PWNAPI _Success_(return) BOOL accept(_Out_ PHANDLE hAlpcNewClientSocket);
+	};
+
+
+	class Client : public Base
+	{
+	public:
+		PWNAPI Client(_In_ const std::wstring& PortName);
+		PWNAPI ~Client();
+
+		PWNAPI _Success_(return) BOOL reconnect();
+		PWNAPI Message sr(_In_ const std::vector<BYTE>& messageData = {});
+		PWNAPI Message sr(_In_ Message& messageData);
+	};
 }
