@@ -201,6 +201,14 @@ namespace pwn::utils
 		return string;
 	}
 
+	std::wstring random::alnum(_In_ ULONG length)
+	{
+		const std::wstring printable(L"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+		std::wstring string;
+		for (ULONG i = 0; i < length; i++)
+			string += printable.at(random::rand(0, (ULONG)printable.length()));
+		return string;
+	}
 
 
 	void hexdump(_In_ const PBYTE Buffer, _In_ SIZE_T BufferSize)

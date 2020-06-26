@@ -19,6 +19,7 @@ namespace pwn::utils
 		PWNAPI DWORD dword(void);
 		PWNAPI QWORD qword(void);
 		PWNAPI std::wstring string(_In_ ULONG length);
+		PWNAPI std::wstring alnum(_In_ ULONG length);
 		PWNAPI std::vector<BYTE> buffer(_In_ ULONG length);
 	}
 

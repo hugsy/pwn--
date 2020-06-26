@@ -83,6 +83,10 @@ Outputs
 PS C:\Users\User> .\test.exe
 [+]  running pwn++ v0.01
 [DEBUG]  log_level set to 0
+[DEBUG]  Now it will!
+[+] Everything is awesome!
+[!] Alright, stop! Collaborate and listen...
+[-] Can't touch this!
 ```
 
 
@@ -350,6 +354,23 @@ void wmain()
 	pwn::process::mem::free(p);
 }
 ```
+
+#### Simple AppContainer
+
+
+```
+#include <pwn++\pwn.h>
+
+void wmain()
+{
+  auto container_name { L"container-" + pwn::utils::random::alnum(10) };
+  pwn::process::appcontainer::AppContainer app(container_name, "notepad.exe");
+  app.spawn();
+}
+```
+
+Also supports capabilities, see [`AppContainMe`](/AppContainMe) for a better example.
+
 
 ### Jobs
 
