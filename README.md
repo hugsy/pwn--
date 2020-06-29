@@ -127,17 +127,36 @@ Outputs
 
 ```cpp
 #include <pwn++\pwn.h>
+
+using namespace pwn::utils;
+
 int wmain()
 {
-	std::string a("a");
-	std::string b("b");
-	auto args = std::vector<flattenable_t>{ a, b, (DWORD)1, (QWORD)1337 };
-	auto out = pwn::utils::flatten(args);
-	pwn::utils::hexdump(out);
+	std::string a("AAAA");
+	std::wstring b(L"BBBB");
+
+	auto args = std::vector<flattenable_t>{ 
+		a,
+		"AAAA",
+		b,
+		L"BBBB",
+		p8(0x43),
+		p8(0x43),
+		p16(0x4343),
+		p32(0x43434343),
+		p64(0x4444444444444444)
+	};
+
+	hexdump( flatten(args) );
 	return 0;
 }
 ```
 
+```
+0000   41 41 41 41 41 41 41 41  42 00 42 00 42 00 42 00  |  AAAAAAAAB.B.B.B.
+0010   42 00 42 00 42 00 42 00  43 43 43 43 43 43 43 43  |  B.B.B.B.CCCCCCCC
+0020   44 44 44 44 44 44 44 44                           |  DDDDDDDD
+```
 
 #### (bad) random stuff
 

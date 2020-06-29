@@ -3,9 +3,13 @@
 #include "common.h"
 
 #include <variant>
+#include "context.h"
 
-//typedef std::variant<DWORD, QWORD, std::wstring, std::string> flattenable_t;
-using flattenable_t = std::variant<DWORD, QWORD, std::wstring, std::string>;
+using flattenable_t = std::variant<
+	std::string, 
+	std::wstring, 
+	std::vector<BYTE>
+>;
 
 namespace pwn::utils
 {
@@ -35,12 +39,13 @@ namespace pwn::utils
 	PWNAPI BOOL startswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern);
 	PWNAPI BOOL endswith(_In_ const std::string& str, _In_ const std::string& pattern);
 	PWNAPI BOOL endswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern);
-	
+
+	PWNAPI std::vector<BYTE> p8 (_In_  BYTE v);
 	PWNAPI std::vector<BYTE> p16(_In_  WORD v);
 	PWNAPI std::vector<BYTE> p32(_In_ DWORD v);
 	PWNAPI std::vector<BYTE> p64(_In_ QWORD v);
 
-	PWNAPI std::vector<BYTE> flatten(_In_ std::vector<flattenable_t>& args);
+	PWNAPI std::vector<BYTE> flatten(_In_ const std::vector<flattenable_t>& args);
 	
 	PWNAPI BOOL cyclic(_In_ DWORD dwSize, _In_ DWORD dwPeriod, _Out_ std::vector<BYTE>& buffer);
 	PWNAPI BOOL cyclic(_In_ DWORD dwSize, _Out_ std::vector<BYTE>& buffer);

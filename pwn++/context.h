@@ -15,7 +15,16 @@ namespace pwn::context
 		mips
 	};
 
+	enum class endianess_t
+	{
+		small,
+		big,
+	};
+
+
 	extern PWNAPI arch_t arch;
+	extern PWNAPI endianess_t endian;
+	
 	PWNAPI BOOL set_arch(_In_ arch_t new_arch);
 
 	extern PWNAPI pwn::log::log_level_t log_level;

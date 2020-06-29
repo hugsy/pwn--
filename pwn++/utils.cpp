@@ -8,7 +8,6 @@
 #include <sstream>
 
 
-
 extern HANDLE pwn::log::g_ConsoleMutex;
 
 QWORD g_seed = 0;
@@ -373,13 +372,22 @@ namespace pwn::utils
 	}
 
 
-	PWNAPI BOOL endswith(const std::wstring& str, const std::wstring& pattern)
+	BOOL endswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern)
 	{
 		return (str.size() >= pattern.size() && str.compare(str.size() - pattern.size(), pattern.size(), pattern) == 0);
 	}
 
 
-
+	std::vector<BYTE> wstring_to_bytes(_In_ const std::wstring& str)
+	{
+		std::vector<BYTE> out;
+		for (auto i = 0; i < str.size(); i++)
+		{
+			out.push_back((BYTE)str[i]);
+			out.push_back(0x00);
+		}
+		return out;
+	}
 
 
 	/*++
@@ -413,34 +421,54 @@ namespace pwn::utils
 	std::vector<BYTE> __pack(_In_ T v)
 	{
 		std::vector<BYTE> out;
-		for (int i = sizeof(T) - 1; i >= 0; i--)
-			out.push_back((v >> (8 * i)) & 0xff);
+		pwn::context::endianess_t endian = pwn::context::endian;
+		if (endian == pwn::context::endianess_t::small)
+		{
+			for (int i = sizeof(T) - 1; i >= 0; i--)
+				out.push_back((v >> (8 * i)) & 0xff);
+		}
+		/*
+		else
+		{
+			TODO: big endian
+		}
+		*/
 		return out;
 	}
 
+	std::vector<BYTE> p8 (_In_  BYTE v) { return __pack(v); }
 	std::vector<BYTE> p16(_In_  WORD v) { return __pack(v); }
 	std::vector<BYTE> p32(_In_ DWORD v) { return __pack(v); }
 	std::vector<BYTE> p64(_In_ QWORD v) { return __pack(v); }
 
 
-	template<typename T>
-	std::vector<BYTE> __flatten(_In_ T v)
+
+	
+
+	std::vector<BYTE> __flatten(_In_ const flattenable_t & v)
 	{
-		if constexpr (std::is_same_v<T, std::string>)
-			return std::vector<BYTE>(v.begin(), v.end());
+		if (const auto ptr = std::get_if<0>(&v))
+		{
+			std::string s(*ptr);
+			return std::vector<BYTE>(s.begin(), s.end());
+		}
 
-		if constexpr (std::is_same_v<T, DWORD>)
-			return p32(v);
+		if (const auto ptr = std::get_if<1>(&v))
+		{
+			const std::wstring& s(*ptr);
+			return wstring_to_bytes(s);
+		}
 
-		if constexpr (std::is_same_v<T, QWORD>)
-			return p64(v);
+		if (const auto ptr = std::get_if<2>(&v))
+		{
+			return std::get<2>(v);
+		}
 
 		return std::vector<BYTE>();
-		//throw std::runtime_error("Unknown type to flatten");
 	}
 
 
-	std::vector<BYTE> flatten(_In_ std::vector<flattenable_t>& args)
+	std::vector<BYTE> flatten(_In_ const std::vector<flattenable_t>& args)
 	{
 		std::vector<BYTE> flat;
 		for (const auto& arg: args)

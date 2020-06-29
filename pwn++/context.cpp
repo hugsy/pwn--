@@ -19,8 +19,11 @@ namespace pwn::context
 		}
 	}
 
+	PWNAPI DWORD ptrsize = __update_ptrsize();
+
 
 	PWNAPI arch_t arch = arch_t::x64;
+	PWNAPI endianess_t endian = endianess_t::small;
 	
 	BOOL set_arch(_In_ arch_t new_arch)
 	{
@@ -53,6 +56,4 @@ namespace pwn::context
 		return TRUE;
 	}
 
-
-	PWNAPI DWORD ptrsize = __update_ptrsize();
 }

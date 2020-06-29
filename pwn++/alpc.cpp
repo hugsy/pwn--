@@ -261,18 +261,18 @@ BOOL pwn::windows::alpc::Server::accept(_Out_ PHANDLE NewClientHandle)
 				ntperror(L"NtAlpcAcceptConnectPort()", Status);
 				hAlpcClientSocket = INVALID_HANDLE_VALUE;
 			}
+
+			*NewClientHandle = hAlpcClientSocket;
 		}
 		else
 		{
-			
 			err(L"Unexpected message type received: %d\n", ConnectionRequestMsg.m_PortMessage.MessageId);
 		}
 	}
 	else
 		ntperror(L"NtAlpcSendWaitReceivePort()", Status);
 
-	*NewClientHandle = hAlpcClientSocket;
-	return *NewClientHandle != INVALID_HANDLE_VALUE;
+	return hAlpcClientSocket != INVALID_HANDLE_VALUE;
 }
 
 
