@@ -586,35 +586,35 @@ using `IMPORT_EXTERNAL_FUNCTION` macro, then copy/paste the definition (from MSD
 #include <pwn++\pwn.h>
 
 IMPORT_EXTERNAL_FUNCTION( \
-    L"ntdll.dll", \
-    ZwCreateEnclave, \
-    NTSTATUS, \
-    HANDLE  hProcess, \
-    LPVOID  lpAddress, \
-    ULONGLONG ZeroBits, \
-    SIZE_T  dwSize, \
-    SIZE_T  dwInitialCommitment, \
-    DWORD   flEnclaveType, \
-    LPCVOID lpEnclaveInformation, \
-    DWORD   dwInfoLength, \
-    LPDWORD lpEnclaveError \
+	L"ntdll.dll", \
+	ZwCreateEnclave, \
+	NTSTATUS, \
+	HANDLE  hProcess, \
+	LPVOID  lpAddress, \
+	ULONGLONG ZeroBits, \
+	SIZE_T  dwSize, \
+	SIZE_T  dwInitialCommitment, \
+	DWORD   flEnclaveType, \
+	LPCVOID lpEnclaveInformation, \
+	DWORD   dwInfoLength, \
+	LPDWORD lpEnclaveError \
 );
 
 void wmain()
 {
-    auto addr = 0x010000;
-    ENCLAVE_CREATE_INFO_VBS enc = {0};
-    auto res = ZwCreateEnclave(
-        ::GetCurrentProcess(),
-        &addr,
-        -1,
-        0x1000,
-        0x2000,
-        ENCLAVE_TYPE_VBS,
-        &enc,
-        sizeof(enc),
-        nullptr
-    );
+	auto addr = 0x010000;
+	ENCLAVE_CREATE_INFO_VBS enc = {0};
+	auto res = ZwCreateEnclave(
+		::GetCurrentProcess(),
+		&addr,
+		-1,
+		0x1000,
+		0x2000,
+		ENCLAVE_TYPE_VBS,
+		&enc,
+		sizeof(enc),
+		nullptr
+	);
 	if(res == STATUS_SUCCESS)
 	  ok(L"enclave allocated\n");
 }

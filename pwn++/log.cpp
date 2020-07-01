@@ -39,25 +39,27 @@ namespace pwn::log
 
 		size_t fmt_len = wcslen(args_list) + wcslen(prio) + 2;
 		size_t total_sz = 2 * fmt_len + 2;
-		PWCHAR fmt = (PWCHAR)LocalAlloc(LPTR, total_sz);
-		if (!fmt)
-			return;
 
-		ZeroMemory(fmt, 2 * fmt_len + 2);
+		auto fmt = std::make_unique<WCHAR[]>(total_sz);
+		ZeroMemory(fmt.get(), total_sz);
 
 		va_list args;
 		va_start(args, args_list);
 
-		_snwprintf_s(fmt, fmt_len, _TRUNCATE, L"%s %s", prio, args_list);
+		_snwprintf_s(fmt.get(), fmt_len, _TRUNCATE, L"%s %s", prio, args_list);
 		if (::WaitForSingleObject(g_ConsoleMutex, INFINITE) == WAIT_OBJECT_0)
 		{
-			::vfwprintf(stderr, fmt, args);
+			::vfwprintf(stderr, fmt.get(), args);
 			::fflush(stderr);
 		}
 
 		va_end(args);
 		::ReleaseMutex(g_ConsoleMutex);
-		::LocalFree(fmt);
+		
+		if (level == log_level_t::LOG_DEBUG)
+		{
+			::OutputDebugStringW(fmt.get());
+		}
 	}
 
 
