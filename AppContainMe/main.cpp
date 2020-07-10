@@ -124,6 +124,7 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
             }
 
             app.join();
+            app.restore_acls();
         } 
         while (0);
     }

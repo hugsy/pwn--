@@ -65,7 +65,9 @@ namespace pwn::process
 			PWNAPI BOOL allow_registry_key(_In_ const std::wstring& regkey);
 
 			PWNAPI BOOL spawn();
+			PWNAPI BOOL restore_acls();
 			PWNAPI BOOL join(_In_ DWORD dwTimeout = INFINITE);
+
 
 
 		private:
@@ -74,6 +76,7 @@ namespace pwn::process
 			std::wstring m_ContainerName;
 			std::wstring m_ExecutablePath;
 			std::vector<WELL_KNOWN_SID_TYPE> m_Capabilities;
+			std::vector< std::tuple<std::wstring, SE_OBJECT_TYPE, PACL> > m_OriginalAcls;
 			std::wstring m_SidAsString;
 			std::wstring m_FolderPath;
 

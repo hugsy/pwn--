@@ -805,6 +805,12 @@ BOOL pwn::process::appcontainer::AppContainer::set_named_object_access(
         if (dwRes != ERROR_SUCCESS)
             break;
 
+
+        //
+        // Keep a reference to the old ACL so we can restore the original ACEs
+        //
+        m_OriginalAcls.push_back({ ObjectName, ObjectType, pOldAcl });
+
         bRes = TRUE;
     } 
     while (0);
@@ -823,4 +829,22 @@ _Success_(return)
 BOOL pwn::process::appcontainer::AppContainer::join(_In_ DWORD dwTimeout)
 {
     return ::WaitForSingleObject(m_ProcessInfo.hProcess, dwTimeout) == WAIT_OBJECT_0 ? TRUE : FALSE;
+}
+
+
+_Success_(return)
+BOOL pwn::process::appcontainer::AppContainer::restore_acls()
+{
+    BOOL bRes = TRUE;
+
+    for (auto& acl : m_OriginalAcls)
+    {
+        auto ObjectName = std::get<0>(acl);
+        auto ObjectType = std::get<1>(acl);
+        auto pOldAcl = std::get<2>(acl);
+        dbg(L"restoring original acl for '%s'\n", ObjectName.c_str());
+        bRes &= (::SetNamedSecurityInfo((PWSTR)ObjectName.c_str(), ObjectType, DACL_SECURITY_INFORMATION, nullptr, nullptr, pOldAcl, nullptr) == ERROR_SUCCESS);
+    }
+
+    return bRes;
 }
