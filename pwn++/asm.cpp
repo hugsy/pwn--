@@ -1,6 +1,7 @@
 #include "asm.h"
 
 #include <keystone/keystone.h>
+#include <stdexcept>
 
 using namespace pwn::log;
 
@@ -79,6 +80,14 @@ namespace pwn::assm
     }
 
 
+    std::vector<BYTE> PWNAPI x86(_In_ const char* code, _In_ const size_t code_size)
+    {
+        std::vector<BYTE> res;
+        __assemble(KS_ARCH_X86, KS_MODE_32, code, code_size, res);
+        return res;
+    }
+
+
 
     /*++
 Description:
@@ -99,6 +108,14 @@ Returns:
     BOOL PWNAPI x64(_In_ const char* code, _In_ const size_t code_size, _Out_ std::vector<BYTE>& bytes)
     {
         return __assemble(KS_ARCH_X86, KS_MODE_64, code, code_size, bytes);
+    }
+
+
+    std::vector<BYTE> PWNAPI x64(_In_ const char* code, _In_ const size_t code_size)
+    {
+        std::vector<BYTE> res;
+        __assemble(KS_ARCH_X86, KS_MODE_64, code, code_size, res);
+        return res;
     }
 
 
@@ -134,5 +151,22 @@ Returns:
         }
 
         return FALSE;
+    }
+
+
+    std::vector<BYTE> assemble(_In_ const char* code, _In_ const size_t code_size)
+    {
+        switch (pwn::context::arch)
+        {
+            case pwn::context::arch_t::x86:
+                return x86(code, code_size);
+
+            case pwn::context::arch_t::x64:
+                return x64(code, code_size);
+
+            default:
+                throw std::runtime_error("unsupported architecture");
+                break;
+        }
     }
 }

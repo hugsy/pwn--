@@ -12,3 +12,5 @@ const std::tuple<WORD, WORD> pwn::version_info()
 	const std::tuple<WORD, WORD> out(__PWNLIB_VERSION_MAJOR__, __PWNLIB_VERSION_MINOR__);
 	return out;
 }
+
+
