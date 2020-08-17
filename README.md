@@ -35,7 +35,7 @@ Then compile your binary linked with the lib (make sure you're C++17 compliant):
 
 ```bash
 C:\> cl.exe whatever.cc /std:c++17
-C:\> clang.exe whatever.cc -std=++17
+C:\> clang.exe whatever.cc -std=c++17
 ```
 
 ### Better start
