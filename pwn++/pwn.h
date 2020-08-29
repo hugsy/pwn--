@@ -23,5 +23,7 @@ namespace pwn
 #include "kernel.h"
 #include "service.h"
 #include "alpc.h"
+#include "fs.h"
+#include "rpc.h"
 
 

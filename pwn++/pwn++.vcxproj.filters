@@ -75,6 +75,12 @@
     <ClInclude Include="handle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="rpc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pwn_nt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -126,6 +132,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="handle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rpc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

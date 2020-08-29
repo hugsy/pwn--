@@ -9,6 +9,19 @@
 
 using namespace pwn::log;
 
+extern NTSYSAPI NTSTATUS NTAPI NtSetInformationThread(
+	IN HANDLE               ThreadHandle,
+	IN THREAD_INFORMATION_CLASS ThreadInformationClass,
+	IN PVOID                ThreadInformation,
+	IN ULONG                ThreadInformationLength
+);
+
+extern NTSYSAPI NTSTATUS NTAPI NtQueryInformationThread(
+	IN HANDLE               ThreadHandle,
+	IN THREAD_INFORMATION_CLASS ThreadInformationClass,
+	OUT PVOID               ThreadInformation,
+	IN ULONG                ThreadInformationLength,
+	OUT PULONG              ReturnLength OPTIONAL);
 
 #ifndef __KERNEL_CONSTANTS__
 #ifdef __WIN10__
@@ -74,7 +87,7 @@ namespace pwn::kernel
 					"ret ;";
 				const size_t sclen = ::strlen(sc);
 				std::vector<BYTE> out;
-				if ( !pwn::assm::x64(sc, sclen, out) )
+				if (!pwn::assm::x64(sc, sclen, out))
 					throw std::runtime_error("failed to compile shellcode\n");
 				return out;
 			}
@@ -98,29 +111,29 @@ namespace pwn::kernel
 
 
 	}
-		
+
 
 
 	/*++
 	Description:
 		Get an iterable of tuple enumerating all the kernel modules, with their base address
-	
+
 	Arguments:
 		None
-	
+
 	Return:
 		Returns a vector of <wstring,ulong_ptr> of all the modules
 	--*/
 	std::vector< std::tuple<std::wstring, ULONG_PTR> > modules()
 	{
 		std::vector< std::tuple<std::wstring, ULONG_PTR> > mods;
-	
+
 		do
 		{
 			NTSTATUS Status;
 			ULONG BufferLength = sizeof(RTL_PROCESS_MODULES);
 			std::unique_ptr<BYTE[]> Buffer;
-	
+
 			do
 			{
 				Buffer = std::make_unique<BYTE[]>(BufferLength);
@@ -130,35 +143,35 @@ namespace pwn::kernel
 					BufferLength,
 					&BufferLength
 				);
-	
-				if ( !NT_SUCCESS(Status) )
+
+				if (!NT_SUCCESS(Status))
 				{
-					if ( Status == STATUS_INFO_LENGTH_MISMATCH )
+					if (Status == STATUS_INFO_LENGTH_MISMATCH)
 						continue;
-	
+
 					perror(L"NtQuerySystemInformation()\n");
 					break;
 				}
-	
+
 				break;
 			}
-			while ( TRUE );
-	
-			if ( !NT_SUCCESS(Status) )
+			while (TRUE);
+
+			if (!NT_SUCCESS(Status))
 				break;
-	
+
 			auto Modules = (PRTL_PROCESS_MODULES)Buffer.get();
 			dbg(L"Found %lu modules\n", Modules->NumberOfModules);
-	
-			for ( DWORD i = 0; i < Modules->NumberOfModules; i++ )
+
+			for (DWORD i = 0; i < Modules->NumberOfModules; i++)
 			{
 				auto ModuleFullPathName = pwn::utils::to_widestring((const char*)Modules->Modules[i].FullPathName);
 				std::tuple<std::wstring, ULONG_PTR> entry = std::make_tuple(ModuleFullPathName, (ULONG_PTR)Modules->Modules[i].ImageBase);
 				mods.push_back(entry);
 			}
 		}
-		while ( FALSE );
-	
+		while (FALSE);
+
 		return mods;
 	}
 
@@ -178,13 +191,13 @@ namespace pwn::kernel
 		ULONG_PTR uKernelBase = (ULONG_PTR)-1;
 		std::wstring pattern(lpwszModuleName);
 
-		for ( auto& mod : modules() )
+		for (auto& mod : modules())
 		{
 			auto name = std::get<0>(mod);
 			auto addr = std::get<1>(mod);
 
 
-			if ( pwn::utils::endswith(name, pattern) )
+			if (pwn::utils::endswith(name, pattern))
 			{
 				uKernelBase = addr;
 				dbg(L"Found %s base (%p)\n", pattern.c_str(), uKernelBase);
@@ -199,5 +212,5 @@ namespace pwn::kernel
 	{
 		return get_module_base_address(ModuleName.c_str());
 	}
-	
+
 }

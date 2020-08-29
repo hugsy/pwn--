@@ -339,7 +339,7 @@ namespace pwn::utils
 	}
 
 
-	std::vector<std::wstring> split(const std::wstring& ws, const wchar_t delim = L' ')
+	std::vector<std::wstring> split(_In_ const std::wstring& ws, _In_ const wchar_t delim = L' ')
 	{
 		std::vector<std::wstring> out;
 		std::wstringstream wss(ws);
@@ -479,7 +479,5 @@ namespace pwn::utils
 
 		return flat;
 	}
-
-
 
 }

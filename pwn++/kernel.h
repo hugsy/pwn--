@@ -5,7 +5,6 @@
 #include <winternl.h>
 
 
-
 namespace pwn::kernel
 {
 	PWNAPI std::vector< std::tuple<std::wstring, ULONG_PTR> > modules();

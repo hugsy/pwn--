@@ -11,9 +11,7 @@ interesting locations from link target
 - \sessions\$x\AppContainerNamedObject\SID
 
 */
-extern "C" {
-	NTSTATUS NTAPI NtCreateSymbolicLinkObject(PHANDLE LinkHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PUNICODE_STRING TargetName);
-}
+
 
 
 #ifndef SYMBOLIC_LINK_ALL_ACCESS 
@@ -23,15 +21,34 @@ extern "C" {
 
 namespace pwn::fs
 {
+	_Success_(return != nullptr)
+	PWNAPI HANDLE touch(
+		_In_ const std::wstring& path
+	);
+
+	_Success_(return != nullptr)
 	PWNAPI HANDLE create_symlink(
 		_In_ const std::wstring& link,
 		_In_ const std::wstring& target
 	);
 
+	_Success_(return != nullptr)
+	PWNAPI HANDLE open_symlink(
+		_In_ const std::wstring & link
+	);
+
+	_Success_(return != nullptr)
+		PWNAPI HANDLE create_junction(
+		_In_ const std::wstring& link,
+		_In_ const std::wstring& target
+	);
+
+	_Success_(return)
 	PWNAPI bool mkdir(
 		_In_ const std::wstring& name
 	);
 
+	_Success_(return)
 	PWNAPI bool rmdir(
 		_In_ const std::wstring& name
 	);

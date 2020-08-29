@@ -180,7 +180,9 @@
     <ClInclude Include="nt.h" />
     <ClInclude Include="process.h" />
     <ClInclude Include="pwn.h" />
+    <ClInclude Include="pwn_nt.h" />
     <ClInclude Include="registry.h" />
+    <ClInclude Include="rpc.h" />
     <ClInclude Include="service.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="utils.h" />
@@ -200,6 +202,7 @@
     <ClCompile Include="process.cpp" />
     <ClCompile Include="pwn.cpp" />
     <ClCompile Include="registry.cpp" />
+    <ClCompile Include="rpc.cpp" />
     <ClCompile Include="service.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="utils.cpp" />

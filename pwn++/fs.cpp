@@ -5,12 +5,38 @@
 
 #include <sstream>
 
+
 /*++
-
-This whole module is a bad re-implem of all that James Forshaw did way better in 
-https://github.com/googleprojectzero/symboliclink-testing-tools/
-
+* 
+* Resources:
+* https://github.com/googleprojectzero/symboliclink-testing-tools/
+*
 --*/
+
+extern "C" {
+	NTSTATUS NTAPI NtCreateSymbolicLinkObject(PHANDLE LinkHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PUNICODE_STRING TargetName);
+	NTSTATUS NTAPI NtOpenSymbolicLinkObject(
+		_Out_ PHANDLE            LinkHandle,
+		_In_  ACCESS_MASK        DesiredAccess,
+		_In_  POBJECT_ATTRIBUTES ObjectAttributes
+	);
+
+}
+
+
+_Success_(return != nullptr)
+HANDLE pwn::fs::touch(_In_ const std::wstring & path)
+{
+	return ::CreateFile(
+		path.c_str(),
+		GENERIC_READ | GENERIC_WRITE,
+		FILE_SHARE_READ,
+		nullptr,
+		CREATE_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL,
+		nullptr
+	);
+}
 
 
 /*++
@@ -42,9 +68,55 @@ HANDLE pwn::fs::create_symlink(
 	);
 
 	if (NT_SUCCESS(NtCreateSymbolicLinkObject(&hLink, SYMBOLIC_LINK_ALL_ACCESS, &oa, &target_name)))
+	{
+		dbg(L"created link '%s' to '%s' (h=%p)\n", link.c_str(), target.c_str(), hLink);
 		return hLink;
+	}
 
 	return nullptr;
+}
+
+
+/*++
+* 
+* wrapper for NtOpenSymbolicLinkObject 
+* https://docs.microsoft.com/en-us/windows/win32/devnotes/ntopensymboliclinkobject
+* 
+--*/
+_Success_(return != nullptr)
+HANDLE pwn::fs::open_symlink(
+	_In_ const std::wstring &link
+)
+{
+	HANDLE hLink = INVALID_HANDLE_VALUE;
+	OBJECT_ATTRIBUTES oa = { 0 };
+	UNICODE_STRING link_name;
+	::RtlInitUnicodeString(&link_name, link.c_str());
+
+	InitializeObjectAttributes(
+		&oa,
+		&link_name,
+		OBJ_CASE_INSENSITIVE,
+		nullptr,
+		nullptr
+	);
+
+	if (NT_SUCCESS(NtOpenSymbolicLinkObject(&hLink, SYMBOLIC_LINK_ALL_ACCESS, &oa)))
+	{
+		dbg(L"opened link '%s' with handle=%p)\n", link.c_str(), hLink);
+		return hLink;
+	}
+
+	return nullptr;
+}
+
+_Success_(return != nullptr)
+HANDLE pwn::fs::create_junction(
+	_In_ const std::wstring& link,
+	_In_ const std::wstring& target
+)
+{
+	return INVALID_HANDLE_VALUE;
 }
 
 
@@ -53,17 +125,20 @@ HANDLE pwn::fs::create_symlink(
 Create directories recursively.
 
 --*/
-bool pwn::fs::mkdir(const std::wstring& name)
+_Success_(return)
+bool pwn::fs::mkdir(_In_ const std::wstring& name)
 {
 	bool bRes = true;
+	std::wstring root = L"";
 
 	for (auto subdir : pwn::utils::split(name, L'\\'))
 	{
-		if (::CreateDirectory(subdir.c_str(), NULL))
+		if (::CreateDirectory((root + subdir).c_str(), NULL) 
+			|| ::GetLastError() == ERROR_ALREADY_EXISTS)
+		{
+			root = root + L"\\" + subdir;
 			continue;
-
-		if (::GetLastError() == ERROR_ALREADY_EXISTS)
-			continue;
+		}
 
 		bRes = false;
 		break;
@@ -73,7 +148,8 @@ bool pwn::fs::mkdir(const std::wstring& name)
 }
 
 
-bool pwn::fs::rmdir(const std::wstring& name)
+_Success_(return)
+bool pwn::fs::rmdir(_In_ const std::wstring& name)
 {
 	return ::RemoveDirectoryW(name.c_str());
 }
