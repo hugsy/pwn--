@@ -113,6 +113,49 @@ namespace pwn::kernel
 	}
 
 
+	std::unique_ptr<BYTE[]> query_system_info(_In_ SYSTEM_INFORMATION_CLASS code, _Out_ PSIZE_T pdwBufferLength)
+	{
+		NTSTATUS Status;
+		ULONG BufferLength = 0, ExpectedBufferLength;
+		std::unique_ptr<BYTE[]> Buffer;
+
+		*pdwBufferLength = 1;
+
+		do
+		{
+			Buffer = std::make_unique<BYTE[]>(BufferLength);
+			Status = ::NtQuerySystemInformation(
+				SystemBigPoolInformation,
+				Buffer.get(),
+				BufferLength,
+				&ExpectedBufferLength
+			);
+
+			if (!NT_SUCCESS(Status))
+			{
+				if (Status == STATUS_INFO_LENGTH_MISMATCH)
+				{
+					BufferLength = ExpectedBufferLength;
+					continue;
+				}
+
+				break;
+			}
+
+			break;
+		}
+		while (true);
+
+		if (!NT_SUCCESS(Status))
+		{
+			::SetLastError(::RtlNtStatusToDosError(Status));
+			return nullptr;
+		}
+
+		*pdwBufferLength = ExpectedBufferLength;
+		return Buffer;
+	}
+
 
 	/*++
 	Description:
@@ -128,54 +171,22 @@ namespace pwn::kernel
 	{
 		std::vector< std::tuple<std::wstring, ULONG_PTR> > mods;
 
-		do
+		SIZE_T BufferLength;
+		auto Buffer = query_system_info(SystemModuleInformation, &BufferLength);
+		if (!Buffer)
 		{
-			NTSTATUS Status;
-			ULONG BufferLength = sizeof(RTL_PROCESS_MODULES);
-			std::unique_ptr<BYTE[]> Buffer;
-
-			do
-			{
-				ULONG ExpectedBufferLength;
-
-				Buffer = std::make_unique<BYTE[]>(BufferLength);
-				Status = ::NtQuerySystemInformation(
-					SystemModuleInformation,
-					Buffer.get(),
-					BufferLength,
-					&ExpectedBufferLength
-				);
-
-				if (!NT_SUCCESS(Status))
-				{
-					if (Status == STATUS_INFO_LENGTH_MISMATCH)
-					{
-						BufferLength = ExpectedBufferLength;
-						continue;
-					}
-
-					perror(L"NtQuerySystemInformation()\n");
-					break;
-				}
-
-				break;
-			}
-			while (true);
-
-			if (!NT_SUCCESS(Status))
-				break;
-
-			auto Modules = (PRTL_PROCESS_MODULES)Buffer.get();
-			dbg(L"Found %lu modules\n", Modules->NumberOfModules);
-
-			for (DWORD i = 0; i < Modules->NumberOfModules; i++)
-			{
-				auto ModuleFullPathName = pwn::utils::to_widestring((const char*)Modules->Modules[i].FullPathName);
-				std::tuple<std::wstring, ULONG_PTR> entry = std::make_tuple(ModuleFullPathName, (ULONG_PTR)Modules->Modules[i].ImageBase);
-				mods.push_back(entry);
-			}
+			throw new std::runtime_error("NtQuerySystemInformation()");
 		}
-		while (false);
+
+		auto Modules = reinterpret_cast<PRTL_PROCESS_MODULES>(Buffer.get());
+		dbg(L"Found %lu modules\n", Modules->NumberOfModules);
+
+		for (DWORD i = 0; i < Modules->NumberOfModules; i++)
+		{
+			auto ModuleFullPathName = pwn::utils::to_widestring((const char*)Modules->Modules[i].FullPathName);
+			std::tuple<std::wstring, ULONG_PTR> entry = std::make_tuple(ModuleFullPathName, (ULONG_PTR)Modules->Modules[i].ImageBase);
+			mods.push_back(entry);
+		}
 
 		return mods;
 	}
@@ -213,53 +224,32 @@ namespace pwn::kernel
 	}
 
 
+	/*++
+	Description:
+		Get the kernel address for the given handle number and PID.
+
+	Arguments:
+		- hTarget is the handle number
+		- dwPid is the process with that handle
+
+	Return:
+		Returns -1 on error (sets last error), the kernel address of the handle
+	--*/
 	ULONG_PTR get_handle_kaddress(_In_ HANDLE hTarget, _In_ DWORD dwPid)
 	{
-		NTSTATUS Status;
-		ULONG BufferLength = sizeof(SYSTEM_HANDLE_INFORMATION);
-		std::unique_ptr<BYTE[]> Buffer;
-
-		do
+		SIZE_T BufferLength;
+		auto Buffer = query_system_info(SystemHandleInformation, &BufferLength);
+		if (!Buffer)
 		{
-			ULONG ExpectedBufferLength;
-
-			Buffer = std::make_unique<BYTE[]>(BufferLength);
-			Status = ::NtQuerySystemInformation(
-				SystemHandleInformation,
-				Buffer.get(),
-				BufferLength,
-				&ExpectedBufferLength
-			);
-
-			if (!NT_SUCCESS(Status))
-			{
-				if (Status == STATUS_INFO_LENGTH_MISMATCH)
-				{
-					BufferLength = ExpectedBufferLength;
-					continue;
-				}
-
-				break;
-			}
-
-			break;
-		}
-		while (true);
-
-		if (!NT_SUCCESS(Status))
-		{
-			::SetLastError(::RtlNtStatusToDosError(Status));
-			return (ULONG_PTR)-1;
+			throw new std::runtime_error("NtQuerySystemInformation()");
 		}
 
+		PSYSTEM_HANDLE_INFORMATION HandleTableInfo = reinterpret_cast<PSYSTEM_HANDLE_INFORMATION>(Buffer.get());
 
-		PSYSTEM_HANDLE_INFORMATION hi = reinterpret_cast<PSYSTEM_HANDLE_INFORMATION>(Buffer.get());
-
-		dbg(L"Dumped %d entries\n",	hi->NumberOfHandles);
-
-		for (ULONG i = 0; i < hi->NumberOfHandles; i++) 
+		dbg(L"Dumped %d entries\n",	HandleTableInfo->NumberOfHandles);
+		for (ULONG i = 0; i < HandleTableInfo->NumberOfHandles; i++) 
 		{
-			SYSTEM_HANDLE_TABLE_ENTRY_INFO HandleInfo = hi->Handles[i];
+			SYSTEM_HANDLE_TABLE_ENTRY_INFO HandleInfo = HandleTableInfo->Handles[i];
 
 			if (
 				HandleInfo.UniqueProcessId == dwPid &&
@@ -275,44 +265,25 @@ namespace pwn::kernel
 		return (ULONG_PTR)-1;
 	}
 
+
+	/*++
+	Description:
+		Get a vector of big pool chunks with the specified Tag
+
+	Arguments:
+		- Tag is a DWORD of the big pool tag to search for. If 0, all big pool chunks are returned.
+
+	Return:
+		A vector with the big pool kernel address with the specified tag
+	--*/
 	std::vector<ULONG_PTR> get_big_pool_kaddress(_In_ DWORD Tag)
 	{
-
-		NTSTATUS Status;
-		ULONG BufferLength = sizeof(BIG_POOL_INFO);
-		std::unique_ptr<BYTE[]> Buffer;
 		std::vector<ULONG_PTR> res;
 
-		do
+		SIZE_T BufferLength;
+		auto Buffer = query_system_info(SystemBigPoolInformation, &BufferLength);
+		if (!Buffer)
 		{
-			ULONG ExpectedBufferLength;
-
-			Buffer = std::make_unique<BYTE[]>(BufferLength);
-			Status = ::NtQuerySystemInformation(
-				SystemBigPoolInformation,
-				Buffer.get(),
-				BufferLength,
-				&ExpectedBufferLength
-			);
-
-			if (!NT_SUCCESS(Status))
-			{
-				if (Status == STATUS_INFO_LENGTH_MISMATCH)
-				{
-					BufferLength = ExpectedBufferLength;
-					continue;
-				}
-
-				break;
-			}
-
-			break;
-		}
-		while (true);
-
-		if (!NT_SUCCESS(Status))
-		{
-			::SetLastError(::RtlNtStatusToDosError(Status));
 			throw new std::runtime_error("NtQuerySystemInformation()");
 		}
 
@@ -321,15 +292,16 @@ namespace pwn::kernel
 
 		for (auto i = 0; i < PoolTableSize; i++)
 		{
-			auto PoolInfo = PoolTableInfo[i];
-			if (PoolInfo.PoolTag == Tag)
-				res.push_back(PoolInfo.Address);
+			auto PoolInfo = reinterpret_cast<PBIG_POOL_INFO>(&PoolTableInfo[i]);
+			
+			if (Tag == 0 || PoolInfo->PoolTag == Tag)
+			{
+				dbg(L"Found PoolTag 0x%x at %p\n", PoolInfo->PoolTag, PoolInfo->Address);
+				res.push_back(PoolInfo->Address);
+			}
 		}
 
 		return res;
 	}
-
-
-	 
 
 }
