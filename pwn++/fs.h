@@ -58,6 +58,12 @@ namespace pwn::fs
 		_In_ int level = 10
 	);
 
+	_Success_(return != nullptr)
+	PWNAPI HANDLE tmpfile(
+		_In_ const std::wstring& prefix,
+		_Out_ std::wstring& path
+	);
+
 	/*++
 	
 	Watch directory and invoke callback when an event occured.

@@ -14,14 +14,20 @@
 *
 --*/
 
-extern "C" {
-	NTSTATUS NTAPI NtCreateSymbolicLinkObject(PHANDLE LinkHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PUNICODE_STRING TargetName);
+extern "C" 
+{
+	NTSTATUS NTAPI NtCreateSymbolicLinkObject(
+		PHANDLE LinkHandle, 
+		ACCESS_MASK DesiredAccess, 
+		POBJECT_ATTRIBUTES ObjectAttributes, 
+		PUNICODE_STRING TargetName
+	);
+
 	NTSTATUS NTAPI NtOpenSymbolicLinkObject(
 		_Out_ PHANDLE            LinkHandle,
 		_In_  ACCESS_MASK        DesiredAccess,
 		_In_  POBJECT_ATTRIBUTES ObjectAttributes
 	);
-
 }
 
 
@@ -38,6 +44,33 @@ HANDLE pwn::fs::touch(_In_ const std::wstring & path)
 		nullptr
 	);
 }
+
+
+_Success_(return != nullptr)
+HANDLE pwn::fs::tmpfile(_In_ const std::wstring & prefix, _Out_ std::wstring& path)
+{
+	HANDLE h = INVALID_HANDLE_VALUE;
+
+	do
+	{
+		path = prefix + L"-" + pwn::utils::random::string(10);
+		h = ::CreateFile(
+			path.c_str(),
+			GENERIC_READ | GENERIC_WRITE,
+			0,
+			nullptr,
+			CREATE_ALWAYS,
+			FILE_ATTRIBUTE_NORMAL | FILE_FLAG_DELETE_ON_CLOSE,
+			nullptr
+		);
+	}
+	while (h == INVALID_HANDLE_VALUE);
+
+	
+
+	return h;
+}
+
 
 
 /*++

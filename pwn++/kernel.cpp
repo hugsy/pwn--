@@ -136,18 +136,23 @@ namespace pwn::kernel
 
 			do
 			{
+				ULONG ExpectedBufferLength;
+
 				Buffer = std::make_unique<BYTE[]>(BufferLength);
 				Status = ::NtQuerySystemInformation(
 					SystemModuleInformation,
 					Buffer.get(),
 					BufferLength,
-					&BufferLength
+					&ExpectedBufferLength
 				);
 
 				if (!NT_SUCCESS(Status))
 				{
 					if (Status == STATUS_INFO_LENGTH_MISMATCH)
+					{
+						BufferLength = ExpectedBufferLength;
 						continue;
+					}
 
 					perror(L"NtQuerySystemInformation()\n");
 					break;
@@ -155,7 +160,7 @@ namespace pwn::kernel
 
 				break;
 			}
-			while (TRUE);
+			while (true);
 
 			if (!NT_SUCCESS(Status))
 				break;
@@ -170,7 +175,7 @@ namespace pwn::kernel
 				mods.push_back(entry);
 			}
 		}
-		while (FALSE);
+		while (false);
 
 		return mods;
 	}
@@ -212,5 +217,8 @@ namespace pwn::kernel
 	{
 		return get_module_base_address(ModuleName.c_str());
 	}
+
+
+	 
 
 }

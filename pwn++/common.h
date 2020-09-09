@@ -8,11 +8,26 @@
 #define PWNAPI __declspec(dllexport)
 #endif
 
+
 #ifndef __countof
 #define __countof(x) (sizeof(x)/x[0])
 #endif 
 
 typedef DWORD64 QWORD;
+
+
+#include <stdint.h>
+
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
+typedef int8_t  i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
+
 
 #ifndef _PWN_LOG_NO_COLOR
 #define PWN_LOG_USE_COLOR

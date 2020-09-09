@@ -265,6 +265,17 @@ int wmain()
 }
 ```
 
+Or `ShellExecute` style:
+
+```cpp
+#include <pwn++\pwn.h>
+int wmain()
+{
+	pwn::process::system(L"ms-settings:");
+	return 0;
+}
+```
+
 #### Process creation from specific parent
 
 Cheap way to spawn a `NT AUTHORITY\SYSTEM` process from Admin prompt
@@ -636,6 +647,40 @@ auto wmain() -> int
         perror(L"watch_dir");
 
     return 0;
+}
+```
+
+#### Create a symlink
+
+
+````cpp
+#include <pwn++\pwn.h>
+
+auto wmain() -> int
+{
+	auto h = pwn::generic::GenericHandle( pwn::fs::touch(L"myfile.txt") );
+	if(!h)
+		return -1;
+
+	auto l = pwn::generic::GenericHandle( pwn::fs::create_symlink(L"mylink.txt", L"myfile.txt") );
+	if(!h)
+		return -2;
+
+	ok(L"created link '%s' -> '%s'\n", L"mylink.txt", L"myfile.txt");
+
+	return 0;
+}
+```
+
+#### Create a junction
+
+
+````cpp
+#include <pwn++\pwn.h>
+
+auto wmain() -> int
+{
+	return 0;
 }
 ```
 
