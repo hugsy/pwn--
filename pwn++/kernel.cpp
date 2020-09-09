@@ -191,31 +191,25 @@ namespace pwn::kernel
 	Return:
 		Returns -1 on error, the address of the module on success
 	--*/
-	ULONG_PTR get_module_base_address(_In_ const wchar_t* lpwszModuleName)
+	ULONG_PTR get_module_base_address(_In_ const std::wstring&  ModuleName)
 	{
-		ULONG_PTR uKernelBase = (ULONG_PTR)-1;
-		std::wstring pattern(lpwszModuleName);
+		std::wstring pattern(ModuleName);
 
 		for (auto& mod : modules())
 		{
 			auto name = std::get<0>(mod);
 			auto addr = std::get<1>(mod);
 
-
 			if (pwn::utils::endswith(name, pattern))
 			{
-				uKernelBase = addr;
-				dbg(L"Found %s base (%p)\n", pattern.c_str(), uKernelBase);
+				dbg(L"Found %s base (%p)\n", pattern.c_str(), addr);
+				return addr;
 				break;
 			}
 		}
-		return uKernelBase;
-	}
 
-
-	ULONG_PTR get_module_base_address(_In_ const std::wstring& ModuleName)
-	{
-		return get_module_base_address(ModuleName.c_str());
+		::SetLastError(ERROR_NOT_FOUND);
+		return (ULONG_PTR)-1;
 	}
 
 
@@ -245,7 +239,6 @@ namespace pwn::kernel
 					continue;
 				}
 
-				perror(L"NtQuerySystemInformation()\n");
 				break;
 			}
 
@@ -254,7 +247,10 @@ namespace pwn::kernel
 		while (true);
 
 		if (!NT_SUCCESS(Status))
+		{
+			::SetLastError(::RtlNtStatusToDosError(Status));
 			return (ULONG_PTR)-1;
+		}
 
 
 		PSYSTEM_HANDLE_INFORMATION hi = reinterpret_cast<PSYSTEM_HANDLE_INFORMATION>(Buffer.get());
@@ -275,7 +271,62 @@ namespace pwn::kernel
 			}
 		}
 
+		::SetLastError(ERROR_NOT_FOUND);
 		return (ULONG_PTR)-1;
+	}
+
+	std::vector<ULONG_PTR> get_big_pool_kaddress(_In_ DWORD Tag)
+	{
+
+		NTSTATUS Status;
+		ULONG BufferLength = sizeof(BIG_POOL_INFO);
+		std::unique_ptr<BYTE[]> Buffer;
+		std::vector<ULONG_PTR> res;
+
+		do
+		{
+			ULONG ExpectedBufferLength;
+
+			Buffer = std::make_unique<BYTE[]>(BufferLength);
+			Status = ::NtQuerySystemInformation(
+				SystemBigPoolInformation,
+				Buffer.get(),
+				BufferLength,
+				&ExpectedBufferLength
+			);
+
+			if (!NT_SUCCESS(Status))
+			{
+				if (Status == STATUS_INFO_LENGTH_MISMATCH)
+				{
+					BufferLength = ExpectedBufferLength;
+					continue;
+				}
+
+				break;
+			}
+
+			break;
+		}
+		while (true);
+
+		if (!NT_SUCCESS(Status))
+		{
+			::SetLastError(::RtlNtStatusToDosError(Status));
+			throw new std::runtime_error("NtQuerySystemInformation()");
+		}
+
+		auto PoolTableSize = (BufferLength - 8) / sizeof(BIG_POOL_INFO);
+		auto PoolTableInfo = reinterpret_cast<PBIG_POOL_INFO>(Buffer.get() + 8);
+
+		for (auto i = 0; i < PoolTableSize; i++)
+		{
+			auto PoolInfo = PoolTableInfo[i];
+			if (PoolInfo.PoolTag == Tag)
+				res.push_back(PoolInfo.Address);
+		}
+
+		return res;
 	}
 
 

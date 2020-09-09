@@ -30,7 +30,15 @@ https://github.com/processhacker/processhacker/blob/89fe55ce6a25f57e5a72a649c7a1
 #define SystemModuleInformation  (SYSTEM_INFORMATION_CLASS)11
 #define SystemHandleInformation (SYSTEM_INFORMATION_CLASS)16
 #define SystemExtendedHandleInformation (SYSTEM_INFORMATION_CLASS)64
+#define SystemBigPoolInformation (SYSTEM_INFORMATION_CLASS)66
 /* EndOf(SYSTEM_INFORMATION_CLASS) */
+
+
+/*++
+THREAD_INFORMATION_CLASS
+--*/
+#define ThreadNameInformation (THREAD_INFORMATION_CLASS)38
+/* EndOf(THREAD_INFORMATION_CLASS) */
 
 
 typedef struct _RTL_PROCESS_MODULES
@@ -156,3 +164,11 @@ typedef struct _TEB_ACTIVE_FRAME
 	PTEB_ACTIVE_FRAME_CONTEXT Context;
 } TEB_ACTIVE_FRAME, *PTEB_ACTIVE_FRAME;
 
+
+typedef struct _BIG_POOL_INFO
+{
+	DWORD64 Address;
+	DWORD64 PoolSize;
+	DWORD PoolTag;
+	char Padding[4];
+} BIG_POOL_INFO, * PBIG_POOL_INFO;
