@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include <functional>
 
 /*
 
@@ -54,11 +55,19 @@ namespace pwn::fs
 	);
 
 	PWNAPI std::wstring make_tmpdir(
-		void
+		_In_ int level = 10
 	);
 
+	/*++
+	
+	Watch directory and invoke callback when an event occured.
+
+	--*/
+	_Success_(return)
 	PWNAPI bool watch_dir(
-		_In_ const std::wstring& name
+		_In_ const std::wstring& name,
+		_In_ std::function<bool(PFILE_NOTIFY_INFORMATION)> cbFunctor,
+		_In_ bool watch_subtree = false
 	);
 }
 

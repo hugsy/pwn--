@@ -1,6 +1,7 @@
 #include "process.h"
 #include "log.h"
 #include "system.h"
+
 using namespace pwn::log;
 
 #include <psapi.h>
@@ -9,6 +10,8 @@ using namespace pwn::log;
 #include <aclapi.h>
 #include <sddl.h>
 #include <stdexcept>
+#include <shellapi.h>
+#include "utils.h"
 
 
 
@@ -21,6 +24,8 @@ extern "C" ULONG_PTR __asm__get_teb_x86();
 #define PEB_OFFSET 0x30
 #define __asm__get_teb __asm__get_teb_x86
 #endif
+
+
 
 
 DWORD pwn::process::pid()
@@ -250,6 +255,25 @@ _Success_(return)
 BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _Out_opt_ LPHANDLE lpNewProcessHandle)
 {
     return pwn::process::execv(lpCommandLine, 0, lpNewProcessHandle);
+}
+
+_Success_(return)
+BOOL pwn::process::system(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operation)
+{
+    auto args = pwn::utils::split(lpCommandLine, L' ');
+    auto cmd{ args[0] };
+    args.erase(args.begin());
+    auto params = pwn::utils::join(args);
+
+    return reinterpret_cast<long long>(::ShellExecuteW(
+        nullptr,
+        operation.c_str(),
+        cmd.c_str(),
+        params.c_str(),
+        nullptr,
+        SW_SHOW
+    )) > 32;
+    
 }
 
 

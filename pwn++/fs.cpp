@@ -2,6 +2,7 @@
 #include "nt.h"
 #include "utils.h"
 #include "log.h"
+#include "handle.h"
 
 #include <sstream>
 
@@ -155,14 +156,19 @@ bool pwn::fs::rmdir(_In_ const std::wstring& name)
 }
 
 
-std::wstring pwn::fs::make_tmpdir()
+std::wstring pwn::fs::make_tmpdir(_In_ int level)
 {
 	std::wstring name;
+	auto max_attempts = 10, attempts = 0;
 
 	do
 	{
-		name = pwn::utils::random::string(10);
+		if (attempts == max_attempts)
+			throw std::exception("failed to create directory");
+
+		name = pwn::utils::random::string(level);
 		name.erase(62);
+		attempts++;
 	}
 	while (mkdir(name) == false);
 
@@ -172,7 +178,46 @@ std::wstring pwn::fs::make_tmpdir()
 }
 
 
-bool pwn::fs::watch_dir(const std::wstring& name)
+_Success_(return)
+bool pwn::fs::watch_dir(_In_ const std::wstring& name, _In_ std::function<bool(PFILE_NOTIFY_INFORMATION)> cbFunctor, _In_ bool watch_subtree)
 {
-	return true;
+	auto h = pwn::generic::GenericHandle(
+		::CreateFileW(
+			name.c_str(),
+			GENERIC_READ,
+			FILE_SHARE_READ,
+			nullptr,
+			OPEN_EXISTING,
+			FILE_FLAG_BACKUP_SEMANTICS,
+			nullptr
+		)
+	);
+
+	if (!h)
+		return false;
+
+	DWORD sz = (DWORD)sizeof(FILE_NOTIFY_INFORMATION);
+	auto buffer = std::make_unique<std::byte[]>(sz);
+	DWORD bytes_written;
+
+	dbg(L"watching %s\n", name.c_str());
+
+	// https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-readdirectorychangesw
+
+	if (!::ReadDirectoryChangesW(
+		h.get(),
+		buffer.get(),
+		sz,
+		watch_subtree,
+		FILE_NOTIFY_CHANGE_FILE_NAME,
+		&bytes_written,
+		nullptr,
+		nullptr
+		))
+	{
+		return false;
+	}
+
+	auto info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(buffer.get());
+	return cbFunctor(info);
 }

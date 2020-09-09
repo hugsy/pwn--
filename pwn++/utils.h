@@ -34,7 +34,8 @@ namespace pwn::utils
 	PWNAPI std::wstring string_to_widestring(_In_ const std::string& s);
 	PWNAPI std::string widestring_to_string(_In_ const std::wstring& ws);
 	PWNAPI std::wstring to_widestring(_In_ const char* str);
-	PWNAPI std::vector<std::wstring> split(_In_ const std::wstring& ws, const wchar_t delim);
+	PWNAPI std::vector<std::wstring> split(_In_ const std::wstring& ws, _In_ const wchar_t delim);
+	PWNAPI std::wstring join(_In_ const std::vector<std::wstring>& args);
 	PWNAPI BOOL startswith(_In_ const std::string& str, _In_ const std::string& pattern);
 	PWNAPI BOOL startswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern);
 	PWNAPI BOOL endswith(_In_ const std::string& str, _In_ const std::string& pattern);

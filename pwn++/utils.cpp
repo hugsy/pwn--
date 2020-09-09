@@ -353,6 +353,17 @@ namespace pwn::utils
 		return out;
 	}
 
+		
+	std::wstring join(_In_ const std::vector<std::wstring>& args)
+	{
+		std::wstring res;
+		for (const auto& arg : args)
+		{
+			res.append(arg);
+		}
+		return res;
+	}
+
 
 	BOOL startswith(_In_ const std::string& str, _In_ const std::string& pattern)
 	{
@@ -422,7 +433,7 @@ namespace pwn::utils
 	{
 		std::vector<BYTE> out;
 		pwn::context::endianess_t endian = pwn::context::endian;
-		if (endian == pwn::context::endianess_t::small)
+		if (endian == pwn::context::endianess_t::little)
 		{
 			for (int i = sizeof(T) - 1; i >= 0; i--)
 				out.push_back((v >> (8 * i)) & 0xff);

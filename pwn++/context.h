@@ -17,7 +17,7 @@ namespace pwn::context
 
 	enum class endianess_t
 	{
-		small,
+		little,
 		big,
 	};
 

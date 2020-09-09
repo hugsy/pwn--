@@ -23,7 +23,7 @@ namespace pwn::context
 
 
 	PWNAPI arch_t arch = arch_t::x64;
-	PWNAPI endianess_t endian = endianess_t::small;
+	PWNAPI endianess_t endian = endianess_t::little;
 	
 	BOOL set_arch(_In_ arch_t new_arch)
 	{
