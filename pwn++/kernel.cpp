@@ -219,6 +219,66 @@ namespace pwn::kernel
 	}
 
 
+	ULONG_PTR get_handle_kaddress(_In_ HANDLE hTarget, _In_ DWORD dwPid)
+	{
+		NTSTATUS Status;
+		ULONG BufferLength = sizeof(SYSTEM_HANDLE_INFORMATION);
+		std::unique_ptr<BYTE[]> Buffer;
+
+		do
+		{
+			ULONG ExpectedBufferLength;
+
+			Buffer = std::make_unique<BYTE[]>(BufferLength);
+			Status = ::NtQuerySystemInformation(
+				SystemHandleInformation,
+				Buffer.get(),
+				BufferLength,
+				&ExpectedBufferLength
+			);
+
+			if (!NT_SUCCESS(Status))
+			{
+				if (Status == STATUS_INFO_LENGTH_MISMATCH)
+				{
+					BufferLength = ExpectedBufferLength;
+					continue;
+				}
+
+				perror(L"NtQuerySystemInformation()\n");
+				break;
+			}
+
+			break;
+		}
+		while (true);
+
+		if (!NT_SUCCESS(Status))
+			return (ULONG_PTR)-1;
+
+
+		PSYSTEM_HANDLE_INFORMATION hi = reinterpret_cast<PSYSTEM_HANDLE_INFORMATION>(Buffer.get());
+
+		dbg(L"Dumped %d entries\n",	hi->NumberOfHandles);
+
+		for (ULONG i = 0; i < hi->NumberOfHandles; i++) 
+		{
+			SYSTEM_HANDLE_TABLE_ENTRY_INFO HandleInfo = hi->Handles[i];
+
+			if (
+				HandleInfo.UniqueProcessId == dwPid &&
+				(HANDLE)HandleInfo.HandleValue == hTarget
+			)
+			{
+				dbg(L"Found HANDLE=%d OBJECT=%p\n",	HandleInfo.HandleValue,	HandleInfo.Object);
+				return (ULONG_PTR)HandleInfo.Object;
+			}
+		}
+
+		return (ULONG_PTR)-1;
+	}
+
+
 	 
 
 }

@@ -25,9 +25,11 @@ Sources:
 /*++
 SYSTEM_INFORMATION_CLASS
 https://www.geoffchappell.com/studies/windows/km/ntoskrnl/api/ex/sysinfo/class.htm
+https://github.com/processhacker/processhacker/blob/89fe55ce6a25f57e5a72a649c7a17d75b8d60e4c/phnt/include/ntexapi.h#L1250
 --*/
-#define SystemModuleInformation  (SYSTEM_INFORMATION_CLASS)0xb
-#define SystemExtendedHandleInformation (SYSTEM_INFORMATION_CLASS)0x40
+#define SystemModuleInformation  (SYSTEM_INFORMATION_CLASS)11
+#define SystemHandleInformation (SYSTEM_INFORMATION_CLASS)16
+#define SystemExtendedHandleInformation (SYSTEM_INFORMATION_CLASS)64
 /* EndOf(SYSTEM_INFORMATION_CLASS) */
 
 
@@ -73,6 +75,33 @@ typedef struct _SYSTEM_HANDLE_INFORMATION_EX
 	ULONG_PTR Reserved;
 	SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX Handles[1];
 } SYSTEM_HANDLE_INFORMATION_EX, *PSYSTEM_HANDLE_INFORMATION_EX;
+
+
+
+
+typedef struct __SYSTEM_HANDLE_TABLE_ENTRY_INFO
+{
+	USHORT UniqueProcessId;
+	USHORT CreatorBackTraceIndex;
+	UCHAR ObjectTypeIndex;
+	UCHAR HandleAttributes;
+	USHORT HandleValue;
+	PVOID Object;
+	ULONG GrantedAccess;
+}
+SYSTEM_HANDLE_TABLE_ENTRY_INFO, * PSYSTEM_HANDLE_TABLE_ENTRY_INFO;
+
+
+
+
+
+typedef struct __SYSTEM_HANDLE_INFORMATION
+{
+	ULONG NumberOfHandles;
+	SYSTEM_HANDLE_TABLE_ENTRY_INFO Handles[ANYSIZE_ARRAY];
+}
+SYSTEM_HANDLE_INFORMATION, * PSYSTEM_HANDLE_INFORMATION;
+
 
 
 
