@@ -14,14 +14,19 @@
 *
 --*/
 
-extern "C" {
-	NTSTATUS NTAPI NtCreateSymbolicLinkObject(PHANDLE LinkHandle, ACCESS_MASK DesiredAccess, POBJECT_ATTRIBUTES ObjectAttributes, PUNICODE_STRING TargetName);
+extern "C" 
+{
+	NTSTATUS NTAPI NtCreateSymbolicLinkObject(
+		PHANDLE LinkHandle, 
+		ACCESS_MASK DesiredAccess, 
+		POBJECT_ATTRIBUTES ObjectAttributes, 
+		PUNICODE_STRING TargetName
+	);
 	NTSTATUS NTAPI NtOpenSymbolicLinkObject(
 		_Out_ PHANDLE            LinkHandle,
 		_In_  ACCESS_MASK        DesiredAccess,
 		_In_  POBJECT_ATTRIBUTES ObjectAttributes
 	);
-
 }
 
 
@@ -37,6 +42,11 @@ HANDLE pwn::fs::touch(_In_ const std::wstring & path)
 		FILE_ATTRIBUTE_NORMAL,
 		nullptr
 	);
+}
+
+PWNAPI HANDLE pwn::fs::create_hardlink(const std::wstring& link, const std::wstring& target)
+{
+	return nullptr;
 }
 
 

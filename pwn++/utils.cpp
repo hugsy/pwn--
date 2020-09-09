@@ -365,6 +365,16 @@ namespace pwn::utils
 	}
 
 
+	std::wstring path::abspath(_In_ const std::wstring& path)
+	{
+		auto res = std::wstring();
+		res.resize(MAX_PATH+1);
+
+		::GetFullPathNameW(path.c_str(), MAX_PATH, &res[0], nullptr);
+		return res;
+	}
+
+
 	BOOL startswith(_In_ const std::string& str, _In_ const std::string& pattern)
 	{
 		return (str.size() >= pattern.size() && str.compare(0, pattern.size(), pattern) == 0);

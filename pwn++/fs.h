@@ -28,6 +28,12 @@ namespace pwn::fs
 	);
 
 	_Success_(return != nullptr)
+	PWNAPI HANDLE create_hardlink(
+			_In_ const std::wstring & link,
+			_In_ const std::wstring & target
+	);
+
+	_Success_(return != nullptr)
 	PWNAPI HANDLE create_symlink(
 		_In_ const std::wstring& link,
 		_In_ const std::wstring& target
