@@ -172,3 +172,8 @@ typedef struct _BIG_POOL_INFO
 	DWORD PoolTag;
 	char Padding[4];
 } BIG_POOL_INFO, * PBIG_POOL_INFO;
+
+
+#ifndef UNLEN
+#define UNLEN 256
+#endif // !UNLEN

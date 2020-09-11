@@ -1,5 +1,6 @@
 #include "system.h"
 #include "log.h"
+#include "nt.h"
 
 #include <tlhelp32.h>
 #include <stdexcept> 
@@ -87,7 +88,7 @@ Returns:
     the PID of the first process if found, -1 if failure
 
  --*/
-DWORD PWNAPI pwn::system::pidof(_In_ const wchar_t* lpwProcessName)
+DWORD PWNAPI pwn::system::pidof(_In_ const std::wstring& name)
 {
     HANDLE hProcessSnap = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hProcessSnap == INVALID_HANDLE_VALUE)
@@ -117,7 +118,7 @@ DWORD PWNAPI pwn::system::pidof(_In_ const wchar_t* lpwProcessName)
 
             ::CloseHandle(hProcess);
 
-            if (::wcscmp(lpwProcessName, pe32.szExeFile) == 0)
+            if (::wcscmp(name.c_str(), pe32.szExeFile) == 0)
             {
                 dwPid = pe32.th32ProcessID;
                 break;
@@ -132,21 +133,9 @@ DWORD PWNAPI pwn::system::pidof(_In_ const wchar_t* lpwProcessName)
 }
 
 
-/*++
 
 
-
---*/
-DWORD pwn::system::pidof(_In_ const std::wstring& name)
-{
-    return pidof(name.c_str());
-}
-
-
-
-
-
-const std::wstring pwn::system::name()
+const std::wstring pwn::system::computername()
 {
     DWORD dwBufLen = MAX_COMPUTERNAME_LENGTH;
     WCHAR lpszBuf[MAX_COMPUTERNAME_LENGTH + 1] = { 0, };
@@ -154,5 +143,36 @@ const std::wstring pwn::system::name()
         throw std::runtime_error("GetComputerName() failed");
     return std::wstring(lpszBuf);
 }
+
+
+
+const std::wstring pwn::system::username() 
+{
+    wchar_t lpwsBuffer[UNLEN + 1];
+    DWORD dwBufferSize = UNLEN + 1;
+    if(!::GetUserName((TCHAR*)lpwsBuffer, &dwBufferSize))
+        throw std::runtime_error("GetUserName() failed");
+    static auto username = std::wstring{ lpwsBuffer };
+    return username;
+}
+
+
+const std::wstring pwn::system::modulename(_In_opt_ HMODULE hModule)
+{
+    wchar_t lpwsBuffer[MAX_PATH]{ 0 };
+    if (!::GetModuleFileName(hModule, lpwsBuffer, MAX_PATH))
+        throw std::runtime_error("GetModuleFileName() failed");
+    static auto module_filename = std::wstring{ lpwsBuffer };
+    return module_filename;
+}
+
+
+const std::wstring pwn::system::filename()
+{
+    return pwn::system::modulename(nullptr);
+}
+
+
+
 
 
