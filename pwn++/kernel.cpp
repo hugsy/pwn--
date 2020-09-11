@@ -9,19 +9,6 @@
 
 using namespace pwn::log;
 
-extern NTSYSAPI NTSTATUS NTAPI NtSetInformationThread(
-	IN HANDLE               ThreadHandle,
-	IN THREAD_INFORMATION_CLASS ThreadInformationClass,
-	IN PVOID                ThreadInformation,
-	IN ULONG                ThreadInformationLength
-);
-
-extern NTSYSAPI NTSTATUS NTAPI NtQueryInformationThread(
-	IN HANDLE               ThreadHandle,
-	IN THREAD_INFORMATION_CLASS ThreadInformationClass,
-	OUT PVOID               ThreadInformation,
-	IN ULONG                ThreadInformationLength,
-	OUT PULONG              ReturnLength OPTIONAL);
 
 #ifndef __KERNEL_CONSTANTS__
 #ifdef __WIN10__

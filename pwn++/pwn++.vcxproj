@@ -185,6 +185,7 @@
     <ClInclude Include="rpc.h" />
     <ClInclude Include="service.h" />
     <ClInclude Include="system.h" />
+    <ClInclude Include="thread.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -205,6 +206,7 @@
     <ClCompile Include="rpc.cpp" />
     <ClCompile Include="service.cpp" />
     <ClCompile Include="system.cpp" />
+    <ClCompile Include="thread.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>

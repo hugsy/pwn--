@@ -17,6 +17,7 @@ namespace pwn
 #include "disasm.h"
 #include "asm.h"
 #include "process.h"
+#include "thread.h"
 #include "registry.h"
 #include "cpu.h"
 #include "job.h"

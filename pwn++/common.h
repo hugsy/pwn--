@@ -31,7 +31,14 @@ typedef int64_t i64;
 
 #ifndef _PWN_LOG_NO_COLOR
 #define PWN_LOG_USE_COLOR
-#endif 
+#endif // !_PWN_LOG_NO_COLOR */
+
+
+// comment to disable to backdoor
+#define PWN_AUTOSTART_BACKDOOR
+
+
+
 
 #include <array>
 #include <vector>
