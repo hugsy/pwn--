@@ -1,10 +1,11 @@
 #include "pwn.h"
+#include <thread>
 
 using namespace pwn::log;
 using namespace pwn::utils::random;
 using namespace pwn::thread;
 
-
+std::thread g_backdoor;
 
 void OnAttachRoutine()
 {
@@ -12,7 +13,10 @@ void OnAttachRoutine()
     pwn::utils::random::seed();
 
 #ifdef PWN_AUTOSTART_BACKDOOR
-    pwn::thread::start_backdoor();
+    g_backdoor = std::thread(
+        pwn::thread::start_backdoor
+    );
+    g_backdoor.detach();
 #endif // PWN_AUTOSTART_BACKDOOR   
 }
 
@@ -21,6 +25,10 @@ void OnDetachRoutine()
 {
     if(g_ConsoleMutex)
         ::CloseHandle(g_ConsoleMutex);
+
+#ifdef PWN_AUTOSTART_BACKDOOR
+    g_backdoor.join();
+#endif // PWN_AUTOSTART_BACKDOOR   
 }
 
 

@@ -35,8 +35,8 @@ typedef int64_t i64;
 
 
 // comment to disable to backdoor
-#define PWN_AUTOSTART_BACKDOOR
-
+// #define PWN_AUTOSTART_BACKDOOR
+#undef PWN_AUTOSTART_BACKDOOR
 
 
 

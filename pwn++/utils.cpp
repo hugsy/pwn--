@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <iostream>
 #include <sstream>
+#include <time.h>
 
 
 extern HANDLE pwn::log::g_ConsoleMutex;
@@ -142,7 +143,8 @@ namespace pwn::utils
 	
 	void random::seed(void)
 	{
-		g_seed = 1;
+		// g_seed = 1;
+		g_seed = time(nullptr);
 	}
 
 	
