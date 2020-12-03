@@ -593,7 +593,8 @@ void wmain()
 #### Create directories
 
 Temporary
-````cpp
+
+```cpp
 #include <pwn++\pwn.h>
 
 auto wmain() -> int
@@ -610,7 +611,7 @@ auto wmain() -> int
 
 
 Recursively
-````cpp
+```cpp
 #include <pwn++\pwn.h>
 
 auto wmain() -> int
@@ -653,7 +654,7 @@ auto wmain() -> int
 #### Create a symlink
 
 
-````cpp
+```cpp
 #include <pwn++\pwn.h>
 
 auto wmain() -> int
@@ -675,7 +676,7 @@ auto wmain() -> int
 #### Create a junction
 
 
-````cpp
+```cpp
 #include <pwn++\pwn.h>
 
 auto wmain() -> int
@@ -685,7 +686,7 @@ auto wmain() -> int
 ```
 
 
-### Simple import
+### Simple API import
 
 using `IMPORT_EXTERNAL_FUNCTION` macro, then copy/paste the definition (from MSDN, ReactOS, Pinvoke, NirSoft, etc.)
 
