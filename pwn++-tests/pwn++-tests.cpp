@@ -149,6 +149,28 @@ namespace pwn::tests
 
 
 
+	TEST_CLASS(UnitPwnCrypto)
+	{
+	public:
+		TEST_METHOD(Test_crc)
+		{
+			std::vector<BYTE> data { 0x41, 0x42, 0x43, 0x44 };
+			Assert::IsTrue(pwn::crypto::crc8(data) == 0x62);
+			Assert::IsTrue(pwn::crypto::crc16(data) == 0xbffa);
+			Assert::IsTrue(pwn::crypto::crc32(data) == 0xdb1720a5);
+			Assert::IsTrue(pwn::crypto::crc64(data) == 0xaed66c3a70b824aa);
+		}
+
+		TEST_METHOD(Test_md)
+		{
+			std::vector<BYTE> data{ 0x41, 0x42, 0x43, 0x44 };
+			std::array<BYTE, MD5LEN> expected{ 0xcb, 0x08, 0xca, 0x4a, 0x7b, 0xb5, 0xf9, 0x68, 0x3c, 0x19, 0x13, 0x3a, 0x84, 0x87, 0x2c, 0xa7 };
+			Assert::IsTrue(pwn::crypto::md5(data) == expected);
+		}
+	};
+
+
+
 
 
 }

@@ -160,7 +160,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>..\..\capstone\msvc\capstone_static\x64\Release\capstone.lib;..\..\keystone\build\llvm\lib\keystone.lib;Userenv.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\..\capstone\msvc\x64\Release\capstone.lib;..\..\keystone\build\llvm\lib\keystone.lib;Userenv.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -170,6 +170,7 @@
     <ClInclude Include="constants.h" />
     <ClInclude Include="context.h" />
     <ClInclude Include="cpu.h" />
+    <ClInclude Include="crypto.h" />
     <ClInclude Include="disasm.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="fs.h" />
@@ -193,6 +194,7 @@
     <ClCompile Include="asm.cpp" />
     <ClCompile Include="context.cpp" />
     <ClCompile Include="cpu.cpp" />
+    <ClCompile Include="crypto.cpp" />
     <ClCompile Include="disasm.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="fs.cpp" />

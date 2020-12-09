@@ -26,5 +26,6 @@ namespace pwn
 #include "alpc.h"
 #include "fs.h"
 #include "rpc.h"
+#include "crypto.h"
 
 

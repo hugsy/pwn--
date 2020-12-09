@@ -172,7 +172,3 @@ const std::wstring pwn::system::filename()
     return pwn::system::modulename(nullptr);
 }
 
-
-
-
-
