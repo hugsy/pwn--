@@ -695,7 +695,8 @@ pwn::process::appcontainer::AppContainer::AppContainer(
     //   
     SIZE_T size;
     m_StartupInfo.StartupInfo.cb = sizeof(STARTUPINFOEX);
-    ::InitializeProcThreadAttributeList(nullptr, 1, 0, &size);
+    if (!::InitializeProcThreadAttributeList(nullptr, 1, 0, &size))
+        throw std::runtime_error("InitializeProcThreadAttributeList() failed");
 
     m_StartupInfo.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)::new byte[size];
 
@@ -761,7 +762,7 @@ BOOL pwn::process::appcontainer::AppContainer::spawn()
 
     dbg(L"launching '%s' in container '%s'\n", lpwCmdLine.get(), m_SidAsString.c_str());
 
-    BOOL bRes = ::CreateProcessW(
+    auto bRes = ::CreateProcessW(
         nullptr,
         (LPWSTR)lpwCmdLine.get(),
         nullptr,

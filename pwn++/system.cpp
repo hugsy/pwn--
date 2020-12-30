@@ -1,6 +1,7 @@
 #include "system.h"
 #include "log.h"
 #include "nt.h"
+#include "handle.h"
 
 #include <tlhelp32.h>
 #include <stdexcept> 
@@ -39,20 +40,18 @@ DWORD pwn::system::pid(_In_ HANDLE hProcess)
 
 DWORD pwn::system::ppid(_In_ DWORD dwProcessId)
 {
-    HANDLE hProcessSnap;
-    PROCESSENTRY32 pe = { 0, };
-
-    hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (hProcessSnap == INVALID_HANDLE_VALUE)
+    auto hProcessSnap = pwn::generic::GenericHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+    if (!hProcessSnap)
     {
         perror(L"CreateToolhelp32Snapshot()");
         return -1;
     }
 
+    PROCESSENTRY32 pe = { 0, };
     pe.dwSize = sizeof(PROCESSENTRY32);
-    int32_t dwPpid = -1;
+    i32 dwPpid = -1;
 
-    if (Process32First(hProcessSnap, &pe))
+    if (Process32First(hProcessSnap.get(), &pe))
     {
         do 
         {
@@ -62,14 +61,11 @@ DWORD pwn::system::ppid(_In_ DWORD dwProcessId)
                 break;
             }
         } 
-        while (Process32Next(hProcessSnap, &pe));
+        while (Process32Next(hProcessSnap.get(), &pe));
     }
 
-    ::CloseHandle(hProcessSnap);
     return dwPpid;
 }
-
-
 
 
 
@@ -90,8 +86,8 @@ Returns:
  --*/
 DWORD PWNAPI pwn::system::pidof(_In_ const std::wstring& name)
 {
-    HANDLE hProcessSnap = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (hProcessSnap == INVALID_HANDLE_VALUE)
+    auto hProcessSnap = pwn::generic::GenericHandle( ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) );
+    if (!hProcessSnap)
     {
         perror(L"CreateToolhelp32Snapshot()");
         return -1;
@@ -104,7 +100,7 @@ DWORD PWNAPI pwn::system::pidof(_In_ const std::wstring& name)
         PROCESSENTRY32W pe32 = { 0, };
         pe32.dwSize = sizeof(PROCESSENTRY32W);
 
-        if (!::Process32FirstW(hProcessSnap, &pe32))
+        if (!::Process32FirstW(hProcessSnap.get(), &pe32))
         {
             perror(L"Process32First()");
             break;
@@ -124,11 +120,10 @@ DWORD PWNAPI pwn::system::pidof(_In_ const std::wstring& name)
                 break;
             }
         }
-        while (::Process32NextW(hProcessSnap, &pe32));
+        while (::Process32NextW(hProcessSnap.get(), &pe32));
     } 
-    while (0);
+    while (false);
 
-    ::CloseHandle(hProcessSnap);
     return dwPid;
 }
 
