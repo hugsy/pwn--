@@ -12,6 +12,7 @@ using namespace pwn::log;
 #include <stdexcept>
 #include <shellapi.h>
 #include "utils.h"
+#include "handle.h"
 
 
 
@@ -449,7 +450,13 @@ BOOL pwn::process::is_elevated( _In_opt_ DWORD dwPid)
 
         TOKEN_ELEVATION TokenInfo = { 0 };
         DWORD dwReturnLength = 0;
-        if ( !::GetTokenInformation(hProcessToken, TokenElevation, &TokenInfo, sizeof(TOKEN_ELEVATION), &dwReturnLength) )
+        if ( !::GetTokenInformation(
+            hProcessToken, 
+            TokenElevation, 
+            &TokenInfo, 
+            sizeof(TOKEN_ELEVATION), 
+            &dwReturnLength
+        ))
         {
             perror(L"GetTokenInformation()");
             break;
@@ -482,7 +489,7 @@ BOOL pwn::process::add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_
         return FALSE;
     }
 
-    bRes = ::OpenProcessToken(hProcess, TOKEN_QUERY, &hToken);
+    bRes = ::OpenProcessToken(hProcess, TOKEN_ADJUST_PRIVILEGES, &hToken);
     if ( bRes )
     {
         LUID Luid = { 0, };
@@ -491,9 +498,10 @@ BOOL pwn::process::add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_
         if ( bRes )
         {
             size_t nBufferSize = sizeof(TOKEN_PRIVILEGES) + 1 * sizeof(LUID_AND_ATTRIBUTES);
-            PTOKEN_PRIVILEGES NewState = (PTOKEN_PRIVILEGES)LocalAlloc(LPTR, nBufferSize);
-            if ( NewState )
+            auto buffer = std::make_unique<std::byte[]>(nBufferSize);
+            if ( buffer )
             {
+                auto NewState = (PTOKEN_PRIVILEGES)buffer.get();
                 NewState->PrivilegeCount = 1;
                 NewState->Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
                 NewState->Privileges[0].Luid = Luid;
@@ -509,8 +517,6 @@ BOOL pwn::process::add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_
 
                 if ( bRes )
                     bRes = GetLastError() != ERROR_NOT_ALL_ASSIGNED;
-
-                LocalFree(NewState);
             }
         }
 
@@ -540,10 +546,16 @@ BOOL pwn::process::has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt
 {
     LUID Luid = { 0, };
     BOOL bRes = FALSE, bHasPriv = FALSE;
-    HANDLE hToken = INVALID_HANDLE_VALUE;
+    HANDLE hToken = nullptr;
 
-    HANDLE hProcess = dwPid ? ::OpenProcess(PROCESS_QUERY_INFORMATION, false, dwPid) : ::GetCurrentProcess();
-    if ( hProcess == nullptr )
+    if (!dwPid)
+        dwPid = ::GetCurrentProcessId();
+
+    auto hProcess = pwn::generic::GenericHandle(
+        ::OpenProcess(PROCESS_QUERY_INFORMATION, false, dwPid)
+    );
+
+    if ( !hProcess)
     {
         perror(L"OpenProcess()");
         return FALSE;
@@ -551,7 +563,7 @@ BOOL pwn::process::has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt
 
     do
     {
-        dbg(L"Checking for '%s' for PID=%d...\n", lpwszPrivilegeName, dwPid ? dwPid : ::GetCurrentProcessId());
+        dbg(L"Checking for '%s' for PID=%d...\n", lpwszPrivilegeName, dwPid);
 
         bRes = LookupPrivilegeValue(NULL, lpwszPrivilegeName, &Luid);
         if ( !bRes )
@@ -568,7 +580,7 @@ BOOL pwn::process::has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt
         PrivSet.PrivilegeCount = 1;
         PrivSet.Privilege[0] = PrivAttr;
 
-        bRes = ::OpenProcessToken(hProcess, TOKEN_QUERY, &hToken);
+        bRes = ::OpenProcessToken(hProcess.get(), TOKEN_QUERY, &hToken);
         if ( !bRes )
         {
             perror(L"OpenProcessToken");
@@ -589,9 +601,6 @@ BOOL pwn::process::has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt
 
     if ( hToken != nullptr )
         ::CloseHandle(hToken);
-
-    if (hProcess != nullptr)
-        ::CloseHandle(hProcess);
 
     return bRes;
 }
@@ -693,11 +702,12 @@ pwn::process::appcontainer::AppContainer::AppContainer(
     //
     // build the startup info
     //   
-    SIZE_T size;
-    m_StartupInfo.StartupInfo.cb = sizeof(STARTUPINFOEX);
-    if (!::InitializeProcThreadAttributeList(nullptr, 1, 0, &size))
+    SIZE_T size=0;
+    ::InitializeProcThreadAttributeList(nullptr, 1, 0, &size);
+    if(!size)
         throw std::runtime_error("InitializeProcThreadAttributeList() failed");
 
+    m_StartupInfo.StartupInfo.cb = sizeof(STARTUPINFOEX);
     m_StartupInfo.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)::new byte[size];
 
     if (!::InitializeProcThreadAttributeList(m_StartupInfo.lpAttributeList, 1, 0, &size))

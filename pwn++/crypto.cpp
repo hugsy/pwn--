@@ -60,28 +60,26 @@ DWORD64 pwn::crypto::crc64(std::vector<BYTE> const& data)
 }
 
 
-// todo: implem sha1, sha256, sha512 with cryptoapi 
 template <typename T>
 static T __calc_hash(std::vector<BYTE> const& data, DWORD dwHashAlgVariant, DWORD dwProvider)
 {
 	T out = {};
-	auto n = data.size();
+	DWORD n = data.size() & 0xffffffff;
 	HCRYPTPROV hProv = 0;
 	HCRYPTHASH hHash = 0;
-	DWORD cbHash = out.size();
-
+	DWORD cbHash = out.size() & 0xffffffff;
 
 	if (CryptAcquireContext(&hProv, nullptr, nullptr, dwProvider, CRYPT_VERIFYCONTEXT))
 	{
-		if (CryptCreateHash(hProv, dwHashAlgVariant, 0, 0, &hHash))
+		if (::CryptCreateHash(hProv, dwHashAlgVariant, 0, 0, &hHash))
 		{
-			if (CryptHashData(hHash, data.data(), n, 0))
+			if (::CryptHashData(hHash, data.data(), n, 0))
 			{
-				CryptGetHashParam(hHash, HP_HASHVAL, &out[0], &cbHash, 0);
+				::CryptGetHashParam(hHash, HP_HASHVAL, &out[0], &cbHash, 0);
 			}
-			CryptDestroyHash(hHash);
+			::CryptDestroyHash(hHash);
 		}
-		CryptReleaseContext(hProv, 0);
+		::CryptReleaseContext(hProv, 0);
 	}
 	return out;
 }
