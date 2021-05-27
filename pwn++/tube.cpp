@@ -71,18 +71,51 @@ std::vector<BYTE> Tube::recvline()
 }
 
 
+static bool __bReplLoop = false;
+
+
+_Success_(return)
+static BOOL WINAPI __pwn_interactive_repl_sighandler(_In_ DWORD signum)
+{
+	switch (signum)
+	{
+		case CTRL_C_EVENT:
+			__bReplLoop = false;
+			break;
+
+		default:
+			break;
+	}
+		
+	return TRUE;
+}
+
+
 void Tube::interactive()
 {
-	bool bDoLoop = true;
+	__bReplLoop = false;
+ 
+	::SetConsoleCtrlHandler(__pwn_interactive_repl_sighandler, true);
 
-	while (bDoLoop)
+	while (__bReplLoop)
 	{
 		std::string cmd;
 		std::cout << ">>> ";
 		std::cin >> cmd;
 
+		if (cmd == "quit")
+			break;
+
 		send(cmd);
-		std::cout << "<<< " << std::endl;
-		pwn::utils::hexdump(recvline());
+		
+		while (true)
+		{
+			auto res = recvline();
+			if (res.empty() || res.at(0) == PWN_LINESEP)
+				break;
+			std::cout << std::string(res.begin(), res.end());
+		}
 	}
+
+	::SetConsoleCtrlHandler(nullptr, true);
 }

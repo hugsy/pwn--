@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <queue>
 #include <iostream>
+#include <functional>
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -52,7 +53,8 @@ public:
 	PWNAPI std::vector<BYTE> recvline();
 
 	/// <summary>
-	/// Basic repl
+	/// Basic REPL.
+	/// TODO: improve
 	/// </summary>
 	/// <returns></returns>
 	PWNAPI void interactive();
