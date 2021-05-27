@@ -33,6 +33,8 @@ namespace pwn::utils
 
 	PWNAPI std::wstring string_to_widestring(_In_ const std::string& s);
 	PWNAPI std::string widestring_to_string(_In_ const std::wstring& ws);
+	PWNAPI std::vector<BYTE> wstring_to_bytes(_In_ const std::wstring& str);
+	PWNAPI std::vector<BYTE> string_to_bytes(_In_ std::string const& str);
 	PWNAPI std::wstring to_widestring(_In_ const char* str);
 	PWNAPI std::vector<std::wstring> split(_In_ const std::wstring& ws, _In_ const wchar_t delim);
 	PWNAPI std::wstring join(_In_ const std::vector<std::wstring>& args);
@@ -55,8 +57,9 @@ namespace pwn::utils
 	PWNAPI std::vector<BYTE> flatten(_In_ const std::vector<flattenable_t>& args);
 	
 	PWNAPI BOOL cyclic(_In_ DWORD dwSize, _In_ DWORD dwPeriod, _Out_ std::vector<BYTE>& buffer);
+	PWNAPI std::vector<BYTE> cyclic(_In_ DWORD dwSize, _In_ DWORD dwPeriod);
 	PWNAPI BOOL cyclic(_In_ DWORD dwSize, _Out_ std::vector<BYTE>& buffer);
-	PWNAPI BOOL cyclic(_In_ DWORD dwSize, _Out_ std::vector<BYTE>& buffer);
+	PWNAPI std::vector<BYTE> cyclic(_In_ DWORD dwSize);
 
 	PWNAPI void hexdump(_In_ const PBYTE Buffer, _In_ SIZE_T BufferSize);
 	PWNAPI void hexdump(_In_ const std::vector<BYTE>& bytes);

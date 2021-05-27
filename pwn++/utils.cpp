@@ -3,10 +3,13 @@
 #include "log.h"
 
 #include <stdio.h>
+#include <time.h>
+
 #include <type_traits>
 #include <iostream>
 #include <sstream>
-#include <time.h>
+#include <algorithm>
+
 
 
 extern HANDLE pwn::log::g_ConsoleMutex;
@@ -355,14 +358,11 @@ namespace pwn::utils
 		return out;
 	}
 
-		
-	std::wstring join(_In_ const std::vector<std::wstring>& args)
+
+	std::wstring join(_In_ const std::vector<std::wstring>& args) // todo: replace w/ c++17 variadic
 	{
 		std::wstring res;
-		for (const auto& arg : args)
-		{
-			res.append(arg);
-		}
+		for (auto const& arg : args) res.append(arg);
 		return res;
 	}
 
@@ -401,7 +401,7 @@ namespace pwn::utils
 	}
 
 
-	std::vector<BYTE> wstring_to_bytes(_In_ const std::wstring& str)
+	std::vector<BYTE> wstring_to_bytes(_In_ std::wstring const& str)
 	{
 		std::vector<BYTE> out;
 		for (auto i = 0; i < str.size(); i++)
@@ -409,6 +409,17 @@ namespace pwn::utils
 			out.push_back((BYTE)str[i]);
 			out.push_back(0x00);
 		}
+		return out;
+	}
+
+	std::vector<BYTE> string_to_bytes(_In_ std::string const& str)
+	{
+		std::vector<BYTE> out;
+		std::transform(str.begin(), str.end(), std::back_inserter(out),
+			[](char const c)
+			{
+				return c;
+			});
 		return out;
 	}
 
@@ -429,9 +440,27 @@ namespace pwn::utils
 	}
 
 
+	std::vector<BYTE> cyclic(_In_ DWORD dwSize, _In_ DWORD dwPeriod)
+	{
+		std::vector<BYTE> buffer;
+		if (cyclic(dwSize, dwPeriod, buffer))
+			return buffer;
+		throw std::runtime_error("cyclic failed");
+	}
+
+
 	BOOL cyclic(_In_ DWORD dwSize, _Out_ std::vector<BYTE>& buffer)
 	{
 		return cyclic(dwSize, pwn::context::ptrsize, buffer);
+	}
+
+
+	std::vector<BYTE> cyclic(_In_ DWORD dwSize)
+	{
+		std::vector<BYTE> buffer;
+		if (cyclic(dwSize, pwn::context::ptrsize, buffer))
+			return buffer;
+		throw std::runtime_error("cyclic failed");
 	}
 
 

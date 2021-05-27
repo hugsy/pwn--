@@ -60,15 +60,15 @@ namespace pwn::process
 			PWNAPI AppContainer(_In_ const std::wstring& container_name, _In_ const std::wstring& executable_path, _In_ const std::vector<WELL_KNOWN_SID_TYPE>& DesiredCapabilities = {});
 			PWNAPI ~AppContainer();
 
-			PWNAPI BOOL allow_file_or_directory(_In_ const wchar_t* file_or_directory_name);
-			PWNAPI BOOL allow_file_or_directory(_In_ const std::wstring& file_or_directory_name);
+			_Success_(return) PWNAPI BOOL allow_file_or_directory(_In_ const wchar_t* file_or_directory_name);
+			_Success_(return) PWNAPI BOOL allow_file_or_directory(_In_ const std::wstring& file_or_directory_name);
 
-			PWNAPI BOOL allow_registry_key(_In_ const wchar_t* regkey);
-			PWNAPI BOOL allow_registry_key(_In_ const std::wstring& regkey);
+			_Success_(return) PWNAPI BOOL allow_registry_key(_In_ const wchar_t* regkey);
+			_Success_(return) PWNAPI BOOL allow_registry_key(_In_ const std::wstring& regkey);
 
-			PWNAPI BOOL spawn();
-			PWNAPI BOOL restore_acls();
-			PWNAPI BOOL join(_In_ DWORD dwTimeout = INFINITE);
+			_Success_(return) PWNAPI BOOL spawn();
+			_Success_(return) PWNAPI BOOL restore_acls();
+			_Success_(return) PWNAPI BOOL join(_In_ DWORD dwTimeout = INFINITE);
 
 
 

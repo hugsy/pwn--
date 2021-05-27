@@ -1,4 +1,4 @@
-
+﻿
 #include <stdio.h>
 #include <string>
 #include <vector>
@@ -22,19 +22,34 @@ namespace pwn::log
 	{
 		assert(g_ConsoleMutex != INVALID_HANDLE_VALUE);
 
-		if ( level < pwn::context::log_level )
+		if ( level < pwn::context::__log_level)
 			return;
 
 		const wchar_t* prio;
 		switch (level)
 		{
-		case log_level_t::LOG_DEBUG:      prio = COLOR_BOLD                    L"[DEBUG] " COLOR_RESET; break;
-		case log_level_t::LOG_INFO:       prio = COLOR_BOLD COLOR_FG_CYAN      L"[*] "     COLOR_RESET; break;
-		case log_level_t::LOG_SUCCESS:    prio = COLOR_BOLD COLOR_FG_GREEN     L"[+] "     COLOR_RESET; break;
-		case log_level_t::LOG_WARNING:    prio = COLOR_BOLD COLOR_FG_YELLOW    L"[!] "     COLOR_RESET; break;
-		case log_level_t::LOG_ERROR:      prio = COLOR_BOLD COLOR_FG_RED       L"[-] "     COLOR_RESET; break;
-		case log_level_t::LOG_CRITICAL:   prio = COLOR_BOLD COLOR_FG_MAGENTA   L"/!\\ "    COLOR_RESET; break;
-		default:                          return;
+		case log_level_t::LOG_DEBUG:      
+			prio = COLOR_BOLD L"[DEBUG] " COLOR_RESET; 
+			break;
+
+		case log_level_t::LOG_INFO:       
+			prio = COLOR_BOLD COLOR_FG_CYAN L"[INFO] " COLOR_RESET; 
+			break;
+
+		case log_level_t::LOG_WARNING:    
+			prio = COLOR_BOLD COLOR_FG_YELLOW    L"[WARN] "     COLOR_RESET; 
+			break;
+		
+		case log_level_t::LOG_ERROR:      
+			prio = COLOR_BOLD COLOR_FG_RED       L"[ERROR] "     COLOR_RESET; 
+			break;
+		
+		case log_level_t::LOG_CRITICAL:   
+			prio = COLOR_BOLD COLOR_FG_MAGENTA   L"[CRITICAL] "    COLOR_RESET; 
+			break;
+		
+		default:                          
+			return;
 		}
 
 		size_t fmt_len = wcslen(args_list) + wcslen(prio) + 2;
@@ -57,9 +72,7 @@ namespace pwn::log
 		::ReleaseMutex(g_ConsoleMutex);
 		
 		if (level == log_level_t::LOG_DEBUG)
-		{
 			::OutputDebugStringW(fmt.get());
-		}
 	}
 
 

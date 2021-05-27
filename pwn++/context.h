@@ -27,7 +27,7 @@ namespace pwn::context
 	
 	PWNAPI BOOL set_arch(_In_ arch_t new_arch);
 
-	extern PWNAPI pwn::log::log_level_t log_level;
+	extern PWNAPI pwn::log::log_level_t __log_level;
 	PWNAPI BOOL set_log_level(_In_ pwn::log::log_level_t new_level);
 
 	extern PWNAPI DWORD ptrsize;

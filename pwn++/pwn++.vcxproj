@@ -187,6 +187,7 @@
     <ClInclude Include="service.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="thread.h" />
+    <ClInclude Include="tube.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -209,6 +210,7 @@
     <ClCompile Include="service.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="thread.cpp" />
+    <ClCompile Include="tube.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>

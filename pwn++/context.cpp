@@ -47,13 +47,22 @@ namespace pwn::context
 	}
 
 
-	PWNAPI pwn::log::log_level_t log_level = pwn::log::log_level_t::LOG_INFO;
+	/// <summary>
+	/// Default log level defined here to Info
+	/// </summary>
+	PWNAPI pwn::log::log_level_t __log_level = pwn::log::log_level_t::LOG_INFO;
 	
 	BOOL set_log_level(_In_ pwn::log::log_level_t new_level)
 	{
-		log_level = new_level;
+		__log_level = new_level;
 		dbg(L"log_level set to %d\n", new_level);
 		return TRUE;
+	}
+
+
+	const wchar_t* log_level()
+	{
+		return L"";
 	}
 
 }

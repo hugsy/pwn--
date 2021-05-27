@@ -31,21 +31,28 @@
 #endif
 
 
+#define _PWN_LOG_LEVEL_DEBUG 0
+#define _PWN_LOG_LEVEL_INFO 1
+#define _PWN_LOG_LEVEL_WARN 2
+#define _PWN_LOG_LEVEL_ERROR 3
+#define _PWN_LOG_LEVEL_CRITICAL 4
+
+
 namespace pwn::log
 {
 	extern PWNAPI HANDLE g_ConsoleMutex;
 
 	enum class log_level_t
 	{
-		LOG_DEBUG = 0,
-		LOG_INFO = 1,
-		LOG_OK = 2,
-		LOG_SUCCESS = 2,
-		LOG_WARN = 3,
-		LOG_WARNING = 3,
-		LOG_ERR = 4,
-		LOG_ERROR = 4,
-		LOG_CRITICAL = 5
+		LOG_DEBUG = _PWN_LOG_LEVEL_DEBUG,
+		LOG_INFO = _PWN_LOG_LEVEL_INFO,
+		LOG_OK = _PWN_LOG_LEVEL_INFO,
+		LOG_SUCCESS = _PWN_LOG_LEVEL_INFO,
+		LOG_WARN = _PWN_LOG_LEVEL_WARN,
+		LOG_WARNING = _PWN_LOG_LEVEL_WARN,
+		LOG_ERR = _PWN_LOG_LEVEL_ERROR,
+		LOG_ERROR = _PWN_LOG_LEVEL_ERROR,
+		LOG_CRITICAL = _PWN_LOG_LEVEL_CRITICAL
 	};
 
 	void PWNAPI xlog(_In_ log_level_t level, _In_ const wchar_t* args_list, ...);
