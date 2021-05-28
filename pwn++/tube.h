@@ -51,6 +51,11 @@ public:
 	/// Read from tube until receiving a LF character, and return it.
 	/// </summary>	
 	PWNAPI std::vector<BYTE> recvline();
+	
+	/// <summary>
+	/// Peek into the tube to see if any data is available.
+	/// </summary>
+	PWNAPI size_t peek();
 
 	/// <summary>
 	/// Basic REPL.
@@ -67,6 +72,7 @@ protected:
 
 	virtual size_t __send_internal(_In_ std::vector<BYTE> const& data) = 0;
 	virtual std::vector<BYTE> __recv_internal(_In_ size_t size) = 0;
+	virtual size_t __peek_internal() = 0;
 
 	std::vector<BYTE> m_receive_buffer;
 	std::vector<BYTE> m_send_buffer;
@@ -97,7 +103,7 @@ public:
 
 
 protected:
-	PWNAPI size_t __send_internal(_In_ std::vector<BYTE> const& out) override
+	size_t __send_internal(_In_ std::vector<BYTE> const& out) override
 	{
 		auto res = ::send(
 			m_socket,
@@ -117,7 +123,7 @@ protected:
 	}
 
 
-	PWNAPI std::vector<BYTE> __recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) override
+	std::vector<BYTE> __recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) override
 	{
 		std::vector<BYTE> in;
 		size_t idx = 0;
@@ -142,7 +148,7 @@ protected:
 			// check if the buffer is already full with data from cache
 			if (in.size() >= size)
 			{
-				dbg(L"<< %d bytes\n", in.size());
+				dbg(L"recv2 %d bytes\n", in.size());
 				return in;
 			}
 
@@ -151,18 +157,34 @@ protected:
 			idx = sz;
 		}
 
-		in.resize(in.size() + size);
+		in.reserve(in.size() + size);
 
-		if (::recv(m_socket, reinterpret_cast<char*>(&in[idx]), (u32)size, 0) == SOCKET_ERROR)
+		auto res = ::recv(m_socket, reinterpret_cast<char*>(&in[idx]), (u32)size, 0);
+		if (res == SOCKET_ERROR)
 		{
 			pwn::log::perror(L"recv()");
 			throw std::runtime_error("::recv() failed");
 		}
 		else
 		{
-			dbg(L"<< %d bytes\n", in.size());
+			size_t sz = in.size() + res;
+			in.resize(sz);
+			dbg(L"recv %d bytes\n", sz);
 		}
 		return in;
+	}
+
+	size_t __peek_internal() override
+	{
+		auto buf = std::make_unique<BYTE[]>(PWN_TUBE_PIPE_DEFAULT_SIZE);
+		auto res = ::recv(m_socket, reinterpret_cast<char*>(buf.get()), PWN_TUBE_PIPE_DEFAULT_SIZE, MSG_PEEK);
+		if (res == SOCKET_ERROR)
+		{
+			pwn::log::perror(L"recv()");
+			throw std::runtime_error("::recv() failed");
+		}
+
+		return res;
 	}
 
 
@@ -183,7 +205,6 @@ private:
 			// TODO: supporter d'autres proto
 		else
 			throw std::invalid_argument("m_protocol");
-
 
 		if (m_socket == INVALID_SOCKET) 
 		{

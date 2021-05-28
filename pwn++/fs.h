@@ -23,6 +23,12 @@ interesting locations from link target
 namespace pwn::fs
 {
 	_Success_(return != nullptr)
+	PWNAPI HANDLE open(
+		_In_ std::wstring const& path,
+		_In_ std::wstring const& perm = L"rw"
+	);
+
+	_Success_(return != nullptr)
 	PWNAPI HANDLE touch(
 		_In_ const std::wstring& path
 	);

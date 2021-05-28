@@ -71,6 +71,12 @@ std::vector<BYTE> Tube::recvline()
 }
 
 
+size_t Tube::peek()
+{
+	return __peek_internal();
+}
+
+
 static bool __bReplLoop = false;
 
 
@@ -80,7 +86,9 @@ static BOOL WINAPI __pwn_interactive_repl_sighandler(_In_ DWORD signum)
 	switch (signum)
 	{
 		case CTRL_C_EVENT:
+			dbg(L"Stopping interactive mode...\n");
 			__bReplLoop = false;
+			::ExitProcess(0);
 			break;
 
 		default:
@@ -93,9 +101,11 @@ static BOOL WINAPI __pwn_interactive_repl_sighandler(_In_ DWORD signum)
 
 void Tube::interactive()
 {
-	__bReplLoop = false;
+	__bReplLoop = true;
  
 	::SetConsoleCtrlHandler(__pwn_interactive_repl_sighandler, true);
+
+	ok(L"Entering interactive mode...\n");
 
 	while (__bReplLoop)
 	{
@@ -106,16 +116,27 @@ void Tube::interactive()
 		if (cmd == "quit")
 			break;
 
-		send(cmd);
+		sendline(cmd);
 		
 		while (true)
 		{
-			auto res = recvline();
-			if (res.empty() || res.at(0) == PWN_LINESEP)
+			try
+			{
+				auto nb = peek();
+				if (nb == 0)
+					break;
+				
+				auto in = recv(nb);
+				std::cout << std::string(in.begin(), in.end());
+			}
+			catch (...)
+			{
 				break;
-			std::cout << std::string(res.begin(), res.end());
+			}
 		}
 	}
 
 	::SetConsoleCtrlHandler(nullptr, true);
+
+	ok(L"Leaving interactive mode...\n");
 }

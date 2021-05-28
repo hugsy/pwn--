@@ -32,6 +32,39 @@ extern "C"
 
 
 _Success_(return != nullptr)
+HANDLE pwn::fs::open(_In_ std::wstring const& path, _In_ std::wstring const& perm)
+{
+	DWORD dwPerm = 0;
+	if (perm.find(L"r") != std::wstring::npos) dwPerm |= GENERIC_READ;
+	if (perm.find(L"w") != std::wstring::npos) dwPerm |= GENERIC_WRITE;
+
+	HANDLE hFile = ::CreateFile(
+		path.c_str(),
+		dwPerm,
+		0x00000000,
+		nullptr,
+		CREATE_NEW,
+		FILE_ATTRIBUTE_NORMAL,
+		nullptr
+	);
+	if (hFile == INVALID_HANDLE_VALUE && ::GetLastError() == ERROR_FILE_EXISTS)
+	{
+		hFile = ::CreateFile(
+			path.c_str(),
+			dwPerm,
+			0x00000000,
+			nullptr,
+			(perm.find(L"-") != std::wstring::npos) ? OPEN_EXISTING | TRUNCATE_EXISTING : OPEN_EXISTING,
+			FILE_ATTRIBUTE_NORMAL,
+			nullptr
+		);
+	}
+	
+	return hFile;
+}
+
+
+_Success_(return != nullptr)
 HANDLE pwn::fs::touch(_In_ const std::wstring & path)
 {
 	return ::CreateFile(
