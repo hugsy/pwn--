@@ -247,7 +247,7 @@ std::wstring pwn::fs::make_tmpdir(_In_ int level)
 _Success_(return)
 bool pwn::fs::watch_dir(_In_ const std::wstring& name, _In_ std::function<bool(PFILE_NOTIFY_INFORMATION)> cbFunctor, _In_ bool watch_subtree)
 {
-	auto h = pwn::generic::GenericHandle(
+	auto h = pwn::utils::GenericHandle(
 		::CreateFileW(
 			name.c_str(),
 			GENERIC_READ,

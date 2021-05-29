@@ -551,7 +551,7 @@ BOOL pwn::process::has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt
     if (!dwPid)
         dwPid = ::GetCurrentProcessId();
 
-    auto hProcess = pwn::generic::GenericHandle(
+    auto hProcess = pwn::utils::GenericHandle(
         ::OpenProcess(PROCESS_QUERY_INFORMATION, false, dwPid)
     );
 

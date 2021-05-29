@@ -5,7 +5,7 @@
 
 namespace pwn::service
 {
-	class ServiceHandle : public pwn::generic::GenericHandle<SC_HANDLE>
+	class ServiceHandle : public pwn::utils::GenericHandle<SC_HANDLE>
 	{
 	public:
 		using GenericHandle<SC_HANDLE>::GenericHandle;

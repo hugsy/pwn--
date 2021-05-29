@@ -3,7 +3,7 @@
 #include "common.h"
 
 
-namespace pwn::generic
+namespace pwn::utils
 {
 	template <class T>
 	class GenericHandle

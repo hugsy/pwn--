@@ -22,7 +22,7 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 	info(L"found '%s' pid=%lu\n", argv[1], ppid);
 	if (pwn::process::execv(L"cmd.exe", ppid, &hProcess))
 	{
-		auto h = pwn::generic::GenericHandle(hProcess);
+		auto h = pwn::utils::GenericHandle(hProcess);
 		::WaitForSingleObject(h.get(), INFINITE);
 	}
 

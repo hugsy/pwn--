@@ -40,7 +40,7 @@ DWORD pwn::system::pid(_In_ HANDLE hProcess)
 
 DWORD pwn::system::ppid(_In_ DWORD dwProcessId)
 {
-    auto hProcessSnap = pwn::generic::GenericHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+    auto hProcessSnap = pwn::utils::GenericHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
     if (!hProcessSnap)
     {
         perror(L"CreateToolhelp32Snapshot()");
@@ -86,7 +86,7 @@ Returns:
  --*/
 DWORD PWNAPI pwn::system::pidof(_In_ const std::wstring& name)
 {
-    auto hProcessSnap = pwn::generic::GenericHandle( ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) );
+    auto hProcessSnap = pwn::utils::GenericHandle( ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) );
     if (!hProcessSnap)
     {
         perror(L"CreateToolhelp32Snapshot()");

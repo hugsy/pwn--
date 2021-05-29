@@ -31,7 +31,7 @@ DWORD WINAPI HandleClientThread(LPVOID lpThreadParams)
     if(lpThreadParams == nullptr)
         return ERROR_INVALID_PARAMETER;
 
-    auto hPipe = pwn::generic::GenericHandle(
+    auto hPipe = pwn::utils::GenericHandle(
         reinterpret_cast<HANDLE>( lpThreadParams )
     );
 
@@ -110,7 +110,7 @@ bool pwn::thread::start_backdoor()
 
        DWORD  dwThreadId = 0;
 
-       auto hThread = pwn::generic::GenericHandle( 
+       auto hThread = pwn::utils::GenericHandle( 
            ::CreateThread(
                 nullptr,
                 0,
@@ -146,7 +146,7 @@ std::unique_ptr<std::wstring> pwn::thread::get_name()
 _Success_(return)
 bool pwn::thread::set_name(_In_ DWORD dwThreadId, _In_ const std::wstring& name)
 {
-    auto hThread = pwn::generic::GenericHandle(
+    auto hThread = pwn::utils::GenericHandle(
         ::OpenThread(THREAD_SET_LIMITED_INFORMATION, FALSE, dwThreadId)
     );
     if (!hThread)
@@ -170,7 +170,7 @@ bool pwn::thread::set_name(_In_ DWORD dwThreadId, _In_ const std::wstring& name)
 _Success_(return)
 bool pwn::thread::set_name(_In_ DWORD dwThreadId, _In_ const PBYTE lpBuffer, _In_ WORD wBufferLength)
 {
-    auto hThread = pwn::generic::GenericHandle(
+    auto hThread = pwn::utils::GenericHandle(
         ::OpenThread(THREAD_SET_LIMITED_INFORMATION, FALSE, dwThreadId)
     );
     if (!hThread)
