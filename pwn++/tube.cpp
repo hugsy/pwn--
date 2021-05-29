@@ -43,9 +43,9 @@ std::vector<BYTE> Tube::recvuntil(_In_ std::vector<BYTE> const& pattern)
 		// append new data received from the pipe
 		{
 			auto in2 = recv(PWN_TUBE_PIPE_DEFAULT_SIZE);
-			if (in2.empty()) 
-				return {};
-			in.insert(in.begin(), in2.begin(), in2.end());
+			if (in2.empty())
+				continue;
+			std::copy(in2.begin(), in2.end(), std::back_inserter(in));
 		}
 
 		// look for the pattern
@@ -62,10 +62,7 @@ std::vector<BYTE> Tube::recvuntil(_In_ std::vector<BYTE> const& pattern)
 
 				for (auto j = 0; j < sz; j++)
 				{
-					auto c1 = pattern.at(j);
-					auto c2 = in.at( (i - sz) + j);
-					dbg(L"[%d] c1=%x == c2=%x\n", idx, c1, c2);
-					if (pattern.at(j) != in.at(i-sz))
+					if (pattern.at(j) != in.at( (i-sz) + j))
 						return false;
 				}
 
@@ -84,16 +81,22 @@ std::vector<BYTE> Tube::recvuntil(_In_ std::vector<BYTE> const& pattern)
 				in.begin() + idx,
 				in.end()
 			);
-
+			        
 			return in;
 		}
 	}
 }
 
 
+std::vector<BYTE> Tube::recvuntil(_In_ std::string const& pattern)
+{
+	return recvuntil(pwn::utils::string_to_bytes(pattern));
+}
+
+
 std::vector<BYTE> Tube::recvline()
 {
-	return recvuntil({ PWN_LINESEP });
+	return recvuntil(std::vector<BYTE>{PWN_LINESEP});
 }
 
 
@@ -138,8 +141,6 @@ void Tube::interactive()
 	std::thread remote([&]() {
 		using namespace std::literals::chrono_literals;
 
-		dbg(L"starting thread %d\n", std::this_thread::get_id());
-
 		while (__bReplLoop)
 		{
 			while (true)
@@ -165,7 +166,7 @@ void Tube::interactive()
 	while (__bReplLoop)
 	{
 		std::string cmd;
-		std::cout << ">>> ";
+		std::cout << PWN_INTERACTIVE_PROMPT;
 		std::getline(std::cin, cmd);
 
 		if (cmd == "quit")

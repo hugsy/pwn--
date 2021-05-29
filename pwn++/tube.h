@@ -19,6 +19,7 @@
 
 #define PWN_TUBE_PIPE_DEFAULT_SIZE 1024
 #define PWN_LINESEP 0x0a // '\n'
+#define PWN_INTERACTIVE_PROMPT ">>> "
 
 
 class Tube
@@ -50,12 +51,13 @@ public:
 	PWNAPI size_t sendline(_In_ std::string const& str);
 
 	/// <summary>
-	/// 
+	/// Read from tube until receiving the given pattern, and return that data.
 	/// </summary>
 	PWNAPI std::vector<BYTE> recvuntil(_In_ std::vector<BYTE> const& pattern);
+	PWNAPI std::vector<BYTE> recvuntil(_In_ std::string const& pattern);
 
 	/// <summary>
-	/// Read from tube until receiving a LF character, and return it.
+	/// Read from tube until receiving a line separator and return it.
 	/// </summary>	
 	PWNAPI std::vector<BYTE> recvline();
 	

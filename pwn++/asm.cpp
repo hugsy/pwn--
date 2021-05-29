@@ -139,10 +139,10 @@ Returns:
     {
         switch (pwn::context::arch)
         {
-        case pwn::context::arch_t::x86:
+        case pwn::context::architecture_t::x86:
             return x86(code, code_size, bytes);
 
-        case pwn::context::arch_t::x64:
+        case pwn::context::architecture_t::x64:
             return x64(code, code_size, bytes);
 
         default:
@@ -158,10 +158,10 @@ Returns:
     {
         switch (pwn::context::arch)
         {
-            case pwn::context::arch_t::x86:
+            case pwn::context::architecture_t::x86:
                 return x86(code, code_size);
 
-            case pwn::context::arch_t::x64:
+            case pwn::context::architecture_t::x64:
                 return x64(code, code_size);
 
             default:
