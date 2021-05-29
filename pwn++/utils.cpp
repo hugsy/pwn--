@@ -532,4 +532,12 @@ namespace pwn::utils
 		return flat;
 	}
 
+
+	void pause()
+	{
+		dbg(L"Pausing, press enter to resume...\n");
+		::getchar();
+		::getchar();
+	}
+
 }

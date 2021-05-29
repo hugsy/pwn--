@@ -64,4 +64,5 @@ namespace pwn::utils
 	PWNAPI void hexdump(_In_ const PBYTE Buffer, _In_ SIZE_T BufferSize);
 	PWNAPI void hexdump(_In_ const std::vector<BYTE>& bytes);
 
+	PWNAPI void pause();
 }

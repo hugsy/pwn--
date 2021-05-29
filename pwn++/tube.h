@@ -48,6 +48,11 @@ public:
 	PWNAPI size_t sendline(_In_ std::string const& str);
 
 	/// <summary>
+	/// 
+	/// </summary>
+	PWNAPI std::vector<BYTE> recvuntil(_In_ std::vector<BYTE> const& pattern);
+
+	/// <summary>
 	/// Read from tube until receiving a LF character, and return it.
 	/// </summary>	
 	PWNAPI std::vector<BYTE> recvline();
@@ -113,19 +118,24 @@ protected:
 		);
 		if (res == SOCKET_ERROR)
 		{
-			err(L"send() function: %x\n", ::WSAGetLastError());
+			err(L"send() function: %#x\n", ::WSAGetLastError());
 			disconnect();
 			return 0;
 		}
 
 		dbg(L"sent %d bytes\n", out.size());
+		if (std::get<0>(pwn::context::get_log_level()) == pwn::log::log_level_t::LOG_DEBUG)
+		{
+			pwn::utils::hexdump(out);
+		}
+
 		return out.size();
 	}
 
 
 	std::vector<BYTE> __recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) override
 	{
-		std::vector<BYTE> in;
+		std::vector<BYTE> cache_data;
 		size_t idx = 0;
 
 		size = min(size, PWN_TUBE_PIPE_DEFAULT_SIZE);
@@ -137,7 +147,7 @@ protected:
 			std::copy(
 				m_receive_buffer.begin(),
 				m_receive_buffer.begin() + sz,
-				std::back_inserter(in)
+				std::back_inserter(cache_data)
 			);
 
 			m_receive_buffer.erase(
@@ -146,10 +156,14 @@ protected:
 			);
 
 			// check if the buffer is already full with data from cache
-			if (in.size() >= size)
+			if (cache_data.size() >= size)
 			{
-				dbg(L"recv2 %d bytes\n", in.size());
-				return in;
+				dbg(L"recv2 %d bytes\n", cache_data.size());
+				if (std::get<0>(pwn::context::get_log_level()) == pwn::log::log_level_t::LOG_DEBUG)
+				{
+					pwn::utils::hexdump(cache_data);
+				}
+				return cache_data;
 			}
 
 			// otherwise, read from network
@@ -157,9 +171,10 @@ protected:
 			idx = sz;
 		}
 
-		in.reserve(in.size() + size);
+		std::vector<BYTE> network_data(cache_data);
+		network_data.resize(cache_data.size() + size);
 
-		auto res = ::recv(m_socket, reinterpret_cast<char*>(&in[idx]), (u32)size, 0);
+		auto res = ::recv(m_socket, reinterpret_cast<char*>(&network_data[idx]), (u32)size, 0);
 		if (res == SOCKET_ERROR)
 		{
 			pwn::log::perror(L"recv()");
@@ -167,11 +182,15 @@ protected:
 		}
 		else
 		{
-			size_t sz = in.size() + res;
-			in.resize(sz);
+			size_t sz = cache_data.size() + res;
+			network_data.resize(sz);
 			dbg(L"recv %d bytes\n", sz);
+			if (std::get<0>(pwn::context::get_log_level()) == pwn::log::log_level_t::LOG_DEBUG)
+			{
+				pwn::utils::hexdump(&network_data[0], sz);
+			}
 		}
-		return in;
+		return network_data;
 	}
 
 	size_t __peek_internal() override
@@ -181,7 +200,7 @@ protected:
 		if (res == SOCKET_ERROR)
 		{
 			pwn::log::perror(L"recv()");
-			throw std::runtime_error("::recv() failed");
+			throw std::runtime_error("::peek() failed");
 		}
 
 		return res;
@@ -208,7 +227,7 @@ private:
 
 		if (m_socket == INVALID_SOCKET) 
 		{
-			err(L"socket() function: %ld\n", ::WSAGetLastError());
+			err(L"socket() function: %#x\n", ::WSAGetLastError());
 			cleanup();
 			return false;
 		}
@@ -246,7 +265,7 @@ private:
 
 		if (::closesocket(m_socket) == SOCKET_ERROR)
 		{
-			err(L"closesocket() failed: %ld\n", WSAGetLastError());
+			err(L"closesocket() failed: %ld\n", ::WSAGetLastError());
 			res = false;
 		}
 

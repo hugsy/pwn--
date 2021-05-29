@@ -33,13 +33,14 @@ size_t Tube::sendline(_In_ std::string const& str)
 }
 
 
-std::vector<BYTE> Tube::recvline()
+std::vector<BYTE> Tube::recvuntil(_In_ std::vector<BYTE> const& pattern)
 {
 	size_t idx = 0;
 	std::vector<BYTE> in;
 
 	while (true)
 	{
+		// append new data received from the pipe
 		{
 			auto in2 = recv(PWN_TUBE_PIPE_DEFAULT_SIZE);
 			if (in2.empty()) 
@@ -47,10 +48,29 @@ std::vector<BYTE> Tube::recvline()
 			in.insert(in.begin(), in2.begin(), in2.end());
 		}
 
+		// look for the pattern
 		if (std::find_if(
 			in.begin(),
 			in.end(),
-			[&idx](BYTE const& x) { idx++; return x == PWN_LINESEP; }
+			[&idx,&pattern, &in](BYTE const& x) { 			
+				idx++;
+				auto i = idx;
+				auto sz = pattern.size();
+
+				if (i < sz)
+					return false;
+
+				for (auto j = 0; j < sz; j++)
+				{
+					auto c1 = pattern.at(j);
+					auto c2 = in.at( (i - sz) + j);
+					dbg(L"[%d] c1=%x == c2=%x\n", idx, c1, c2);
+					if (pattern.at(j) != in.at(i-sz))
+						return false;
+				}
+
+				return true; 
+			}
 		) != in.end())
 		{
 			// line separator found, copy the rest of the buffer to the queue
@@ -68,6 +88,12 @@ std::vector<BYTE> Tube::recvline()
 			return in;
 		}
 	}
+}
+
+
+std::vector<BYTE> Tube::recvline()
+{
+	return recvuntil({ PWN_LINESEP });
 }
 
 
@@ -121,13 +147,12 @@ void Tube::interactive()
 		while (true)
 		{
 			try
-			{
-				auto nb = peek();
-				if (nb == 0)
+			{		
+				auto in = recv(PWN_TUBE_PIPE_DEFAULT_SIZE);
+				::printf("%s\n", &in[0]);
+
+				if (in.size() < PWN_TUBE_PIPE_DEFAULT_SIZE)
 					break;
-				
-				auto in = recv(nb);
-				std::cout << std::string(in.begin(), in.end());
 			}
 			catch (...)
 			{

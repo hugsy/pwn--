@@ -31,15 +31,24 @@ namespace pwn::context
 		{
 			// currently supported architectures
 			case arch_t::x64:
+				arch = arch_t::x64;
+				endian = endianess_t::little;
+				break;
+
 			case arch_t::x86:
+				arch = arch_t::x86;
+				endian = endianess_t::little;
+				break;
+
 			case arch_t::arm64:
+				arch = arch_t::arm64;
+				endian = endianess_t::little;
 				break;
 
 			default:
 				return FALSE;
 		}
 
-		arch = new_arch;
 		__update_ptrsize();
 		dbg(L"new architecture set to %d (ptrsz=%d)\n", new_arch, ptrsize);
 		// TODO: add hooks that triggers on arch change
@@ -59,10 +68,33 @@ namespace pwn::context
 		return TRUE;
 	}
 
-
-	const wchar_t* log_level()
+	PWNAPI const std::tuple<pwn::log::log_level_t, const wchar_t*> get_log_level()
 	{
-		return L"";
+		const wchar_t* str = L"";
+		switch (__log_level)
+		{
+			case pwn::log::log_level_t::LOG_DEBUG:  
+				str = L"LOG_LEVEL_DEBUG";
+				break;
+
+			case pwn::log::log_level_t::LOG_INFO:   
+				str = L"LOG_LEVEL_INFO";
+				break; 
+
+			case pwn::log::log_level_t::LOG_WARNING:
+				str = L"LOG_LEVEL_WARN";
+				break;
+
+			case pwn::log::log_level_t::LOG_ERROR: 
+				str = L"LOG_LEVEL_ERROR";
+				break;
+
+			case pwn::log::log_level_t::LOG_CRITICAL:
+				str = L"LOG_LEVEL_CRITICAL";
+				break;
+		}
+		
+		return std::tuple<pwn::log::log_level_t, const wchar_t*>  (__log_level, str);
 	}
 
 }
