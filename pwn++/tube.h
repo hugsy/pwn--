@@ -3,6 +3,7 @@
 #include "common.h"
 #include "log.h"
 #include "utils.h"
+#include "handle.h"
 
 #include <string>
 #include <iterator>
@@ -316,6 +317,122 @@ private:
 };
 
 
+class Process : public Tube
+{
+public:
+	Process(){}
+	~Process(){}
+
+protected:
+
+	size_t __send_internal(_In_ std::vector<BYTE> const& out) override
+	{
+		DWORD dwRead = 0;
+		auto bSuccess = ::WriteFile(
+			m_ChildPipeStdin,
+			&out[0], 
+			out.size() & 0xffffffff,
+			&dwRead, 
+			nullptr
+		);
+		if (!bSuccess)
+			pwn::log::perror(L"ReadFile()");
+
+		return dwRead;
+	}
+
+
+	std::vector<BYTE> __recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) override
+	{
+		DWORD dwRead;
+		std::vector<BYTE> out;
+
+		size = min(size, PWN_TUBE_PIPE_DEFAULT_SIZE) & 0xffffffff;
+		out.resize(size);
+
+		auto bSuccess = ::ReadFile(
+			m_ChildPipeStdout,
+			&out[0],
+			size & 0xffffffff,
+			&dwRead,
+			nullptr
+		);
+		if (!bSuccess)
+			pwn::log::perror(L"ReadFile()");
+
+		return out;
+	}
+
+
+	size_t __peek_internal() override
+	{
+		throw std::exception("not implemented");
+	}
+
+private:
+
+	bool create_pipes()
+	{
+		SECURITY_ATTRIBUTES sa = { 0 };
+		sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+		sa.bInheritHandle = true;
+		sa.lpSecurityDescriptor = nullptr;
+
+		return \
+			CreatePipe(&m_ParentStdin, &m_ChildPipeStdin, &sa, 0) && \
+			CreatePipe(&m_ParentStdout, &m_ChildPipeStdout, &sa, 0) && \
+			SetHandleInformation(m_ChildPipeStdout, HANDLE_FLAG_INHERIT, 0);
+	}
+
+
+	bool spawn_process()
+	{
+		if (!create_pipes())
+		{
+			err(L"failed to create pipes\n");
+			return false;
+		}
+
+		STARTUPINFO si = { 0 };
+		PROCESS_INFORMATION pi = {0};
+
+		si.cb = sizeof(STARTUPINFO);
+		si.hStdError = m_ChildPipeStdout;
+		si.hStdOutput = m_ChildPipeStdout;
+		si.hStdInput = m_ChildPipeStdin;
+		si.dwFlags |= STARTF_USESTDHANDLES;
+
+		if (::CreateProcessW(
+			nullptr,
+			m_commandline.data(),
+			nullptr,
+			nullptr,
+			true,
+			0,
+			nullptr,
+			nullptr,
+			&si,
+			&pi
+			))
+		{
+			m_hProcess = pwn::utils::GenericHandle(pi.hProcess);
+			::CloseHandle(pi.hThread);
+			return true;
+		}
+
+		return false;
+	}
+
+	std::wstring m_processname;
+	std::wstring m_commandline;
+
+	pwn::utils::GenericHandle<HANDLE> m_hProcess;
+
+	HANDLE m_ChildPipeStdin = INVALID_HANDLE_VALUE;
+	HANDLE m_ChildPipeStdout = INVALID_HANDLE_VALUE;
+	HANDLE m_ParentStdin = ::GetStdHandle(STD_INPUT_HANDLE);
+	HANDLE m_ParentStdout = ::GetStdHandle(STD_OUTPUT_HANDLE);
+};
 
 
 }
