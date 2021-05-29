@@ -10,6 +10,8 @@
 #include <queue>
 #include <iostream>
 #include <functional>
+#include <string>
+#include <thread>
 
 #include <winsock2.h>
 #include <ws2tcpip.h>

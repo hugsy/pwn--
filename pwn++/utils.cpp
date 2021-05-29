@@ -536,8 +536,7 @@ namespace pwn::utils
 	void pause()
 	{
 		dbg(L"Pausing, press enter to resume...\n");
-		::getchar();
-		::getchar();
+		std::cin.get();
 	}
 
 }

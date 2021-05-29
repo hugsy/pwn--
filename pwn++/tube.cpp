@@ -125,6 +125,7 @@ static BOOL WINAPI __pwn_interactive_repl_sighandler(_In_ DWORD signum)
 }
 
 
+
 void Tube::interactive()
 {
 	__bReplLoop = true;
@@ -133,33 +134,50 @@ void Tube::interactive()
 
 	ok(L"Entering interactive mode...\n");
 
+	// the `remote` thread reads and prints received data
+	std::thread remote([&]() {
+		using namespace std::literals::chrono_literals;
+
+		dbg(L"starting thread %d\n", std::this_thread::get_id());
+
+		while (__bReplLoop)
+		{
+			while (true)
+			{
+				try
+				{
+					auto in = recv(PWN_TUBE_PIPE_DEFAULT_SIZE);
+					std::cout << std::string(in.begin(), in.end());
+
+					if (in.size() < PWN_TUBE_PIPE_DEFAULT_SIZE)
+						break;
+
+					std::this_thread::sleep_for(0.1s); // for debug, remove later
+				}
+				catch (...)
+				{
+					break;
+				}
+			}
+		}
+	});
+
 	while (__bReplLoop)
 	{
 		std::string cmd;
 		std::cout << ">>> ";
-		std::cin >> cmd;
+		std::getline(std::cin, cmd);
 
 		if (cmd == "quit")
+		{
+			__bReplLoop = false;
 			break;
+		}
 
 		sendline(cmd);
-		
-		while (true)
-		{
-			try
-			{		
-				auto in = recv(PWN_TUBE_PIPE_DEFAULT_SIZE);
-				::printf("%s\n", &in[0]);
-
-				if (in.size() < PWN_TUBE_PIPE_DEFAULT_SIZE)
-					break;
-			}
-			catch (...)
-			{
-				break;
-			}
-		}
 	}
+
+	remote.join();
 
 	::SetConsoleCtrlHandler(nullptr, true);
 
