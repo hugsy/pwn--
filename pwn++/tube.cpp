@@ -100,6 +100,34 @@ std::vector<BYTE> Tube::recvline()
 }
 
 
+size_t Tube::sendafter(_In_ std::vector<BYTE> const& pattern, _In_ std::vector<BYTE> const& data)
+{
+	recvuntil(pattern);
+	return send(data);
+}
+
+
+size_t Tube::sendafter(_In_ std::string const& pattern, _In_ std::string const& data)
+{
+	recvuntil(pattern);
+	return send(data);
+}
+
+
+size_t Tube::sendlineafter(_In_ std::vector<BYTE> const& pattern, _In_ std::vector<BYTE> const& data)
+{
+	recvuntil(pattern);
+	return sendline(data);
+}
+
+
+size_t Tube::sendlineafter(_In_ std::string const& pattern, _In_ std::string const& data)
+{
+	recvuntil(pattern);
+	return sendline(data);
+}
+
+
 size_t Tube::peek()
 {
 	return __peek_internal();

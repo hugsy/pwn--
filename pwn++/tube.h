@@ -60,7 +60,25 @@ public:
 	/// Read from tube until receiving a line separator and return it.
 	/// </summary>	
 	PWNAPI std::vector<BYTE> recvline();
-	
+
+	/// <summary>
+	/// Convenience function combining in one call recvuntil() + send()
+	/// </summary>
+	/// <param name="pattern"></param>
+	/// <param name="data"></param>
+	/// <returns></returns>
+	PWNAPI size_t sendafter(_In_ std::string const& pattern, _In_ std::string const& data);
+	PWNAPI size_t sendafter(_In_ std::vector<BYTE> const& pattern, _In_ std::vector<BYTE> const& data);
+
+	/// <summary>
+	/// Convenience function combining in one call recvuntil() + sendline()
+	/// </summary>
+	/// <param name="pattern"></param>
+	/// <param name="data"></param>
+	/// <returns></returns>
+	PWNAPI size_t sendlineafter(_In_ std::string const& pattern, _In_ std::string const& data);
+	PWNAPI size_t sendlineafter(_In_ std::vector<BYTE> const& pattern, _In_ std::vector<BYTE> const& data);
+
 	/// <summary>
 	/// Peek into the tube to see if any data is available.
 	/// </summary>

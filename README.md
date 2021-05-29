@@ -486,6 +486,8 @@ void wmain()
 
 ### Kernel stuff
 
+Namespace: `pwn::kernel`
+
 #### Enumerate driver modules
 
 ```cpp
@@ -522,6 +524,8 @@ void wmain()
 
 
 ### Service
+
+Namespace: `pwn::windows::service`
 
 #### Enumerate
 
