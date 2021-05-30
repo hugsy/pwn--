@@ -65,7 +65,7 @@ auto wmain() -> int
 	ctx::set_arch(pwn::context::arch_t::x64);
 
 	dbg(L"The default log_level is INFO, this message will never appear!\n");
-	ctx:set_log_level(pwn::log::log_level_t::LOG_DEBUG);
+	ctx::set_log_level(pwn::log::log_level_t::LOG_DEBUG);
 	dbg(L"Now it will!\n");
 
 	ok(L"Everything is awesome!\n");
