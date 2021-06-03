@@ -2,6 +2,7 @@ name: CI Build for MSVC
 
 env:
   ARCH: x64
+  CONFIGURATION: Release
 
 on:
   push:
@@ -32,7 +33,7 @@ jobs:
         Invoke-VisualStudio2019${{ env.ARCH }}
         devenv capstone.sln -nologo /resetsettings
         devenv capstone.sln -nologo /upgrade
-        msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release" /p:Platform=${{ env.ARCH }}
+        msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration=${{ env.CONFIGURATION }} /p:Platform=${{ env.ARCH }}
 
 
     - name: Build Keystone lib
@@ -53,18 +54,28 @@ jobs:
         Import-Module .\.github\Invoke-VS.ps1
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         Invoke-VisualStudio2019${{ env.ARCH }}
-        msbuild pwn++\pwn++.vcxproj -nologo /m /p:Configuration=Release /p:Platform=${{ env.ARCH }}
+        msbuild.exe pwn++\pwn++.vcxproj -nologo /m /p:Configuration=${{ env.CONFIGURATION }} /p:Platform=${{ env.ARCH }}
+
+
+    - name: Run tests
+      shell: pwsh
+      run: |
+        Import-Module .\.github\Invoke-VS.ps1
+        Invoke-VisualStudio2019${{ env.ARCH }}
+        msbuild.exe pwn++-tests\pwn++-tests.vcxproj -nologo /m /p:Configuration=${{ env.CONFIGURATION }} /p:Platform=${{ env.ARCH }}
+        Copy-Item pwn++\${{ env.ARCH }}\${{ env.CONFIGURATION }}\pwn++.dll pwn++-tests\${{ env.ARCH }}\${{ env.CONFIGURATION }}\
+        vstest.console.exe /Platform:${{ env.ARCH }} .\pwn++-tests\${{ env.ARCH }}\${{ env.CONFIGURATION }}\pwn++-tests.dll
 
 
     - name: Prepare artifact
       id: prepare_artifact
       shell: pwsh
       run: |
-        mkdir build\
-        mkdir build\include\
-        cp pwn++\${{ env.ARCH }}\Release\pwn++.lib build\
-        cp pwn++\${{ env.ARCH }}\Release\pwn++.dll build\
-        cp pwn++\*.h build\include\
+        New-Item -Type Directory -Name build\
+        New-Item -Type Directory -Name build\include\
+        Copy-Item pwn++\${{ env.ARCH }}\${{ env.CONFIGURATION }}\pwn++.lib build\
+        Copy-Item pwn++\${{ env.ARCH }}\${{ env.CONFIGURATION }}\pwn++.dll build\
+        Copy-Item pwn++\*.h build\include\
 
 
     - name: Publish artifact

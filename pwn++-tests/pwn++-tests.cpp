@@ -52,8 +52,8 @@ namespace pwn::tests
 
 		TEST_METHOD(Test_hexdump)
 		{
-			std::vector<BYTE> buf{ 0x41, 0x41, 0x41, 0x41, 0x41, 0x41 };
-			pwn::utils::hexdump(buf);
+			pwn::utils::hexdump(std::vector<BYTE>{ 0x41, 0x41, 0x41, 0x41, 0x41, 0x41 });
+			pwn::utils::hexdump( reinterpret_cast<PBYTE>("BBCCDDEE"), 8);
 		}
 
 		TEST_METHOD(Test_cyclic)
@@ -66,7 +66,7 @@ namespace pwn::tests
 			Assert::IsTrue(buf[4] == 'b');
 			Assert::IsTrue(buf[8] == 'c');
 
-			pwn::context::set_arch(pwn::context::arch_t::x64);
+			pwn::context::set_architecture(pwn::context::architecture_t::x64);
 
 			Assert::IsTrue(pwn::utils::cyclic(0x30, buf));
 			Assert::IsTrue(buf.size() == 0x30);
@@ -111,11 +111,11 @@ namespace pwn::tests
 			std::vector<BYTE> bytes;
 			std::vector<BYTE> expected{ 0x48, 0x31, 0xc0, 0x48, 0xff, 0xc0, 0x90, 0xc3 };
 
-			pwn::context::set_arch(pwn::context::arch_t::x64);
+			pwn::context::set_architecture(pwn::context::architecture_t::x64);
 			Assert::IsTrue( pwn::assm::assemble(code, sizeof(code) - 1, bytes));
 			Assert::IsTrue( bytes == expected);
 			
-			pwn::context::set_arch(pwn::context::arch_t::arm64);
+			pwn::context::set_architecture(pwn::context::architecture_t::arm64);
 			Assert::IsFalse( pwn::assm::assemble(code, sizeof(code) - 1, bytes) );
 		}
 	};
@@ -131,13 +131,13 @@ namespace pwn::tests
 				// x64 - nop; xor rax, rax; int3; ret
 				// x86 - nop; dec eax; xor eax, eax; int3; ret
 
-			pwn::context::set_arch(pwn::context::arch_t::x64);
+			pwn::context::set_architecture(pwn::context::architecture_t::x64);
 			Assert::IsTrue(pwn::disasm::disassemble(code1, sizeof(code1), insns));
 			Assert::IsTrue(insns.size() == 4);
 
 			insns.clear();
 
-			pwn::context::set_arch(pwn::context::arch_t::x86);
+			pwn::context::set_architecture(pwn::context::architecture_t::x86);
 			Assert::IsTrue(pwn::disasm::disassemble(code1, sizeof(code1), insns));
 			Assert::IsTrue(insns.size() == 5);
 
@@ -183,9 +183,6 @@ namespace pwn::tests
 			Assert::IsTrue(pwn::crypto::sha512(data) == expected3);
 		}
 	};
-
-
-
 
 
 }
