@@ -46,9 +46,6 @@ jobs:
         Import-Module .\.github\Invoke-VS.ps1
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         Invoke-VisualStudio2019x64
-        pwd
-        ls .
-        ls ..
         msbuild pwn++.sln -nologo /m /p:Configuration=Release /p:Platform=x64
 
 
