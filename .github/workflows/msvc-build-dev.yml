@@ -1,6 +1,6 @@
 name: CI Dev Build for MSVC
 
-on: 
+on:
   push:
     branches:
       - dev
@@ -12,9 +12,9 @@ jobs:
     strategy:
       fail-fast: true
 
-    steps:  
+    steps:
     - uses: actions/checkout@v2
-           
+
     - name: Build Capstone lib
       shell: pwsh
       run: |
@@ -38,8 +38,8 @@ jobs:
         mkdir .\keystone\build
         cd .\keystone\build
         ..\nmake-lib.bat
-          
-     
+
+
     - name: Build pwn++ DLL
       shell: pwsh
       run: |
@@ -59,8 +59,8 @@ jobs:
         mkdir build\include\
         cp pwn++\*.h build\include\
         cp x64\Release\*.exe build\
-        
-        
+
+
     - name: Publish artifact
       id: publish_artifact
       uses: actions/upload-artifact@v2
