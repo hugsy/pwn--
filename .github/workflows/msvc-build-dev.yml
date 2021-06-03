@@ -19,7 +19,7 @@ jobs:
       shell: pwsh
       run: |
         Import-Module .\.github\Invoke-VS.ps1
-        cd ..
+        cd ..\..
         git clone https://github.com/aquynh/capstone
         cd .\capstone\msvc
         Invoke-VisualStudio2019x64
@@ -32,7 +32,7 @@ jobs:
       shell: pwsh
       run: |
         Import-Module .\.github\Invoke-VS.ps1
-        cd ..
+        cd ..\..
         git clone https://github.com/keystone-engine/keystone
         Invoke-VisualStudio2019x64
         mkdir .\keystone\build
