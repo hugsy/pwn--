@@ -1,6 +1,9 @@
 name: CI Build for MSVC
 
-on: 
+env:
+  ARCH: x64
+
+on:
   push:
     branches:
       - master
@@ -10,11 +13,11 @@ jobs:
     name: "Building pwn++"
     runs-on: [windows-latest]
     strategy:
-      fail-fast: false
+      fail-fast: true
 
-    steps:  
+    steps:
     - uses: actions/checkout@v2
-           
+
     - name: Build Capstone lib
       shell: pwsh
       run: |
@@ -25,7 +28,7 @@ jobs:
         Invoke-VisualStudio2019x64
         devenv capstone.sln -nologo /resetsettings
         devenv capstone.sln -nologo /upgrade
-        msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release" /p:Platform=x64
+        msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release" /p:Platform=${{ env.ARCH }}
 
 
     - name: Build Keystone lib
@@ -38,15 +41,15 @@ jobs:
         mkdir .\keystone\build
         cd .\keystone\build
         ..\nmake-lib.bat
-          
-     
+
+
     - name: Build pwn++ DLL
       shell: pwsh
       run: |
         Import-Module .\.github\Invoke-VS.ps1
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         Invoke-VisualStudio2019x64
-        msbuild pwn++.sln -nologo /m /p:Configuration=Release /p:Platform=x64
+        msbuild pwn++\pwn++.vcxproj -nologo /m /p:Configuration=Release /p:Platform=x64
 
 
     - name: Prepare artifact
@@ -54,16 +57,15 @@ jobs:
       shell: pwsh
       run: |
         mkdir build\
-        cp x64\Release\pwn++.dll build\
-        cp x64\Release\pwn++.lib build\
         mkdir build\include\
+        cp pwn++\x64\Release\pwn++.lib build\
+        cp pwn++\x64\Release\pwn++.dll build\
         cp pwn++\*.h build\include\
-        cp x64\Release\*.exe build\
-        
-        
+
+
     - name: Publish artifact
       id: publish_artifact
       uses: actions/upload-artifact@v2
       with:
-        name: pwn++_latest_msvc_x64_${{ github.head_ref }}
+        name: pwn++_msvc_${{ env.ARCH }}_${{ github.sha }}
         path: build\

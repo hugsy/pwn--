@@ -1,5 +1,8 @@
 name: CI Dev Build for MSVC
 
+env:
+  ARCH: x64
+
 on:
   push:
     branches:
@@ -22,10 +25,10 @@ jobs:
         cd ..
         git clone https://github.com/aquynh/capstone
         cd .\capstone\msvc
-        Invoke-VisualStudio2019x64
+        Invoke-VisualStudio2019${{ env.ARCH }}
         devenv capstone.sln -nologo /resetsettings
         devenv capstone.sln -nologo /upgrade
-        msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release" /p:Platform=x64
+        msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration="Release" /p:Platform=${{ env.ARCH }}
 
 
     - name: Build Keystone lib
@@ -64,5 +67,5 @@ jobs:
       id: publish_artifact
       uses: actions/upload-artifact@v2
       with:
-        name: pwn++_latest_msvc_x64_${{ github.head_ref }}
+        name: pwn++_msvc_${{ env.ARCH }}_${{ github.sha }}
         path: build\
