@@ -22,7 +22,8 @@ _Note_: the original `PwnLib` was written around Windows 7 for feature testing. 
 
 ### Quick Start
 
-To start using, simply include `pwn.h` and link with `pwn++.dll`.
+To start using `pwn++` lib, simply download the latest successful build from [CI builds](https://github.com/hugsy/pwn--/actions?query=is%3Asuccess), download and extract the zip file.
+In your C++ file, just include `pwn.h` and link with `pwn++.dll`.
 
 ```cpp
 #include "path\to\pwn++\pwn.h"
