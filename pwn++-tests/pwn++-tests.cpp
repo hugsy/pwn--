@@ -3,7 +3,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-#include <pwn++\pwn.h>
+#include "..\pwn++\pwn.h"
 
 using namespace pwn::log;
 
