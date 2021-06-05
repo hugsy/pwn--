@@ -685,12 +685,13 @@ auto wmain() -> int
 
 auto wmain() -> int
 {
-	auto h = pwn::utils::GenericHandle( pwn::fs::touch(L"myfile.txt") );
-	if(!h)
-		return -1;
+	{
+		if(!pwn::utils::GenericHandle( pwn::fs::touch(L"myfile.txt") ))
+			return -1;
+	}
 
 	auto l = pwn::utils::GenericHandle( pwn::fs::create_symlink(L"mylink.txt", L"myfile.txt") );
-	if(!h)
+	if(!l)
 		return -2;
 
 	ok(L"created link '%s' -> '%s'\n", L"mylink.txt", L"myfile.txt");
