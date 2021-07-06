@@ -3,7 +3,7 @@
 
 | Build | Discord |
 |:---:|:---:|
-| [![CI - MSVC](https://github.com/hugsy/pwn--/workflows/CI%20Build%20for%20MSVC/badge.svg)](https://github.com/hugsy/pwn--/actions?query=workflow%3A%22CI+Build+for+MSVC%22) | [Discord](https://img.shields.io/badge/Discord-pwn-purple)](https://discord.gg/5HmwPxy3HP) |
+| [![CI - MSVC](https://github.com/hugsy/pwn--/workflows/CI%20Build%20for%20MSVC/badge.svg)](https://github.com/hugsy/pwn--/actions?query=workflow%3A%22CI+Build+for+MSVC%22) | [![Discord](https://img.shields.io/badge/Discord-pwn%2b%2b-purple)](https://discord.gg/5HmwPxy3HP) |
 
 
 A (bad) C++17 rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL for Windows.
