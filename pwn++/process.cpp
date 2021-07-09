@@ -11,6 +11,7 @@ using namespace pwn::log;
 #include <sddl.h>
 #include <stdexcept>
 #include <shellapi.h>
+#include <optional>
 #include "utils.h"
 #include "handle.h"
 
@@ -184,6 +185,15 @@ DWORD pwn::process::get_integrity_level(_Out_ std::wstring & IntegrityLevelName)
 }
 
 
+std::optional<std::wstring> pwn::process::get_integrity_level()
+{
+    std::wstring & IntegrityLevelName;
+    if( get_integrity_level(::GetCurrentProcessId(), IntegrityLevelName) == ERROR_SUCCESS )
+        return IntegrityLevelName;
+    return std::nullopt;
+}
+
+
 _Success_(return)
 BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwParentPid, _Out_opt_ LPHANDLE lpNewProcessHandle)
 {
@@ -257,6 +267,16 @@ BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _Out_opt_ LPHANDLE l
 {
     return pwn::process::execv(lpCommandLine, 0, lpNewProcessHandle);
 }
+
+
+std::optional<HANDLE> pwn::process::execv(_In_ const wchar_t* lpCommandLine)
+{
+    HANDLE hProcess = INVALID_HANDLE_VALUE;
+    if (pwn::process::execv(lpCommandLine, 0, &hProcess))
+        return hProcess;
+    return std::nullopt;
+}
+
 
 _Success_(return)
 BOOL pwn::process::system(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operation)
