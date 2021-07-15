@@ -58,4 +58,18 @@ namespace pwn::utils
 	protected:
 		T _h;
 	};
+
+
+	template<typename T, typename D>
+	class CustomHandle
+	{
+	public:
+		CustomHandle(T& f, D d) : _f(f), _d(d) {}
+		~CustomHandle() { _d(); }
+		T get() const { return _f; }
+		operator bool() const {	return _f != nullptr; }
+	private:
+		T _f;
+		D _d;
+	};
 }
