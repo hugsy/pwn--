@@ -23,28 +23,11 @@ jobs:
     - name: Inject slug/short variables
       uses: rlespinasse/github-slug-action@v3.x
 
-    - name: Build Capstone lib
+    - name: Install dependencies
       shell: pwsh
       run: |
-        Import-Module .\.github\Invoke-VS.ps1
-        cd ..
-        git clone https://github.com/aquynh/capstone
-        cd .\capstone\msvc
-        Invoke-VisualStudio2019${{ matrix.platform }}
-        devenv capstone.sln -nologo /resetsettings
-        devenv capstone.sln -nologo /upgrade
-        msbuild capstone_static/capstone_static.vcxproj -m -nologo /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
-
-    - name: Build Keystone lib
-      shell: pwsh
-      run: |
-        Import-Module .\.github\Invoke-VS.ps1
-        cd ..
-        git clone https://github.com/keystone-engine/keystone
-        Invoke-VisualStudio2019${{ matrix.platform }}
-        mkdir .\keystone\build
-        cd .\keystone\build
-        ..\nmake-lib.bat
+        vcpkg install keystone:${{ matrix.platform }}-windows-static
+        vcpkg install capstone:${{ matrix.platform }}-windows-static
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v1
@@ -62,16 +45,15 @@ jobs:
     - name: Notify on build failure
       if: ${{ failure() }}
       uses: sarisia/actions-status-discord@v1
-        with:
-          nodetail: true
-          title: CI failed on `${{ github.ref }}`
-          description: |
-            Failed to compile `${{ github.ref }}`
-
-            See ${{ github.event.push.html_url }}
-          color: 0xff0000
-          username: ${{ github.actor }} via GithubBot
-          avatar_url: ${{ github.actor.avatar_url }}
+      with:
+        nodetail: true
+        title: CI failed on `${{ github.ref }}`
+        description: |
+          Failed to compile `${{ github.ref }}`
+          See ${{ github.event.push.html_url }}
+        color: 0xff0000
+        username: ${{ github.actor }} via GithubBot
+        avatar_url: ${{ github.actor.avatar_url }}
 
     - name: Run tests
       shell: pwsh

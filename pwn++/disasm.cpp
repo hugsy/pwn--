@@ -19,7 +19,7 @@ namespace pwn::disasm
         {
             insn.address = _cs_insn.address;
             insn.size = _cs_insn.size;
-            ::RtlCopyMemory(insn.bytes, _cs_insn.bytes, _cs_insn.size);
+            ::RtlCopyMemory(insn.bytes, _cs_insn.bytes, min(_cs_insn.size, sizeof(insn.bytes)));
             insn.mnemonic = pwn::utils::to_widestring(_cs_insn.mnemonic);
             insn.operands = pwn::utils::to_widestring(_cs_insn.op_str); 
             return TRUE;
