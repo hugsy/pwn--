@@ -348,7 +348,7 @@ Memory writes
 SIZE_T pwn::process::mem::write(_In_ HANDLE hProcess, _In_ ULONG_PTR Address, _In_ PBYTE Data, _In_ SIZE_T DataLength)
 {
     size_t dwNbWritten;
-    if ( ::WriteProcessMemory(hProcess, reinterpret_cast<LPVOID>(Address), Data, DataLength, &dwNbWritten) )
+    if ( ::WriteProcessMemory(hProcess, reinterpret_cast<LPVOID>(Address), Data, DataLength, &dwNbWritten) != FALSE )
         return dwNbWritten;
     return -1;
 }
@@ -805,9 +805,9 @@ BOOL pwn::process::appcontainer::AppContainer::spawn()
 
 _Success_(return)
 BOOL pwn::process::appcontainer::AppContainer::set_named_object_access(
-    _In_ PWSTR ObjectName, 
-    _In_ SE_OBJECT_TYPE ObjectType, 
-    _In_ ACCESS_MODE AccessMode, 
+    _In_ PWSTR ObjectName,
+    _In_ SE_OBJECT_TYPE ObjectType,
+    _In_ ACCESS_MODE AccessMode,
     _In_ ACCESS_MASK AccessMask
 )
 {
@@ -846,7 +846,7 @@ BOOL pwn::process::appcontainer::AppContainer::set_named_object_access(
         //
         // Apply to the object
         //
-        dbg(L"%s access to object '%s' by container '%s'\n", AccessMode==GRANT_ACCESS?L"Allowing":L"Denying", ObjectName, m_SidAsString.c_str());
+        dbg(L"%s access to object '%s' by container '%s'\n", AccessMode == GRANT_ACCESS ? L"Allowing" : L"Denying", ObjectName, m_SidAsString.c_str());
         dwRes = ::SetNamedSecurityInfo(ObjectName, ObjectType, DACL_SECURITY_INFORMATION, nullptr, nullptr, pNewAcl, nullptr);
         if (dwRes != ERROR_SUCCESS)
             break;
@@ -858,14 +858,17 @@ BOOL pwn::process::appcontainer::AppContainer::set_named_object_access(
         m_OriginalAcls.push_back({ ObjectName, ObjectType, pOldAcl });
 
         bRes = TRUE;
-    } 
-    while (0);
+    } while (0);
 
-    if (pNewAcl)
+    if (pNewAcl != nullptr)
+    {
         ::LocalFree(pNewAcl);
+    }
 
-    if (pSD)
+    if (pSD != nullptr)
+    {
         ::LocalFree(pSD);
+    }
 
     return bRes;
 }
@@ -885,9 +888,9 @@ BOOL pwn::process::appcontainer::AppContainer::restore_acls()
 
     for (auto& acl : m_OriginalAcls)
     {
-        auto ObjectName = std::get<0>(acl);
-        auto ObjectType = std::get<1>(acl);
-        auto pOldAcl = std::get<2>(acl);
+        auto const &ObjectName = std::get<0>(acl);
+        auto const &ObjectType = std::get<1>(acl);
+        auto const &pOldAcl = std::get<2>(acl);
         dbg(L"restoring original acl for '%s'\n", ObjectName.c_str());
         bRes &= (::SetNamedSecurityInfo((PWSTR)ObjectName.c_str(), ObjectType, DACL_SECURITY_INFORMATION, nullptr, nullptr, pOldAcl, nullptr) == ERROR_SUCCESS);
     }

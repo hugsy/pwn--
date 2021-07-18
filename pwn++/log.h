@@ -40,25 +40,25 @@
 
 namespace pwn::log
 {
-	extern PWNAPI HANDLE g_ConsoleMutex;
+    extern PWNAPI HANDLE g_ConsoleMutex;
 
-	enum class log_level_t
-	{
-		LOG_DEBUG = _PWN_LOG_LEVEL_DEBUG,
-		LOG_INFO = _PWN_LOG_LEVEL_INFO,
-		LOG_OK = _PWN_LOG_LEVEL_INFO,
-		LOG_SUCCESS = _PWN_LOG_LEVEL_INFO,
-		LOG_WARN = _PWN_LOG_LEVEL_WARN,
-		LOG_WARNING = _PWN_LOG_LEVEL_WARN,
-		LOG_ERR = _PWN_LOG_LEVEL_ERROR,
-		LOG_ERROR = _PWN_LOG_LEVEL_ERROR,
-		LOG_CRITICAL = _PWN_LOG_LEVEL_CRITICAL
-	};
+    enum class log_level_t
+    {
+        LOG_DEBUG = _PWN_LOG_LEVEL_DEBUG,
+        LOG_INFO = _PWN_LOG_LEVEL_INFO,
+        LOG_OK = _PWN_LOG_LEVEL_INFO,
+        LOG_SUCCESS = _PWN_LOG_LEVEL_INFO,
+        LOG_WARN = _PWN_LOG_LEVEL_WARN,
+        LOG_WARNING = _PWN_LOG_LEVEL_WARN,
+        LOG_ERR = _PWN_LOG_LEVEL_ERROR,
+        LOG_ERROR = _PWN_LOG_LEVEL_ERROR,
+        LOG_CRITICAL = _PWN_LOG_LEVEL_CRITICAL
+    };
 
-	void PWNAPI xlog(_In_ log_level_t level, _In_ const wchar_t* args_list, ...);
-	void PWNAPI perror(_In_ const std::wstring& prefix);
-	void PWNAPI perror(_In_ const wchar_t* prefix);
-	void PWNAPI ntperror(_In_ const wchar_t* prefix, _In_ NTSTATUS Status);
+    void PWNAPI xlog(_In_ log_level_t level, _In_ const wchar_t* args_list, ...);
+    void PWNAPI perror(_In_ const std::wstring& prefix);
+    void PWNAPI perror(_In_ const wchar_t* prefix);
+    void PWNAPI ntperror(_In_ const wchar_t* prefix, _In_ NTSTATUS Status);
 }
 
 #define dbg(fmt, ...)  pwn::log::xlog(pwn::log::log_level_t::LOG_DEBUG, fmt, ##__VA_ARGS__)

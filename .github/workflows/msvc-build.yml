@@ -3,12 +3,11 @@ name: CI Build for MSVC
 env:
   ARCH: x64
   CONFIGURATION: Release
+  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
 on:
   push:
-    branches:
-      - master
-      - dev
+    branches: [master, dev]
 
 jobs:
   build:
@@ -57,6 +56,21 @@ jobs:
         msbuild.exe pwn++\pwn++.vcxproj -nologo /m /p:Configuration=${{ env.CONFIGURATION }} /p:Platform=${{ env.ARCH }}
 
 
+    - name: Notify on build failure
+      if: ${{ failure() }}
+      uses: sarisia/actions-status-discord@v1
+        with:
+          nodetail: true
+          title: CI failed on `${{ github.ref }}`
+          description: |
+            Failed to compile `${{ github.ref }}`
+
+            See ${{ github.event.push.html_url }}
+          color: 0xff0000
+          username: ${{ github.actor }} via GithubBot
+          avatar_url: ${{ github.actor.avatar_url }}
+
+
     - name: Run tests
       shell: pwsh
       run: |
@@ -65,6 +79,21 @@ jobs:
         msbuild.exe pwn++-tests\pwn++-tests.vcxproj -nologo /m /p:Configuration=${{ env.CONFIGURATION }} /p:Platform=${{ env.ARCH }}
         Copy-Item pwn++\${{ env.ARCH }}\${{ env.CONFIGURATION }}\pwn++.dll pwn++-tests\${{ env.ARCH }}\${{ env.CONFIGURATION }}\
         vstest.console.exe /Platform:${{ env.ARCH }} .\pwn++-tests\${{ env.ARCH }}\${{ env.CONFIGURATION }}\pwn++-tests.dll
+
+
+    - name: Notify on test failure
+      if: ${{ failure() }}
+      uses: sarisia/actions-status-discord@v1
+        with:
+          nodetail: true
+          title: CI failed on `${{ github.ref }}`
+          description: |
+            Tests failed for `${{ github.ref }}`
+
+            See ${{ github.event.push.html_url }}
+          color: 0xff0000
+          username: ${{ github.actor }} via GithubBot
+          avatar_url: ${{ github.actor.avatar_url }}
 
 
     - name: Prepare artifact
@@ -84,3 +113,19 @@ jobs:
       with:
         name: pwn++_msvc_${{ env.GITHUB_REF_SLUG }}_${{ env.ARCH }}_${{ env.GITHUB_SHA_SHORT }}
         path: build\
+
+
+    - name: Notify on success
+      if: ${{ success() }}
+      uses: sarisia/actions-status-discord@v1
+        with:
+          nodetail: true
+          title: CI failed on `${{ github.ref }}`
+          description: |
+            Tests failed for `${{ github.ref }}`
+
+            See ${{ github.event.push.html_url }}
+          color: 0xff0000
+          username: ${{ github.actor }} via GithubBot
+          avatar_url: ${{ github.actor.avatar_url }}
+

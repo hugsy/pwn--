@@ -20,9 +20,9 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 
     ctx::set_log_level(log_level_t::LOG_DEBUG);
 
-    const std::wstring containerName{L"appcontainer-" + pwn::utils::random::alnum(10)};
-    const std::wstring processName = argv[1];
-    const std::vector< std::tuple<std::wstring, WELL_KNOWN_SID_TYPE>> AvailableCapabilities =
+    const std::wstring containerName{ L"appcontainer-" + pwn::utils::random::alnum(10) };
+    const std::wstring processName{ argv[1] };
+    const std::vector< std::tuple<std::wstring, WELL_KNOWN_SID_TYPE> > AvailableCapabilities =
     {
         {L"InetClient", WinCapabilityInternetClientSid},
         {L"InetServer", WinCapabilityInternetClientServerSid},
