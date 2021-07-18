@@ -84,16 +84,15 @@ jobs:
     - name: Notify on test failure
       if: ${{ failure() }}
       uses: sarisia/actions-status-discord@v1
-        with:
-          nodetail: true
-          title: CI failed on `${{ github.ref }}`
-          description: |
-            Tests failed for `${{ github.ref }}`
-
-            See ${{ github.event.push.html_url }}
-          color: 0xff0000
-          username: ${{ github.actor }} via GithubBot
-          avatar_url: ${{ github.actor.avatar_url }}
+      with:
+        nodetail: true
+        title: CI failed on `${{ github.ref }}`
+        description: |
+          Tests failed for `${{ github.ref }}`
+          See ${{ github.event.push.html_url }}
+        color: 0xff0000
+        username: ${{ github.actor }} via GithubBot
+        avatar_url: ${{ github.actor.avatar_url }}
 
 
     - name: Prepare artifact
@@ -118,14 +117,13 @@ jobs:
     - name: Notify on success
       if: ${{ success() }}
       uses: sarisia/actions-status-discord@v1
-        with:
-          nodetail: true
-          title: CI failed on `${{ github.ref }}`
-          description: |
-            Tests failed for `${{ github.ref }}`
-
-            See ${{ github.event.push.html_url }}
-          color: 0xff0000
-          username: ${{ github.actor }} via GithubBot
-          avatar_url: ${{ github.actor.avatar_url }}
+      with:
+        nodetail: true
+        title: Build `${{ github.ref }}` succeeded
+        description: |
+          Tests failed for `${{ github.ref }}`
+          See ${{ github.event.push.html_url }}
+        color: 0x00ff00
+        username: ${{ github.actor }} via GithubBot
+        avatar_url: ${{ github.actor.avatar_url }}
 

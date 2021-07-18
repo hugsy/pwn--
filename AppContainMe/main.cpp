@@ -52,7 +52,7 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 
                 for (auto& cap : AvailableCapabilities)
                 {
-                    auto name = std::get<0>(cap);
+                    auto &name = std::get<0>(cap);
                     if (name == value)
                     {
                         info(L"adding capability '%s'...\n", name.c_str());

@@ -122,7 +122,7 @@ DWORD pwn::process::get_integrity_level(_In_ DWORD dwProcessId, _Out_ std::wstri
         }
 
         auto pTokenBuffer = reinterpret_cast<PTOKEN_MANDATORY_LABEL>(::LocalAlloc(LPTR, dwLengthNeeded));
-        auto pTIL = pwn::utils::CustomHandle(pTokenBuffer, [&]() { ::LocalFree(pTokenBuffer);  });
+        auto pTIL = pwn::utils::GenericHandle(pTokenBuffer, [&]() { return ::LocalFree(pTokenBuffer) == nullptr;  });
 
         if (!pTIL)
         {
@@ -186,7 +186,8 @@ std::optional<std::wstring> pwn::process::get_integrity_level()
 
 
 _Success_(return)
-BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwParentPid, _Out_opt_ LPHANDLE lpNewProcessHandle)
+BOOL 
+pwn::process::execv(_In_ const wchar_t* lpCommandLine, _In_ DWORD dwParentPid, _Out_ LPHANDLE lpNewProcessHandle)
 {
     HANDLE hParentProcess = NULL;
     STARTUPINFOEX si = { 0, };
@@ -224,7 +225,7 @@ BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwPar
         dbg(L"Spawning '%s'...\n", cmd.get());
     }
 
-    if (!::CreateProcess(NULL, cmd.get(), NULL, NULL, TRUE, dwFlags, NULL, NULL, (LPSTARTUPINFO)&si, &pi))
+    if (!::CreateProcess(nullptr, cmd.get(), nullptr, nullptr, true, dwFlags, nullptr, nullptr, (LPSTARTUPINFO)&si, &pi))
     {
         perror(L"CreateProcess()");
         return FALSE;
@@ -253,17 +254,10 @@ BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwPar
 }
 
 
-_Success_(return)
-BOOL pwn::process::execv(_In_ const wchar_t* lpCommandLine, _Out_opt_ LPHANDLE lpNewProcessHandle)
-{
-    return pwn::process::execv(lpCommandLine, 0, lpNewProcessHandle);
-}
-
-
-std::optional<HANDLE> pwn::process::execv(_In_ const wchar_t* lpCommandLine)
+std::optional<HANDLE> pwn::process::execv(_In_ const wchar_t* lpCommandLine, _In_ DWORD dwParentPid)
 {
     HANDLE hProcess = INVALID_HANDLE_VALUE;
-    if (pwn::process::execv(lpCommandLine, 0, &hProcess))
+    if (pwn::process::execv(lpCommandLine, dwParentPid, &hProcess))
         return hProcess;
     return std::nullopt;
 }
@@ -312,9 +306,8 @@ BOOL pwn::process::kill(_In_ HANDLE hProcess)
 _Success_(return != nullptr)
 HANDLE pwn::process::cmd()
 {
-    HANDLE hProcess = nullptr;
-    pwn::process::execv(L"cmd.exe", &hProcess);
-    return hProcess;
+    auto hProcess = pwn::process::execv(L"cmd.exe");
+    return hProcess ? hProcess.value() : INVALID_HANDLE_VALUE;
 }
 
 

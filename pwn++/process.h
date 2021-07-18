@@ -14,9 +14,9 @@ namespace pwn::process
 	_Success_(return == ERROR_SUCCESS) PWNAPI DWORD get_integrity_level(_In_ DWORD dwProcessId, _Out_ std::wstring & IntegrityLevelName);
 	_Success_(return == ERROR_SUCCESS) PWNAPI DWORD get_integrity_level(_Out_ std::wstring & IntegrityLevelName); 
 	PWNAPI std::optional<std::wstring> get_integrity_level();
-	_Success_(return) PWNAPI BOOL execv(_In_ const wchar_t* lpCommandLine, _Out_opt_ LPHANDLE lpNewProcessHandle = nullptr);
-	_Success_(return) PWNAPI BOOL execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwParentPid = 0, _Out_opt_ LPHANDLE lpNewProcessHandle = nullptr);
-	PWNAPI std::optional<HANDLE> execv(_In_ const wchar_t* lpCommandLine);
+	
+	PWNAPI _Success_(return) BOOL execv(_In_ const wchar_t* lpCommandLine, _In_ DWORD dwParentPid, _Out_ LPHANDLE lpNewProcessHandle);
+	PWNAPI std::optional<HANDLE> execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwParentPid = 0);
 	_Success_(return) PWNAPI BOOL system(_In_ const std::wstring & lpCommandLine, _In_ const std::wstring & operation = L"open");
 
 	_Success_(return) PWNAPI BOOL kill(_In_ DWORD dwProcessPid);

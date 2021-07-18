@@ -285,13 +285,13 @@ Cheap way to spawn a `NT AUTHORITY\SYSTEM` process from Admin prompt
 #include <pwn++\pwn.h>
 int wmain()
 {
-	HANDLE hProcess;
 	auto ppid = pwn::system::pidof(L"winlogon.exe");
 	info(L"found winlogon pid=%lu\n", ppid);
-	if(pwn::process::execv(L"cmd.exe", ppid, &hProcess))
+	auto hProcess = pwn::process::execv(L"cmd.exe", ppid);
+	if(hProcess)
 	{
-		auto h = pwn::utils::GenericHandle(hProcess);
-		::CloseHandle(h.Get());
+		auto h = pwn::utils::GenericHandle(hProcess.value());
+		::WaitForSingleObject(h.get(), INFINITE);
 	}
 	return 0;
 }
@@ -319,12 +319,12 @@ nt authority\system
 #include <pwn++\pwn.h>
 int wmain()
 {
-	HANDLE hProcess;
-	if ( pwn::process::execv(L"notepad.exe hello.txt", &hProcess) )
+	auto hProcess = pwn::process::execv(L"notepad.exe hello.txt");
+	if ( hProcess )
 	{
-		auto h = pwn::utils::GenericHandle(hProcess);
+		auto h = pwn::utils::GenericHandle(hProcess.value());
 		::Sleep(5*1000);
-		pwn::process::kill(h.Get());
+		pwn::process::kill(h.get());
 	}
 }
 ```
@@ -349,9 +349,9 @@ void wmain()
 #include <pwn++\pwn.h>
 void wmain()
 {
-	std::wstring integrity;
-	if ( pwn::process::get_integrity_level(integrity) == ERROR_SUCCESS )
-		ok(L"integrity set to '%s'\n", integrity.c_str());
+	auto integrity = pwn::process::get_integrity_level();
+	if ( integrity )
+		ok(L"integrity set to '%s'\n", integrity.value().c_str());
 	else
 		perror(L"pwn::process::get_integrity_level()");
 }

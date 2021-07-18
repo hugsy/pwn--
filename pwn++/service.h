@@ -10,13 +10,14 @@ namespace pwn::service
 	public:
 		using GenericHandle<SC_HANDLE>::GenericHandle;
 
-		void close() override
+		bool close() override
 		{
-			if ( bool(_h) )
+			if ( bool(m_handle) )
 			{
-				::CloseServiceHandle(_h);
-				_h = nullptr;
+				::CloseServiceHandle(m_handle);
+				m_handle = nullptr;
 			}
+			return true;
 		}
 	};
 

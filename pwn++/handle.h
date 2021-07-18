@@ -2,74 +2,62 @@
 
 #include "common.h"
 
+static const u64 __magic = 0xdeadbeef;
+static auto dummy = []() { throw __magic; };
 
 namespace pwn::utils
 {
-	template <class T>
-	class GenericHandle
-	{
-	public:
-		GenericHandle(T h = nullptr) :_h(h) {}
-		
-		~GenericHandle() 
-		{ 
-			close(); 
-		}
-		
-		GenericHandle(const GenericHandle&) = delete;
-		
-		GenericHandle& operator=(const GenericHandle&) = delete;
-		
-		GenericHandle(GenericHandle&& other) noexcept : _h(other._h) 
-		{ 
-			other._h = nullptr; 
-		}
+    template<typename T, typename D = decltype(dummy)>
+    class GenericHandle
+    {
+    public:
+        GenericHandle(T h = nullptr, D d = dummy) :m_handle(h), m_closure_function(d) {}
+        ~GenericHandle() { close(); }
+        GenericHandle(const GenericHandle&) = delete;
+        GenericHandle& operator=(const GenericHandle&) = delete;
+        GenericHandle(GenericHandle&& other) noexcept : m_handle(other.m_handle) { other.m_handle = nullptr; }
+        GenericHandle& operator=(GenericHandle&& other) noexcept
+        {
+            if (this != &other)
+            {
+                close();
+                m_handle = other.m_handle;
+                other.m_handle = nullptr;
+            }
 
-		GenericHandle& operator=(GenericHandle&& other) noexcept
-		{
-			if (this != &other)
-			{
-				close();
-				_h = other._h;
-				other._h = nullptr;
-			}
-			return*this;
-		}
+            return *this;
+        }
 
-		operator bool() const
-		{
-			return _h != nullptr && _h != INVALID_HANDLE_VALUE;
-		}
+        operator bool() const { return m_handle != nullptr && m_handle != INVALID_HANDLE_VALUE; }
+        T get() const { return m_handle; }
 
-		T get() const
-		{
-			return _h;
-		}
+        virtual bool close()
+        {
+            bool res = false;
+            
+            if (bool(m_handle))
+            {
+                try
+                {
+                    m_closure_function();
+                    ::wprintf(L"using lambda destructor\n");
+                }
+                catch(u64 e)
+                {
+                    if (e == __magic)
+                    {
+                        ::CloseHandle(m_handle);
+                        ::wprintf(L"using default destructor\n");
+                    }
+                }
+                m_handle = nullptr;
+            }
 
-		virtual void close()
-		{
-			if (bool(_h))
-			{
-				::CloseHandle(_h);
-				_h = nullptr;
-			}
-		}
+            return res;
+        }
 
-	protected:
-		T _h;
-	};
-
-
-	template<typename T, typename D>
-	class CustomHandle
-	{
-	public:
-		CustomHandle(T& f, D d) : _f(f), _d(d) {}
-		~CustomHandle() { _d(); }
-		T get() const { return _f; }
-		operator bool() const {	return _f != nullptr; }
-	private:
-		T _f;
-		D _d;
-	};
+    protected:
+        T m_handle;
+        D m_closure_function;
+    };
 }

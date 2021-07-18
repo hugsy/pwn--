@@ -14,17 +14,16 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 		return EXIT_FAILURE;
 	}
 
-	ctx::set_arch(ctx::arch_t::x64);
+	ctx::set_architecture(ctx::architecture_t::x64);
 	ctx::set_log_level(log_level_t::LOG_DEBUG);
 
-	HANDLE hProcess = INVALID_HANDLE_VALUE;
-	auto ppid = pwn::system::pidof(argv[1]);
-	info(L"found '%s' pid=%lu\n", argv[1], ppid);
-	if (pwn::process::execv(L"cmd.exe", ppid, &hProcess))
+	auto ppid = pwn::system::pidof(L"winlogon.exe");
+	info(L"found winlogon pid=%lu\n", ppid);
+	std::optional<HANDLE> hProcess = pwn::process::execv(L"cmd.exe", ppid);
+	if (hProcess)
 	{
-		auto h = pwn::utils::GenericHandle(hProcess);
+		auto h = pwn::utils::GenericHandle(hProcess.value());
 		::WaitForSingleObject(h.get(), INFINITE);
 	}
-
-	return EXIT_SUCCESS;
+	return 0;
 }

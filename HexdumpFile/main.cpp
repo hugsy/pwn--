@@ -24,6 +24,10 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 		if (::ReadFile(h.get(), bytes.data(), sz, &dummy, nullptr))
 			pwn::utils::hexdump(bytes);
 	}
+	else
+	{
+		perror(L"CreateFile()");
+	}
 
 	return EXIT_SUCCESS;
 }
