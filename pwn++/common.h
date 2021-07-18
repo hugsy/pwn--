@@ -10,28 +10,34 @@
 
 
 #ifndef __countof
-#define __countof(x) (sizeof(x)/x[0])
+#define __countof(x) (sizeof(x)/sizeof(x[0]))
 #endif 
 
-typedef DWORD64 QWORD;
+using QWORD = DWORD64;
 
 
-#include <stdint.h>
+#include <cstdint>
 
-typedef uint8_t u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
+using u8 = uint8_t;
+using u16 = int16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
 
-typedef int8_t  i8;
-typedef int16_t i16;
-typedef int32_t i32;
-typedef int64_t i64;
+using i8 = int8_t;
+using i16 = int16_t;
+using i32 = int32_t;
+using i64 = int64_t;
 
 
-#ifndef _PWN_LOG_NO_COLOR
+#ifndef PWN_LOG_NO_COLOR
 #define PWN_LOG_USE_COLOR
-#endif // !_PWN_LOG_NO_COLOR */
+#endif // !PWN_LOG_NO_COLOR */
+
+
+// uncomment to disable to the integration with capstone
+// #define PWN_NO_ASSEMBLER
+// uncomment to disable to the integration with keystone
+// #define PWN_NO_DISASSEMBLER
 
 
 // comment to disable to backdoor
@@ -47,11 +53,14 @@ typedef int64_t i64;
 #include <exception>
 
 
-template< typename modHandleType, typename procNameType >
-auto LoadModAndProcOrFail(modHandleType modHandle, procNameType procName) {
-    auto address = ::GetProcAddress(modHandle, procName);
-    if (!address) 
-        throw std::exception{ (std::string{"Error importing: "} + (std::string{procName})).c_str() };
+template<typename M, typename P>
+auto LoadModuleOrThrow(M hMod, P lpszProcName) 
+{
+    auto address = ::GetProcAddress(hMod, lpszProcName);
+    if (!address)
+    {
+        throw std::exception(  std::string("Error importing: ") << std::string(lpszProcName).c_str() );
+    }
     return address;
 }
 
@@ -62,33 +71,6 @@ auto LoadModAndProcOrFail(modHandleType modHandle, procNameType procName) {
    template< typename... Ts >                                                                                                \
    auto FUNCNAME( Ts... ts ) {                                                                                               \
       const static CONCAT( t_, FUNCNAME ) func =                                                                             \
-       (CONCAT( t_, FUNCNAME )) LoadModAndProcOrFail( ( LoadLibraryW( DLLFILE ), GetModuleHandleW( DLLFILE ) ), #FUNCNAME ); \
+        (CONCAT( t_, FUNCNAME )) LoadModuleOrThrow( ( LoadLibraryW( DLLFILE ), GetModuleHandleW( DLLFILE ) ), #FUNCNAME );   \
       return func( std::forward< Ts >( ts )... );                                                                            \
    } 
-
-
-//
-// Usage example below with ntdll!ZwCreateEnclave(https://docs.microsoft.com/en-us/windows/win32/api/enclaveapi/nf-enclaveapi-createenclave)
-// The comment allows to be picked up by intellisense.
-// 
-// 
-// /*++
-// Creates a new uninitialized enclave. An enclave is an isolated region of code and data within the address space for an application. 
-// Only code that runs within the enclave can access data within the same enclave.
-// --*/
-// IMPORT_EXTERNAL_FUNCTION( \
-//     L"ntdll.dll", \
-//     ZwCreateEnclave, \
-//     NTSTATUS, \
-//     HANDLE  hProcess, \
-//     LPVOID  lpAddress, \
-//     ULONGLONG ZeroBits, \
-//     SIZE_T  dwSize, \
-//     SIZE_T  dwInitialCommitment, \
-//     DWORD   flEnclaveType, \
-//     LPCVOID lpEnclaveInformation, \
-//     DWORD   dwInfoLength, \
-//     LPDWORD lpEnclaveError \
-// );
-// 
-

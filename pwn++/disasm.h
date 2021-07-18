@@ -1,10 +1,12 @@
 #pragma once
 
+
 #include "pwn.h"
 
 #include <vector>
 #include <string>
 
+#ifndef PWN_NO_DISASSEMBLER
 
 namespace pwn::disasm
 {
@@ -21,3 +23,5 @@ namespace pwn::disasm
     _Success_(return) BOOL PWNAPI x64(_In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns);
     _Success_(return) BOOL PWNAPI x86(_In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns);
 }
+
+#endif /* PWN_NO_DISASSEMBLER */

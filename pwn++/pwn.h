@@ -14,8 +14,12 @@ namespace pwn
 #include "context.h"
 #include "log.h"
 #include "system.h"
+#ifndef PWN_NO_DISASSEMBLER
 #include "disasm.h"
+#endif
+#ifndef PWN_NO_ASSEMBLER
 #include "asm.h"
+#endif // !PWN_NO_ASSEMBLER
 #include "process.h"
 #include "thread.h"
 #include "registry.h"

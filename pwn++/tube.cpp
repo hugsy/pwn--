@@ -60,7 +60,7 @@ std::vector<BYTE> Tube::recvuntil(_In_ std::vector<BYTE> const& pattern)
 				if (i < sz)
 					return false;
 
-				for (auto j = 0; j < sz; j++)
+				for (size_t j = 0; j < sz; j++)
 				{
 					if (pattern.at(j) != in.at( (i-sz) + j))
 						return false;

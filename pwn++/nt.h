@@ -167,8 +167,8 @@ typedef struct _TEB_ACTIVE_FRAME
 
 typedef struct _BIG_POOL_INFO
 {
-	DWORD64 Address;
-	DWORD64 PoolSize;
+	ULONG_PTR Address;
+	ULONG_PTR PoolSize;
 	DWORD PoolTag;
 	char Padding[4];
 } BIG_POOL_INFO, * PBIG_POOL_INFO;

@@ -26,13 +26,14 @@ namespace pwn::utils
 		void __hexdump(_In_ const PBYTE data, _In_ SIZE_T size)
 		{
 			WCHAR ascii[17] = { 0, };
-			SIZE_T i, j;
+			u32 i, j;
+            size &= 0xffffffff;
 
 			for (i = 0; i < size; ++i) {
 				BYTE c = *((PCHAR)data + i);
 
 				if (!ascii[0])
-					::wprintf(L"%04llx   ", i);
+					::wprintf(L"%04lx   ", i);
 
 				::wprintf(L"%02X ", c);
 				ascii[i % 16] = (c >= 0x20 && c <= 0x7e) ? c : '.';
@@ -404,7 +405,7 @@ namespace pwn::utils
 	std::vector<BYTE> wstring_to_bytes(_In_ std::wstring const& str)
 	{
 		std::vector<BYTE> out;
-		for (auto i = 0; i < str.size(); i++)
+		for (size_t i = 0; i < str.size(); i++)
 		{
 			out.push_back((BYTE)str[i]);
 			out.push_back(0x00);

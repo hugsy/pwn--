@@ -4,7 +4,7 @@
 
 #include <vector>
 
-
+#ifndef PWN_NO_ASSEMBLER
 namespace pwn::assm
 {
     _Success_(return) BOOL PWNAPI assemble(_In_ const char* code, _In_ const size_t code_size, _Out_ std::vector<BYTE>& bytes);
@@ -15,3 +15,5 @@ namespace pwn::assm
     _Success_(return) PWNAPI std::vector<BYTE> x64(_In_ const char* code, _In_ const size_t code_size);
     _Success_(return) PWNAPI std::vector<BYTE> x86(_In_ const char* code, _In_ const size_t code_size);
 }
+
+#endif /* !PWN_NO_ASSEMBLER */

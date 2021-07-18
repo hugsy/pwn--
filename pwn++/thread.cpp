@@ -4,21 +4,7 @@
 #include "utils.h"
 
 
-extern "C" NTSYSAPI NTSTATUS NtSetInformationThread(
-    IN HANDLE          ThreadHandle,
-    IN THREAD_INFORMATION_CLASS ThreadInformationClass,
-    IN PVOID           ThreadInformation,
-    IN ULONG           ThreadInformationLength
-);
 
-
-extern NTSYSAPI NTSTATUS NTAPI NtQueryInformationThread(
-        IN HANDLE               ThreadHandle,
-        IN THREAD_INFORMATION_CLASS ThreadInformationClass,
-        OUT PVOID               ThreadInformation,
-        IN ULONG                ThreadInformationLength,
-        OUT PULONG              ReturnLength OPTIONAL
-);
 
 
 auto g_AdminThreadId = std::vector<DWORD>();
@@ -157,7 +143,7 @@ bool pwn::thread::set_name(_In_ DWORD dwThreadId, _In_ const std::wstring& name)
     us.MaximumLength = 0xffff; // no one cares
     us.Buffer = (PWSTR)name.c_str();
 
-    auto Status = NtSetInformationThread(
+    auto Status = ::NtSetInformationThread(
         hThread.get(), 
         ThreadNameInformation, 
         &us, 
@@ -181,7 +167,7 @@ bool pwn::thread::set_name(_In_ DWORD dwThreadId, _In_ const PBYTE lpBuffer, _In
     us.MaximumLength = wBufferLength;
     us.Buffer = (PWSTR)lpBuffer;
 
-    auto Status = NtSetInformationThread(
+    auto Status = ::NtSetInformationThread(
         hThread.get(),
         ThreadNameInformation,
         &us,

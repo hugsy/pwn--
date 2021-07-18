@@ -1,5 +1,6 @@
 #include "disasm.h"
 
+#ifndef PWN_NO_DISASSEMBLER
 #include <capstone/capstone.h>
 
 using namespace pwn::log;
@@ -135,11 +136,10 @@ namespace pwn::disasm
         case pwn::context::architecture_t::x64:
             return x64(code, code_size, insns);
 
-        default:
-            err(L"unsupported architecture\n");
-            break;
         }
 
-        return FALSE;
+        throw std::exception("unsupported architecture\n");
     }
 }
+
+#endif /* PWN_NO_DISASSEMBLER */

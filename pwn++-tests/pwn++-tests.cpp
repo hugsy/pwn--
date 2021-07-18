@@ -133,6 +133,7 @@ namespace pwn::tests
 
 			pwn::context::set_architecture(pwn::context::architecture_t::x64);
 			Assert::IsTrue(pwn::disasm::disassemble(code1, sizeof(code1), insns));
+			insns.size();
 			Assert::IsTrue(insns.size() == 4);
 
 			insns.clear();

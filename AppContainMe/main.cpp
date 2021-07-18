@@ -1,9 +1,15 @@
-#include "../pwn++/pwn.h"
+/*++
+
+Example file to create a simple AppContainer for containing any PE binary.
+
+--*/
+
+#include "..\pwn++\pwn.h"
 
 #include <iostream>
 #include <exception>
+#include <filesystem>
 
-#pragma comment(lib, "../x64/release/pwn++.lib")
 
 using namespace pwn::log;
 
@@ -75,12 +81,18 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 
                     if (pwn::utils::startswith(arg, std::wstring(L"d:")))
                     {
-                        std::wstring value(arg.substr(2));
+                        const std::filesystem::path value(arg.substr(2));
+                        if (!std::filesystem::is_regular_file(value) && !std::filesystem::is_directory(value))
+                        {
+                            warn(L"Skipping %s...\n", std::filesystem::absolute(value).c_str());
+                            continue;
+                        }
+
                         //
                         // appcontainers only allow explicit access to objects
                         //
                         info(L"trying to add access to file/directory '%s'...\n", value.c_str());
-                        if (!app.allow_file_or_directory(value))
+                        if (!app.allow_file_or_directory(std::filesystem::absolute(value).c_str()))
                         {
                             perror(L"allow_file_or_directory()");
                             break;

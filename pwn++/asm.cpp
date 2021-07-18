@@ -1,5 +1,7 @@
 #include "asm.h"
 
+#ifndef PWN_NO_ASSEMBLER
+
 #include <keystone/keystone.h>
 #include <stdexcept>
 
@@ -170,3 +172,5 @@ Returns:
         }
     }
 }
+
+#endif /* !PWN_NO_ASSEMBLER */

@@ -72,7 +72,9 @@ namespace pwn::log
 		::ReleaseMutex(g_ConsoleMutex);
 		
 		if (level == log_level_t::LOG_DEBUG)
+		{
 			::OutputDebugStringW(fmt.get());
+		}
 	}
 
 

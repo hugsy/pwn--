@@ -17,9 +17,9 @@ static T __crc_base(std::vector<BYTE> const& data, T variant)
 {
 	auto n = data.size();
 	T crc = -1;
-	for (auto i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++)
 	{
-		auto c = data.at(i);
+		BYTE c = data.at(i);
 		T b = (T)c;
 
 		for (auto j = 0; j < 8; j++)

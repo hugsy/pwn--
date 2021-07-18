@@ -46,9 +46,7 @@ namespace pwn::process
 		PWNAPI ULONG_PTR free(_In_ ULONG_PTR Address);
 	}
 
-	/*++/
-	Ref: https://scorpiosoftware.net/2019/01/15/fun-with-appcontainers/
-	--*/
+
 	namespace appcontainer
 	{
 		class AppContainer

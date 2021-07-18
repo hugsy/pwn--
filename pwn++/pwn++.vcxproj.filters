@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\asm">
+      <UniqueIdentifier>{9c76910d-84ec-45b0-b20c-29c619675fe2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -157,8 +160,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="asm_process.asm">
-      <Filter>Source Files</Filter>
+    <MASM Include="get_teb.asm">
+      <Filter>Source Files\asm</Filter>
     </MASM>
   </ItemGroup>
 </Project>

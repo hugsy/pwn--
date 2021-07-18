@@ -23,7 +23,7 @@ void OnAttachRoutine()
 
 void OnDetachRoutine()
 {
-    if(g_ConsoleMutex)
+    if (g_ConsoleMutex && g_ConsoleMutex != INVALID_HANDLE_VALUE)
         ::CloseHandle(g_ConsoleMutex);
 
 #ifdef PWN_AUTOSTART_BACKDOOR

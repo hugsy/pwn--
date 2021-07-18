@@ -16,15 +16,19 @@ using namespace pwn::log;
 #include "handle.h"
 
 
-
+///
+/// Note: this is just a fake excuse to use assembly in VS, for real world use `NtCurrentTeb()`
+///
 #ifdef _WIN64
-extern "C" ULONG_PTR __asm__get_teb_x64();
+#define TEB_OFFSET 0x30
 #define PEB_OFFSET 0x60
-#define __asm__get_teb __asm__get_teb_x64
+extern "C" ULONG_PTR x64_get_teb();
+#define get_teb x64_get_teb
 #else
-extern "C" ULONG_PTR __asm__get_teb_x86();
+#define TEB_OFFSET 0x18
 #define PEB_OFFSET 0x30
-#define __asm__get_teb __asm__get_teb_x86
+extern "C" ULONG_PTR x86_get_teb();
+#define get_teb x86_get_teb
 #endif
 
 
@@ -44,7 +48,7 @@ DWORD pwn::process::ppid()
 
 std::vector<std::tuple<std::wstring, DWORD>> pwn::process::list()
 {
-    int maxCount = 256; 
+    u16 maxCount = 256; 
     std::unique_ptr<DWORD[]> pids; 
     int count = 0; 
     std::vector<std::tuple<std::wstring, DWORD>> processes;
@@ -318,7 +322,7 @@ Get the TEB address of the current process
 --*/
 PTEB pwn::process::teb()
 {
-    return (PTEB)__asm__get_teb();
+    return NtCurrentTeb();
 }
 
 
@@ -329,7 +333,7 @@ Get the PEB address of the current process
 --*/
 PPEB pwn::process::peb()
 {
-    return pwn::process::teb()->ProcessEnvironmentBlock;
+    return teb()->ProcessEnvironmentBlock;
 }
 
 
@@ -340,7 +344,7 @@ Memory writes
 --*/
 SIZE_T pwn::process::mem::write(_In_ HANDLE hProcess, _In_ ULONG_PTR Address, _In_ PBYTE Data, _In_ SIZE_T DataLength)
 {
-    size_t dwNbWritten;
+    SIZE_T dwNbWritten;
     if ( ::WriteProcessMemory(hProcess, reinterpret_cast<LPVOID>(Address), Data, DataLength, &dwNbWritten) != FALSE )
         return dwNbWritten;
     return -1;
@@ -372,7 +376,7 @@ std::vector<BYTE> pwn::process::mem::read(_In_ HANDLE hProcess, _In_ ULONG_PTR A
 {
     auto tmp = std::make_unique<BYTE[]>(DataLength);
     std::vector<BYTE> out;
-    size_t dwNbRead;
+    SIZE_T dwNbRead;
     ::ReadProcessMemory(hProcess, reinterpret_cast<LPVOID>(Address), tmp.get(), DataLength, &dwNbRead);
     for ( size_t i = 0; i < dwNbRead; i++ ) out.push_back(tmp[i]);
     return out;
