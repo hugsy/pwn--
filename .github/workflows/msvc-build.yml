@@ -2,20 +2,27 @@ name: CI Build for MSVC
 
 env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+  REPO: hugsy/pwn--
+
 
 on:
   push:
     branches: [master, dev]
+  pull_request:
+    branches: [master, dev]
+
 
 jobs:
   build:
-    name: "Building pwn++"
-    runs-on: [windows-latest]
+    name: "Building pwn++ for ${{ matrix.configuration }}/${{ matrix.platform }}"
+    runs-on: windows-latest
     strategy:
       fail-fast: true
       matrix:
         platform: ['x86', 'x64']
         configuration: ['Debug', 'Release']
+    env:
+      RUN_URL: https://github.com/${{ env.REPO }}/runs/${{ github.run_number }}
 
     steps:
     - uses: actions/checkout@v2
@@ -26,6 +33,7 @@ jobs:
     - name: Install dependencies
       shell: pwsh
       run: |
+        vcpkg integrate install
         vcpkg install keystone:${{ matrix.platform }}-windows-static
         vcpkg install capstone:${{ matrix.platform }}-windows-static
 
@@ -50,7 +58,8 @@ jobs:
         title: CI failed on `${{ github.ref }}`
         description: |
           Failed to compile `${{ github.ref }}`
-          See ${{ github.event.push.html_url }}
+          ---
+          See ${{ env.RUN_URL }} for details
         color: 0xff0000
         username: ${{ github.actor }} via GithubBot
         avatar_url: ${{ github.actor.avatar_url }}
@@ -64,6 +73,10 @@ jobs:
         Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\
         vstest.console.exe /Platform:${{ matrix.platform }} .\pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++-tests.dll
 
+    - name: Perform CodeQL Analysis
+      if: ${{ success() }}
+      uses: github/codeql-action/analyze@v1
+
     - name: Notify on test failure
       if: ${{ failure() }}
       uses: sarisia/actions-status-discord@v1
@@ -72,7 +85,8 @@ jobs:
         title: CI failed on `${{ github.ref }}`
         description: |
           Tests failed for `${{ github.ref }}`
-          See ${{ github.event.push.html_url }}
+          ---
+          See ${{ env.RUN_URL }} for details
         color: 0xff0000
         username: ${{ github.actor }} via GithubBot
         avatar_url: ${{ github.actor.avatar_url }}
@@ -82,9 +96,10 @@ jobs:
       shell: pwsh
       run: |
         New-Item -Type Directory -Name build\
-        New-Item -Type Directory -Name build\include\
         Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.lib build\
         Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll build\
+        Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.pdb build\
+        New-Item -Type Directory -Name build\include\
         Copy-Item pwn++\*.h build\include\
 
     - name: Publish artifact
@@ -102,7 +117,8 @@ jobs:
         title: Build `${{ github.ref }}` succeeded
         description: |
           Tests failed for `${{ github.ref }}`
-          See ${{ github.event.push.html_url }}
+          ---
+          See ${{ env.RUN_URL }} for details
         color: 0x00ff00
         username: ${{ github.actor }} via GithubBot
         avatar_url: ${{ github.actor.avatar_url }}

@@ -1,5 +1,4 @@
-#include "../pwn++/pwn.h"
-#pragma comment(lib, "../x64/release/pwn++.lib")
+#include "..\pwn++\pwn.h"
 
 using namespace pwn::log;
 

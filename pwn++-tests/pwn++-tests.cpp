@@ -127,13 +127,12 @@ namespace pwn::tests
 		TEST_METHOD(Test_disassemble)
 		{
 			std::vector<pwn::disasm::insn_t> insns;
-			const uint8_t code1[] = { 0x90, 0x48, 0x31, 0xc0, 0xcc, 0xc3 };  
+			const u8 code1[] = { 0x90, 0x48, 0x31, 0xc0, 0xcc, 0xc3 };  
 				// x64 - nop; xor rax, rax; int3; ret
 				// x86 - nop; dec eax; xor eax, eax; int3; ret
 
 			pwn::context::set_architecture(pwn::context::architecture_t::x64);
 			Assert::IsTrue(pwn::disasm::disassemble(code1, sizeof(code1), insns));
-			insns.size();
 			Assert::IsTrue(insns.size() == 4);
 
 			insns.clear();

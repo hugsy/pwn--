@@ -16,6 +16,12 @@
     <Filter Include="Source Files\asm">
       <UniqueIdentifier>{9c76910d-84ec-45b0-b20c-29c619675fe2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\net">
+      <UniqueIdentifier>{a0c97378-1e7f-42d7-a97c-a706363d9d8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ctf">
+      <UniqueIdentifier>{5ae0436a-ff62-4460-bd97-709130490565}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -91,7 +97,10 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="tube.h">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files\ctf</Filter>
+    </ClInclude>
+    <ClInclude Include="network.h">
+      <Filter>Source Files\net</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -155,8 +164,11 @@
     <ClCompile Include="crypto.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="network.cpp">
+      <Filter>Source Files\net</Filter>
+    </ClCompile>
     <ClCompile Include="tube.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\ctf</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

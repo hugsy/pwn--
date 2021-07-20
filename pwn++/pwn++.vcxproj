@@ -210,6 +210,7 @@
     <ClInclude Include="job.h" />
     <ClInclude Include="kernel.h" />
     <ClInclude Include="log.h" />
+    <ClInclude Include="network.h" />
     <ClInclude Include="nt.h" />
     <ClInclude Include="process.h" />
     <ClInclude Include="pwn.h" />
@@ -235,6 +236,7 @@
     <ClCompile Include="job.cpp" />
     <ClCompile Include="kernel.cpp" />
     <ClCompile Include="log.cpp" />
+    <ClCompile Include="network.cpp" />
     <ClCompile Include="process.cpp" />
     <ClCompile Include="pwn.cpp" />
     <ClCompile Include="registry.cpp" />

@@ -44,7 +44,9 @@ namespace pwn::disasm
                 {
                     insn_t insn = { 0, };
                     if (__build_insn(cs_insns[i], insn))
+                    {
                         insns.push_back(insn);
+                    }
                     else
                     {
                         res = FALSE;
