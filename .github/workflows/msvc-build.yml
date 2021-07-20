@@ -7,8 +7,7 @@ env:
   NB_CPU: "$env:NUMBER_OF_PROCESSORS"
   VCPKG_INSTALL_PATH: "$env:VCPKG_INSTALLATION_ROOT/installed"
 
-on:[push, pull_request]
-
+on: [push, pull_request]
 
 jobs:
   build:
