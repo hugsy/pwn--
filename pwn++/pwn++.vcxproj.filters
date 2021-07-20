@@ -90,9 +90,6 @@
     <ClInclude Include="crypto.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="network.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="tube.h">
       <Filter>Header Files</Filter>
     </ClInclude>
