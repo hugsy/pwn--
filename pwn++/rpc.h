@@ -14,7 +14,7 @@
 #include <Rpc.h>
 #include <stdexcept>
 
-namespace pwn::rpc
+namespace pwn::windows::rpc
 {
     class RpcContext
     {

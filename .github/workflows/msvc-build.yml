@@ -3,19 +3,18 @@ name: CI Build for MSVC
 env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
   REPO: hugsy/pwn--
-  RUN_URL: https://github.com/hugsy/pwn--/runs/${{ github.run_number }}
+  RUN_URL: "https://github.com/hugsy/pwn--/runs/${{ github.run_number }}"
+  NB_CPU: "$env:NUMBER_OF_PROCESSORS"
+  VCPKG_INSTALL_PATH: "$env:VCPKG_INSTALLATION_ROOT/installed"
 
-on:
-  push:
-    branches: [master, dev]
-  pull_request:
-    branches: [master, dev]
+on:[push, pull_request]
 
 
 jobs:
   build:
     name: "Building pwn++ for ${{ matrix.configuration }}/${{ matrix.platform }}"
     runs-on: windows-latest
+
     strategy:
       fail-fast: true
       matrix:
@@ -28,25 +27,32 @@ jobs:
     - name: Inject slug/short variables
       uses: rlespinasse/github-slug-action@v3.x
 
+    - uses: actions/cache@v1
+      id: vcpkg_cache
+      with:
+       path: ${{ env.VCPKG_INSTALL_PATH }}
+       key: ${{ runner.os }}-vcpkg-${{ hashFiles('msbuild_version') }}
+
     - name: Install dependencies
+      if: steps.vcpkg_cache.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
-        vcpkg integrate install
-        vcpkg install keystone:${{ matrix.platform }}-windows-static
-        vcpkg install capstone:${{ matrix.platform }}-windows-static
+        vcpkg install keystone:${{ matrix.platform }}-windows-static keystone:${{ matrix.platform }}-windows
+        vcpkg install capstone:${{ matrix.platform }}-windows-static capstone:${{ matrix.platform }}-windows
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v1
       with:
         languages: cpp
 
-    - name: Build pwn++ lib & dll
+    - name: Build pwn++ dll
       shell: pwsh
       run: |
         Import-Module .\.github\Invoke-VS.ps1
+        vcpkg integrate install
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         Invoke-VisualStudio2019${{ matrix.platform }}
-        msbuild.exe pwn++\pwn++.vcxproj -nologo /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
+        msbuild.exe pwn++\pwn++.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:d /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
 
     - name: Notify on build failure
       if: ${{ failure() }}
@@ -67,7 +73,7 @@ jobs:
       run: |
         Import-Module .\.github\Invoke-VS.ps1
         Invoke-VisualStudio2019${{ matrix.platform }}
-        msbuild.exe pwn++-tests\pwn++-tests.vcxproj -nologo /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
+        msbuild.exe pwn++-tests\pwn++-tests.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:d /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
         Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\
         vstest.console.exe /Platform:${{ matrix.platform }} .\pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++-tests.dll
 
