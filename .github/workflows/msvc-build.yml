@@ -3,7 +3,7 @@ name: CI Build for MSVC
 env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
   REPO: hugsy/pwn--
-  RUN_URL: https://github.com/${{ env.REPO }}/runs/${{ github.run_number }}
+  RUN_URL: https://github.com/hugsy/pwn--/runs/${{ github.run_number }}
 
 on:
   push:
