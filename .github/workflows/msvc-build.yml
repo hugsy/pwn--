@@ -51,7 +51,7 @@ jobs:
         vcpkg integrate install
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         Invoke-VisualStudio2019${{ matrix.platform }}
-        msbuild.exe pwn++\pwn++.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:d /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
+        msbuild.exe pwn++\pwn++.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
 
     - name: Notify on build failure
       if: ${{ failure() }}
@@ -72,8 +72,15 @@ jobs:
       run: |
         Import-Module .\.github\Invoke-VS.ps1
         Invoke-VisualStudio2019${{ matrix.platform }}
-        msbuild.exe pwn++-tests\pwn++-tests.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:d /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
-        Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\
+        msbuild.exe pwn++-tests\pwn++-tests.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
+        if ( "${{ matrix.platform }}" -eq "x86" )
+        {
+          Copy-Item pwn++\Win32\${{ matrix.configuration }}\pwn++.dll pwn++-tests\Win32\${{ matrix.configuration }}\
+        }
+        else
+        {
+          Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\
+        }
         vstest.console.exe /Platform:${{ matrix.platform }} .\pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++-tests.dll
 
     - name: Perform CodeQL Analysis
@@ -99,9 +106,18 @@ jobs:
       shell: pwsh
       run: |
         New-Item -Type Directory -Name build\
-        Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.lib build\
-        Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll build\
-        Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.pdb build\
+        if ( "${{ matrix.platform }}" -eq "x86" )
+        {
+          Copy-Item pwn++\Win32\${{ matrix.configuration }}\pwn++.lib build\
+          Copy-Item pwn++\Win32\${{ matrix.configuration }}\pwn++.dll build\
+          Copy-Item pwn++\Win32\${{ matrix.configuration }}\pwn++.pdb build\
+        }
+        else
+        {
+          Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.lib build\
+          Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll build\
+          Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.pdb build\
+        }
         New-Item -Type Directory -Name build\include\
         Copy-Item pwn++\*.h build\include\
 
