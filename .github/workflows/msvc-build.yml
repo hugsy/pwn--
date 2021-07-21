@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        platform: ['x64']
+        platform: ['x86', 'x64']
         configuration: ['Debug', 'Release']
 
     steps:
@@ -61,13 +61,13 @@ jobs:
         msbuild.exe pwn++-tests\pwn++-tests.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
         if ( "${{ matrix.platform }}" -eq "x86" )
         {
-          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.dll pwn++-tests\Win32\${{ matrix.configuration }}\
-          vstest.console.exe /Platform:${{ matrix.platform }} .\pwn++-tests\Win32\${{ matrix.configuration }}\pwn++-tests.dll
+          # Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.dll .\Win32\${{ matrix.configuration }}\
+          vstest.console.exe /Platform:${{ matrix.platform }} .\Win32\${{ matrix.configuration }}\pwn++-tests.dll
         }
         else
         {
-          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\
-          vstest.console.exe /Platform:${{ matrix.platform }} .\pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++-tests.dll
+          # Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\
+          vstest.console.exe /Platform:${{ matrix.platform }} .\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++-tests.dll
         }
 
     - name: Perform CodeQL Analysis
@@ -82,15 +82,15 @@ jobs:
         New-Item -Type Directory -Name build\
         if ( "${{ matrix.platform }}" -eq "x86" )
         {
-          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.lib build\
-          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.dll build\
-          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.pdb build\
+          Copy-Item -Verbose .\Win32\${{ matrix.configuration }}\pwn++.lib build\
+          Copy-Item -Verbose .\Win32\${{ matrix.configuration }}\pwn++.dll build\
+          Copy-Item -Verbose .\Win32\${{ matrix.configuration }}\pwn++.pdb build\
         }
         else
         {
-          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.lib build\
-          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll build\
-          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.pdb build\
+          Copy-Item -Verbose .\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.lib build\
+          Copy-Item -Verbose .\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll build\
+          Copy-Item -Verbose .\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.pdb build\
         }
         New-Item -Type Directory -Name build\include\
         Copy-Item pwn++\*.h build\include\
