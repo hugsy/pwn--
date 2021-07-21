@@ -53,20 +53,6 @@ jobs:
         Invoke-VisualStudio2019${{ matrix.platform }}
         msbuild.exe pwn++\pwn++.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
 
-    - name: Notify on build failure
-      if: ${{ failure() }}
-      uses: sarisia/actions-status-discord@v1
-      with:
-        nodetail: true
-        title: CI failed on `${{ github.ref }}`
-        description: |
-          Failed to compile `${{ github.ref }}`
-          ---
-          See ${{ env.RUN_URL }} for details
-        color: 0xff0000
-        username: ${{ github.actor }} via GithubBot
-        avatar_url: ${{ github.actor.avatar_url }}
-
     - name: Run tests
       shell: pwsh
       run: |
@@ -75,11 +61,11 @@ jobs:
         msbuild.exe pwn++-tests\pwn++-tests.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
         if ( "${{ matrix.platform }}" -eq "x86" )
         {
-          Copy-Item pwn++\Win32\${{ matrix.configuration }}\pwn++.dll pwn++-tests\Win32\${{ matrix.configuration }}\
+          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.dll pwn++-tests\Win32\${{ matrix.configuration }}\
         }
         else
         {
-          Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\
+          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\
         }
         vstest.console.exe /Platform:${{ matrix.platform }} .\pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++-tests.dll
 
@@ -87,19 +73,6 @@ jobs:
       if: ${{ success() }}
       uses: github/codeql-action/analyze@v1
 
-    - name: Notify on test failure
-      if: ${{ failure() }}
-      uses: sarisia/actions-status-discord@v1
-      with:
-        nodetail: true
-        title: CI failed on `${{ github.ref }}`
-        description: |
-          Tests failed for `${{ github.ref }}`
-          ---
-          See ${{ env.RUN_URL }} for details
-        color: 0xff0000
-        username: ${{ github.actor }} via GithubBot
-        avatar_url: ${{ github.actor.avatar_url }}
 
     - name: Prepare artifact
       id: prepare_artifact
@@ -108,15 +81,15 @@ jobs:
         New-Item -Type Directory -Name build\
         if ( "${{ matrix.platform }}" -eq "x86" )
         {
-          Copy-Item pwn++\Win32\${{ matrix.configuration }}\pwn++.lib build\
-          Copy-Item pwn++\Win32\${{ matrix.configuration }}\pwn++.dll build\
-          Copy-Item pwn++\Win32\${{ matrix.configuration }}\pwn++.pdb build\
+          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.lib build\
+          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.dll build\
+          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.pdb build\
         }
         else
         {
-          Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.lib build\
-          Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll build\
-          Copy-Item pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.pdb build\
+          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.lib build\
+          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll build\
+          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.pdb build\
         }
         New-Item -Type Directory -Name build\include\
         Copy-Item pwn++\*.h build\include\
@@ -142,3 +115,16 @@ jobs:
         username: ${{ github.actor }} via GithubBot
         avatar_url: ${{ github.actor.avatar_url }}
 
+    - name: Notify on test failure
+      if: ${{ failure() }}
+      uses: sarisia/actions-status-discord@v1
+      with:
+        nodetail: true
+        title: CI build failed on `${{ github.ref }}`
+        description: |
+          CI build failed for `${{ github.ref }}`
+          ---
+          See ${{ env.RUN_URL }} for details
+        color: 0xff0000
+        username: ${{ github.actor }} via GithubBot
+        avatar_url: ${{ github.actor.avatar_url }}
