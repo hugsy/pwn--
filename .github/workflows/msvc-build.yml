@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        platform: ['x86', 'x64']
+        platform: ['x64']
         configuration: ['Debug', 'Release']
 
     steps:
