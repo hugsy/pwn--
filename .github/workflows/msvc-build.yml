@@ -32,12 +32,17 @@ jobs:
        path: ${{ env.VCPKG_INSTALL_PATH }}
        key: ${{ runner.os }}-vcpkg-${{ hashFiles('msbuild_version') }}
 
+    - name: Install vcpkg
+      shell: pwsh
+      run: |
+        vcpkg integrate install
+
     - name: Install dependencies
       if: steps.vcpkg_cache.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
-        vcpkg install keystone:${{ matrix.platform }}-windows-static keystone:${{ matrix.platform }}-windows
-        vcpkg install capstone:${{ matrix.platform }}-windows-static capstone:${{ matrix.platform }}-windows
+        vcpkg install keystone:${{ matrix.platform }}-windows-static
+        vcpkg install capstone:${{ matrix.platform }}-windows-static
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v1
@@ -48,10 +53,9 @@ jobs:
       shell: pwsh
       run: |
         Import-Module .\.github\Invoke-VS.ps1
-        vcpkg integrate install
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         Invoke-VisualStudio2019${{ matrix.platform }}
-        msbuild.exe pwn++.sln -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
+        msbuild.exe pwn++\pwn++.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
 
     - name: Run tests
       shell: pwsh
@@ -61,13 +65,13 @@ jobs:
         msbuild.exe pwn++-tests\pwn++-tests.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
         if ( "${{ matrix.platform }}" -eq "x86" )
         {
-          # Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.dll .\Win32\${{ matrix.configuration }}\
-          vstest.console.exe /Platform:${{ matrix.platform }} .\Win32\${{ matrix.configuration }}\pwn++-tests.dll
+          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.dll pwn++-tests\Win32\${{ matrix.configuration }}\
+          vstest.console.exe pwn++-tests\Win32\${{ matrix.configuration }}\pwn++-tests.dll
         }
         else
         {
-          # Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\
-          vstest.console.exe /Platform:${{ matrix.platform }} .\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++-tests.dll
+          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\
+          vstest.console.exe pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++-tests.dll
         }
 
     - name: Perform CodeQL Analysis

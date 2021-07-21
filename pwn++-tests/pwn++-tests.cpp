@@ -100,7 +100,7 @@ namespace pwn::tests
 		}
 	};
 
-
+#ifndef PWN_NO_ASSEMBLER
 	TEST_CLASS(UnitPwnAsm)
 	{
 	public:
@@ -119,8 +119,9 @@ namespace pwn::tests
 			Assert::IsFalse( pwn::assm::assemble(code, sizeof(code) - 1, bytes) );
 		}
 	};
+#endif
 
-
+#ifndef PWN_NO_DISASSEMBLER
 	TEST_CLASS(UnitPwnDisasm)
 	{
 	public:
@@ -133,20 +134,20 @@ namespace pwn::tests
 
 			pwn::context::set_architecture(pwn::context::architecture_t::x64);
 			Assert::IsTrue(pwn::disasm::disassemble(code1, sizeof(code1), insns));
-			Assert::IsTrue(insns.size() == 4);
+			Assert::IsTrue(insns.size() == (size_t)4);
 
 			insns.clear();
 
 			pwn::context::set_architecture(pwn::context::architecture_t::x86);
 			Assert::IsTrue(pwn::disasm::disassemble(code1, sizeof(code1), insns));
-			Assert::IsTrue(insns.size() == 5);
+			Assert::IsTrue(insns.size() == (size_t)5);
 
 			insns.clear();
 			const uint8_t code3[] = { 0xff, 0xff };
 			Assert::IsFalse(pwn::disasm::disassemble(code3, sizeof(code3), insns));
 		}
 	};
-
+#endif
 
 
 	TEST_CLASS(UnitPwnCrypto)

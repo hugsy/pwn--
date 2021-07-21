@@ -411,8 +411,8 @@ private:
             0,
             nullptr,
             nullptr,
-            &si,
-            &pi
+            reinterpret_cast<LPSTARTUPINFOW>(&si),
+            reinterpret_cast<LPPROCESS_INFORMATION>(&pi)
             ))
         {
             m_hProcess = pwn::utils::GenericHandle(pi.hProcess);

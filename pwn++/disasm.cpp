@@ -28,10 +28,15 @@ namespace pwn::disasm
         _Success_(return) 
         BOOL __disassemble(_In_ cs_arch arch, _In_ cs_mode mode, _In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
         {
+            cs_err err;
             csh handle;
-            if (cs_open(arch, mode, &handle) != CS_ERR_OK)
+
+            dbg(L"arch=%u mode=%u\n", arch, mode);
+
+            err = ::cs_open(arch, mode, &handle);
+            if (err != CS_ERR_OK)
             {
-                err(L"cs_open() failed\n");
+                err(L"cs_open() failed: %u\n", err);
                 return FALSE;
             }
 
@@ -138,6 +143,8 @@ namespace pwn::disasm
         case pwn::context::architecture_t::x64:
             return x64(code, code_size, insns);
 
+        default:
+            break;
         }
 
         throw std::exception("unsupported architecture\n");
