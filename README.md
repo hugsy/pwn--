@@ -17,7 +17,8 @@ _Note_: the original `PwnLib` was written around Windows 7 for feature testing. 
 
 ## Requirement
 
-[MS VS 16+ x64 Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe)
+ - x86 → [MSVC 16+ x86 Redistributable](https://aka.ms/vs/16/release/vc_redist.x86.exe)
+ - x64 → [MSVC 16+ x64 Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe)
 
 
 ## Get started
@@ -136,7 +137,7 @@ int wmain()
 	std::string a("AAAA");
 	std::wstring b(L"BBBB");
 
-	auto args = std::vector<flattenable_t>{ 
+	auto args = std::vector<flattenable_t>{
 		a,
 		"AAAA",
 		b,

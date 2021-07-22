@@ -185,5 +185,22 @@ namespace pwn::tests
 		}
 	};
 
+	TEST_CLASS(UnitPwnThread)
+	{
+	public:
+		TEST_METHOD(TestThread_GetSetName)
+		{
+			// get default name, should be non existing
+			Assert::IsFalse(pwn::thread::get_name().has_value());
+
+			// affect a name
+			Assert::IsTrue(pwn::thread::set_name(L"TestThreadName")); // len=14*2
+
+			// re-test the name
+			Assert::IsTrue(pwn::thread::get_name().has_value());
+			Assert::IsTrue( ::RtlCompareMemory( (*pwn::thread::get_name()).c_str(), L"TestThreadName", 28) == 28 );
+			Assert::IsTrue((*pwn::thread::get_name()).length() == 28); 
+		}
+	};
 
 }

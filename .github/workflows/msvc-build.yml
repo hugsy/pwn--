@@ -28,8 +28,10 @@ jobs:
 
     - uses: actions/cache@v1
       id: vcpkg_cache
+      env:
+        cache-name: cache-deps
       with:
-       key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/PACKAGES') }}
+       key: ${{ runner.os }}-vcpkg-${{ matrix.platform }}-${{ hashFiles('**/PACKAGES') }}
        path: |
           ${{ env.VCPKG_INSTALL_PATH }}
        restore-keys:
@@ -119,7 +121,8 @@ jobs:
         nodetail: true
         title: Build `${{ github.ref }}` succeeded
         description: |
-          Tests failed for `${{ github.ref }}`
+          [Job:${{ github.run_number }}] `${{ env.GITHUB_SHA_SHORT }}` in `${{ env.GITHUB_REF_SLUG }}` was built with success for ${{ matrix.platform }}/${{ matrix.configuration }}
+
           ---
           See ${{ env.RUN_URL }} for details
         color: 0x00ff00
@@ -133,8 +136,8 @@ jobs:
         nodetail: true
         title: CI build failed on `${{ github.ref }}`
         description: |
-          CI build failed for `${{ github.ref }}`
-          Job Id: ${{ github.run_number }}
+          [Job:${{ github.run_number }}] Failed to build `${{ env.GITHUB_SHA_SHORT }}` in `${{  env.GITHUB_REF_SLUG }}` for ${{ matrix.platform }}/${{ matrix.configuration }}
+
           ---
           See ${{ env.RUN_URL }} for details
         color: 0xff0000

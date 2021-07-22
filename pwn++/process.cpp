@@ -774,7 +774,7 @@ BOOL pwn::process::appcontainer::AppContainer::spawn()
 {
     auto length = m_ExecutablePath.length();
     auto sz = length * 2;
-    auto lpwCmdLine = std::make_unique<BYTE[]>(sz+2);
+    auto lpwCmdLine = std::make_unique<WCHAR[]>(sz+2);
     ::ZeroMemory(lpwCmdLine.get(), sz+2);
     ::memcpy(lpwCmdLine.get(), m_ExecutablePath.c_str(), sz);
 
@@ -785,7 +785,7 @@ BOOL pwn::process::appcontainer::AppContainer::spawn()
         (LPWSTR)lpwCmdLine.get(),
         nullptr,
         nullptr,
-        FALSE,
+        false,
         EXTENDED_STARTUPINFO_PRESENT,
         nullptr,
         nullptr,

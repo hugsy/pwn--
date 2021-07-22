@@ -3,6 +3,7 @@
 #include "common.h"
 #include "nt.h"
 
+#include <optional>
 
 extern "C"
 {
@@ -16,7 +17,7 @@ extern "C"
 
 
     NTSTATUS NTAPI NtQueryInformationThread(
-        IN HANDLE ThreadHandle,
+        IN HANDLE ThreadHandle, 
         IN THREADINFOCLASS ThreadInformationClass,
         OUT PVOID ThreadInformation,
         IN ULONG ThreadInformationLength,
@@ -28,7 +29,6 @@ extern "C"
 namespace pwn::thread
 {
 	_Success_(return) PWNAPI bool start_backdoor();
-	_Success_(return != nullptr) PWNAPI std::unique_ptr<std::wstring> get_name();
-	_Success_(return) PWNAPI bool set_name(_In_ DWORD dwThreadId, _In_ const std::wstring& name);
-	_Success_(return) PWNAPI bool set_name(_In_ DWORD dwThreadId, _In_ const PBYTE lpBuffer, _In_ WORD wBufferLength);
-}
+	_Success_(return != nullptr) PWNAPI std::optional<std::wstring> get_name(_In_ DWORD dwThreadId = -1);
+    _Success_(return ) PWNAPI bool set_name(_In_ std::wstring const& name, _In_ DWORD dwThreadId = -1);
+    }

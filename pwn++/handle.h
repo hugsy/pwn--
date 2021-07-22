@@ -40,14 +40,12 @@ namespace pwn::utils
                 try
                 {
                     m_closure_function();
-                    ::wprintf(L"using lambda destructor\n");
                 }
                 catch(u64 e)
                 {
                     if (e == __magic)
                     {
                         ::CloseHandle(m_handle);
-                        ::wprintf(L"using default destructor\n");
                     }
                 }
                 m_handle = nullptr;
