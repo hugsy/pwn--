@@ -3,7 +3,7 @@ name: CI Build for MSVC
 env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
   REPO: hugsy/pwn--
-  RUN_URL: "https://github.com/hugsy/pwn--/runs/${{ github.run_number }}"
+  RUN_URL: "https://github.com/hugsy/pwn--/actions/"
   NB_CPU: "$env:NUMBER_OF_PROCESSORS"
   VCPKG_INSTALL_PATH: "$env:VCPKG_INSTALLATION_ROOT/installed"
 
@@ -29,8 +29,14 @@ jobs:
     - uses: actions/cache@v1
       id: vcpkg_cache
       with:
-       path: ${{ env.VCPKG_INSTALL_PATH }}
-       key: ${{ runner.os }}-vcpkg-${{ hashFiles('msbuild_version') }}
+       key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/PACKAGES') }}
+       path: |
+          ${{ env.VCPKG_INSTALL_PATH }}
+       restore-keys:
+          ${{ runner.os }}-vcpkg-${{ env.cache-name }}-
+          ${{ runner.os }}-vcpkg-
+          ${{ runner.os }}-${{ env.cache-name }}-
+          ${{ runner.os }}-
 
     - name: Install vcpkg
       shell: pwsh
@@ -42,7 +48,7 @@ jobs:
       shell: pwsh
       run: |
         vcpkg install keystone:${{ matrix.platform }}-windows-static
-        vcpkg install capstone:${{ matrix.platform }}-windows-static
+        vcpkg install capstone[x86,arm,arm64]:${{ matrix.platform }}-windows-static
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v1
@@ -128,6 +134,7 @@ jobs:
         title: CI build failed on `${{ github.ref }}`
         description: |
           CI build failed for `${{ github.ref }}`
+          Job Id: ${{ github.run_number }}
           ---
           See ${{ env.RUN_URL }} for details
         color: 0xff0000
