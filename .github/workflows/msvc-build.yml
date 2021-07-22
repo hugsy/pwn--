@@ -18,7 +18,7 @@ jobs:
       fail-fast: true
       matrix:
         platform: ['x86', 'x64']
-        configuration: ['Debug', 'Release']
+        configuration: ['Release']
 
     steps:
     - uses: actions/checkout@v2
