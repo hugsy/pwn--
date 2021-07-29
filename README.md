@@ -6,7 +6,7 @@
 | [![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/hugsy/pwn--) | [![CI - MSVC](https://github.com/hugsy/pwn--/workflows/CI%20Build%20for%20MSVC/badge.svg)](https://github.com/hugsy/pwn--/actions?query=workflow%3A%22CI+Build+for+MSVC%22) | [![Discord](https://img.shields.io/badge/Discord-pwn%2b%2b-purple)](https://discord.gg/5HmwPxy3HP) |
 
 
-A (bad) C++17 rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL for Windows.
+A (bad) C++17 rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL, battery-included pwn kit for Windows.
 
 The idea is to provide in C on Windows the same kind of functionalities than [pwntools](https://github.com/Gallopsled/pwntools) does in Python on Linux.
 It's also a toy library meant for exploring Windows in a more friendly way. So if you're looking for years of poorly written C/C++ tangled with performant
@@ -25,7 +25,7 @@ _Note_: the original `PwnLib` was written around Windows 7 for feature testing. 
 
 ### Quick Start
 
-To start using `pwn++` lib, simply download the latest successful build from [CI builds](https://github.com/hugsy/pwn--/actions?query=is%3Asuccess), download and extract the zip file.
+To start using `pwn++` lib, simply download the latest successful build from [CI builds](https://github.com/hugsy/pwn--/actions/workflows/msvc-build.yml?query=is%3Asuccess), download and extract the zip file.
 In your C++ file, just include `pwn.h` and link with `pwn++.dll`.
 
 ```cpp
@@ -33,7 +33,7 @@ In your C++ file, just include `pwn.h` and link with `pwn++.dll`.
 #pragma comment(lib, "\path\to\pwn++\pwn.lib")
 ```
 
-Then compile your binary linked with the lib (make sure you're C++17 compliant):
+Then compile your binary linked with the lib (make sure you're at least C++17 compliant):
 
 ```bash
 C:\> cl.exe whatever.cc /std:c++17
@@ -42,7 +42,7 @@ C:\> clang.exe whatever.cc -std=c++17
 
 ### Better start
 
-Or better, use Visual Studio and add it via the GUI (this approach has the huge advantage that you can rely on IntelliSense for auto-completion). In VS, go to
+Or better, use Visual Studio and add it via the GUI (this approach has the huge advantage that you can rely on IntelliSense for auto-completion). In Visual Studio, 
 right click on your project in the `Solution Explorer` -> `Properties`, then:
  - add `pwn++` location to `C/C++`->`General`->`Additional Include Directories`
  - add `pwn++` library location to `Linker`->`General`->`Additional Libraries Directories`
@@ -391,7 +391,7 @@ void wmain()
 #### Simple AppContainer
 
 
-```
+```cpp
 #include <pwn++\pwn.h>
 
 void wmain()
@@ -711,7 +711,8 @@ auto wmain() -> int
 
 auto wmain() -> int
 {
-	return 0;
+    // todo   
+    return 0;
 }
 ```
 
