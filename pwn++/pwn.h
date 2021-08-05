@@ -1,13 +1,28 @@
 #pragma once
 
+#include <thread>
+
 #include "common.h"
 
 
 namespace pwn
 {
-	PWNAPI const wchar_t* version();
-	PWNAPI const std::tuple<WORD, WORD> version_info();
-}
+struct globals_t
+{
+    std::thread m_backdoor_thread;
+    std::vector<u32> m_admin_thread_ids{};
+    QWORD m_seed           = 0;
+    HANDLE m_console_mutex = INVALID_HANDLE_VALUE;
+};
+
+extern struct globals_t globals;
+
+PWNAPI auto
+version() -> const wchar_t *;
+
+PWNAPI auto
+version_info() -> const std::tuple<WORD, WORD>;
+} // namespace pwn
 
 
 /// namespace pwn::utils
@@ -66,4 +81,5 @@ namespace pwn
 /// namespace pwn::ctf
 #include "tube.h"
 
-
+// namespace pwn::backdoor
+#include "backdoor.h"

@@ -33,17 +33,13 @@ using i64 = int64_t;
 #define PWN_LOG_USE_COLOR
 #endif // !PWN_LOG_NO_COLOR */
 
+// uncomment to disable the backdoor thread
+// #define PWN_NO_BACKDOOR
 
 // uncomment to disable to the integration with capstone
 // #define PWN_NO_ASSEMBLER
 // uncomment to disable to the integration with keystone
 // #define PWN_NO_DISASSEMBLER
-
-
-// comment to disable to backdoor
-// #define PWN_AUTOSTART_BACKDOOR
-#undef PWN_AUTOSTART_BACKDOOR
-
 
 
 #include <array>
@@ -59,7 +55,7 @@ auto LoadModuleOrThrow(M hMod, P lpszProcName)
     auto address = ::GetProcAddress(hMod, lpszProcName);
     if (!address)
     {
-        throw std::exception(  std::string("Error importing: ") << std::string(lpszProcName).c_str() );
+        throw std::exception( (std::string("Error importing: ") + std::string(lpszProcName) ).c_str() );
     }
     return address;
 }

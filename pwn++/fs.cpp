@@ -32,11 +32,13 @@ extern "C"
 
 
 _Success_(return != nullptr)
-HANDLE pwn::fs::open(_In_ std::wstring const& path, _In_ std::wstring const& perm)
+auto pwn::fs::open(_In_ std::wstring const& path, _In_ std::wstring const& perm) -> HANDLE
 {
 	DWORD dwPerm = 0;
-	if (perm.find(L"r") != std::wstring::npos) dwPerm |= GENERIC_READ;
-	if (perm.find(L"w") != std::wstring::npos) dwPerm |= GENERIC_WRITE;
+	if (perm.find(L"r") != std::wstring::npos) { dwPerm |= GENERIC_READ;
+}
+	if (perm.find(L"w") != std::wstring::npos) { dwPerm |= GENERIC_WRITE;
+}
 
 	HANDLE hFile = ::CreateFile(
 		path.c_str(),
@@ -65,7 +67,7 @@ HANDLE pwn::fs::open(_In_ std::wstring const& path, _In_ std::wstring const& per
 
 
 _Success_(return != nullptr)
-HANDLE pwn::fs::touch(_In_ const std::wstring & path)
+auto pwn::fs::touch(_In_ const std::wstring & path) -> HANDLE
 {
 	return ::CreateFile(
 		path.c_str(),
@@ -80,7 +82,7 @@ HANDLE pwn::fs::touch(_In_ const std::wstring & path)
 
 
 _Success_(return != nullptr)
-HANDLE pwn::fs::tmpfile(_In_ const std::wstring & prefix, _Out_ std::wstring& path)
+auto pwn::fs::tmpfile(_In_ const std::wstring & prefix, _Out_ std::wstring& path) -> HANDLE
 {
 	HANDLE h = INVALID_HANDLE_VALUE;
 
@@ -113,15 +115,16 @@ do it when the refcount of handles on the object reaches 0.
 
 --*/
 _Success_ (return != nullptr)
-HANDLE pwn::fs::create_symlink(
+auto pwn::fs::create_symlink(
 	_In_ const std::wstring& link, 
 	_In_ const std::wstring& target
-)
+) -> HANDLE
 {
 	OBJECT_ATTRIBUTES oa = { 0 };
 	HANDLE hLink = nullptr;
 
-	UNICODE_STRING link_name, target_name;
+	UNICODE_STRING link_name;
+	UNICODE_STRING target_name;
 	
 	::RtlInitUnicodeString(&link_name, link.c_str());
 	::RtlInitUnicodeString(&target_name, target.c_str());
@@ -151,9 +154,9 @@ HANDLE pwn::fs::create_symlink(
 * 
 --*/
 _Success_(return != nullptr)
-HANDLE pwn::fs::open_symlink(
+auto pwn::fs::open_symlink(
 	_In_ const std::wstring &link
-)
+) -> HANDLE
 {
 	HANDLE hLink = INVALID_HANDLE_VALUE;
 	OBJECT_ATTRIBUTES oa = { 0 };
@@ -178,10 +181,10 @@ HANDLE pwn::fs::open_symlink(
 }
 
 _Success_(return != nullptr)
-HANDLE pwn::fs::create_junction(
+auto pwn::fs::create_junction(
 	_In_ const std::wstring& link,
 	_In_ const std::wstring& target
-)
+) -> HANDLE
 {
 	return INVALID_HANDLE_VALUE;
 }
@@ -193,14 +196,14 @@ Create directories recursively.
 
 --*/
 _Success_(return)
-bool pwn::fs::mkdir(_In_ const std::wstring& name)
+auto pwn::fs::mkdir(_In_ const std::wstring& name) -> bool
 {
 	bool bRes = true;
-	std::wstring root = L"";
+	std::wstring root;
 
 	for (auto subdir : pwn::utils::split(name, L'\\'))
 	{
-		if (::CreateDirectory((root + subdir).c_str(), NULL) 
+		if ((::CreateDirectory((root + subdir).c_str(), nullptr) != 0) 
 			|| ::GetLastError() == ERROR_ALREADY_EXISTS)
 		{
 			root = root + L"\\" + subdir;
@@ -216,27 +219,29 @@ bool pwn::fs::mkdir(_In_ const std::wstring& name)
 
 
 _Success_(return)
-bool pwn::fs::rmdir(_In_ const std::wstring& name)
+auto pwn::fs::rmdir(_In_ const std::wstring& name) -> bool
 {
-	return ::RemoveDirectoryW(name.c_str());
+	return ::RemoveDirectoryW(name.c_str()) != 0;
 }
 
 
-std::wstring pwn::fs::make_tmpdir(_In_ int level)
+auto pwn::fs::make_tmpdir(_In_ int level) -> std::wstring
 {
 	std::wstring name;
-	auto max_attempts = 10, attempts = 0;
+	auto max_attempts = 10;
+	auto attempts = 0;
 
 	do
 	{
-		if (attempts == max_attempts)
+		if (attempts == max_attempts) {
 			throw std::exception("failed to create directory");
+}
 
 		name = pwn::utils::random::string(level);
 		name.erase(62);
 		attempts++;
 	}
-	while (mkdir(name) == false);
+	while (!mkdir(name));
 
 	dbg(L"created tmp dir '%s'\n", name.c_str());
 
@@ -245,7 +250,7 @@ std::wstring pwn::fs::make_tmpdir(_In_ int level)
 
 
 _Success_(return)
-bool pwn::fs::watch_dir(_In_ const std::wstring& name, _In_ std::function<bool(PFILE_NOTIFY_INFORMATION)> cbFunctor, _In_ bool watch_subtree)
+auto pwn::fs::watch_dir(_In_ const std::wstring& name, _In_ std::function<bool(PFILE_NOTIFY_INFORMATION)> cbFunctor, _In_ bool watch_subtree) -> bool
 {
 	auto h = pwn::utils::GenericHandle(
 		::CreateFileW(
@@ -259,10 +264,11 @@ bool pwn::fs::watch_dir(_In_ const std::wstring& name, _In_ std::function<bool(P
 		)
 	);
 
-	if (!h)
+	if (!h) {
 		return false;
+}
 
-	DWORD sz = (DWORD)sizeof(FILE_NOTIFY_INFORMATION);
+	auto sz = (DWORD)sizeof(FILE_NOTIFY_INFORMATION);
 	auto buffer = std::make_unique<std::byte[]>(sz);
 	DWORD bytes_written;
 
@@ -270,16 +276,16 @@ bool pwn::fs::watch_dir(_In_ const std::wstring& name, _In_ std::function<bool(P
 
 	// https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-readdirectorychangesw
 
-	if (!::ReadDirectoryChangesW(
+	if (::ReadDirectoryChangesW(
 		h.get(),
 		buffer.get(),
 		sz,
-		watch_subtree,
+		static_cast<BOOL>(watch_subtree),
 		FILE_NOTIFY_CHANGE_FILE_NAME,
 		&bytes_written,
 		nullptr,
 		nullptr
-		))
+		) == 0)
 	{
 		return false;
 	}

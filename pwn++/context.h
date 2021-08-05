@@ -27,8 +27,8 @@ namespace pwn::context
 	extern PWNAPI u8 ptrsize;
 	extern PWNAPI pwn::log::log_level_t __log_level;
 	
-	PWNAPI BOOL set_architecture(_In_ architecture_t new_arch);
-	PWNAPI BOOL set_log_level(_In_ pwn::log::log_level_t new_level);
-	PWNAPI const std::tuple<pwn::log::log_level_t, const wchar_t*> get_log_level();
+	PWNAPI auto set_architecture(_In_ architecture_t new_arch) -> BOOL;
+	PWNAPI auto set_log_level(_In_ pwn::log::log_level_t new_level) -> BOOL;
+	PWNAPI auto get_log_level() -> const std::tuple<pwn::log::log_level_t, const wchar_t*>;
 
 }

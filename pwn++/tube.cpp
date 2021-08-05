@@ -1,25 +1,25 @@
 #include "tube.h"
 
 
-size_t Tube::send(_In_ std::vector<BYTE> const& data)
+auto Tube::send(_In_ std::vector<BYTE> const& data) -> size_t
 {
 	return __send_internal(data);
 }
 
 
-size_t Tube::send(_In_ std::string const& str)
+auto Tube::send(_In_ std::string const& str) -> size_t
 {
 	return __send_internal(pwn::utils::string_to_bytes(str));
 }
 
 
-std::vector<BYTE> Tube::recv(_In_ size_t size)
+auto Tube::recv(_In_ size_t size) -> std::vector<BYTE>
 {
 	return __recv_internal(size);
 }
 
 
-size_t Tube::sendline(_In_ std::vector<BYTE> const& data)
+auto Tube::sendline(_In_ std::vector<BYTE> const& data) -> size_t
 {
 	auto send_data(data);
 	send_data.push_back(PWN_LINESEP);
@@ -27,13 +27,13 @@ size_t Tube::sendline(_In_ std::vector<BYTE> const& data)
 }
 
 
-size_t Tube::sendline(_In_ std::string const& str)
+auto Tube::sendline(_In_ std::string const& str) -> size_t
 {
 	return sendline(pwn::utils::string_to_bytes(str));
 }
 
 
-std::vector<BYTE> Tube::recvuntil(_In_ std::vector<BYTE> const& pattern)
+auto Tube::recvuntil(_In_ std::vector<BYTE> const& pattern) -> std::vector<BYTE>
 {
 	size_t idx = 0;
 	std::vector<BYTE> in;
@@ -43,8 +43,9 @@ std::vector<BYTE> Tube::recvuntil(_In_ std::vector<BYTE> const& pattern)
 		// append new data received from the pipe
 		{
 			auto in2 = recv(PWN_TUBE_PIPE_DEFAULT_SIZE);
-			if (in2.empty())
+			if (in2.empty()) {
 				continue;
+}
 			std::copy(in2.begin(), in2.end(), std::back_inserter(in));
 		}
 
@@ -57,13 +58,15 @@ std::vector<BYTE> Tube::recvuntil(_In_ std::vector<BYTE> const& pattern)
 				auto i = idx;
 				auto sz = pattern.size();
 
-				if (i < sz)
+				if (i < sz) {
 					return false;
+}
 
 				for (size_t j = 0; j < sz; j++)
 				{
-					if (pattern.at(j) != in.at( (i-sz) + j))
+					if (pattern.at(j) != in.at( (i-sz) + j)) {
 						return false;
+}
 				}
 
 				return true; 
@@ -88,47 +91,47 @@ std::vector<BYTE> Tube::recvuntil(_In_ std::vector<BYTE> const& pattern)
 }
 
 
-std::vector<BYTE> Tube::recvuntil(_In_ std::string const& pattern)
+auto Tube::recvuntil(_In_ std::string const& pattern) -> std::vector<BYTE>
 {
 	return recvuntil(pwn::utils::string_to_bytes(pattern));
 }
 
 
-std::vector<BYTE> Tube::recvline()
+auto Tube::recvline() -> std::vector<BYTE>
 {
 	return recvuntil(std::vector<BYTE>{PWN_LINESEP});
 }
 
 
-size_t Tube::sendafter(_In_ std::vector<BYTE> const& pattern, _In_ std::vector<BYTE> const& data)
+auto Tube::sendafter(_In_ std::vector<BYTE> const& pattern, _In_ std::vector<BYTE> const& data) -> size_t
 {
 	recvuntil(pattern);
 	return send(data);
 }
 
 
-size_t Tube::sendafter(_In_ std::string const& pattern, _In_ std::string const& data)
+auto Tube::sendafter(_In_ std::string const& pattern, _In_ std::string const& data) -> size_t
 {
 	recvuntil(pattern);
 	return send(data);
 }
 
 
-size_t Tube::sendlineafter(_In_ std::vector<BYTE> const& pattern, _In_ std::vector<BYTE> const& data)
+auto Tube::sendlineafter(_In_ std::vector<BYTE> const& pattern, _In_ std::vector<BYTE> const& data) -> size_t
 {
 	recvuntil(pattern);
 	return sendline(data);
 }
 
 
-size_t Tube::sendlineafter(_In_ std::string const& pattern, _In_ std::string const& data)
+auto Tube::sendlineafter(_In_ std::string const& pattern, _In_ std::string const& data) -> size_t
 {
 	recvuntil(pattern);
 	return sendline(data);
 }
 
 
-size_t Tube::peek()
+auto Tube::peek() -> size_t
 {
 	return __peek_internal();
 }
@@ -161,7 +164,7 @@ void Tube::interactive()
 {
 	__bReplLoop = true;
  
-	::SetConsoleCtrlHandler(__pwn_interactive_repl_sighandler, true);
+	::SetConsoleCtrlHandler(__pwn_interactive_repl_sighandler, 1);
 
 	ok(L"Entering interactive mode...\n");
 
@@ -178,8 +181,9 @@ void Tube::interactive()
 					auto in = recv(PWN_TUBE_PIPE_DEFAULT_SIZE);
 					std::cout << std::string(in.begin(), in.end());
 
-					if (in.size() < PWN_TUBE_PIPE_DEFAULT_SIZE)
+					if (in.size() < PWN_TUBE_PIPE_DEFAULT_SIZE) {
 						break;
+}
 
 					std::this_thread::sleep_for(0.1s); // for debug, remove later
 				}
@@ -208,7 +212,7 @@ void Tube::interactive()
 
 	remote.join();
 
-	::SetConsoleCtrlHandler(nullptr, true);
+	::SetConsoleCtrlHandler(nullptr, 1);
 
 	ok(L"Leaving interactive mode...\n");
 }

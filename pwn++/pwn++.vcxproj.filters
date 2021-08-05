@@ -93,6 +93,9 @@
     <ClInclude Include="tube.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="backdoor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -158,10 +161,16 @@
     <ClCompile Include="tube.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="backdoor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="get_teb.asm">
       <Filter>Source Files\asm</Filter>
     </MASM>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

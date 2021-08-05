@@ -6,12 +6,12 @@
 
 namespace pwn::system
 {
-	PWNAPI DWORD pagesize();
-	PWNAPI DWORD pid(_In_ HANDLE hProcess);
-	PWNAPI DWORD ppid(_In_ DWORD dwProcessId);
-	PWNAPI DWORD pidof(_In_ const std::wstring& name);
-	PWNAPI const std::wstring computername();
-	PWNAPI const std::wstring username();
-	PWNAPI const std::wstring modulename(_In_opt_ HMODULE hModule);
-	PWNAPI const std::wstring filename();
+	PWNAPI auto pagesize() -> DWORD;
+	PWNAPI auto pid(_In_ HANDLE hProcess) -> DWORD;
+	PWNAPI auto ppid(_In_ DWORD dwProcessId) -> DWORD;
+	PWNAPI auto pidof(_In_ const std::wstring& name) -> DWORD;
+	PWNAPI auto computername() -> const std::wstring;
+	PWNAPI auto username() -> const std::wstring;
+	PWNAPI auto modulename(_In_opt_ HMODULE hModule) -> const std::wstring;
+	PWNAPI auto filename() -> const std::wstring;
 }

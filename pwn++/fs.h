@@ -23,58 +23,58 @@ interesting locations from link target
 namespace pwn::fs
 {
 	_Success_(return != nullptr)
-	PWNAPI HANDLE open(
+	PWNAPI auto open(
 		_In_ std::wstring const& path,
 		_In_ std::wstring const& perm = L"rw"
-	);
+	) -> HANDLE;
 
 	_Success_(return != nullptr)
-	PWNAPI HANDLE touch(
+	PWNAPI auto touch(
 		_In_ const std::wstring& path
-	);
+	) -> HANDLE;
 
 	_Success_(return != nullptr)
-	PWNAPI HANDLE create_hardlink(
+	PWNAPI auto create_hardlink(
 			_In_ const std::wstring & link,
 			_In_ const std::wstring & target
-	);
+	) -> HANDLE;
 
 	_Success_(return != nullptr)
-	PWNAPI HANDLE create_symlink(
+	PWNAPI auto create_symlink(
 		_In_ const std::wstring& link,
 		_In_ const std::wstring& target
-	);
+	) -> HANDLE;
 
 	_Success_(return != nullptr)
-	PWNAPI HANDLE open_symlink(
+	PWNAPI auto open_symlink(
 		_In_ const std::wstring & link
-	);
+	) -> HANDLE;
 
 	_Success_(return != nullptr)
-		PWNAPI HANDLE create_junction(
+		PWNAPI auto create_junction(
 		_In_ const std::wstring& link,
 		_In_ const std::wstring& target
-	);
+	) -> HANDLE;
 
 	_Success_(return)
-	PWNAPI bool mkdir(
+	PWNAPI auto mkdir(
 		_In_ const std::wstring& name
-	);
+	) -> bool;
 
 	_Success_(return)
-	PWNAPI bool rmdir(
+	PWNAPI auto rmdir(
 		_In_ const std::wstring& name
-	);
+	) -> bool;
 
-	PWNAPI std::wstring make_tmpdir(
+	PWNAPI auto make_tmpdir(
 		_In_ int level = 10
-	);
+	) -> std::wstring;
 
 	_Success_(return != nullptr)
-	PWNAPI HANDLE tmpfile(
+	PWNAPI auto tmpfile(
 		_In_ const std::wstring& prefix,
 		_Out_ std::wstring& path
-	);
+	) -> HANDLE;
 
 	/*++
 	
@@ -82,11 +82,11 @@ namespace pwn::fs
 
 	--*/
 	_Success_(return)
-	PWNAPI bool watch_dir(
+	PWNAPI auto watch_dir(
 		_In_ const std::wstring& name,
 		_In_ std::function<bool(PFILE_NOTIFY_INFORMATION)> cbFunctor,
 		_In_ bool watch_subtree = false
-	);
+	) -> bool;
 }
 
 

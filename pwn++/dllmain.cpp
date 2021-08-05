@@ -1,44 +1,43 @@
 #include "pwn.h"
-#include <thread>
 
 using namespace pwn::log;
+using namespace pwn::backdoor;
 using namespace pwn::utils::random;
 using namespace pwn::thread;
 
-std::thread g_backdoor;
 
-void OnAttachRoutine()
+void
+OnAttachRoutine()
 {
-    g_ConsoleMutex = CreateMutex(NULL, FALSE, NULL);
+    pwn::globals.m_console_mutex = ::CreateMutex(nullptr, FALSE, nullptr);
     pwn::utils::random::seed();
 
-#ifdef PWN_AUTOSTART_BACKDOOR
-    g_backdoor = std::thread(
-        pwn::thread::start_backdoor
-    );
-    g_backdoor.detach();
-#endif // PWN_AUTOSTART_BACKDOOR   
+#ifndef PWN_NO_BACKDOOR
+    {
+        pwn::globals.m_backdoor_thread = std::thread::thread(pwn::backdoor::start);
+
+        pwn::globals.m_backdoor_thread.detach();
+    }
+#endif // PWN_NO_BACKDOOR
 }
 
 
-void OnDetachRoutine()
+void
+OnDetachRoutine()
 {
-    if (g_ConsoleMutex && g_ConsoleMutex != INVALID_HANDLE_VALUE)
-        ::CloseHandle(g_ConsoleMutex);
+    if (pwn::globals.m_console_mutex != INVALID_HANDLE_VALUE)
+    {
+        ::CloseHandle(pwn::globals.m_console_mutex);
+    }
 
-#ifdef PWN_AUTOSTART_BACKDOOR
-    g_backdoor.join();
-#endif // PWN_AUTOSTART_BACKDOOR   
+#ifndef PWN_NO_BACKDOOR
+    pwn::backdoor::stop();
+#endif // PWN_NO_BACKDOOR
 }
 
 
-BOOL
-APIENTRY
-DllMain( 
-    _In_ HMODULE hModule,
-    _In_ DWORD  ul_reason_for_call,
-    _In_ LPVOID lpReserved
-)
+BOOL APIENTRY
+DllMain(_In_ HMODULE hModule, _In_ DWORD ul_reason_for_call, _In_ LPVOID lpReserved)
 {
     UNREFERENCED_PARAMETER(hModule);
     UNREFERENCED_PARAMETER(lpReserved);
@@ -57,4 +56,3 @@ DllMain(
     }
     return TRUE;
 }
-

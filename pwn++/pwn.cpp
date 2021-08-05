@@ -1,16 +1,28 @@
 #include "pwn.h"
 
 
-const wchar_t* pwn::version()
+
+namespace pwn
 {
-	return __PWNLIB_VERSION__;
+
+
+
+struct pwn::globals_t globals;
+
+auto
+pwn::version() -> const wchar_t *
+{
+    return __PWNLIB_VERSION__;
 }
 
 
-const std::tuple<WORD, WORD> pwn::version_info()
+auto
+pwn::version_info() -> const std::tuple<WORD, WORD>
 {
-	const std::tuple<WORD, WORD> out(__PWNLIB_VERSION_MAJOR__, __PWNLIB_VERSION_MINOR__);
-	return out;
+    const std::tuple<WORD, WORD> out(__PWNLIB_VERSION_MAJOR__, __PWNLIB_VERSION_MINOR__);
+    return out;
+}
+
 }
 
 

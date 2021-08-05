@@ -14,26 +14,26 @@ namespace pwn::crypto
 	/**
 	 * CRCx
 	 */
-	PWNAPI BYTE crc8(std::vector<BYTE> const&);
-	PWNAPI WORD crc16(std::vector<BYTE> const&);
-	PWNAPI DWORD crc32(std::vector<BYTE> const&);
-	PWNAPI DWORD64 crc64(std::vector<BYTE> const&);
+	PWNAPI auto crc8(std::vector<BYTE> const&) -> BYTE;
+	PWNAPI auto crc16(std::vector<BYTE> const&) -> WORD;
+	PWNAPI auto crc32(std::vector<BYTE> const&) -> DWORD;
+	PWNAPI auto crc64(std::vector<BYTE> const&) -> DWORD64;
 
 
 	/**
 	 * MDx
 	 */
 
-	PWNAPI std::array<BYTE, MD5LEN> md2(std::vector<BYTE> const& data);
-	PWNAPI std::array<BYTE, MD5LEN> md4(std::vector<BYTE> const& data);
-	PWNAPI std::array<BYTE, MD5LEN> md5(std::vector<BYTE> const& data);
+	PWNAPI auto md2(std::vector<BYTE> const& data) -> std::array<BYTE, MD5LEN>;
+	PWNAPI auto md4(std::vector<BYTE> const& data) -> std::array<BYTE, MD5LEN>;
+	PWNAPI auto md5(std::vector<BYTE> const& data) -> std::array<BYTE, MD5LEN>;
 
 
 
 	/**
 	 * SHAx
 	 */
-	PWNAPI std::array<BYTE, SHA1LEN> sha1(std::vector<BYTE> const& data);
-	PWNAPI std::array<BYTE, SHA256LEN> sha256(std::vector<BYTE> const& data);
-	PWNAPI std::array<BYTE, SHA512LEN> sha512(std::vector<BYTE> const& data);
+	PWNAPI auto sha1(std::vector<BYTE> const& data) -> std::array<BYTE, SHA1LEN>;
+	PWNAPI auto sha256(std::vector<BYTE> const& data) -> std::array<BYTE, SHA256LEN>;
+	PWNAPI auto sha512(std::vector<BYTE> const& data) -> std::array<BYTE, SHA512LEN>;
 }

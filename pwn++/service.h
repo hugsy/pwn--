@@ -10,7 +10,7 @@ namespace pwn::service
 	public:
 		using GenericHandle<SC_HANDLE>::GenericHandle;
 
-		bool close() override
+		auto close() -> bool override
 		{
 			if ( bool(m_handle) )
 			{
@@ -21,31 +21,31 @@ namespace pwn::service
 		}
 	};
 
-	typedef struct 
+	using service_info_t = struct 
 	{
 		std::wstring Name;
 		std::wstring DisplayName;
 		DWORD Status;
 		DWORD Type;
 		DWORD ProcessId;
-	} service_info_t;
+	};
 
 
-	PWNAPI DWORD create(_In_ const wchar_t* lpwszName, _In_ const wchar_t* lpwszPath);
-	PWNAPI DWORD create(_In_ const std::wstring& ServiceName, _In_ const std::wstring& ServiceBinaryPath); 
+	PWNAPI auto create(_In_ const wchar_t* lpwszName, _In_ const wchar_t* lpwszPath) -> DWORD;
+	PWNAPI auto create(_In_ const std::wstring& ServiceName, _In_ const std::wstring& ServiceBinaryPath) -> DWORD; 
 
-	PWNAPI DWORD start(_In_ const wchar_t* lpwszName);
-	PWNAPI DWORD start(_In_ const std::wstring& ServiceName);
+	PWNAPI auto start(_In_ const wchar_t* lpwszName) -> DWORD;
+	PWNAPI auto start(_In_ const std::wstring& ServiceName) -> DWORD;
 
-	PWNAPI DWORD stop(_In_ const wchar_t* lpwszName, _In_ DWORD dwTimeout = 10000);
-	PWNAPI DWORD stop(_In_ const std::wstring& ServiceName, _In_ DWORD dwTimeout = 10000);
+	PWNAPI auto stop(_In_ const wchar_t* lpwszName, _In_ DWORD dwTimeout = 10000) -> DWORD;
+	PWNAPI auto stop(_In_ const std::wstring& ServiceName, _In_ DWORD dwTimeout = 10000) -> DWORD;
 
-	PWNAPI DWORD destroy(_In_ const wchar_t* lpwszName);
-	PWNAPI DWORD destroy(_In_ const std::wstring& ServiceName);
+	PWNAPI auto destroy(_In_ const wchar_t* lpwszName) -> DWORD;
+	PWNAPI auto destroy(_In_ const std::wstring& ServiceName) -> DWORD;
 
-	PWNAPI std::vector<service_info_t> list();
+	PWNAPI auto list() -> std::vector<service_info_t>;
 
-	PWNAPI BOOL is_running(_In_ const wchar_t* lpwszName);
-	PWNAPI BOOL is_running(_In_ const std::wstring& ServiceName);
+	PWNAPI auto is_running(_In_ const wchar_t* lpwszName) -> BOOL;
+	PWNAPI auto is_running(_In_ const std::wstring& ServiceName) -> BOOL;
 
 }

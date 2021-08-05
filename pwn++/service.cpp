@@ -24,7 +24,7 @@ Returns:
 	The error code of the function, sets last error on failure.
 
 --*/
-DWORD pwn::service::create(_In_ const wchar_t* lpwszName, _In_ const wchar_t* lpwszPath)
+auto pwn::service::create(_In_ const wchar_t* lpwszName, _In_ const wchar_t* lpwszPath) -> DWORD
 {
 	DWORD dwResult = ERROR_SUCCESS;
 
@@ -67,7 +67,7 @@ DWORD pwn::service::create(_In_ const wchar_t* lpwszName, _In_ const wchar_t* lp
 }
 
 
-DWORD pwn::service::create(_In_ const std::wstring& ServiceName, _In_ const std::wstring& ServiceBinaryPath)
+auto pwn::service::create(_In_ const std::wstring& ServiceName, _In_ const std::wstring& ServiceBinaryPath) -> DWORD
 {
 	return pwn::service::create(ServiceName.c_str(), ServiceBinaryPath.c_str());
 }
@@ -90,7 +90,7 @@ Returns:
 	The error code of the function, sets last error on failure.
 
 --*/
-DWORD pwn::service::start(_In_ const wchar_t* lpwszName)
+auto pwn::service::start(_In_ const wchar_t* lpwszName) -> DWORD
 {
 	DWORD dwResult = ERROR_SUCCESS;
 
@@ -114,7 +114,7 @@ DWORD pwn::service::start(_In_ const wchar_t* lpwszName)
 		}
 
 
-		if ( !::StartService(hService.get(), 0, nullptr) )
+		if ( ::StartService(hService.get(), 0, nullptr) == 0 )
 		{
 			perror(L"StartService()");
 			dwResult = ::GetLastError();
@@ -129,7 +129,7 @@ DWORD pwn::service::start(_In_ const wchar_t* lpwszName)
 }
 
 
-DWORD pwn::service::start(_In_ const std::wstring& ServiceName)
+auto pwn::service::start(_In_ const std::wstring& ServiceName) -> DWORD
 {
 	return  pwn::service::start(ServiceName.c_str());
 }
@@ -153,9 +153,10 @@ Returns:
 	The error code of the function, sets last error on failure.
 
 --*/
-DWORD pwn::service::stop(_In_ const wchar_t* lpwszName, _In_ DWORD dwTimeout)
+auto pwn::service::stop(_In_ const wchar_t* lpwszName, _In_ DWORD dwTimeout) -> DWORD
 {
-	DWORD dwResult = ERROR_SUCCESS, dwBytes = 0;
+	DWORD dwResult = ERROR_SUCCESS;
+	DWORD dwBytes = 0;
 
 	do
 	{
@@ -176,7 +177,7 @@ DWORD pwn::service::stop(_In_ const wchar_t* lpwszName, _In_ DWORD dwTimeout)
 		}
 
 		SERVICE_STATUS_PROCESS Status = { 0 };
-		if ( !::ControlService(hService.get(), SERVICE_CONTROL_STOP, (SERVICE_STATUS*)&Status) )
+		if ( ::ControlService(hService.get(), SERVICE_CONTROL_STOP, (SERVICE_STATUS*)&Status) == 0 )
 		{
 			perror(L"ControlService()");
 			dwResult = ::GetLastError();
@@ -191,12 +192,12 @@ DWORD pwn::service::stop(_In_ const wchar_t* lpwszName, _In_ DWORD dwTimeout)
 		//
 		while ( TRUE )
 		{
-			if ( !::QueryServiceStatusEx(
+			if ( ::QueryServiceStatusEx(
 				hService.get(), 
 				SC_STATUS_PROCESS_INFO, 
 				(LPBYTE)&Status,
 				sizeof(SERVICE_STATUS_PROCESS), 
-				&dwBytes) 
+				&dwBytes) == 0 
 			)
 			{
 				perror(L"QueryServiceStatusEx()");
@@ -226,7 +227,7 @@ DWORD pwn::service::stop(_In_ const wchar_t* lpwszName, _In_ DWORD dwTimeout)
 }
 
 
-DWORD pwn::service::stop(_In_ const std::wstring& ServiceName, _In_ DWORD dwTimeout)
+auto pwn::service::stop(_In_ const std::wstring& ServiceName, _In_ DWORD dwTimeout) -> DWORD
 {
 	return  pwn::service::stop(ServiceName.c_str(), dwTimeout);
 }
@@ -249,7 +250,7 @@ Returns:
 	The error code of the function, sets last error on failure.
 
 --*/
-DWORD pwn::service::destroy(_In_ const wchar_t* lpwszName)
+auto pwn::service::destroy(_In_ const wchar_t* lpwszName) -> DWORD
 {
 	DWORD dwResult = ERROR_SUCCESS;
 
@@ -271,7 +272,7 @@ DWORD pwn::service::destroy(_In_ const wchar_t* lpwszName)
 			break;
 		}
 
-		if ( !::DeleteService(hService.get()) )
+		if ( ::DeleteService(hService.get()) == 0 )
 		{
 			perror(L"DeleteService()");
 			dwResult = ::GetLastError();
@@ -285,7 +286,7 @@ DWORD pwn::service::destroy(_In_ const wchar_t* lpwszName)
 }
 
 
-DWORD pwn::service::destroy(_In_ const std::wstring& ServiceName)
+auto pwn::service::destroy(_In_ const std::wstring& ServiceName) -> DWORD
 {
 	return pwn::service::destroy(ServiceName.c_str());
 }
@@ -308,7 +309,7 @@ Returns:
 	An iterable of pwn::service::service_info_t containing basic service information.
 
 --*/
-std::vector<pwn::service::service_info_t> pwn::service::list()
+auto pwn::service::list() -> std::vector<pwn::service::service_info_t>
 {
 	std::vector<pwn::service::service_info_t> services;
 	DWORD dwResult = ERROR_SUCCESS;
@@ -327,7 +328,9 @@ std::vector<pwn::service::service_info_t> pwn::service::list()
 		// Get the structure size
 		//
 
-		DWORD dwBufferSize = 0, dwServiceEntryCount = 0, dwResumeHandle = 0;
+		DWORD dwBufferSize = 0;
+		DWORD dwServiceEntryCount = 0;
+		DWORD dwResumeHandle = 0;
 		
 		BOOL bRes = ::EnumServicesStatusEx(
 			hManager.get(),
@@ -341,7 +344,7 @@ std::vector<pwn::service::service_info_t> pwn::service::list()
 			&dwResumeHandle,
 			nullptr
 		);
-		if (!bRes && ::GetLastError() != ERROR_MORE_DATA)
+		if ((bRes == 0) && ::GetLastError() != ERROR_MORE_DATA)
 		{
 			perror(L"EnumServicesStatusEx(1)");
 			dwResult = ::GetLastError();
@@ -351,7 +354,7 @@ std::vector<pwn::service::service_info_t> pwn::service::list()
 		ok(L"BufSz=%lu,EntryCnt=%lu,ResumeHandle=%lu,sizeof=%lu\n", dwBufferSize, dwServiceEntryCount, dwResumeHandle, sizeof(ENUM_SERVICE_STATUS_PROCESS));
 		auto Buffer = std::make_unique<ENUM_SERVICE_STATUS_PROCESS[]>(dwBufferSize);
 
-		if ( !::EnumServicesStatusEx(
+		if ( ::EnumServicesStatusEx(
 			hManager.get(),
 			SC_ENUM_PROCESS_INFO,
 			SERVICE_KERNEL_DRIVER | SERVICE_FILE_SYSTEM_DRIVER | SERVICE_WIN32_OWN_PROCESS | SERVICE_WIN32_SHARE_PROCESS,
@@ -362,7 +365,7 @@ std::vector<pwn::service::service_info_t> pwn::service::list()
 			&dwServiceEntryCount,
 			&dwResumeHandle,
 			nullptr
-		) )
+		) == 0 )
 		{
 			perror(L"EnumServicesStatusEx(2)");
 			dwResult = ::GetLastError();
@@ -412,7 +415,7 @@ Returns:
 	A boolean set to TRUE if the service has a running status. Throws an exception if any error occurs.
 
 --*/
-BOOL pwn::service::is_running(_In_ const wchar_t* lpwszName)
+auto pwn::service::is_running(_In_ const wchar_t* lpwszName) -> BOOL
 {
 	DWORD dwResult = ERROR_SUCCESS;
 	BOOL bRes = FALSE;
@@ -437,12 +440,12 @@ BOOL pwn::service::is_running(_In_ const wchar_t* lpwszName)
 
 		DWORD dwBytes = 0;
 		SERVICE_STATUS_PROCESS Status = { 0 };
-		if ( !::QueryServiceStatusEx(
+		if ( ::QueryServiceStatusEx(
 			hService.get(),
 			SC_STATUS_PROCESS_INFO,
 			(LPBYTE)&Status,
 			sizeof(SERVICE_STATUS_PROCESS),
-			&dwBytes)
+			&dwBytes) == 0
 		)
 		{
 			perror(L"QueryServiceStatusEx()");
@@ -468,7 +471,7 @@ BOOL pwn::service::is_running(_In_ const wchar_t* lpwszName)
 }
 
 
-BOOL pwn::service::is_running(_In_ const std::wstring& ServiceName)
+auto pwn::service::is_running(_In_ const std::wstring& ServiceName) -> BOOL
 {
 	return pwn::service::is_running(ServiceName.c_str());
 }

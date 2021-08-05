@@ -13,6 +13,7 @@
 #include <functional>
 #include <string>
 #include <thread>
+#include <utility>
 
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -30,37 +31,37 @@ public:
     /// Move data given as argument to the send buffer, tries to send. 
     /// This pure function should be defined for each new derived tube.
     /// </summary>
-    PWNAPI size_t send(_In_ std::vector<BYTE> const& str);
-    PWNAPI size_t send(_In_ std::string const& str);
+    PWNAPI auto send(_In_ std::vector<BYTE> const& str) -> size_t;
+    PWNAPI auto send(_In_ std::string const& str) -> size_t;
 
     /// <summary>	
     /// Read bytes from the tube, moves the read bytes to the receive buffer.
     /// This pure function should be defined for each new derived tube.
     /// </summary>
-    PWNAPI std::vector<BYTE> recv(_In_ size_t size);
+    PWNAPI auto recv(_In_ size_t size) -> std::vector<BYTE>;
         
     /// <summary>
     /// Send the data (as byte vector) followed by a line separator
     /// </summary>
-    PWNAPI size_t sendline(_In_ std::vector<BYTE> const& data);
+    PWNAPI auto sendline(_In_ std::vector<BYTE> const& data) -> size_t;
 
     /// <summary>
     /// Send the data (as str) followed by a line separator
     /// </summary>
     /// <param name="str"></param>
     /// <returns></returns>
-    PWNAPI size_t sendline(_In_ std::string const& str);
+    PWNAPI auto sendline(_In_ std::string const& str) -> size_t;
 
     /// <summary>
     /// Read from tube until receiving the given pattern, and return that data.
     /// </summary>
-    PWNAPI std::vector<BYTE> recvuntil(_In_ std::vector<BYTE> const& pattern);
-    PWNAPI std::vector<BYTE> recvuntil(_In_ std::string const& pattern);
+    PWNAPI auto recvuntil(_In_ std::vector<BYTE> const& pattern) -> std::vector<BYTE>;
+    PWNAPI auto recvuntil(_In_ std::string const& pattern) -> std::vector<BYTE>;
 
     /// <summary>
     /// Read from tube until receiving a line separator and return it.
     /// </summary>	
-    PWNAPI std::vector<BYTE> recvline();
+    PWNAPI auto recvline() -> std::vector<BYTE>;
 
     /// <summary>
     /// Convenience function combining in one call recvuntil() + send()
@@ -68,8 +69,8 @@ public:
     /// <param name="pattern"></param>
     /// <param name="data"></param>
     /// <returns></returns>
-    PWNAPI size_t sendafter(_In_ std::string const& pattern, _In_ std::string const& data);
-    PWNAPI size_t sendafter(_In_ std::vector<BYTE> const& pattern, _In_ std::vector<BYTE> const& data);
+    PWNAPI auto sendafter(_In_ std::string const& pattern, _In_ std::string const& data) -> size_t;
+    PWNAPI auto sendafter(_In_ std::vector<BYTE> const& pattern, _In_ std::vector<BYTE> const& data) -> size_t;
 
     /// <summary>
     /// Convenience function combining in one call recvuntil() + sendline()
@@ -77,13 +78,13 @@ public:
     /// <param name="pattern"></param>
     /// <param name="data"></param>
     /// <returns></returns>
-    PWNAPI size_t sendlineafter(_In_ std::string const& pattern, _In_ std::string const& data);
-    PWNAPI size_t sendlineafter(_In_ std::vector<BYTE> const& pattern, _In_ std::vector<BYTE> const& data);
+    PWNAPI auto sendlineafter(_In_ std::string const& pattern, _In_ std::string const& data) -> size_t;
+    PWNAPI auto sendlineafter(_In_ std::vector<BYTE> const& pattern, _In_ std::vector<BYTE> const& data) -> size_t;
 
     /// <summary>
     /// Peek into the tube to see if any data is available.
     /// </summary>
-    PWNAPI size_t peek();
+    PWNAPI auto peek() -> size_t;
 
     /// <summary>
     /// Basic REPL.
@@ -95,12 +96,12 @@ public:
 
 
 protected:
-    Tube(){}
-    ~Tube(){}
+    Tube()= default;
+    ~Tube()= default;
 
-    virtual size_t __send_internal(_In_ std::vector<BYTE> const& data) = 0;
-    virtual std::vector<BYTE> __recv_internal(_In_ size_t size) = 0;
-    virtual size_t __peek_internal() = 0;
+    virtual auto __send_internal(_In_ std::vector<BYTE> const& data) -> size_t = 0;
+    virtual auto __recv_internal(_In_ size_t size) -> std::vector<BYTE> = 0;
+    virtual auto __peek_internal() -> size_t = 0;
 
     std::vector<BYTE> m_receive_buffer;
     std::vector<BYTE> m_send_buffer;
@@ -115,8 +116,8 @@ namespace pwn::ctf
 class Remote : public Tube
 {
 public: 
-    Remote(_In_ std::wstring const& host, _In_ u16 port)
-        : m_host(host), m_port(port), m_protocol(L"tcp"), m_socket(INVALID_SOCKET)
+    Remote(_In_ std::wstring  host, _In_ u16 port)
+        : m_host(std::move(host)), m_port(port), m_protocol(L"tcp"), m_socket(INVALID_SOCKET)
     {
         if (!connect())
         {
@@ -131,7 +132,7 @@ public:
 
 
 protected:
-    size_t __send_internal(_In_ std::vector<BYTE> const& out) override
+    auto __send_internal(_In_ std::vector<BYTE> const& out) -> size_t override
     {
         auto res = ::send(
             m_socket,
@@ -156,7 +157,7 @@ protected:
     }
 
 
-    std::vector<BYTE> __recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) override
+    auto __recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) -> std::vector<BYTE> override
     {
         std::vector<BYTE> cache_data;
         size_t idx = 0;
@@ -216,7 +217,7 @@ protected:
         return network_data;
     }
 
-    size_t __peek_internal() override
+    auto __peek_internal() -> size_t override
     {
         auto buf = std::make_unique<BYTE[]>(PWN_TUBE_PIPE_DEFAULT_SIZE);
         auto res = ::recv(m_socket, reinterpret_cast<char*>(buf.get()), PWN_TUBE_PIPE_DEFAULT_SIZE, MSG_PEEK);
@@ -232,7 +233,7 @@ protected:
 
 
 private:
-    bool init()
+    auto init() -> bool
     {
         WSADATA wsaData = { 0 };
         auto ret = ::WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -242,11 +243,12 @@ private:
             return false;
         }
 
-        if (m_protocol == L"tcp")
+        if (m_protocol == L"tcp") {
             m_socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
             // TODO: supporter d'autres proto
-        else
+        } else {
             throw std::invalid_argument("m_protocol");
+}
 
         if (m_socket == INVALID_SOCKET) 
         {
@@ -259,10 +261,11 @@ private:
     }
 
 
-    bool connect()
+    auto connect() -> bool
     {
-        if (!init()) 
+        if (!init()) { 
             return false;
+}
 
         sockaddr_in sin = { 0 };
         sin.sin_family = AF_INET;
@@ -282,7 +285,7 @@ private:
     }
 
 
-    bool disconnect()
+    auto disconnect() -> bool
     {
         auto res = true;
 
@@ -298,13 +301,13 @@ private:
     }
 
 
-    bool cleanup()
+    static auto cleanup() -> bool
     {
         return ::WSACleanup() != SOCKET_ERROR;
     }
 
 
-    bool reconnect() 
+    auto reconnect() -> bool 
     { 
         return disconnect() && connect(); 
     }
@@ -320,12 +323,12 @@ private:
 class Process : public Tube
 {
 public:
-    Process(){}
-    ~Process(){}
+    Process()= default;
+    ~Process()= default;
 
 protected:
 
-    size_t __send_internal(_In_ std::vector<BYTE> const& out) override
+    auto __send_internal(_In_ std::vector<BYTE> const& out) -> size_t override
     {
         DWORD dwRead = 0;
         auto bSuccess = ::WriteFile(
@@ -335,14 +338,15 @@ protected:
             &dwRead, 
             nullptr
         );
-        if (!bSuccess)
+        if (bSuccess == 0) {
             pwn::log::perror(L"ReadFile()");
+}
 
         return dwRead;
     }
 
 
-    std::vector<BYTE> __recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) override
+    auto __recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) -> std::vector<BYTE> override
     {
         DWORD dwRead;
         std::vector<BYTE> out;
@@ -357,35 +361,36 @@ protected:
             &dwRead,
             nullptr
         );
-        if (!bSuccess)
+        if (bSuccess == 0) {
             pwn::log::perror(L"ReadFile()");
+}
 
         return out;
     }
 
 
-    size_t __peek_internal() override
+    auto __peek_internal() -> size_t override
     {
         throw std::exception("not implemented");
     }
 
 private:
 
-    bool create_pipes()
+    auto create_pipes() -> bool
     {
         SECURITY_ATTRIBUTES sa = { 0 };
         sa.nLength = sizeof(SECURITY_ATTRIBUTES);
-        sa.bInheritHandle = true;
+        sa.bInheritHandle = 1;
         sa.lpSecurityDescriptor = nullptr;
 
         return \
-            CreatePipe(&m_ParentStdin, &m_ChildPipeStdin, &sa, 0) && \
-            CreatePipe(&m_ParentStdout, &m_ChildPipeStdout, &sa, 0) && \
-            SetHandleInformation(m_ChildPipeStdout, HANDLE_FLAG_INHERIT, 0);
+            (CreatePipe(&m_ParentStdin, &m_ChildPipeStdin, &sa, 0) != 0) && \
+            (CreatePipe(&m_ParentStdout, &m_ChildPipeStdout, &sa, 0) != 0) && \
+            (SetHandleInformation(m_ChildPipeStdout, HANDLE_FLAG_INHERIT, 0) != 0);
     }
 
 
-    bool spawn_process()
+    auto spawn_process() -> bool
     {
         if (!create_pipes())
         {
@@ -394,7 +399,7 @@ private:
         }
 
         STARTUPINFO si = { 0 };
-        PROCESS_INFORMATION pi = {0};
+        PROCESS_INFORMATION pi = {nullptr};
 
         si.cb = sizeof(STARTUPINFO);
         si.hStdError = m_ChildPipeStdout;
@@ -407,13 +412,13 @@ private:
             m_commandline.data(),
             nullptr,
             nullptr,
-            true,
+            1,
             0,
             nullptr,
             nullptr,
             reinterpret_cast<LPSTARTUPINFOW>(&si),
             reinterpret_cast<LPPROCESS_INFORMATION>(&pi)
-            ))
+            ) != 0)
         {
             m_hProcess = pwn::utils::GenericHandle(pi.hProcess);
             ::CloseHandle(pi.hThread);

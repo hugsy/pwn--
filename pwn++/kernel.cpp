@@ -45,7 +45,7 @@ namespace pwn::kernel
 		namespace
 		{
 
-			std::vector<BYTE> __steal_system_token_x64(void)
+			auto __steal_system_token_x64() -> std::vector<BYTE>
 			{
 #ifdef PWN_NO_ASSEMBLER
                 throw std::exception("This library wasn't compiled with assembly support");
@@ -79,21 +79,22 @@ namespace pwn::kernel
 
 				const size_t sclen = ::strlen(sc);
 				std::vector<BYTE> out;
-				if (!pwn::assm::x64(sc, sclen, out))
+				if (pwn::assm::x64(sc, sclen, out) == 0) {
 					throw std::runtime_error("failed to compile shellcode\n");
+}
 				return out;
 #endif
 			}
 		}
 
 
-		std::vector<BYTE> debug_break(void)
+		auto debug_break() -> std::vector<BYTE>
 		{
 			return std::vector<BYTE>({ 0x90, 0x90, 0xcc, 0xcc });
 		}
 
 
-		std::vector<BYTE> steal_system_token(void)
+		auto steal_system_token() -> std::vector<BYTE>
 		{
 #ifdef __x86_64__
 			return __steal_system_token_x64();
@@ -106,10 +107,11 @@ namespace pwn::kernel
 	}
 
 
-	std::unique_ptr<BYTE[]> query_system_info(_In_ SYSTEM_INFORMATION_CLASS code, _Out_ PSIZE_T pdwBufferLength)
+	auto query_system_info(_In_ SYSTEM_INFORMATION_CLASS code, _Out_ PSIZE_T pdwBufferLength) -> std::unique_ptr<BYTE[]>
 	{
 		NTSTATUS Status;
-		ULONG BufferLength = 0, ExpectedBufferLength;
+		ULONG BufferLength = 0;
+		ULONG ExpectedBufferLength;
 		std::unique_ptr<BYTE[]> Buffer;
 
 		*pdwBufferLength = 1;
@@ -160,7 +162,7 @@ namespace pwn::kernel
 	Return:
 		Returns a vector of <wstring,ulong_ptr> of all the modules
 	--*/
-	std::vector< std::tuple<std::wstring, ULONG_PTR> > modules()
+	auto modules() -> std::vector< std::tuple<std::wstring, ULONG_PTR> >
 	{
 		std::vector< std::tuple<std::wstring, ULONG_PTR> > mods;
 
@@ -195,7 +197,7 @@ namespace pwn::kernel
 	Return:
 		Returns -1 on error, the address of the module on success
 	--*/
-	ULONG_PTR get_module_base_address(_In_ const std::wstring&  ModuleName)
+	auto get_module_base_address(_In_ const std::wstring&  ModuleName) -> ULONG_PTR
 	{
 		std::wstring pattern(ModuleName);
 
@@ -204,7 +206,7 @@ namespace pwn::kernel
 			auto name = std::get<0>(mod);
 			auto addr = std::get<1>(mod);
 
-			if (pwn::utils::endswith(name, pattern))
+			if (pwn::utils::endswith(name, pattern) != 0)
 			{
 				dbg(L"Found %s base (%p)\n", pattern.c_str(), addr);
 				return addr;
@@ -228,7 +230,7 @@ namespace pwn::kernel
 	Return:
 		Returns -1 on error (sets last error), the kernel address of the handle
 	--*/
-	ULONG_PTR get_handle_kaddress(_In_ HANDLE hTarget, _In_ DWORD dwPid)
+	auto get_handle_kaddress(_In_ HANDLE hTarget, _In_ DWORD dwPid) -> ULONG_PTR
 	{
 		SIZE_T BufferLength;
 		auto Buffer = query_system_info(SystemHandleInformation, &BufferLength);
@@ -237,7 +239,7 @@ namespace pwn::kernel
 			throw new std::runtime_error("NtQuerySystemInformation()");
 		}
 
-		PSYSTEM_HANDLE_INFORMATION HandleTableInfo = reinterpret_cast<PSYSTEM_HANDLE_INFORMATION>(Buffer.get());
+		auto HandleTableInfo = reinterpret_cast<PSYSTEM_HANDLE_INFORMATION>(Buffer.get());
 
 		dbg(L"Dumped %d entries\n",	HandleTableInfo->NumberOfHandles);
 		for (ULONG i = 0; i < HandleTableInfo->NumberOfHandles; i++) 
@@ -269,7 +271,7 @@ namespace pwn::kernel
 	Return:
 		A vector with the big pool kernel address with the specified tag
 	--*/
-	std::vector<ULONG_PTR> get_big_pool_kaddress(_In_ DWORD Tag)
+	auto get_big_pool_kaddress(_In_ DWORD Tag) -> std::vector<ULONG_PTR>
 	{
 		std::vector<ULONG_PTR> res;
 
@@ -280,8 +282,8 @@ namespace pwn::kernel
 			throw new std::runtime_error("NtQuerySystemInformation()");
 		}
 
-		u32 PoolTableSize = (BufferLength - 8) / sizeof(BIG_POOL_INFO);
-        PBIG_POOL_INFO PoolTableInfo = reinterpret_cast<PBIG_POOL_INFO>(Buffer.get() + 8);
+		u32 PoolTableSize = static_cast<u32>((BufferLength - 8) / sizeof(BIG_POOL_INFO));
+        auto PoolTableInfo = reinterpret_cast<PBIG_POOL_INFO>(Buffer.get() + 8);
 
 		for (u32 i = 0; i < PoolTableSize; i++)
 		{

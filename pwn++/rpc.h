@@ -58,7 +58,7 @@ namespace pwn::windows::rpc
                     0, 
                     &qos
                 );
-                if (!status)
+                if (status == 0)
                 {
                     throw std::runtime_error("RpcBindingSetAuthInfoExW failed\n");
                 }
@@ -69,11 +69,13 @@ namespace pwn::windows::rpc
 
         ~RpcContext()
         {
-            if (m_pszStringBinding)
+            if (m_pszStringBinding != nullptr) {
                 RpcStringFreeW(&m_pszStringBinding);
+}
 
-            if (m_Binding)
+            if (m_Binding != nullptr) {
                 RpcBindingFree(&m_Binding);
+}
         }
 
         RPC_WSTR m_pszStringBinding;

@@ -12,37 +12,37 @@
 
 namespace pwn::reg
 {
-	HKEY PWNAPI hklm();
-	HKEY PWNAPI hkcu();
-	HKEY PWNAPI hku();
+	auto PWNAPI hklm() -> HKEY;
+	auto PWNAPI hkcu() -> HKEY;
+	auto PWNAPI hku() -> HKEY;
 
 
-	_Success_(return == ERROR_SUCCESS) DWORD PWNAPI read_bool(
+	_Success_(return == ERROR_SUCCESS) auto PWNAPI read_bool(
 		_In_ HKEY hKeyRoot,
 		_In_ const std::wstring& SubKey,
 		_In_ const std::wstring& KeyName,
 		_Out_ PBOOL lpbKeyValue
-	);
+	) -> DWORD;
 
-	_Success_(return == ERROR_SUCCESS) DWORD PWNAPI read_dword(
+	_Success_(return == ERROR_SUCCESS) auto PWNAPI read_dword(
 		_In_ HKEY hKeyRoot,
 		_In_ const std::wstring& SubKey,
 		_In_ const std::wstring& KeyName,
 		_Out_ PDWORD lpdwKeyValue
-	);
+	) -> DWORD;
 
-	_Success_(return == ERROR_SUCCESS) DWORD PWNAPI read_wstring(
+	_Success_(return == ERROR_SUCCESS) auto PWNAPI read_wstring(
 		_In_ HKEY hKeyRoot,
 		_In_ const std::wstring& SubKey,
 		_In_ const std::wstring& KeyName,
 		_Out_ std::wstring& KeyValue
-	);
+	) -> DWORD;
 
-	_Success_(return == ERROR_SUCCESS) DWORD PWNAPI read_binary(
+	_Success_(return == ERROR_SUCCESS) auto PWNAPI read_binary(
 			_In_ HKEY hKeyRoot,
 			_In_ const std::wstring & SubKey,
 			_In_ const std::wstring & KeyName,
 			_Out_ std::vector<BYTE> & KeyValue
-	);
+	) -> DWORD;
 
 }

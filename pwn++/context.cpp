@@ -8,7 +8,7 @@ namespace pwn::context
 	PWNAPI endianess_t endian = endianess_t::little;
 	PWNAPI u8 ptrsize = 8;
 	
-	BOOL set_architecture(_In_ architecture_t new_arch)
+	auto set_architecture(_In_ architecture_t new_arch) -> BOOL
 	{
 		switch (new_arch)
 		{
@@ -46,7 +46,7 @@ namespace pwn::context
 	/// </summary>
 	PWNAPI pwn::log::log_level_t __log_level = pwn::log::log_level_t::LOG_INFO;
 	
-	BOOL set_log_level(_In_ pwn::log::log_level_t new_level)
+	auto set_log_level(_In_ pwn::log::log_level_t new_level) -> BOOL
 	{
 		__log_level = new_level;
 		auto level = get_log_level();
@@ -54,7 +54,7 @@ namespace pwn::context
 		return TRUE;
 	}
 
-	PWNAPI const std::tuple<pwn::log::log_level_t, const wchar_t*> get_log_level()
+	PWNAPI auto get_log_level() -> const std::tuple<pwn::log::log_level_t, const wchar_t*>
 	{
 		const wchar_t* str = L"";
 		switch (__log_level)
