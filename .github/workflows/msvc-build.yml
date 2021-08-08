@@ -17,6 +17,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
+        os: ['win']
         platform: ['x86', 'x64']
         configuration: ['Release']
 
@@ -46,7 +47,7 @@ jobs:
         vcpkg integrate install
 
     - name: Install dependencies
-      if: steps.vcpkg_cache.outputs.cache-hit != 'true'
+      if: matrix.os == 'win' and steps.vcpkg_cache.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
         vcpkg install keystone:${{ matrix.platform }}-windows-static
@@ -58,61 +59,51 @@ jobs:
         languages: cpp
 
     - name: Build pwn++ dll
+      if: matrix.os == 'win'
       shell: pwsh
       run: |
         Import-Module .\.github\Invoke-VS.ps1
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         Invoke-VisualStudio2019${{ matrix.platform }}
-        msbuild.exe pwn++\pwn++.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
+        New-Item -Type Directory -Name build
+        Set-Location pwn++\build
+        cmake ..\src
+        Set-Location ..\..
 
-    - name: Run tests
+
+    - name: Run Windows tests
+      if: matrix.os == 'win'
       shell: pwsh
       run: |
-        Import-Module .\.github\Invoke-VS.ps1
-        Invoke-VisualStudio2019${{ matrix.platform }}
-        msbuild.exe pwn++-tests\pwn++-tests.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
-        if ( "${{ matrix.platform }}" -eq "x86" )
-        {
-          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.dll pwn++-tests\Win32\${{ matrix.configuration }}\
-          vstest.console.exe pwn++-tests\Win32\${{ matrix.configuration }}\pwn++-tests.dll
-        }
-        else
-        {
-          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\
-          vstest.console.exe pwn++-tests\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++-tests.dll
-        }
+        Copy-Item -Verbose pwn++\build\pwn++\${{ matrix.os}}\${{ matrix.configuration }}\pwn++.dll pwn++\tests\${{ matrix.configuration }}\
+        pwn++\tests\unit_tests.exe
+
 
     - name: Perform CodeQL Analysis
       if: ${{ success() }}
       uses: github/codeql-action/analyze@v1
 
 
-    - name: Prepare artifact
+    - name: Prepare Windows artifact
       id: prepare_artifact
+      if: matrix.os == 'win'
       shell: pwsh
       run: |
-        New-Item -Type Directory -Name build\
-        if ( "${{ matrix.platform }}" -eq "x86" )
-        {
-          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.lib build\
-          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.dll build\
-          Copy-Item -Verbose pwn++\Win32\${{ matrix.configuration }}\pwn++.pdb build\
-        }
-        else
-        {
-          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.lib build\
-          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.dll build\
-          Copy-Item -Verbose pwn++\${{ matrix.platform }}\${{ matrix.configuration }}\pwn++.pdb build\
-        }
-        New-Item -Type Directory -Name build\include\
-        Copy-Item pwn++\*.h build\include\
+        New-Item -Type Directory -Name artifact\
+        Copy-Item -Verbose pwn++\build\pwn++\${{ matrix.os }}\${{ matrix.configuration }}\pwn++.lib artifact\
+        Copy-Item -Verbose pwn++\build\pwn++\${{ matrix.os }}\${{ matrix.configuration }}\pwn++.dll artifact\
+        Copy-Item -Verbose pwn++\build\pwn++\${{ matrix.os }}\${{ matrix.configuration }}\pwn++.pdb artifact\
+        New-Item -Type Directory -Name artifact\include\
+        New-Item -Type Directory -Name artifact\include\win\
+        Copy-Item pwn++\src\inc\*.hpp artifact\include\
+        Copy-Item pwn++\src\inc\win\*.hpp artifact\include\win\
 
     - name: Publish artifact
       id: publish_artifact
       uses: actions/upload-artifact@v2
       with:
         name: pwn++_msvc_${{ env.GITHUB_REF_SLUG }}_${{ matrix.platform }}_${{ env.GITHUB_SHA_SHORT }}
-        path: build\
+        path: artifact/
 
     - name: Notify on success
       if: ${{ success() }}
