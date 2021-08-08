@@ -10,6 +10,7 @@ set(
     ${HEADER_DIR}/system.hpp
     ${HEADER_DIR}/process.hpp
     ${HEADER_DIR}/thread.hpp
+    ${HEADER_DIR}/cpu.hpp
 )
 
 set(SOURCE_DIR ${COMMON_SOURCE_DIR}/win)
@@ -20,6 +21,7 @@ set(
     ${SOURCE_DIR}/system.cpp
     ${SOURCE_DIR}/process.cpp
     ${SOURCE_DIR}/thread.cpp
+    ${SOURCE_DIR}/cpu.cpp
 )
 
 add_library(pwn++ SHARED ${SOURCE_FILES})

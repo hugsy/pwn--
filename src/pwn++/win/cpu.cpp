@@ -1,30 +1,33 @@
-#include "cpu.hpp"
+#include "win/cpu.hpp"
 
 #include "log.hpp"
 using namespace pwn::log;
 
+#include <optional>
 
-_Success_(return != -1)
-PWNAPI auto pwn::cpu::nb_cores() -> DWORD
+
+auto
+pwn::win::cpu::nb_cores() -> std::optional<u32>
 {
-	DWORD dwNbMax = 0x100;
-    DWORD dwLen = dwNbMax * sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
-	auto proc_info = std::make_unique<SYSTEM_LOGICAL_PROCESSOR_INFORMATION[]>(dwLen);
+    DWORD dwNbMax  = 0x100;
+    DWORD dwLen    = dwNbMax * sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+    auto proc_info = std::make_unique<SYSTEM_LOGICAL_PROCESSOR_INFORMATION[]>(dwLen);
 
-    if (::GetLogicalProcessorInformation(proc_info.get(), &dwLen) == 0)
+    if ( ::GetLogicalProcessorInformation(proc_info.get(), &dwLen) == 0 )
     {
         perror(L"GetLogicalProcessorInformation()");
-		return -1;
+        return {};
     }
 
     DWORD dwLogicalProcessorCount = 0;
-	DWORD dwNbEntries = dwLen / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
-	for (size_t i = 0; i < dwNbEntries; i++)
-	{
-		if (proc_info[i].Relationship == RelationProcessorCore) {
-			dwLogicalProcessorCount++;
-}
-	}
+    DWORD dwNbEntries             = dwLen / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+    for ( size_t i = 0; i < dwNbEntries; i++ )
+    {
+        if ( proc_info[i].Relationship == RelationProcessorCore )
+        {
+            dwLogicalProcessorCount++;
+        }
+    }
 
     return dwLogicalProcessorCount;
 }

@@ -56,7 +56,7 @@ version_info() -> const std::tuple<WORD, WORD>;
 
 /**
  *
- * Windows namespace
+ * Windows namespace (pwn::win)
  *
  */
 
@@ -69,12 +69,13 @@ version_info() -> const std::tuple<WORD, WORD>;
 /// namespace pwn::win::thread
 #include "win/thread.hpp"
 
+/// namespace pwn::win::cpu
+#include "win/cpu.hpp"
+
 /*
 /// namespace pwn::registry
 #include "registry.hpp"
 
-/// namespace pwn::cpu
-#include "cpu.hpp"
 
 /// namespace pwn::job
 #include "job.hpp"

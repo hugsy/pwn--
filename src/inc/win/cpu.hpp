@@ -1,11 +1,12 @@
 #pragma once
 
 #include "common.hpp"
+#include <optional>
 
 
-namespace pwn::cpu
+namespace pwn::win::cpu
 {
-	_Success_(return != -1) PWNAPI auto nb_cores() -> DWORD;
+	PWNAPI auto nb_cores() -> std::optional<u32>;
 }
 
 
