@@ -4,16 +4,31 @@
 
 set(COMMON_TEST_DIR ${CMAKE_CURRENT_LIST_DIR})
 
-set(TEST_DIR ${COMMON_TEST_DIR}/win)
 set(
     SOURCE_FILES
     ${COMMON_TEST_DIR}/main.cpp
     ${COMMON_TEST_DIR}/pwn_utils.cpp
     ${COMMON_TEST_DIR}/pwn_crypto.cpp
     ${COMMON_TEST_DIR}/pwn_assm_disasm.cpp
-    ${TEST_DIR}/pwn_win_system.cpp
-    ${TEST_DIR}/pwn_win_thread.cpp
 )
+
+
+if(MSVC)
+    set(TEST_DIR ${COMMON_TEST_DIR}/win)
+    set(
+        SOURCE_FILES
+        ${SOURCE_FILES}
+        ${TEST_DIR}/pwn_win_system.cpp
+        ${TEST_DIR}/pwn_win_thread.cpp
+    )
+else()
+    set(TEST_DIR ${COMMON_TEST_DIR}/linux)
+    set(
+        SOURCE_FILES
+        ${SOURCE_FILES}
+    )
+endif(MSVC)
+
 
 add_executable(unit_tests ${SOURCE_FILES})
 target_include_directories(unit_tests PUBLIC ${TEST_DIR}/)

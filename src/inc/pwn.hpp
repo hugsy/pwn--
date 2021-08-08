@@ -76,7 +76,6 @@ version_info() -> const std::tuple<WORD, WORD>;
 /// namespace pwn::registry
 #include "registry.hpp"
 
-
 /// namespace pwn::job
 #include "job.hpp"
 
