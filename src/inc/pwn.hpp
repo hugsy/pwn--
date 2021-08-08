@@ -75,13 +75,16 @@ version_info() -> const std::tuple<WORD, WORD>;
 /// namespace pwn::win::registry
 #include "win/registry.hpp"
 
+/// namespace pwn::win::kernel
+#include "win/kernel.hpp"
+
+
 /*
 
 /// namespace pwn::job
 #include "job.hpp"
 
-/// namespace pwn::kernel
-#include "kernel.hpp"
+
 
 /// namespace pwn::service
 #include "service.hpp"
