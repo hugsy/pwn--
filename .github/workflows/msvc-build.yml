@@ -66,9 +66,9 @@ jobs:
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         Invoke-VisualStudio2019${{ matrix.platform }}
         New-Item -Type Directory -Name build
-        Set-Location pwn++\build
+        Set-Location.\build
         cmake ..\src
-        Set-Location ..\..
+        Set-Location ..
 
 
     - name: Run Windows tests
