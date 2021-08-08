@@ -1,15 +1,16 @@
-#include "thread.hpp"
+#include "win/thread.hpp"
+
 #include "handle.hpp"
 #include "utils.hpp"
 
 
 _Success_(return != std::nullopt)
-std::optional<std::wstring>
-pwn::thread::get_name(_In_ DWORD dwThreadId)
+auto
+pwn::win::thread::get_name(_In_ i32 dwThreadId) -> std::optional<std::wstring>
 {
     HANDLE ThreadHandle = INVALID_HANDLE_VALUE;
 
-    if (dwThreadId == (DWORD)-1)
+    if ( dwThreadId == -1 )
     {
         ThreadHandle = ::GetCurrentThread();
     }
@@ -19,7 +20,7 @@ pwn::thread::get_name(_In_ DWORD dwThreadId)
     }
 
     auto hThread = pwn::utils::GenericHandle(ThreadHandle);
-    if (!hThread)
+    if ( !hThread )
     {
         return std::nullopt;
     }
@@ -29,13 +30,13 @@ pwn::thread::get_name(_In_ DWORD dwThreadId)
     auto Status          = ::NtQueryInformationThread(hThread.get(), (THREADINFOCLASS)ThreadNameInformation, &us, sizeof(UNICODE_STRING), &ReturnedLength);
 
     // empty value ?
-    if (NT_SUCCESS(Status))
+    if ( NT_SUCCESS(Status) )
     {
         return std::nullopt;
     }
 
     // buffer too small ?
-    if (Status != STATUS_BUFFER_TOO_SMALL || ReturnedLength < sizeof(UNICODE_STRING))
+    if ( Status != STATUS_BUFFER_TOO_SMALL || ReturnedLength < sizeof(UNICODE_STRING) )
     {
         pwn::log::ntperror(L"NtQueryInformationThread1()", Status);
         return std::nullopt;
@@ -45,7 +46,7 @@ pwn::thread::get_name(_In_ DWORD dwThreadId)
 
     Status = ::NtQueryInformationThread(hThread.get(), (THREADINFOCLASS)ThreadNameInformation, buffer.get(), ReturnedLength, nullptr);
 
-    if (!NT_SUCCESS(Status))
+    if ( !NT_SUCCESS(Status) )
     {
         pwn::log::ntperror(L"NtQueryInformationThread2()", Status);
         return std::nullopt;
@@ -56,11 +57,13 @@ pwn::thread::get_name(_In_ DWORD dwThreadId)
 }
 
 
-_Success_(return) bool pwn::thread::set_name(_In_ std::wstring const &name, _In_ DWORD dwThreadId)
+_Success_(return )
+auto
+pwn::win::thread::set_name(_In_ std::wstring const& name, _In_ i32 dwThreadId) -> bool
 {
     HANDLE ThreadHandle = INVALID_HANDLE_VALUE;
 
-    if (dwThreadId == (DWORD)-1)
+    if ( dwThreadId == -1 )
     {
         ThreadHandle = ::GetCurrentThread();
     }
@@ -70,13 +73,13 @@ _Success_(return) bool pwn::thread::set_name(_In_ std::wstring const &name, _In_
     }
 
     auto hThread = pwn::utils::GenericHandle(ThreadHandle);
-    if (!hThread)
+    if ( !hThread )
     {
         return false;
     }
 
 
-    if (name.size() >= 0xffff)
+    if ( name.size() >= 0xffff )
     {
         return false;
     }

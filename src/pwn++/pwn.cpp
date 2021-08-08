@@ -7,7 +7,7 @@ namespace pwn
 struct pwn::globals_t globals;
 
 auto
-pwn::version() -> const wchar_t*
+pwn::version() -> wchar_t const*
 {
     return __PWNLIB_VERSION__;
 }

@@ -11,8 +11,8 @@ using namespace pwn::log;
 
 
 #ifndef __KERNEL_CONSTANTS__
-#ifdef __WIN10__
 
+#if __PWNLIB_WINDOWS_BUILD__ == 10
 //
 // Offset for Win10 RS6 x64
 //
@@ -24,8 +24,7 @@ using namespace pwn::log;
 #define SYSTEM_PID                  4
 
 
-
-#elif defined(__WIN81__)
+#elif __PWNLIB_WINDOWS_BUILD__ == 81
 #define CURRENT_ETHREAD   0x0188
 #define EPROCESS_OFFSET   0x00b8
 #define PROCESSID_OFFSET  0x02e0
@@ -38,14 +37,14 @@ using namespace pwn::log;
 #endif
 
 
-namespace pwn::kernel
+namespace pwn::windows::kernel
 {
 	namespace shellcode
 	{
 		namespace
 		{
 
-			auto __steal_system_token_x64() -> std::vector<BYTE>
+			auto __steal_system_token_x64() -> std::vector<u8>
 			{
 #ifdef PWN_NO_ASSEMBLER
                 throw std::exception("This library wasn't compiled with assembly support");
@@ -78,7 +77,7 @@ namespace pwn::kernel
 					"ret ;";
 
 				const size_t sclen = ::strlen(sc);
-				std::vector<BYTE> out;
+				std::vector<u8> out;
 				if (pwn::assm::x64(sc, sclen, out) == 0) {
 					throw std::runtime_error("failed to compile shellcode\n");
 }
@@ -88,13 +87,13 @@ namespace pwn::kernel
 		}
 
 
-		auto debug_break() -> std::vector<BYTE>
+		auto debug_break() -> std::vector<u8>
 		{
-			return std::vector<BYTE>({ 0x90, 0x90, 0xcc, 0xcc });
+			return std::vector<u8>({ 0x90, 0x90, 0xcc, 0xcc });
 		}
 
 
-		auto steal_system_token() -> std::vector<BYTE>
+		auto steal_system_token() -> std::vector<u8>
 		{
 #ifdef __x86_64__
 			return __steal_system_token_x64();
@@ -107,18 +106,18 @@ namespace pwn::kernel
 	}
 
 
-	auto query_system_info(_In_ SYSTEM_INFORMATION_CLASS code, _Out_ PSIZE_T pdwBufferLength) -> std::unique_ptr<BYTE[]>
+	auto query_system_info(_In_ SYSTEM_INFORMATION_CLASS code, _Out_ size_t* pdwBufferLength) -> std::unique_ptr<u8[]>
 	{
 		NTSTATUS Status;
 		ULONG BufferLength = 0;
 		ULONG ExpectedBufferLength;
-		std::unique_ptr<BYTE[]> Buffer;
+		std::unique_ptr<u8[]> Buffer;
 
 		*pdwBufferLength = 1;
 
 		do
 		{
-			Buffer = std::make_unique<BYTE[]>(BufferLength);
+			Buffer = std::make_unique<u8[]>(BufferLength);
 			Status = ::NtQuerySystemInformation(
 				SystemBigPoolInformation,
 				Buffer.get(),
@@ -160,17 +159,17 @@ namespace pwn::kernel
 		None
 
 	Return:
-		Returns a vector of <wstring,ulong_ptr> of all the modules
+		Returns a vector of <wstring,uptr> of all the modules
 	--*/
-	auto modules() -> std::vector< std::tuple<std::wstring, ULONG_PTR> >
+	auto modules() -> std::vector< std::tuple<std::wstring, uptr> >
 	{
-		std::vector< std::tuple<std::wstring, ULONG_PTR> > mods;
+		std::vector< std::tuple<std::wstring, uptr> > mods;
 
 		SIZE_T BufferLength;
 		auto Buffer = query_system_info(SystemModuleInformation, &BufferLength);
 		if (!Buffer)
 		{
-			throw new std::runtime_error("NtQuerySystemInformation()");
+			throw std::runtime_error("NtQuerySystemInformation()");
 		}
 
 		auto Modules = reinterpret_cast<PRTL_PROCESS_MODULES>(Buffer.get());
@@ -179,7 +178,7 @@ namespace pwn::kernel
 		for (DWORD i = 0; i < Modules->NumberOfModules; i++)
 		{
 			auto ModuleFullPathName = pwn::utils::to_widestring((const char*)Modules->Modules[i].FullPathName);
-			std::tuple<std::wstring, ULONG_PTR> entry = std::make_tuple(ModuleFullPathName, (ULONG_PTR)Modules->Modules[i].ImageBase);
+			std::tuple<std::wstring, uptr> entry = std::make_tuple(ModuleFullPathName, (uptr)Modules->Modules[i].ImageBase);
 			mods.push_back(entry);
 		}
 
@@ -197,7 +196,7 @@ namespace pwn::kernel
 	Return:
 		Returns -1 on error, the address of the module on success
 	--*/
-	auto get_module_base_address(_In_ const std::wstring&  ModuleName) -> ULONG_PTR
+	auto get_module_base_address(_In_ const std::wstring&  ModuleName) -> uptr
 	{
 		std::wstring pattern(ModuleName);
 
@@ -215,7 +214,7 @@ namespace pwn::kernel
 		}
 
 		::SetLastError(ERROR_NOT_FOUND);
-		return (ULONG_PTR)-1;
+		return (uptr)-1;
 	}
 
 
@@ -230,13 +229,13 @@ namespace pwn::kernel
 	Return:
 		Returns -1 on error (sets last error), the kernel address of the handle
 	--*/
-	auto get_handle_kaddress(_In_ HANDLE hTarget, _In_ DWORD dwPid) -> ULONG_PTR
+	auto get_handle_kernel_address(_In_ HANDLE hTarget, _In_ u32 dwPid) -> uptr
 	{
 		SIZE_T BufferLength;
 		auto Buffer = query_system_info(SystemHandleInformation, &BufferLength);
 		if (!Buffer)
 		{
-			throw new std::runtime_error("NtQuerySystemInformation()");
+			throw  std::runtime_error("NtQuerySystemInformation()");
 		}
 
 		auto HandleTableInfo = reinterpret_cast<PSYSTEM_HANDLE_INFORMATION>(Buffer.get());
@@ -252,12 +251,12 @@ namespace pwn::kernel
 			)
 			{
 				dbg(L"Found HANDLE=%d OBJECT=%p\n",	HandleInfo.HandleValue,	HandleInfo.Object);
-				return (ULONG_PTR)HandleInfo.Object;
+				return (uptr)HandleInfo.Object;
 			}
 		}
 
 		::SetLastError(ERROR_NOT_FOUND);
-		return (ULONG_PTR)-1;
+		return (uptr)-1;
 	}
 
 
@@ -271,9 +270,9 @@ namespace pwn::kernel
 	Return:
 		A vector with the big pool kernel address with the specified tag
 	--*/
-	auto get_big_pool_kaddress(_In_ DWORD Tag) -> std::vector<ULONG_PTR>
+	auto get_big_pool_kaddress(_In_ u32 Tag) -> std::vector<uptr>
 	{
-		std::vector<ULONG_PTR> res;
+		std::vector<uptr> res;
 
 		SIZE_T BufferLength;
 		auto Buffer = query_system_info(SystemBigPoolInformation, &BufferLength);

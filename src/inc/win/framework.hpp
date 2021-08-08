@@ -5,6 +5,15 @@
 
 // Windows Header Files
 #include <windows.h>
+
+#ifndef _WINTERNL_
 #include <winternl.h>
+#endif
+
+#ifndef __ATTR_SAL
 #include <sal.h>
+#endif
+
+#ifndef _NTSTATUS_
 #include <ntstatus.h>
+#endif

@@ -1,10 +1,13 @@
-#include "system.hpp"
-#include "log.hpp"
-#include "nt.hpp"
-#include "handle.hpp"
+#include "win\system.hpp"
 
 #include <tlhelp32.h>
+
+#include <optional>
 #include <stdexcept>
+
+#include "log.hpp"
+#include "handle.hpp"
+#include "win\nt.hpp"
 
 
 using namespace pwn::log;
@@ -16,91 +19,83 @@ using namespace pwn::log;
 #define CMD_PROCESS_NAME L"cmd.exe"
 
 #define WINDOWS_SYSTEM32_PATH L"\\SystemRoot\\system32\\"
-
 #define CALC_PATH WINDOWS_SYSTEM32_PATH CALC_PROCESS_NAME
 #define CMD_PATH WINDOWS_SYSTEM32_PATH CMD_PROCESS_NAME
 #define KERNEL_PROCESS_NAME WINDOWS_SYSTEM32_PATH L"ntoskrnl.exe"
 
 
-auto pwn::system::pagesize() -> DWORD
+namespace pwn::win::system
 {
-    SYSTEM_INFO siSysInfo = { {0}, };
+
+auto
+pagesize() -> u32
+{
+    SYSTEM_INFO siSysInfo = {
+        {0},
+    };
     ::GetSystemInfo(&siSysInfo);
     return siSysInfo.dwPageSize;
 }
 
 
-
-auto pwn::system::pid(_In_ HANDLE hProcess) -> DWORD
+auto
+pid(_In_ HANDLE hProcess) -> u32
 {
     return ::GetProcessId(hProcess);
 }
 
 
-
-auto pwn::system::ppid(_In_ DWORD dwProcessId) -> DWORD
+auto
+ppid(_In_ u32 dwProcessId) -> std::optional<u32>
 {
     auto hProcessSnap = pwn::utils::GenericHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
-    if (!hProcessSnap)
+    if ( !hProcessSnap )
     {
         perror(L"CreateToolhelp32Snapshot()");
-        return -1;
+        return std::nullopt;
     }
 
-    PROCESSENTRY32 pe = { 0, };
-    pe.dwSize = sizeof(PROCESSENTRY32);
-    i32 dwPpid = -1;
+    PROCESSENTRY32 pe = {0};
+    pe.dwSize         = sizeof(PROCESSENTRY32);
+    i32 dwPpid        = -1;
 
-    if (Process32First(hProcessSnap.get(), &pe))
+    if ( ::Process32First(hProcessSnap.get(), &pe) )
     {
         do
         {
-            if (pe.th32ProcessID == dwProcessId)
+            if ( pe.th32ProcessID == dwProcessId )
             {
                 dwPpid = pe.th32ParentProcessID;
                 break;
             }
-        }
-        while (Process32Next(hProcessSnap.get(), &pe));
+        } while ( ::Process32Next(hProcessSnap.get(), &pe) );
     }
+
+    if (dwPpid < 0)
+        return std::nullopt;
 
     return dwPpid;
 }
 
 
-
-/*++
-
-Description:
-
-    Look up for a process name with the given argument, and return the PID of the first instance
-
-Arguments:
-
-    - lpwProcessName an LPWSTR of the name of the process to find
-
-Returns:
-
-    the PID of the first process if found, -1 if failure
-
- --*/
-auto PWNAPI pwn::system::pidof(_In_ const std::wstring& name) -> DWORD
+auto
+pidof(_In_ const std::wstring& name) -> std::optional<u32>
 {
-    auto hProcessSnap = pwn::utils::GenericHandle( ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) );
-    if (!hProcessSnap)
+    auto hProcessSnap = pwn::utils::GenericHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+    if ( !hProcessSnap )
     {
         perror(L"CreateToolhelp32Snapshot()");
-        return -1;
+        return std::nullopt;
     }
 
-    DWORD dwPid = -1;
+    i32 dwPid = -1;
 
     do
     {
-        PROCESSENTRY32W pe32 = { 0, };
-        pe32.dwSize = sizeof(PROCESSENTRY32W);
+        PROCESSENTRY32W pe32 = {0};
+        pe32.dwSize          = sizeof(PROCESSENTRY32W);
 
-        if (::Process32FirstW(hProcessSnap.get(), &pe32) == 0)
+        if ( ::Process32FirstW(hProcessSnap.get(), &pe32) == 0 )
         {
             perror(L"Process32First()");
             break;
@@ -108,66 +103,82 @@ auto PWNAPI pwn::system::pidof(_In_ const std::wstring& name) -> DWORD
 
         do
         {
-            HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pe32.th32ProcessID);
-            if (hProcess == nullptr) {
+            auto hProcess = pwn::utils::GenericHandle(
+                ::OpenProcess(
+                    PROCESS_QUERY_LIMITED_INFORMATION,
+                    false,
+                    pe32.th32ProcessID
+                )
+            );
+            if ( !hProcess )
+            {
                 continue;
-}
+            }
 
-            ::CloseHandle(hProcess);
-
-            if (::wcscmp(name.c_str(), pe32.szExeFile) == 0)
+            if ( ::wcscmp(name.c_str(), pe32.szExeFile) == 0 )
             {
                 dwPid = pe32.th32ProcessID;
                 break;
             }
-        }
-        while (::Process32NextW(hProcessSnap.get(), &pe32) != 0);
-    }
-    while (false);
+        } while ( ::Process32NextW(hProcessSnap.get(), &pe32) != 0 );
+    } while ( false );
+
+    if (dwPid < 0)
+        return std::nullopt;
 
     return dwPid;
 }
 
 
-
-
-auto pwn::system::computername() -> const std::wstring
+auto
+computername() -> const std::wstring
 {
-    DWORD dwBufLen = MAX_COMPUTERNAME_LENGTH;
-    WCHAR lpszBuf[MAX_COMPUTERNAME_LENGTH + 1] = { 0, };
-    if(::GetComputerName(lpszBuf, &dwBufLen) == 0) {
+    u32 dwBufLen                                 = MAX_COMPUTERNAME_LENGTH;
+    wchar_t lpszBuf[MAX_COMPUTERNAME_LENGTH + 1] = {0};
+
+    if ( ::GetComputerName(lpszBuf, (LPDWORD)&dwBufLen) == 0 )
+    {
+        // that case is weird enough it justifies throwing
         throw std::runtime_error("GetComputerName() failed");
-}
+    }
     return std::wstring(lpszBuf);
 }
 
 
-
-auto pwn::system::username() -> const std::wstring
+auto
+username() -> const std::wstring
 {
-    wchar_t lpwsBuffer[UNLEN + 1];
-    DWORD dwBufferSize = UNLEN + 1;
-    if(::GetUserName((TCHAR*)lpwsBuffer, &dwBufferSize) == 0) {
+    wchar_t lpwsBuffer[UNLEN + 1] = {0};
+    u32 dwBufferSize              = UNLEN + 1;
+    if ( ::GetUserName((TCHAR*)lpwsBuffer, (LPDWORD)&dwBufferSize) == 0 )
+    {
+        // that case is weird enough it justifies throwing
         throw std::runtime_error("GetUserName() failed");
-}
-    static auto username = std::wstring{ lpwsBuffer };
+    }
+
+    static auto username = std::wstring {lpwsBuffer};
     return username;
 }
 
 
-auto pwn::system::modulename(_In_opt_ HMODULE hModule) -> const std::wstring
+auto
+modulename(_In_opt_ HMODULE hModule) -> std::optional<std::wstring>
 {
-    wchar_t lpwsBuffer[MAX_PATH]{ 0 };
-    if (::GetModuleFileName(hModule, lpwsBuffer, MAX_PATH) == 0u) {
-        throw std::runtime_error("GetModuleFileName() failed");
-}
-    static auto module_filename = std::wstring{ lpwsBuffer };
+    wchar_t lpwsBuffer[MAX_PATH] = {0};
+    if ( ::GetModuleFileName(hModule, lpwsBuffer, MAX_PATH) == 0u )
+    {
+        perror("GetModuleFileName()");
+        return std::nullopt;
+    }
+    static auto module_filename = std::wstring {lpwsBuffer};
     return module_filename;
 }
 
 
-auto pwn::system::filename() -> const std::wstring
+auto
+filename() -> std::optional<std::wstring>
 {
-    return pwn::system::modulename(nullptr);
+    return modulename(nullptr);
 }
 
+} // namespace pwn::win::system

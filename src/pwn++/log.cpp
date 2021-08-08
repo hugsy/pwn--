@@ -65,12 +65,6 @@ xlog(_In_ log_level_t level, _In_ const wchar_t *args_list, ...)
     globals.m_console_mutex.unlock();
 
     va_end(args);
-
-
-    if (level == log_level_t::LOG_DEBUG)
-    {
-        ::OutputDebugStringW(fmt.get());
-    }
 }
 
 

@@ -13,14 +13,16 @@
 #define __PWNLIB_VERSION_MINOR__     PWN_VERSION_MINOR
 #define __PWNLIB_VERSION__	         WIDECHAR(PWN_VERSION_STR)
 
-
-#ifndef __WIN10__
-#define __WIN10__       TRUE
+#if defined(__linux__)
+#define __PWNLIB_LINUX_BUILD__
+#else
+#define __PWNLIB_WINDOWS_BUILD__ 10
 #endif
 
 
+
 #ifndef __x86_64__
-#define __x86_64__      TRUE
+#define __x86_64__
 #endif
 
 

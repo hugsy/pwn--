@@ -57,10 +57,10 @@ namespace pwn::utils
 
 	PWNAPI auto flatten(_In_ const std::vector<flattenable_t>& args) -> std::vector<u8>;
 
-	PWNAPI auto cyclic(_In_ DWORD dwSize, _In_ DWORD dwPeriod, _Out_ std::vector<u8>& buffer) -> bool;
-	PWNAPI auto cyclic(_In_ DWORD dwSize, _In_ DWORD dwPeriod) -> std::vector<u8>;
-	PWNAPI auto cyclic(_In_ DWORD dwSize, _Out_ std::vector<u8>& buffer) -> bool;
-	PWNAPI auto cyclic(_In_ DWORD dwSize) -> std::vector<u8>;
+	PWNAPI auto cyclic(_In_ u32 dwSize, _In_ u32 dwPeriod, _Out_ std::vector<u8>& buffer) -> bool;
+	PWNAPI auto cyclic(_In_ u32 dwSize, _In_ u32 dwPeriod) -> std::vector<u8>;
+	PWNAPI auto cyclic(_In_ u32 dwSize, _Out_ std::vector<u8>& buffer) -> bool;
+	PWNAPI auto cyclic(_In_ u32 dwSize) -> std::vector<u8>;
 
 	PWNAPI void hexdump(_In_ const u8* Buffer, _In_ size_t BufferSize);
 	PWNAPI void hexdump(_In_ const std::vector<u8>& bytes);

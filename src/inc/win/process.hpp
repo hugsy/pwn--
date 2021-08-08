@@ -1,49 +1,49 @@
 #pragma once
 
 #include "common.hpp"
-#include "nt.hpp"
+#include "win/nt.hpp"
 
 #include <AccCtrl.h>
 #include <optional>
 
 namespace pwn::process
 {
-	PWNAPI auto pid() -> DWORD;
-	PWNAPI auto ppid() -> DWORD;
-	PWNAPI auto list() -> std::vector< std::tuple<std::wstring, DWORD> >;
-	_Success_(return == ERROR_SUCCESS) PWNAPI auto get_integrity_level(_In_ DWORD dwProcessId, _Out_ std::wstring & IntegrityLevelName) -> DWORD;
-	_Success_(return == ERROR_SUCCESS) PWNAPI auto get_integrity_level(_Out_ std::wstring & IntegrityLevelName) -> DWORD;
+	PWNAPI auto pid() -> u32;
+	PWNAPI auto ppid() -> std::optional<u32>;
+	PWNAPI auto list() -> std::vector< std::tuple<std::wstring, u32> >;
+	_Success_(return == ERROR_SUCCESS) PWNAPI auto get_integrity_level(_In_ u32 dwProcessId, _Out_ std::wstring & IntegrityLevelName) -> u32;
+	_Success_(return == ERROR_SUCCESS) PWNAPI auto get_integrity_level(_Out_ std::wstring & IntegrityLevelName) -> u32;
 	PWNAPI auto get_integrity_level() -> std::optional<std::wstring>;
 
-	PWNAPI _Success_(return) auto execv(_In_ const wchar_t* lpCommandLine, _In_ DWORD dwParentPid, _Out_ LPHANDLE lpNewProcessHandle) -> BOOL;
-	PWNAPI auto execv(_In_ const wchar_t* lpCommandLine, _In_opt_ DWORD dwParentPid = 0) -> std::optional<HANDLE>;
-	_Success_(return) PWNAPI auto system(_In_ const std::wstring & lpCommandLine, _In_ const std::wstring & operation = L"open") -> BOOL;
+	PWNAPI _Success_(return) auto execv(_In_ const wchar_t* lpCommandLine, _In_ u32 dwParentPid, _Out_ LPHANDLE lpNewProcessHandle) -> bool;
+	PWNAPI auto execv(_In_ const wchar_t* lpCommandLine, _In_opt_ u32 dwParentPid = 0) -> std::optional<HANDLE>;
+	_Success_(return) PWNAPI auto system(_In_ const std::wstring & lpCommandLine, _In_ const std::wstring & operation = L"open") -> bool;
 
-	_Success_(return) PWNAPI auto kill(_In_ DWORD dwProcessPid) -> BOOL;
-	_Success_(return) PWNAPI auto kill(_In_ HANDLE hProcess) -> BOOL;
+	_Success_(return) PWNAPI auto kill(_In_ u32 dwProcessPid) -> bool;
+	_Success_(return) PWNAPI auto kill(_In_ HANDLE hProcess) -> bool;
 	_Success_(return != nullptr) PWNAPI auto cmd() -> HANDLE;
-	_Success_(return) PWNAPI auto is_elevated(_In_opt_ DWORD dwPid = 0) -> BOOL;
-	_Success_(return) PWNAPI auto add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_ DWORD dwPid = 0) -> BOOL;
-	_Success_(return) PWNAPI auto has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt_ DWORD dwPid = 0) -> BOOL;
+	_Success_(return) PWNAPI auto is_elevated(_In_opt_ u32 dwPid = 0) -> bool;
+	_Success_(return) PWNAPI auto add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_ u32 dwPid = 0) -> bool;
+	_Success_(return) PWNAPI auto has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt_ u32 dwPid = 0) -> bool;
 
 	PWNAPI auto peb() -> PPEB;
 	PWNAPI auto teb() -> PTEB;
 
 	namespace mem
 	{
-		PWNAPI auto write(_In_ HANDLE hProcess, _In_ ULONG_PTR Address, _In_ PBYTE Data, _In_ SIZE_T DataLength) -> SIZE_T;
-		PWNAPI auto write(_In_ HANDLE hProcess, _In_ ULONG_PTR Address, _In_ std::vector<BYTE>& Data) -> SIZE_T;
-		PWNAPI auto write(_In_ ULONG_PTR Address, _In_ PBYTE Data, _In_ SIZE_T DataLength) -> SIZE_T;
-		PWNAPI auto write(_In_ ULONG_PTR Address, _In_ std::vector<BYTE>& Data) -> SIZE_T;
+		PWNAPI auto write(_In_ HANDLE hProcess, _In_ uptr Address, _In_ u8* Data, _In_ size_t DataLength) -> size_t;
+		PWNAPI auto write(_In_ HANDLE hProcess, _In_ uptr Address, _In_ std::vector<u8>& Data) -> size_t;
+		PWNAPI auto write(_In_ uptr Address, _In_ u8* Data, _In_ size_t DataLength) -> size_t;
+		PWNAPI auto write(_In_ uptr Address, _In_ std::vector<u8>& Data) -> size_t;
 
-		PWNAPI auto read(_In_ HANDLE hProcess, _In_ ULONG_PTR Address, _In_ SIZE_T DataLength) -> std::vector<BYTE>;
-		PWNAPI auto read(_In_ ULONG_PTR Address, _In_ SIZE_T DataLength) -> std::vector<BYTE>;
+		PWNAPI auto read(_In_ HANDLE hProcess, _In_ uptr Address, _In_ size_t DataLength) -> std::vector<u8>;
+		PWNAPI auto read(_In_ uptr Address, _In_ size_t DataLength) -> std::vector<u8>;
 
-		PWNAPI auto alloc(_In_ HANDLE hProcess, _In_ SIZE_T Size, _In_ const wchar_t* Permission, _In_opt_ ULONG_PTR Address = NULL) -> ULONG_PTR;
-		PWNAPI auto alloc(_In_ SIZE_T Size, _In_ const wchar_t Permission[3], _In_opt_ ULONG_PTR Address = NULL) -> ULONG_PTR;
+		PWNAPI auto alloc(_In_ HANDLE hProcess, _In_ size_t Size, _In_ const wchar_t* Permission, _In_opt_ uptr Address = NULL) -> uptr;
+		PWNAPI auto alloc(_In_ size_t Size, _In_ const wchar_t Permission[3], _In_opt_ uptr Address = NULL) -> uptr;
 
-		PWNAPI auto free(_In_ HANDLE hProcess, _In_ ULONG_PTR Address) -> ULONG_PTR;
-		PWNAPI auto free(_In_ ULONG_PTR Address) -> ULONG_PTR;
+		PWNAPI auto free(_In_ HANDLE hProcess, _In_ uptr Address) -> uptr;
+		PWNAPI auto free(_In_ uptr Address) -> uptr;
 	}
 
 
@@ -55,20 +55,20 @@ namespace pwn::process
 			PWNAPI AppContainer(_In_ std::wstring  container_name, _In_ std::wstring  executable_path, _In_ std::vector<WELL_KNOWN_SID_TYPE>  DesiredCapabilities = {});
 			PWNAPI ~AppContainer();
 
-			_Success_(return) PWNAPI auto allow_file_or_directory(_In_ const wchar_t* file_or_directory_name) -> BOOL;
-			_Success_(return) PWNAPI auto allow_file_or_directory(_In_ const std::wstring& file_or_directory_name) -> BOOL;
+			_Success_(return) PWNAPI auto allow_file_or_directory(_In_ const wchar_t* file_or_directory_name) -> bool;
+			_Success_(return) PWNAPI auto allow_file_or_directory(_In_ const std::wstring& file_or_directory_name) -> bool;
 
-			_Success_(return) PWNAPI auto allow_registry_key(_In_ const wchar_t* regkey) -> BOOL;
-			_Success_(return) PWNAPI auto allow_registry_key(_In_ const std::wstring& regkey) -> BOOL;
+			_Success_(return) PWNAPI auto allow_registry_key(_In_ const wchar_t* regkey) -> bool;
+			_Success_(return) PWNAPI auto allow_registry_key(_In_ const std::wstring& regkey) -> bool;
 
-			_Success_(return) PWNAPI auto spawn() -> BOOL;
-			_Success_(return) PWNAPI auto restore_acls() -> BOOL;
-			_Success_(return) PWNAPI auto join(_In_ DWORD dwTimeout = INFINITE) -> BOOL;
+			_Success_(return) PWNAPI auto spawn() -> bool;
+			_Success_(return) PWNAPI auto restore_acls() -> bool;
+			_Success_(return) PWNAPI auto join(_In_ u32 dwTimeout = INFINITE) -> bool;
 
 
 
 		private:
-			auto set_named_object_access(_In_ PWSTR ObjectName, _In_ SE_OBJECT_TYPE ObjectType, _In_ ACCESS_MODE AccessMode, _In_ ACCESS_MASK AccessMask) -> BOOL;
+			auto set_named_object_access(_In_ PWSTR ObjectName, _In_ SE_OBJECT_TYPE ObjectType, _In_ ACCESS_MODE AccessMode, _In_ ACCESS_MASK AccessMask) -> bool;
 
 			std::wstring m_ContainerName;
 			std::wstring m_ExecutablePath;

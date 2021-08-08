@@ -53,21 +53,21 @@ version_info() -> const std::tuple<WORD, WORD>;
 
 /**
  *
- * Windows specific
+ * Windows namespace
  *
  */
 
+/// namespace pwn::win::system
+#include "win/system.hpp"
+
+/// namespace pwn::win::process
+#include "win/process.hpp"
+
+/// namespace pwn::win::thread
+#include "win/thread.hpp"
+
 /*
-/// namespace pwn::system
-#include "system.hpp"
-
-/// namespace pwn::process
-#include "process.hpp"
-
-/// namespace pwn::thread
-#include "thread.hpp"
-
-/// namespace pwn::thread
+/// namespace pwn::registry
 #include "registry.hpp"
 
 /// namespace pwn::cpu
@@ -100,5 +100,24 @@ version_info() -> const std::tuple<WORD, WORD>;
 */
 
 
-/// namespace pwn::ctf
-//#include "tube.hpp"
+/**
+ *
+ * Linux namespace
+ *
+ */
+// todo
+/// namespace pwn::linux::system
+// #include "linux/system.hpp"
+
+
+//
+// namespace pwn::ctf
+//
+
+/**
+ *
+ * CTF namespace
+ *
+ */
+
+// #include "tube.hpp"

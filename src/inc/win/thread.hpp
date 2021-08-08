@@ -16,10 +16,10 @@ extern "C"
 }
 
 
-namespace pwn::thread
+namespace pwn::win::thread
 {
-_Success_(return != nullptr) PWNAPI auto get_name(_In_ DWORD dwThreadId = -1) -> std::optional<std::wstring>;
+_Success_(return != std::nullopt) PWNAPI auto get_name(_In_ i32 dwThreadId = -1) -> std::optional<std::wstring>;
 
-_Success_(return ) PWNAPI auto set_name(_In_ std::wstring const& name, _In_ DWORD dwThreadId = -1) -> bool;
+_Success_(return ) PWNAPI auto set_name(_In_ std::wstring const& name, _In_ i32 dwThreadId = -1) -> bool;
 
-} // namespace pwn::thread
+} // namespace pwn::win::thread
