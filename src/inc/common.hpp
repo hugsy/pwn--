@@ -1,7 +1,12 @@
 #pragma once
 
-#include "win/framework.hpp"
 #include "constants.hpp"
+
+#ifdef __PWNLIB_WINDOWS_BUILD__
+#include "win/framework.hpp"
+#else
+#include "linux/framework.hpp"
+#endif
 
 
 #ifndef PWNAPI
@@ -16,7 +21,7 @@
 #include <cstdint>
 
 using u8 = uint8_t;
-using u16 = int16_t;
+using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
 

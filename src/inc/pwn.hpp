@@ -41,11 +41,14 @@ version_info() -> const std::tuple<WORD, WORD>;
 /// namespace pwn::utils
 #include "utils.hpp"
 
+/// namespace pwn::crypto
+#include "crypto.hpp"
 
 /// namespace pwn::assm
 #ifndef PWN_NO_DISASSEMBLER
 #include "disasm.hpp"
 #endif
+
 #ifndef PWN_NO_ASSEMBLER
 #include "asm.hpp"
 #endif // !PWN_NO_ASSEMBLER
@@ -91,8 +94,7 @@ version_info() -> const std::tuple<WORD, WORD>;
 /// namespace pwn::windows::rpc
 #include "rpc.hpp"
 
-/// namespace pwn::crypto
-#include "crypto.hpp"
+
 
 // namespace pwn::backdoor
 #include "backdoor.hpp"

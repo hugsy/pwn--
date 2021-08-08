@@ -4,6 +4,13 @@
 #define NS "pwn::utils"
 
 
+TEST_CASE("base64", "[" NS "]")
+{
+    const std::vector<BYTE> test_buf {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf};
+    REQUIRE(pwn::utils::base64_decode(pwn::utils::base64_encode(test_buf.data(), test_buf.size())) == test_buf);
+}
+
+
 TEST_CASE("hexdump", "[" NS "]")
 {
     pwn::utils::hexdump(std::vector<BYTE> {0x41, 0x41, 0x41, 0x41, 0x41, 0x41});

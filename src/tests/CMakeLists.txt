@@ -9,6 +9,8 @@ set(
     SOURCE_FILES
     ${COMMON_TEST_DIR}/main.cpp
     ${COMMON_TEST_DIR}/pwn_utils.cpp
+    ${COMMON_TEST_DIR}/pwn_crypto.cpp
+    ${COMMON_TEST_DIR}/pwn_assm_disasm.cpp
     ${TEST_DIR}/pwn_win_system.cpp
     ${TEST_DIR}/pwn_win_thread.cpp
 )

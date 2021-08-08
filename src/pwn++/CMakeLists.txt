@@ -1,10 +1,3 @@
-option(DEBUG                  "Enable Debug"                                ON)
-option(DISABLE_LOG_COLOR      "Disable ANSI color codes in log messages"    OFF)
-option(INCLUDE_ASSEMBLER      "Compile with keystone-engine support"        OFF)
-option(INCLUDE_DISASSEMBLER   "Compile with capstone-engine support"        OFF)
-option(INCLUDE_BACKDOOR       "Enable the lua vm backdoor"                  OFF)
-
-
 if(MSVC)
     add_compile_options(/W3 /WX)
 else()
@@ -23,6 +16,7 @@ set(
     ${COMMON_SOURCE_DIR}/pwn.cpp
     ${COMMON_SOURCE_DIR}/context.cpp
     ${COMMON_SOURCE_DIR}/utils.cpp
+    ${COMMON_SOURCE_DIR}/crypto.cpp
 )
 
 
@@ -33,6 +27,7 @@ set(
     ${COMMON_HEADER_DIR}/common.hpp
     ${COMMON_HEADER_DIR}/utils.hpp
     ${COMMON_HEADER_DIR}/handle.hpp
+    ${COMMON_HEADER_DIR}/crypto.hpp
 )
 
 set (PWN_VERSION_MAJOR 0)

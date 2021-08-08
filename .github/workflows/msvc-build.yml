@@ -17,7 +17,7 @@ jobs:
       fail-fast: true
       matrix:
         os: ['windows-latest']
-        platform: ['x86', 'x64']
+        platform: ['x64']
         configuration: ['Release']
 
     runs-on: ${{ matrix.os }}

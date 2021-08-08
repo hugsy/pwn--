@@ -45,28 +45,6 @@ add_compile_definitions(_UNICODE)
 add_compile_definitions(UNICODE)
 
 
-if(NOT INCLUDE_BACKDOOR)
-    add_compile_definitions(PWN_NO_BACKDOOR)
-endif()
-
-
-if(INCLUDE_ASSEMBLER)
-    find_package(keystone CONFIG QUIET)
-    target_link_libraries(pwn++ PRIVATE capstone.lib)
-else()
-    add_compile_definitions(PWN_NO_ASSEMBLER)
-endif(INCLUDE_ASSEMBLER)
-
-
-if(INCLUDE_DISASSEMBLER)
-    find_package(capstone CONFIG QUIET)
-    target_link_libraries(pwn++ PRIVATE capstone.lib)
-else()
-    add_compile_definitions(PWN_NO_DISASSEMBLER)
-endif(INCLUDE_DISASSEMBLER)
-
-
-
 target_link_libraries(
     pwn++
     PRIVATE
