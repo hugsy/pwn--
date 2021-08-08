@@ -12,15 +12,15 @@ on: [push, pull_request]
 jobs:
   build:
     name: "Building pwn++ for ${{ matrix.configuration }}/${{ matrix.platform }}"
-    runs-on: windows-latest
 
     strategy:
       fail-fast: true
       matrix:
-        os: ['win']
+        os: ['windows-latest']
         platform: ['x86', 'x64']
         configuration: ['Release']
 
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
 
@@ -42,12 +42,13 @@ jobs:
           ${{ runner.os }}-
 
     - name: Install vcpkg
+      if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
         vcpkg integrate install
 
     - name: Install dependencies
-      if: matrix.os == 'win' && steps.vcpkg_cache.outputs.cache-hit != 'true'
+      if: matrix.os == 'windows-latest' && steps.vcpkg_cache.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
         vcpkg install keystone:${{ matrix.platform }}-windows-static
@@ -59,7 +60,7 @@ jobs:
         languages: cpp
 
     - name: Build pwn++ dll
-      if: matrix.os == 'win'
+      if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
         Import-Module .\.github\Invoke-VS.ps1
@@ -68,14 +69,15 @@ jobs:
         New-Item -Type Directory -Name build
         Set-Location .\build
         cmake ..\src
+        msbuild.exe ALL_BUILD.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
         Set-Location ..
 
 
     - name: Run Windows tests
-      if: matrix.os == 'win'
+      if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Copy-Item -Verbose pwn++\build\pwn++\${{ matrix.os}}\${{ matrix.configuration }}\pwn++.dll pwn++\tests\${{ matrix.configuration }}\
+        Copy-Item -Verbose pwn++\build\pwn++\win\${{ matrix.configuration }}\pwn++.dll pwn++\tests\${{ matrix.configuration }}\
         pwn++\tests\unit_tests.exe
 
 
@@ -86,13 +88,13 @@ jobs:
 
     - name: Prepare Windows artifact
       id: prepare_artifact
-      if: matrix.os == 'win'
+      if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
         New-Item -Type Directory -Name artifact\
-        Copy-Item -Verbose pwn++\build\pwn++\${{ matrix.os }}\${{ matrix.configuration }}\pwn++.lib artifact\
-        Copy-Item -Verbose pwn++\build\pwn++\${{ matrix.os }}\${{ matrix.configuration }}\pwn++.dll artifact\
-        Copy-Item -Verbose pwn++\build\pwn++\${{ matrix.os }}\${{ matrix.configuration }}\pwn++.pdb artifact\
+        Copy-Item -Verbose pwn++\build\pwn++\win\${{ matrix.configuration }}\pwn++.lib artifact\
+        Copy-Item -Verbose pwn++\build\pwn++\win\${{ matrix.configuration }}\pwn++.dll artifact\
+        Copy-Item -Verbose pwn++\build\pwn++\win\${{ matrix.configuration }}\pwn++.pdb artifact\
         New-Item -Type Directory -Name artifact\include\
         New-Item -Type Directory -Name artifact\include\win\
         Copy-Item pwn++\src\inc\*.hpp artifact\include\
@@ -102,7 +104,7 @@ jobs:
       id: publish_artifact
       uses: actions/upload-artifact@v2
       with:
-        name: pwn++_${{ matrix.os }}_${{ env.GITHUB_REF_SLUG }}_${{ matrix.platform }}_${{ env.GITHUB_SHA_SHORT }}
+        name: pwn++_${{ env.GITHUB_REF_SLUG }}_${{ matrix.platform }}_${{ env.GITHUB_SHA_SHORT }}
         path: artifact/
 
     - name: Notify on success
