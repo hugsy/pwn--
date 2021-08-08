@@ -72,9 +72,10 @@ version_info() -> const std::tuple<WORD, WORD>;
 /// namespace pwn::win::cpu
 #include "win/cpu.hpp"
 
+/// namespace pwn::win::registry
+#include "win/registry.hpp"
+
 /*
-/// namespace pwn::registry
-#include "registry.hpp"
 
 /// namespace pwn::job
 #include "job.hpp"
