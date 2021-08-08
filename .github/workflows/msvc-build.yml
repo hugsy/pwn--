@@ -77,8 +77,8 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Copy-Item -Verbose pwn++\build\pwn++\win\${{ matrix.configuration }}\pwn++.dll pwn++\tests\${{ matrix.configuration }}\
-        pwn++\tests\unit_tests.exe
+        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.dll build\tests\${{ matrix.configuration }}\
+        build\tests\${{ matrix.configuration }}\\unit_tests.exe
 
 
     - name: Perform CodeQL Analysis
@@ -92,13 +92,13 @@ jobs:
       shell: pwsh
       run: |
         New-Item -Type Directory -Name artifact\
-        Copy-Item -Verbose pwn++\build\pwn++\win\${{ matrix.configuration }}\pwn++.lib artifact\
-        Copy-Item -Verbose pwn++\build\pwn++\win\${{ matrix.configuration }}\pwn++.dll artifact\
-        Copy-Item -Verbose pwn++\build\pwn++\win\${{ matrix.configuration }}\pwn++.pdb artifact\
+        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.lib artifact\
+        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.dll artifact\
+        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.pdb artifact\
         New-Item -Type Directory -Name artifact\include\
         New-Item -Type Directory -Name artifact\include\win\
-        Copy-Item pwn++\src\inc\*.hpp artifact\include\
-        Copy-Item pwn++\src\inc\win\*.hpp artifact\include\win\
+        Copy-Item src\inc\*.hpp artifact\include\
+        Copy-Item src\inc\win\*.hpp artifact\include\win\
 
     - name: Publish artifact
       id: publish_artifact
