@@ -47,7 +47,7 @@ jobs:
         vcpkg integrate install
 
     - name: Install dependencies
-      if: matrix.os == 'win' and steps.vcpkg_cache.outputs.cache-hit != 'true'
+      if: matrix.os == 'win' && steps.vcpkg_cache.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
         vcpkg install keystone:${{ matrix.platform }}-windows-static
@@ -102,7 +102,7 @@ jobs:
       id: publish_artifact
       uses: actions/upload-artifact@v2
       with:
-        name: pwn++_msvc_${{ env.GITHUB_REF_SLUG }}_${{ matrix.platform }}_${{ env.GITHUB_SHA_SHORT }}
+        name: pwn++_${{ matrix.os }}_${{ env.GITHUB_REF_SLUG }}_${{ matrix.platform }}_${{ env.GITHUB_SHA_SHORT }}
         path: artifact/
 
     - name: Notify on success
