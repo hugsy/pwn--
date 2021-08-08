@@ -1,38 +1,28 @@
-#include "job.hpp"
+#include "win/job.hpp"
 
 
-HANDLE pwn::job::create()
+
+
+auto
+pwn::win::job::Job::add_process(_In_ u32 ProcessId) -> bool
 {
-	return ::CreateJobObject(nullptr, nullptr);
-}
+    auto hProcess = pwn::utils::GenericHandle(
+        ::OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, false, ProcessId)
+    );
 
+    if ( !hProcess )
+    {
+        perror("OpenProcess()");
+        return false;
+    }
 
-HANDLE pwn::job::create(_In_ const std::wstring& name)
-{
-	HANDLE hJob = ::CreateJobObject(nullptr, name.data());
-	if ( hJob )
-		return hJob;
+    if(::AssignProcessToJobObject(m_hJob.get(), hProcess.get()))
+    {
+        m_handles.push_back(
+            pwn::utils::GenericHandle(hProcess.get())
+        );
+        return true;
+    }
 
-	if ( ::GetLastError() == ERROR_ALREADY_EXISTS )
-		hJob = ::OpenJobObject(JOB_OBJECT_ALL_ACCESS, FALSE, name.data());
-
-	return hJob;
-}
-
-
-BOOL pwn::job::close(_In_ HANDLE hJob)
-{
-	return ::CloseHandle(hJob);
-}
-
-
-BOOL pwn::job::add_process(_In_ HANDLE hJob, _In_ DWORD dwProcessId)
-{
-	HANDLE hProcess = ::OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, FALSE, dwProcessId);
-	if ( !hProcess )
-		return FALSE;
-
-	BOOL success = ::AssignProcessToJobObject(hJob, hProcess);
-	::CloseHandle(hProcess);
-	return success;
+    return false;
 }

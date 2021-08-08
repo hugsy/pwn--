@@ -21,6 +21,9 @@ if(MSVC)
         ${TEST_DIR}/pwn_win_system.cpp
         ${TEST_DIR}/pwn_win_thread.cpp
     )
+
+    add_compile_definitions(_UNICODE)
+    add_compile_definitions(UNICODE)
 else()
     set(TEST_DIR ${COMMON_TEST_DIR}/linux)
     set(
