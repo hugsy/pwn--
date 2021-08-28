@@ -64,18 +64,63 @@ __hexdump(_In_ const u8* data, _In_ size_t size)
             }
         }
     }
+
+    std::cout << std::flush;
 }
 
-const std::string base64_chars =
+const std::string b64_charset =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
 
 
-inline bool
-is_base64(unsigned char c)
+const std::vector<i8> b64_inverted_table = {
+    62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58,
+    59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5,
+    6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1, 26, 27, 28,
+    29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42,
+    43, 44, 45, 46, 47, 48, 49, 50, 51 };
+
+
+inline auto
+b64_is_valid_char(unsigned char c) -> bool
 {
-    return ((isalnum(c) != 0) || (c == '+') || (c == '/'));
+    return ((isalnum(c) != 0) || (c == '+') || (c == '/') || (c == '='));
+}
+
+
+inline auto
+b64_encoded_size(size_t inlen) -> size_t
+{
+    size_t ret = inlen;
+    if (inlen % 3 != 0)
+        ret += 3 - (inlen % 3);
+    ret /= 3;
+    ret *= 4;
+    return ret;
+}
+
+inline auto
+b64_decoded_size(const char *in) -> size_t
+{
+    if (in == nullptr)
+        return 0;
+
+    size_t len = strlen(in);
+    size_t ret = len / 4 * 3;
+    for (size_t i=len; (i--)>0; )
+    {
+        if (in[i] == '=')
+        {
+            ret--;
+        }
+        else
+        {
+            break;
+        }
+    }
+    return ret;
 }
 
 
@@ -153,7 +198,7 @@ __create_cyclic_buffer(_In_ u32 t, _In_ u32 p, _In_ size_t dwSize, _In_ const st
     }
 }
 
-} // namespace
+} // internal anonymous namespace
 
 
 void
@@ -165,7 +210,7 @@ random::seed()
 
 
 auto
-random::rand() -> QWORD
+random::rand() -> u64
 {
     return xorshift64();
 }
@@ -221,7 +266,7 @@ random::buffer(_In_ u32 length) -> std::vector<u8>
 auto
 random::string(_In_ u32 length) -> std::wstring
 {
-    const std::wstring printable(L"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ ");
+    const std::wstring printable(WIDECHAR(PWN_UTILS_PRINTABLE_CHARSET));
     std::wstring string;
     for (u32 i = 0; i < length; i++)
     {
@@ -234,7 +279,7 @@ random::string(_In_ u32 length) -> std::wstring
 auto
 random::alnum(_In_ u32 length) -> std::wstring
 {
-    const std::wstring printable(L"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    const std::wstring printable(WIDECHAR(PWN_UTILS_ALNUM_CHARSET));
     std::wstring string;
     for (u32 i = 0; i < length; i++)
     {
@@ -268,116 +313,78 @@ base64_encode(_In_ std::vector<u8> const &bytes) -> std::string
 
 
 auto
-base64_encode(_In_ const u8 *bytes_to_encode, _In_ size_t in_len) -> std::string
+base64_encode(_In_ const u8 *in, _In_ size_t len) -> std::string
 {
-    std::string ret;
-    int i = 0;
-    int j = 0;
-    unsigned char char_array_3[3];
-    unsigned char char_array_4[4];
+    if (in == nullptr || len == 0)
+        throw std::exception("invalid input");
 
-    while ((in_len--) != 0u)
+    size_t elen = b64_encoded_size(len);
+    auto output_buffer = std::make_unique<u8[]>(elen+1);
+    auto out = output_buffer.get();
+    memset(out, 0, elen+1);
+
+    for (size_t i=0, j=0; i<len; i+=3, j+=4)
     {
-        char_array_3[i++] = *(bytes_to_encode++);
-        if (i == 3)
-        {
-            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-            char_array_4[3] = char_array_3[2] & 0x3f;
+        u32 v = in[i];
+        v = i+1 < len ? v << 8 | in[i+1] : v << 8;
+        v = i+2 < len ? v << 8 | in[i+2] : v << 8;
 
-            for (i = 0; (i < 4); i++)
-            {
-                ret += base64_chars[char_array_4[i]];
-            }
-            i = 0;
+        out[j]   = b64_charset[(v >> 18) & 0x3F];
+        out[j+1] = b64_charset[(v >> 12) & 0x3F];
+        if (i+1 < len)
+        {
+            out[j+2] = b64_charset[(v >> 6) & 0x3F];
+        }
+        else
+        {
+            out[j+2] = '=';
+        }
+        if (i+2 < len)
+        {
+            out[j+3] = b64_charset[v & 0x3F];
+        } else {
+            out[j+3] = '=';
         }
     }
 
-    if (i != 0)
-    {
-        for (j = i; j < 3; j++)
-        {
-            char_array_3[j] = '\0';
-        }
-
-        char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
-        char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
-        char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
-        char_array_4[3] = char_array_3[2] & 0x3f;
-
-        for (j = 0; (j < i + 1); j++)
-        {
-            ret += base64_chars[char_array_4[j]];
-        }
-
-        while ((i++ < 3))
-        {
-            ret += '=';
-        }
-    }
-
-    return ret;
+    return std::string(reinterpret_cast<char*>(out), elen);
 }
 
 
+
 auto
-base64_decode(_In_ std::string const &encoded_string) -> std::vector<u8>
+base64_decode(_In_ std::string const &in) -> std::optional<std::vector<u8>>
 {
-    size_t in_len = encoded_string.size();
-    int i         = 0;
-    int j         = 0;
-    int in_       = 0;
-    unsigned char char_array_4[4];
-    unsigned char char_array_3[3];
-    std::vector<u8> ret;
+    size_t len = in.size();
+    size_t outlen = b64_decoded_size(in.c_str());
 
-    while (((in_len--) != 0u) && (encoded_string[in_] != '=') && is_base64(encoded_string[in_]))
+    if (!len || !outlen || len % 4 != 0)
+        return std::nullopt;
+
+    for (size_t i=0; i<len; i++)
     {
-        char_array_4[i++] = encoded_string[in_];
-        in_++;
-        if (i == 4)
+        if (!b64_is_valid_char(in[i]))
         {
-            for (i = 0; i < 4; i++)
-            {
-                char_array_4[i] = base64_chars.find(char_array_4[i]) & 0xff;
-            }
-
-            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-
-            for (i = 0; (i < 3); i++)
-            {
-                ret.push_back(char_array_3[i]);
-            }
-            i = 0;
+            return std::nullopt;
         }
     }
 
-    if (i != 0)
+    std::vector<u8> out(outlen, 0);
+    for (size_t i=0, j=0; i<len; i+=4, j+=3)
     {
-        for (j = i; j < 4; j++)
-        {
-            char_array_4[j] = 0;
-        }
+        int v = b64_inverted_table[in[i]-43];
+        v = (v << 6) | b64_inverted_table[in[i+1]-43];
+        v = in[i+2]=='=' ? v << 6 : (v << 6) | b64_inverted_table[in[i+2]-43];
+        v = in[i+3]=='=' ? v << 6 : (v << 6) | b64_inverted_table[in[i+3]-43];
 
-        for (j = 0; j < 4; j++)
-        {
-            char_array_4[j] = base64_chars.find(char_array_4[j]) & 0xff;
-        }
-
-        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
-        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
-        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
-
-        for (j = 0; (j < i - 1); j++)
-        {
-            ret.push_back(char_array_3[j]);
-        }
+        out[j] = (v >> 16) & 0xFF;
+        if (in[i+2] != '=')
+            out[j+1] = (v >> 8) & 0xFF;
+        if (in[i+3] != '=')
+            out[j+2] = v & 0xFF;
     }
 
-    return ret;
+    return out;
 }
 
 
@@ -601,7 +608,7 @@ p32(_In_ u32 v) -> std::vector<u8>
     return __pack(v);
 }
 auto
-p64(_In_ QWORD v) -> std::vector<u8>
+p64(_In_ u64 v) -> std::vector<u8>
 {
     return __pack(v);
 }

@@ -54,9 +54,11 @@ version_info() -> const std::tuple<WORD, WORD>;
 #endif // !PWN_NO_ASSEMBLER
 
 
+
+#ifdef __PWNLIB_WINDOWS_BUILD__
 /**
  *
- * Windows namespace (pwn::win)
+ * Windows namespace definition
  *
  */
 
@@ -81,10 +83,6 @@ version_info() -> const std::tuple<WORD, WORD>;
 /// namespace pwn::win::job
 #include "win/job.hpp"
 
-
-
-
-
 /*
 /// namespace pwn::service
 #include "service.hpp"
@@ -98,32 +96,33 @@ version_info() -> const std::tuple<WORD, WORD>;
 /// namespace pwn::windows::rpc
 #include "rpc.hpp"
 
-
-
 // namespace pwn::backdoor
 #include "backdoor.hpp"
 
 */
+#endif
+
+
+#ifdef __PWNLIB_LINUX_BUILD__
+/**
+ *
+ * Linux namespace definition
+ *
+ */
+
+
+namespace pwn::linux::system
+#include "linux/system.hpp"
+
+#endif
 
 
 /**
  *
- * Linux namespace
+ * CTF namespace definition
  *
  */
-// todo
-/// namespace pwn::linux::system
-// #include "linux/system.hpp"
 
-
-//
 // namespace pwn::ctf
-//
-
-/**
- *
- * CTF namespace
- *
- */
-
 // #include "tube.hpp"
+

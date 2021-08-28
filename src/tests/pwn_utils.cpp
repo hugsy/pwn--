@@ -3,21 +3,44 @@
 #include "./catch.hpp"
 #define NS "pwn::utils"
 
-
-TEST_CASE("base64", "[" NS "]")
-{
-    const std::vector<BYTE> test_buf {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf};
-    REQUIRE(pwn::utils::base64_decode(pwn::utils::base64_encode(test_buf.data(), test_buf.size())) == test_buf);
-}
+#include <vector>
+#include <iostream>
 
 
 TEST_CASE("hexdump", "[" NS "]")
 {
-    pwn::utils::hexdump(std::vector<BYTE> {0x41, 0x41, 0x41, 0x41, 0x41, 0x41});
-    pwn::utils::hexdump(reinterpret_cast<PBYTE>("BBCCDDEE"), 8);
+    std::vector<u8> const vec{0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41};
+    pwn::utils::hexdump(vec);
+    pwn::utils::hexdump(reinterpret_cast<u8*>("BBCCDDEE"), 8);
 }
 
 
+TEST_CASE("base64", "[" NS "]")
+{
+    std::vector<u8> const vec {
+        0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+        0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f
+    };
+    std::string const vec_enc = "MDEyMzQ1Njc4OTo7PD0+Pw==";
+    auto encoded_string1 = pwn::utils::base64_encode(vec.data(), vec.size());
+    auto encoded_string2 = pwn::utils::base64_encode(vec);
+    REQUIRE( encoded_string1 == encoded_string2 );
+
+    // auto const encoded_vector = pwn::utils::string_to_bytes(encoded_string1);
+    // pwn::utils::hexdump( encoded_vector );
+
+    // REQUIRE( encoded_string1.size() == vec_enc.size());
+    // REQUIRE( encoded_string1 == vec_enc );
+
+    //auto p = pwn::utils::base64_decode( encoded_string1 );
+    //REQUIRE( p.has_value());
+    //REQUIRE( p.value() == vec);
+
+    //auto p2 = pwn::utils::base64_decode( "qweasdzxcpokpo123==" );
+    //REQUIRE_FALSE( p2.has_value());
+}
+
+/*
 TEST_CASE("cyclic", "[" NS "]")
 {
     std::vector<u8> buf;
@@ -55,3 +78,4 @@ TEST_CASE("strings", "[" NS "]")
     REQUIRE(pwn::utils::startswith(str2, L"TEST"));
     REQUIRE_FALSE(pwn::utils::startswith(str2, L"test"));
 }
+*/

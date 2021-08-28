@@ -1,5 +1,4 @@
-﻿
-#include "log.hpp"
+﻿#include "log.hpp"
 
 #include <cassert>
 #include <cstdio>
@@ -8,7 +7,6 @@
 
 #include "context.hpp"
 #include "pwn.hpp"
-
 
 namespace pwn::log
 {
@@ -68,6 +66,7 @@ xlog(_In_ log_level_t level, _In_ const wchar_t *args_list, ...)
 }
 
 
+#ifdef __PWNLIB_WINDOWS_BUILD__
 /*++
 
 perror() style of function for Windows
@@ -95,5 +94,7 @@ ntperror(_In_ const wchar_t *prefix, _In_ NTSTATUS Status)
     ::SetLastError(hResult);
     perror(prefix);
 }
+#endif
+
 
 } // namespace pwn::log

@@ -65,6 +65,7 @@ void PWNAPI
 xlog(_In_ log_level_t level, _In_ const wchar_t *args_list, ...);
 
 
+#ifdef __PWNLIB_WINDOWS_BUILD__
 /// <summary>
 /// Basic equivalent of Linux Glibc's `perror`
 /// </summary>
@@ -81,7 +82,7 @@ perror(_In_ const std::wstring &prefix);
 void PWNAPI
 ntperror(_In_ const wchar_t *prefix, _In_ NTSTATUS Status);
 } // namespace pwn::log
-
+#endif
 
 #define dbg(fmt, ...) pwn::log::xlog(pwn::log::log_level_t::LOG_DEBUG, fmt, ##__VA_ARGS__)
 #define info(fmt, ...) pwn::log::xlog(pwn::log::log_level_t::LOG_INFO, fmt, ##__VA_ARGS__)

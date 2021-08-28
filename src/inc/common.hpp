@@ -2,15 +2,37 @@
 
 #include "constants.hpp"
 
+#define __STR(x)       #x
+#define STR(x)         __STR(x)
+#define __WIDE(x)      L#x
+#define WIDECHAR(x)    __WIDE(x)
+#define __WIDE2(x)     L##x
+#define WIDECHAR2(x)   __WIDE2(x)
+#define CONCAT(x, y)   x##y
+
+
+
+
 #ifdef __PWNLIB_WINDOWS_BUILD__
 #include "win/framework.hpp"
 #else
 #include "linux/framework.hpp"
+
 #endif
 
 
 #ifndef PWNAPI
-#define PWNAPI __declspec(dllexport)
+
+#if defined(_MSC_VER)
+    // Microsoft
+    #define PWNAPI __declspec(dllexport)
+#elif defined(__GNUC__)
+    // GCC / clang
+    #define PWNAPI __attribute__((visibility("default")))
+#else
+    #error Unknown dynamic link export semantics.
+#endif
+
 #endif
 
 
@@ -32,9 +54,6 @@ using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 
-#ifndef QWORD
-using QWORD = u64;
-#endif
 
 
 #ifndef PWN_LOG_NO_COLOR
@@ -54,6 +73,7 @@ using QWORD = u64;
 #include <exception>
 
 
+#ifdef __PWNLIB_WINDOWS_BUILD__
 
 // todo: port to linux too
 template<typename M, typename P>
@@ -77,3 +97,5 @@ auto LoadModuleOrThrow(M hMod, P lpszProcName)
         (CONCAT( t_, FUNCNAME )) LoadModuleOrThrow( ( LoadLibraryW( DLLFILE ), GetModuleHandleW( DLLFILE ) ), #FUNCNAME );   \
       return func( std::forward< Ts >( ts )... );                                                                            \
    }
+
+#endif

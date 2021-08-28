@@ -1,9 +1,14 @@
 #pragma once
 
 #include <variant>
+#include <optional>
 
 #include "common.hpp"
 #include "context.hpp"
+
+#define PWN_UTILS_PRINTABLE_CHARSET "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ "
+#define PWN_UTILS_ALNUM_CHARSET "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
 
 using flattenable_t = std::variant<
 	std::string,
@@ -30,7 +35,7 @@ namespace pwn::utils
 
 	PWNAPI auto base64_encode(_In_ const u8 *bytes_to_encode, _In_ size_t in_len) -> std::string;
     PWNAPI auto base64_encode(_In_ std::vector<u8> const &bytes) -> std::string;
-	PWNAPI auto base64_decode(_In_ std::string const& encoded_string) -> std::vector<u8>;
+	PWNAPI auto base64_decode(_In_ std::string const& encoded_string) -> std::optional<std::vector<u8>>;
 
 	PWNAPI auto string_to_widestring(_In_ const std::string& s) -> std::wstring;
 	PWNAPI auto widestring_to_string(_In_ const std::wstring& ws) -> std::string;
@@ -51,7 +56,7 @@ namespace pwn::utils
 	PWNAPI auto endswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern) -> bool;
 
 	PWNAPI auto p8 (_In_  u8 v) -> std::vector<u8>;
-	PWNAPI auto p16(_In_  u16 v) -> std::vector<u8>;
+	PWNAPI auto p16(_In_ u16 v) -> std::vector<u8>;
 	PWNAPI auto p32(_In_ u32 v) -> std::vector<u8>;
 	PWNAPI auto p64(_In_ u64 v) -> std::vector<u8>;
 

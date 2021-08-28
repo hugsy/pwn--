@@ -8,7 +8,7 @@ namespace pwn::context
 	PWNAPI endianess_t endian = endianess_t::little;
 	PWNAPI u8 ptrsize = 8;
 
-	auto set_architecture(_In_ architecture_t new_arch) -> BOOL
+	auto set_architecture(_In_ architecture_t new_arch) -> bool
 	{
 		switch (new_arch)
 		{
@@ -46,7 +46,7 @@ namespace pwn::context
 	/// </summary>
 	PWNAPI pwn::log::log_level_t __log_level = pwn::log::log_level_t::LOG_INFO;
 
-	auto set_log_level(_In_ pwn::log::log_level_t new_level) -> BOOL
+	auto set_log_level(_In_ pwn::log::log_level_t new_level) -> bool
 	{
 		__log_level = new_level;
 		auto level = get_log_level();

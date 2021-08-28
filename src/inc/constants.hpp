@@ -1,17 +1,16 @@
 #pragma once
 
-#define __STR(x) #x
-#define STR(x) __STR(x)
-#define __WIDE(x) L#x
-#define WIDECHAR(x) __WIDE(x)
-#define __WIDE2(x) L##x
-#define WIDECHAR2(x) __WIDE2(x)
-#define CONCAT(x, y) x##y
 
-#define __PWNLIB_NAME__              WIDECHAR(PROGNAME)
-#define __PWNLIB_VERSION_MAJOR__     PWN_VERSION_MAJOR
-#define __PWNLIB_VERSION_MINOR__     PWN_VERSION_MINOR
-#define __PWNLIB_VERSION__	         WIDECHAR(PWN_VERSION_STR)
+#define __PWNLIB_NAME__              L"pwn++"
+#define __PWNLIB_AUTHOR__            L"hugsy"
+#define __PWNLIB_LICENSE__           L"MIT"
+#define __PWNLIB_VERSION_MAJOR__     0
+#define __PWNLIB_VERSION_MINOR__     1
+#define __PWNLIB_VERSION__	         L"0.1-dev:058910f"
+#define __PWNLIB_TARGET_ARCH__       L"AMD64"
+#define __PWNLIB_TARGET_OS__         L"Windows"
+#define __PWNLIB_TARGET__            L"CMAKE_SYSTEM_NAME/AMD64"
+
 
 #if defined(__linux__)
 #define __PWNLIB_LINUX_BUILD__
