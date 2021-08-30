@@ -42,10 +42,15 @@ pwn::win::thread::get_name(_In_ i32 dwThreadId) -> std::optional<std::wstring>
         return std::nullopt;
     }
 
-    auto buffer = std::make_unique<BYTE[]>(ReturnedLength);
+    auto buffer = std::make_unique<u8[]>(ReturnedLength);
 
-    Status = ::NtQueryInformationThread(hThread.get(), (THREADINFOCLASS)ThreadNameInformation, buffer.get(), ReturnedLength, nullptr);
-
+    Status = ::NtQueryInformationThread(
+        hThread.get(),
+        (THREADINFOCLASS)ThreadNameInformation,
+        buffer.get(),
+        ReturnedLength,
+        nullptr
+    );
     if ( !NT_SUCCESS(Status) )
     {
         pwn::log::ntperror(L"NtQueryInformationThread2()", Status);
@@ -53,7 +58,7 @@ pwn::win::thread::get_name(_In_ i32 dwThreadId) -> std::optional<std::wstring>
     }
 
     auto u = reinterpret_cast<PUNICODE_STRING>(buffer.get());
-    return std::wstring(u->Buffer, u->Length);
+    return std::wstring(u->Buffer, u->Length/sizeof(wchar_t));
 }
 
 

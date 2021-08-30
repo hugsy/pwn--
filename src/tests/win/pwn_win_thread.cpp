@@ -6,14 +6,20 @@
 
 TEST_CASE("set/get thread names", "[" NS "]")
 {
-    // get default name, should be non existing
-    REQUIRE_FALSE(pwn::win::thread::get_name().has_value());
+    wchar_t * const expected_name = L"TestThreadName";
 
-    // affect a name
-    REQUIRE(pwn::win::thread::set_name(L"TestThreadName")); // len=14*2
+    SECTION("Get the initial name of thread (expecting none)")
+    {
+        auto const thread_name = pwn::win::thread::get_name();
+        REQUIRE_FALSE(thread_name.has_value());
+    }
 
-    // re-test the name
-    REQUIRE(pwn::win::thread::get_name().has_value());
-    REQUIRE(::RtlCompareMemory((*pwn::win::thread::get_name()).c_str(), L"TestThreadName", 28) == 28);
-    REQUIRE((*pwn::win::thread::get_name()).length() == 28);
+    SECTION("Set a name of thread and check it")
+    {
+        REQUIRE(pwn::win::thread::set_name(expected_name));
+        auto const thread_name = pwn::win::thread::get_name();
+        REQUIRE(thread_name.has_value());
+        REQUIRE(thread_name.value() == expected_name);
+        REQUIRE(thread_name.value().length() == wcslen(expected_name));
+    }
 }

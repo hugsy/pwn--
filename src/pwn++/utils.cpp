@@ -331,20 +331,8 @@ base64_encode(_In_ const u8 *in, _In_ size_t len) -> std::string
 
         out[j]   = b64_charset[(v >> 18) & 0x3F];
         out[j+1] = b64_charset[(v >> 12) & 0x3F];
-        if (i+1 < len)
-        {
-            out[j+2] = b64_charset[(v >> 6) & 0x3F];
-        }
-        else
-        {
-            out[j+2] = '=';
-        }
-        if (i+2 < len)
-        {
-            out[j+3] = b64_charset[v & 0x3F];
-        } else {
-            out[j+3] = '=';
-        }
+        out[j+2] = (i+1 < len) ? b64_charset[(v >> 6) & 0x3F] : '=';
+        out[j+3] = (i+2 < len) ? b64_charset[v & 0x3F] :  '=';
     }
 
     return std::string(reinterpret_cast<char*>(out), elen);

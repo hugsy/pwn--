@@ -22,22 +22,25 @@ TEST_CASE("base64", "[" NS "]")
         0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f
     };
     std::string const vec_enc = "MDEyMzQ1Njc4OTo7PD0+Pw==";
-    auto encoded_string1 = pwn::utils::base64_encode(vec.data(), vec.size());
-    auto encoded_string2 = pwn::utils::base64_encode(vec);
-    REQUIRE( encoded_string1 == encoded_string2 );
 
-    // auto const encoded_vector = pwn::utils::string_to_bytes(encoded_string1);
-    // pwn::utils::hexdump( encoded_vector );
+    SECTION("Base64 encoding test")
+    {
+        auto encoded_string1 = pwn::utils::base64_encode(vec.data(), vec.size());
+        auto encoded_string2 = pwn::utils::base64_encode(vec);
+        REQUIRE( encoded_string1 == encoded_string2 );
+        REQUIRE( encoded_string2 == vec_enc );
+    }
 
-    // REQUIRE( encoded_string1.size() == vec_enc.size());
-    // REQUIRE( encoded_string1 == vec_enc );
 
-    //auto p = pwn::utils::base64_decode( encoded_string1 );
-    //REQUIRE( p.has_value());
-    //REQUIRE( p.value() == vec);
+    SECTION("Base64 dencoding test")
+    {
+        auto p = pwn::utils::base64_decode( vec_enc );
+        REQUIRE( p.has_value());
+        REQUIRE( p.value() == vec);
 
-    //auto p2 = pwn::utils::base64_decode( "qweasdzxcpokpo123==" );
-    //REQUIRE_FALSE( p2.has_value());
+        auto p2 = pwn::utils::base64_decode( "qweasdzxcpokpo123==" );
+        REQUIRE_FALSE( p2.has_value());
+    }
 }
 
 /*
@@ -45,22 +48,28 @@ TEST_CASE("cyclic", "[" NS "]")
 {
     std::vector<u8> buf;
 
-    REQUIRE(pwn::utils::cyclic(0x20, 4, buf));
-    REQUIRE(buf.size() == 0x20);
-    REQUIRE(buf[0] == 'a');
-    REQUIRE(buf[4] == 'b');
-    REQUIRE(buf[8] == 'c');
+    SECTION("cyclic buffer with period=4")
+    {
+        REQUIRE(pwn::utils::cyclic(0x20, 4, buf));
+        REQUIRE(buf.size() == 0x20);
+        REQUIRE(buf[0] == 'a');
+        REQUIRE(buf[4] == 'b');
+        REQUIRE(buf[8] == 'c');
+    }
 
-    pwn::context::set_architecture(pwn::context::architecture_t::x64);
 
-    REQUIRE(pwn::utils::cyclic(0x30, buf));
-    REQUIRE(buf.size() == 0x30);
-    REQUIRE(buf[0] == 'a');
-    REQUIRE(buf[8] == 'b');
-    REQUIRE(buf[16] == 'c');
+    SECTION("cyclic buffer with period determined from architecture")
+    {
+        pwn::context::set_architecture(pwn::context::architecture_t::x64);
+        REQUIRE(pwn::utils::cyclic(0x30, buf));
+        REQUIRE(buf.size() == 0x30);
+        REQUIRE(buf[0] == 'a');
+        REQUIRE(buf[8] == 'b');
+        REQUIRE(buf[16] == 'c');
+    }
 }
-
-
+*/
+/*
 TEST_CASE("strings", "[" NS "]")
 {
     const char* str0        = "TEST test 1234";

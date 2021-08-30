@@ -32,13 +32,11 @@ set(
 
 add_library(pwn++ SHARED ${SOURCE_FILES})
 
-if(DEBUG)
-    target_compile_options(pwn++ PRIVATE /MTd)
-    set(CMAKE_CXX_FLAGS_DEBUG "/MTd")
-else()
-    target_compile_options(pwn++ PRIVATE /MT)
-    set(CMAKE_CXX_FLAGS_RELEASE "/MT")
-endif(DEBUG)
+# if(DEBUG)
+#     target_compile_options(pwn++ PRIVATE /MTd)
+# else()
+#     target_compile_options(pwn++ PRIVATE /MT)
+# endif(DEBUG)
 
 
 # TODO: use proper vcpkg envvar way

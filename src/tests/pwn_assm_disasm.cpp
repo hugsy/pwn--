@@ -8,8 +8,8 @@ TEST_CASE("asm x86-x64", "[pwn::assm]")
 {
     const char* code = "xor rax, rax; inc rax; nop; ret;";
 
-    std::vector<BYTE> bytes;
-    std::vector<BYTE> expected {0x48, 0x31, 0xc0, 0x48, 0xff, 0xc0, 0x90, 0xc3};
+    std::vector<u8> bytes;
+    std::vector<u8> expected {0x48, 0x31, 0xc0, 0x48, 0xff, 0xc0, 0x90, 0xc3};
 
     pwn::context::set_architecture(pwn::context::architecture_t::x64);
     REQUIRE(pwn::assm::assemble(code, sizeof(code) - 1, bytes));

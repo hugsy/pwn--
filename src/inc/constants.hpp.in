@@ -9,7 +9,7 @@
 #define __PWNLIB_VERSION__	         L"@PWN_VERSION_STR@"
 #define __PWNLIB_TARGET_ARCH__       L"@CMAKE_SYSTEM_PROCESSOR@"
 #define __PWNLIB_TARGET_OS__         L"@CMAKE_SYSTEM_NAME@"
-#define __PWNLIB_TARGET__            L"CMAKE_SYSTEM_NAME/@CMAKE_SYSTEM_PROCESSOR@"
+#define __PWNLIB_TARGET__            L"@CMAKE_SYSTEM_NAME@" L"/" L"@CMAKE_SYSTEM_PROCESSOR@"
 
 
 #if defined(__linux__)
@@ -23,5 +23,4 @@
 #ifndef __x86_64__
 #define __x86_64__
 #endif
-
 

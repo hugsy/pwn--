@@ -16,8 +16,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 option(DEBUG                  "Enable Debug"                                ON)
 option(DISABLE_LOG_COLOR      "Disable ANSI color codes in log messages"    OFF)
-option(INCLUDE_ASSEMBLER      "Compile with keystone-engine support"        ON)
-option(INCLUDE_DISASSEMBLER   "Compile with capstone-engine support"        ON)
+option(INCLUDE_ASSEMBLER      "Compile with keystone-engine support"        OFF)
+option(INCLUDE_DISASSEMBLER   "Compile with capstone-engine support"        OFF)
 option(INCLUDE_BACKDOOR       "Enable the lua vm backdoor"                  OFF)
 
 
@@ -26,6 +26,7 @@ if(NOT INCLUDE_BACKDOOR)
 endif()
 
 # list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
 
 #
 # Build pwn++ library

@@ -6,10 +6,10 @@
 #define __PWNLIB_LICENSE__           L"MIT"
 #define __PWNLIB_VERSION_MAJOR__     0
 #define __PWNLIB_VERSION_MINOR__     1
-#define __PWNLIB_VERSION__	         L"0.1-dev:058910f"
+#define __PWNLIB_VERSION__	         L"0.1-dev:099bd5e"
 #define __PWNLIB_TARGET_ARCH__       L"AMD64"
 #define __PWNLIB_TARGET_OS__         L"Windows"
-#define __PWNLIB_TARGET__            L"CMAKE_SYSTEM_NAME/AMD64"
+#define __PWNLIB_TARGET__            L"Windows" L"/" L"AMD64"
 
 
 #if defined(__linux__)
@@ -23,5 +23,4 @@
 #ifndef __x86_64__
 #define __x86_64__
 #endif
-
 

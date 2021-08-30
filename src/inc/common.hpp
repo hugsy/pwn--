@@ -11,8 +11,6 @@
 #define CONCAT(x, y)   x##y
 
 
-
-
 #ifdef __PWNLIB_WINDOWS_BUILD__
 #include "win/framework.hpp"
 #else
