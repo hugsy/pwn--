@@ -33,6 +33,7 @@ jobs:
         languages: cpp
       if: matrix.os == 'windows-latest'
 
+
     - name: Build pwn++ dll
       if: matrix.os == 'windows-latest'
       shell: pwsh
@@ -56,9 +57,8 @@ jobs:
 
 
     - name: Perform CodeQL Analysis
-      if: ${{ success() }}
-      uses: github/codeql-action/analyze@v1
       if: matrix.os == 'windows-latest'
+      uses: github/codeql-action/analyze@v1
 
 
     - name: Prepare Windows artifact
