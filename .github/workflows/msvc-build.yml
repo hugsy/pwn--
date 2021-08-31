@@ -34,7 +34,7 @@ jobs:
       if: matrix.os == 'windows-latest'
 
 
-    - name: Build pwn++ dll
+    - name: Build pwn++.dll
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
@@ -47,6 +47,16 @@ jobs:
         msbuild.exe ALL_BUILD.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
         Set-Location ..
 
+
+    - name: Build libpwn++.so
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: |
+        ln -s ../pwn++ ../pwn--
+        cd ./build
+        cmake ../src -DINCLUDE_ASSEMBLER=OFF -DINCLUDE_DISASSEMBLER=OFF
+        make -j${{ env.NB_CPU }}
+        cd ..
 
     - name: Run Windows tests
       if: matrix.os == 'windows-latest'
