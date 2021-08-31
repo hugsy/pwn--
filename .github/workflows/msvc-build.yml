@@ -56,7 +56,7 @@ jobs:
         mkdir ./build
         cd ./build
         cmake ../src -DINCLUDE_ASSEMBLER=OFF -DINCLUDE_DISASSEMBLER=OFF
-        make -j${{ env.NB_CPU }}
+        make
         cd ..
 
     - name: Run Windows tests
