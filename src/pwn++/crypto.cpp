@@ -1,11 +1,6 @@
 #include "crypto.hpp"
 
-#if 0
 
-#endif
-
-
-#pragma region CRC
 /**
  *
  * Those are NOT valid CRC implementations!! Use https://en.wikipedia.org/wiki/Cyclic_redundancy_check for that
@@ -68,8 +63,6 @@ pwn::crypto::crc64(std::vector<u8> const& data)
 {
     return __crc_base<u64>(data, CRC64_VARIANT);
 }
-
-#pragma endregion
 
 
 //

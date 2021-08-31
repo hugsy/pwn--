@@ -6,6 +6,7 @@ env:
   RUN_URL: "https://github.com/hugsy/pwn--/actions/"
   NB_CPU: "$env:NUMBER_OF_PROCESSORS"
   VCPKG_INSTALL_PATH: "$env:VCPKG_INSTALLATION_ROOT/installed"
+  VERBOSE: "1"
 
 on: [push, pull_request]
 
