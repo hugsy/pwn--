@@ -60,7 +60,7 @@ jobs:
 
 
     - name: Prepare Windows artifact
-      id: prepare_artifact
+      id: prepare_artifact_full_win
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
@@ -202,7 +202,7 @@ jobs:
         Copy-Item src\inc\*.hpp artifact\include\
         Copy-Item src\inc\win\*.hpp artifact\include\win\
 
-    - name: Publish artifact
+    - name: Publish Linux artifact
       id: publish_artifact_linux
       uses: actions/upload-artifact@v2
       with:
