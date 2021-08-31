@@ -64,8 +64,8 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.dll build\tests\${{ matrix.configuration }}\
-        build\tests\${{ matrix.configuration }}\\unit_tests.exe
+        Copy-Item -Verbose build\pwn++\win\pwn++.dll build\tests\
+        Start-Process build\tests\unit_tests.exe
 
 
     - name: Perform CodeQL Analysis
@@ -79,9 +79,9 @@ jobs:
       shell: pwsh
       run: |
         New-Item -Type Directory -Name artifact\
-        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.lib artifact\
-        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.dll artifact\
-        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.pdb artifact\
+        Copy-Item -Verbose build\pwn++\win\pwn++.lib artifact\
+        Copy-Item -Verbose build\pwn++\win\pwn++.dll artifact\
+        Copy-Item -Verbose build\pwn++\win\pwn++.pdb artifact\
         New-Item -Type Directory -Name artifact\include\
         New-Item -Type Directory -Name artifact\include\win\
         Copy-Item src\inc\*.hpp artifact\include\
@@ -93,7 +93,7 @@ jobs:
       shell: bash
       run: |
         mkdir -p artifact/include/linux/
-        cp -v build/pwn++/linux/${{ matrix.configuration }}/libpwn++.so artifact/
+        cp -v build/pwn++/linux/libpwn++.so artifact/
         cp -v src/inc/*.hpp artifact/include/
         cp -v src/inc/linux/*.hpp artifact/include/linux/
 
