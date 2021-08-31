@@ -60,7 +60,7 @@ jobs:
 
 
     - name: Prepare Windows artifact
-      id: prepare_artifact_full_win
+      id: prepare_artifact_mini_win
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
@@ -74,7 +74,7 @@ jobs:
         Copy-Item src\inc\win\*.hpp artifact\include\win\
 
     - name: Prepare Linux artifact
-      id: prepare_artifact
+      id: prepare_artifact_mini_linux
       if: matrix.os == 'ubuntu-latest'
       shell: bash
       run: |
@@ -84,7 +84,7 @@ jobs:
         cp -v src/inc/linux/*.hpp artifact/include/linux/
 
     - name: Publish artifact
-      id: publish_artifact
+      id: publish_artifact_mini
       uses: actions/upload-artifact@v2
       with:
         name: pwn++_mini_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_${{ matrix.platform }}_${{ env.GITHUB_SHA_SHORT }}
@@ -189,7 +189,7 @@ jobs:
 
 
     - name: Prepare Windows artifact
-      id: prepare_artifact_win
+      id: prepare_artifact_full_win
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
@@ -202,11 +202,21 @@ jobs:
         Copy-Item src\inc\*.hpp artifact\include\
         Copy-Item src\inc\win\*.hpp artifact\include\win\
 
-    - name: Publish Linux artifact
-      id: publish_artifact_linux
+    - name: Prepare Linux artifact
+      id: prepare_artifact_full_linux
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: |
+        mkdir -p artifact/include/linux/
+        cp -v build/pwn++/linux/${{ matrix.configuration }}/libpwn++.so artifact/
+        cp -v src/inc/*.hpp artifact/include/
+        cp -v src/inc/linux/*.hpp artifact/include/linux/
+
+    - name: Publish artifact
+      id: publish_artifact
       uses: actions/upload-artifact@v2
       with:
-        name: pwn++_full_${{ env.GITHUB_REF_SLUG }}_${{ matrix.platform }}_${{ env.GITHUB_SHA_SHORT }}
+        name: pwn++_mini_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_${{ matrix.platform }}_${{ env.GITHUB_SHA_SHORT }}
         path: artifact/
 
     - name: Notify on success
