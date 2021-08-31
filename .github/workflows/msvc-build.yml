@@ -64,7 +64,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Copy-Item -Verbose build\pwn++\win\pwn++.dll build\tests\
+        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.dll build\tests\${{ matrix.configuration }}\
         Start-Process build\tests\unit_tests.exe
 
 
@@ -79,9 +79,9 @@ jobs:
       shell: pwsh
       run: |
         New-Item -Type Directory -Name artifact\
-        Copy-Item -Verbose build\pwn++\win\pwn++.lib artifact\
-        Copy-Item -Verbose build\pwn++\win\pwn++.dll artifact\
-        Copy-Item -Verbose build\pwn++\win\pwn++.pdb artifact\
+        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.lib artifact\
+        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.dll artifact\
+        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.pdb artifact\
         New-Item -Type Directory -Name artifact\include\
         New-Item -Type Directory -Name artifact\include\win\
         Copy-Item src\inc\*.hpp artifact\include\
@@ -109,9 +109,9 @@ jobs:
       uses: sarisia/actions-status-discord@v1
       with:
         nodetail: true
-        title: Build `${{ github.ref }}` succeeded for ${{ matrix.configuration }}/${{ matrix.platform }}
+        title: SUCCESS building `${{ github.ref }}` for ${{ matrix.os }}/${{ matrix.platform }} [${{ matrix.configuration }}]
         description: |
-          [Job:${{ github.run_number }}] `${{ env.GITHUB_SHA_SHORT }}` in `${{ env.GITHUB_REF_SLUG }}` was built with success for ${{ matrix.platform }}/${{ matrix.configuration }}
+          [Job #${{ github.run_number }}] `${{ env.GITHUB_SHA_SHORT }}` in `${{ env.GITHUB_REF_SLUG }}` was built with success for ${{ matrix.platform }}/${{ matrix.configuration }}
 
           ---
           See ${{ env.RUN_URL }} for details
@@ -124,9 +124,9 @@ jobs:
       uses: sarisia/actions-status-discord@v1
       with:
         nodetail: true
-        title: CI build failed on `${{ github.ref }}` for ${{ matrix.configuration }}/${{ matrix.platform }}
+        title: FAILED building `${{ github.ref }}` for ${{ matrix.os }}/${{ matrix.platform }} [${{ matrix.configuration }}]
         description: |
-          [Job:${{ github.run_number }}] Failed to build `${{ env.GITHUB_SHA_SHORT }}` in `${{  env.GITHUB_REF_SLUG }}` for ${{ matrix.platform }}/${{ matrix.configuration }}
+          [Job #${{ github.run_number }}] Failed to build `${{ env.GITHUB_SHA_SHORT }}` in `${{  env.GITHUB_REF_SLUG }}` for ${{ matrix.platform }}/${{ matrix.configuration }}
 
           ---
           See ${{ env.RUN_URL }} for details
