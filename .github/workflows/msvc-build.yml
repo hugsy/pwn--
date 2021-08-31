@@ -189,7 +189,7 @@ jobs:
 
 
     - name: Prepare Windows artifact
-      id: prepare_artifact
+      id: prepare_artifact_win
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
@@ -203,7 +203,7 @@ jobs:
         Copy-Item src\inc\win\*.hpp artifact\include\win\
 
     - name: Publish artifact
-      id: publish_artifact
+      id: publish_artifact_linux
       uses: actions/upload-artifact@v2
       with:
         name: pwn++_full_${{ env.GITHUB_REF_SLUG }}_${{ matrix.platform }}_${{ env.GITHUB_SHA_SHORT }}
