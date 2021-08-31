@@ -32,12 +32,12 @@ namespace pwn::context
 				break;
 
 			default:
-				return FALSE;
+				return false;
 		}
 
 		dbg(L"new architecture set to %d (ptrsz=%d)\n", new_arch, ptrsize);
 		// TODO: add hooks that triggers on arch change
-		return TRUE;
+		return true;
 	}
 
 
@@ -51,7 +51,7 @@ namespace pwn::context
 		__log_level = new_level;
 		auto level = get_log_level();
 		dbg(L"Log level set to %s (%d)\n", std::get<1>(level), std::get<0>(level));
-		return TRUE;
+		return true;
 	}
 
 	PWNAPI auto get_log_level() -> const std::tuple<pwn::log::log_level_t, const wchar_t*>

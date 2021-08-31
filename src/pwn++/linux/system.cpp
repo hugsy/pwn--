@@ -1,6 +1,4 @@
-#include "linux\system.hpp"
-
-#include <unistd.h>
+#include "linux/system.hpp"
 
 namespace pwn::linux::system
 {

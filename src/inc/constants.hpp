@@ -6,10 +6,10 @@
 #define __PWNLIB_LICENSE__           L"MIT"
 #define __PWNLIB_VERSION_MAJOR__     0
 #define __PWNLIB_VERSION_MINOR__     1
-#define __PWNLIB_VERSION__	         L"0.1-dev:099bd5e"
-#define __PWNLIB_TARGET_ARCH__       L"AMD64"
-#define __PWNLIB_TARGET_OS__         L"Windows"
-#define __PWNLIB_TARGET__            L"Windows" L"/" L"AMD64"
+#define __PWNLIB_VERSION__	         L"0.1-dev:7c38f75"
+#define __PWNLIB_TARGET_ARCH__       L"x86_64"
+#define __PWNLIB_TARGET_OS__         L"Linux"
+#define __PWNLIB_TARGET__            L"Linux" L"/" L"x86_64"
 
 
 #if defined(__linux__)

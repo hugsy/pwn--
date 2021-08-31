@@ -1,12 +1,12 @@
-﻿#include "log.hpp"
-
 #include <cassert>
 #include <cstdio>
 #include <string>
 #include <vector>
 
-#include "context.hpp"
+#include "log.hpp"
 #include "pwn.hpp"
+#include "context.hpp"
+
 
 namespace pwn::log
 {
@@ -49,17 +49,22 @@ xlog(_In_ log_level_t level, _In_ const wchar_t *args_list, ...)
     size_t fmt_len  = wcslen(args_list) + wcslen(prio) + 2;
     size_t total_sz = 2 * fmt_len + 2;
 
-    auto fmt = std::make_unique<WCHAR[]>(total_sz);
-    memset(fmt.get(), 0, total_sz);
+    auto fmt = std::make_unique<wchar_t[]>(total_sz);
+    wmemset(fmt.get(), 0, total_sz);
 
     va_list args;
     va_start(args, args_list);
 
-    ::_snwprintf_s(fmt.get(), fmt_len, _TRUNCATE, L"%s %s", prio, args_list);
-
     globals.m_console_mutex.lock();
+    {
+#if defined(__PWN_WINDOWS_BUILD__)
+    ::_snwprintf_s(fmt.get(), fmt_len, _TRUNCATE, L"%s %s", prio, args_list);
+#elif defined(__PWN_LINUX_BUILD__)
+    ::snwprintf(fmt.get(), fmt_len, L"%s %s", prio, args_list);
+#endif
     ::vfwprintf(stderr, fmt.get(), args);
     ::fflush(stderr);
+    }
     globals.m_console_mutex.unlock();
 
     va_end(args);

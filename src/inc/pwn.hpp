@@ -22,7 +22,7 @@ PWNAPI auto
 version() -> const wchar_t*;
 
 PWNAPI auto
-version_info() -> const std::tuple<WORD, WORD>;
+version_info() -> const std::tuple<u16, u16>;
 } // namespace pwn
 
 
@@ -32,13 +32,14 @@ version_info() -> const std::tuple<WORD, WORD>;
  *
  */
 
-/// namespace pwn::context
-#include "context.hpp"
-
-/// namespace pwn::log
+// namespace pwn::log
 #include "log.hpp"
 
-/// namespace pwn::utils
+// namespace pwn::context
+#include "context.hpp"
+
+
+// namespace pwn::utils
 #include "utils.hpp"
 
 /// namespace pwn::crypto
@@ -98,8 +99,8 @@ version_info() -> const std::tuple<WORD, WORD>;
 
 // namespace pwn::backdoor
 #include "backdoor.hpp"
-
 */
+
 #endif
 
 
@@ -111,7 +112,7 @@ version_info() -> const std::tuple<WORD, WORD>;
  */
 
 
-namespace pwn::linux::system
+// namespace pwn::linux::system
 #include "linux/system.hpp"
 
 #endif

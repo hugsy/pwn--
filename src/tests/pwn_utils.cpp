@@ -11,7 +11,7 @@ TEST_CASE("hexdump", "[" NS "]")
 {
     std::vector<u8> const vec{0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41};
     pwn::utils::hexdump(vec);
-    pwn::utils::hexdump(reinterpret_cast<u8*>("BBCCDDEE"), 8);
+    pwn::utils::hexdump(reinterpret_cast<const u8*>("BBCCDDEE"), 8);
 }
 
 
@@ -43,7 +43,7 @@ TEST_CASE("base64", "[" NS "]")
     }
 }
 
-/*
+
 TEST_CASE("cyclic", "[" NS "]")
 {
     std::vector<u8> buf;
@@ -68,8 +68,8 @@ TEST_CASE("cyclic", "[" NS "]")
         REQUIRE(buf[16] == 'c');
     }
 }
-*/
-/*
+
+
 TEST_CASE("strings", "[" NS "]")
 {
     const char* str0        = "TEST test 1234";
@@ -87,4 +87,3 @@ TEST_CASE("strings", "[" NS "]")
     REQUIRE(pwn::utils::startswith(str2, L"TEST"));
     REQUIRE_FALSE(pwn::utils::startswith(str2, L"test"));
 }
-*/

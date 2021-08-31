@@ -3,11 +3,21 @@
 #ifndef PWN_NO_DISASSEMBLER
 #include <capstone/capstone.h>
 
+#include <algorithm>
+
+
 using namespace pwn::log;
 
 #define CS_DEFAULT_BASE_ADDRESS 0x40000
-#pragma warning(disable: 26812 ) // because of cs_arch & cs_mode,  TODO: fix
 
+#if defined(_MSC_VER)
+#pragma warning(disable: 26812 ) // because of cs_arch & cs_mode,  TODO: fix
+#endif
+
+//
+// todos:
+// - move csh to globals
+//
 
 namespace pwn::disasm
 {
@@ -15,18 +25,18 @@ namespace pwn::disasm
     namespace
     {
         _Success_(return)
-        BOOL __build_insn(_In_ cs_insn _cs_insn, _Out_ insn_t& insn)
+        bool __build_insn(_In_ cs_insn _cs_insn, _Out_ insn_t& insn)
         {
             insn.address = _cs_insn.address;
             insn.size = _cs_insn.size;
-            ::RtlCopyMemory(insn.bytes, _cs_insn.bytes, min(_cs_insn.size, sizeof(insn.bytes)));
+            ::memcpy(insn.bytes, _cs_insn.bytes, std::min((size_t) _cs_insn.size,(size_t) sizeof(insn.bytes)));
             insn.mnemonic = pwn::utils::to_widestring(_cs_insn.mnemonic);
             insn.operands = pwn::utils::to_widestring(_cs_insn.op_str);
-            return TRUE;
+            return true;
         }
 
         _Success_(return)
-        BOOL __disassemble(_In_ cs_arch arch, _In_ cs_mode mode, _In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
+        bool __disassemble(_In_ cs_arch arch, _In_ cs_mode mode, _In_ const u8* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
         {
             cs_err err;
             csh handle;
@@ -37,24 +47,24 @@ namespace pwn::disasm
             if (err != CS_ERR_OK)
             {
                 err(L"cs_open() failed: %u\n", err);
-                return FALSE;
+                return false;
             }
 
             cs_insn* cs_insns;
-            BOOL res = TRUE;
+            bool res = true;
             size_t count = cs_disasm(handle, code, code_size, CS_DEFAULT_BASE_ADDRESS, 0, &cs_insns);
             if (count > 0)
             {
                 for (size_t i = 0; i < count; i++)
                 {
-                    insn_t insn = { 0, };
+                    insn_t insn = {};
                     if (__build_insn(cs_insns[i], insn))
                     {
                         insns.push_back(insn);
                     }
                     else
                     {
-                        res = FALSE;
+                        res = false;
                         break;
                     }
                 }
@@ -64,7 +74,7 @@ namespace pwn::disasm
             else
             {
                 err(L"Failed to disassemble given code!\n");
-                res = FALSE;
+                res = false;
             }
 
             cs_close(&handle);
@@ -89,7 +99,7 @@ namespace pwn::disasm
         TRUE on success, else FALSE
     --*/
     _Success_(return)
-    BOOL x86(_In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
+    bool x86(_In_ const u8* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
     {
         return __disassemble(CS_ARCH_X86, CS_MODE_32, code, code_size, insns);
     }
@@ -111,7 +121,7 @@ namespace pwn::disasm
         TRUE on success, else FALSE
     --*/
     _Success_(return)
-    BOOL x64(_In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
+    bool x64(_In_ const u8* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
     {
         return __disassemble(CS_ARCH_X86, CS_MODE_64, code, code_size, insns);
     }
@@ -133,7 +143,7 @@ namespace pwn::disasm
         TRUE on success, else FALSE
     --*/
     _Success_(return)
-    BOOL disassemble(_In_ const uint8_t* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
+    bool disassemble(_In_ const u8* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns)
     {
         switch (pwn::context::arch)
         {
@@ -147,7 +157,7 @@ namespace pwn::disasm
             break;
         }
 
-        throw std::exception("unsupported architecture\n");
+        throw std::runtime_error("unsupported architecture\n");
     }
 }
 

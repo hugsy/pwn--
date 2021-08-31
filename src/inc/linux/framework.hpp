@@ -11,8 +11,18 @@
 #define _Inout_
 #define _Inout_opt_
 
+#define _Success_(c)
 
 #include <unistd.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
+#include <stdint.h>
 
+#ifndef MAX_PATH
+#define MAX_PATH 260
+#endif // MAX_PATH
+
+#ifndef UnusedParameter
+#define UnusedParameter (void)
+#endif // UnusedParameter

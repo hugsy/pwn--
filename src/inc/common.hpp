@@ -8,12 +8,13 @@
 #define WIDECHAR(x)    __WIDE(x)
 #define __WIDE2(x)     L##x
 #define WIDECHAR2(x)   __WIDE2(x)
-#define CONCAT(x, y)   x##y
+#define CONCAT(x, y)   (x ## y)
 
 
-#ifdef __PWNLIB_WINDOWS_BUILD__
+#if defined(__PWNLIB_WINDOWS_BUILD__)
 #include "win/framework.hpp"
-#else
+
+#elif defined(__PWNLIB_LINUX_BUILD__)
 #include "linux/framework.hpp"
 
 #endif
@@ -22,13 +23,15 @@
 #ifndef PWNAPI
 
 #if defined(_MSC_VER)
-    // Microsoft
-    #define PWNAPI __declspec(dllexport)
+// Microsoft cl
+#define PWNAPI __declspec(dllexport)
+
 #elif defined(__GNUC__)
-    // GCC / clang
-    #define PWNAPI __attribute__((visibility("default")))
+// GCC / clang
+#define PWNAPI __attribute__((visibility("default")))
+
 #else
-    #error Unknown dynamic link export semantics.
+#error Unknown dynamic link export semantics.
 #endif
 
 #endif
@@ -57,11 +60,6 @@ using i64 = int64_t;
 #ifndef PWN_LOG_NO_COLOR
 #define PWN_LOG_USE_COLOR
 #endif // !PWN_LOG_NO_COLOR */
-
-// uncomment to disable to the integration with capstone
-// #define PWN_NO_ASSEMBLER
-// uncomment to disable to the integration with keystone
-// #define PWN_NO_DISASSEMBLER
 
 
 #include <array>

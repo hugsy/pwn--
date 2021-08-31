@@ -138,9 +138,7 @@ xorshift64() -> u64
     return seed;
 }
 
-//
-// found on SO
-//
+/*
 auto
 xorshift128() -> u32
 {
@@ -155,7 +153,7 @@ xorshift128() -> u32
     z        = w;
     return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
 }
-
+*/
 
 /*++
 
@@ -266,7 +264,7 @@ random::buffer(_In_ u32 length) -> std::vector<u8>
 auto
 random::string(_In_ u32 length) -> std::wstring
 {
-    const std::wstring printable(WIDECHAR(PWN_UTILS_PRINTABLE_CHARSET));
+    const std::wstring printable(L"" PWN_UTILS_PRINTABLE_CHARSET);
     std::wstring string;
     for (u32 i = 0; i < length; i++)
     {
@@ -279,7 +277,7 @@ random::string(_In_ u32 length) -> std::wstring
 auto
 random::alnum(_In_ u32 length) -> std::wstring
 {
-    const std::wstring printable(WIDECHAR(PWN_UTILS_ALNUM_CHARSET));
+    const std::wstring printable(L"" PWN_UTILS_ALNUM_CHARSET);
     std::wstring string;
     for (u32 i = 0; i < length; i++)
     {
@@ -316,7 +314,7 @@ auto
 base64_encode(_In_ const u8 *in, _In_ size_t len) -> std::string
 {
     if (in == nullptr || len == 0)
-        throw std::exception("invalid input");
+        throw std::runtime_error("invalid input");
 
     size_t elen = b64_encoded_size(len);
     auto output_buffer = std::make_unique<u8[]>(elen+1);
@@ -436,11 +434,15 @@ join(_In_ const std::vector<std::wstring> &args) -> std::wstring // todo: replac
 auto
 path::abspath(_In_ const std::wstring &path) -> std::wstring
 {
+#if defined(__PWNLIB_WINDOWS_BUILD__)
     auto res = std::wstring();
     res.resize(MAX_PATH + 1);
-
     ::GetFullPathNameW(path.c_str(), MAX_PATH, &res[0], nullptr);
     return res;
+#elif defined(__PWNLIB_LINUX_BUILD__)
+    auto out = realpath( widestring_to_string(path).c_str(), nullptr);
+    return to_widestring(out);
+#endif
 }
 
 
@@ -586,7 +588,7 @@ p8(_In_ u8 v) -> std::vector<u8>
     return __pack(v);
 }
 auto
-p16(_In_ WORD v) -> std::vector<u8>
+p16(_In_ u16 v) -> std::vector<u8>
 {
     return __pack(v);
 }

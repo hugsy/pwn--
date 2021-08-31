@@ -1,23 +1,20 @@
 #include "pwn.hpp"
 
 
-namespace pwn
-{
-
-struct pwn::globals_t globals;
+struct pwn::globals_t pwn::globals;
 
 auto
-pwn::version() -> wchar_t const*
+pwn::version() -> const wchar_t*
 {
     return __PWNLIB_VERSION__;
 }
 
 
 auto
-pwn::version_info() -> const std::tuple<WORD, WORD>
+pwn::version_info() -> const std::tuple<u16, u16>
 {
-    const std::tuple<WORD, WORD> out(__PWNLIB_VERSION_MAJOR__, __PWNLIB_VERSION_MINOR__);
+    const std::tuple<u16, u16> out(__PWNLIB_VERSION_MAJOR__, __PWNLIB_VERSION_MINOR__);
     return out;
 }
 
-} // namespace pwn
+

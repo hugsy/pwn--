@@ -3,7 +3,6 @@
 #include "common.hpp"
 #include "log.hpp"
 
-using namespace pwn;
 
 namespace pwn::context
 {

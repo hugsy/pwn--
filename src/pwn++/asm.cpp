@@ -7,9 +7,9 @@
 
 using namespace pwn::log;
 
-
+#if defined(_MSC_VER)
 #pragma warning(disable: 26812 ) // because of ks_arch & ks_mode,  TODO: fix
-
+#endif
 
 namespace pwn::assm
 {
@@ -18,31 +18,33 @@ namespace pwn::assm
     namespace
     {
         _Success_(return)
-        BOOL __assemble(_In_ ks_arch arch, _In_ ks_mode mode, _In_ const char* code, _In_ const size_t code_size, _Out_ std::vector<BYTE>& bytes)
+        bool __assemble(_In_ ks_arch arch, _In_ ks_mode mode, _In_ const char* code, _In_ const size_t code_size, _Out_ std::vector<u8>& bytes)
         {
             ks_engine* ks;
             size_t count, size;
-            PBYTE assembled;
+            u8* assembled;
+
+            UnusedParameter(code_size);
 
             if (ks_open(arch, mode, &ks) != KS_ERR_OK)
             {
                 err(L"ks_open() failed\n");
-                return FALSE;
+                return false;
             }
 
-            BOOL res = TRUE;
+            bool res = true;
             do
             {
                 if (ks_asm(ks, code, 0, &assembled, &size, &count) != KS_ERR_OK)
                 {
                     err(L"ks_asm() failed: count=%lu, error=%u\n", count, ks_errno(ks));
-                    res = FALSE;
+                    res = false;
                     break;
                 }
 
                 if (size == 0)
                 {
-                    res = FALSE;
+                    res = false;
                 }
                 else
                 {
@@ -76,15 +78,15 @@ namespace pwn::assm
         TRUE on success, else FALSE
     --*/
     _Success_(return)
-    BOOL PWNAPI x86(_In_ const char* code, _In_ const size_t code_size, _Out_ std::vector<BYTE>& bytes)
+    bool PWNAPI x86(_In_ const char* code, _In_ const size_t code_size, _Out_ std::vector<u8>& bytes)
     {
         return __assemble(KS_ARCH_X86, KS_MODE_32, code, code_size, bytes);
     }
 
 
-    std::vector<BYTE> PWNAPI x86(_In_ const char* code, _In_ const size_t code_size)
+    std::vector<u8> PWNAPI x86(_In_ const char* code, _In_ const size_t code_size)
     {
-        std::vector<BYTE> res;
+        std::vector<u8> res;
         __assemble(KS_ARCH_X86, KS_MODE_32, code, code_size, res);
         return res;
     }
@@ -107,15 +109,15 @@ Returns:
     TRUE on success, else FALSE
 --*/
     _Success_(return)
-    BOOL PWNAPI x64(_In_ const char* code, _In_ const size_t code_size, _Out_ std::vector<BYTE>& bytes)
+    bool PWNAPI x64(_In_ const char* code, _In_ const size_t code_size, _Out_ std::vector<u8>& bytes)
     {
         return __assemble(KS_ARCH_X86, KS_MODE_64, code, code_size, bytes);
     }
 
 
-    std::vector<BYTE> PWNAPI x64(_In_ const char* code, _In_ const size_t code_size)
+    std::vector<u8> PWNAPI x64(_In_ const char* code, _In_ const size_t code_size)
     {
-        std::vector<BYTE> res;
+        std::vector<u8> res;
         __assemble(KS_ARCH_X86, KS_MODE_64, code, code_size, res);
         return res;
     }
@@ -137,7 +139,7 @@ Returns:
         TRUE on success, else FALSE
     --*/
     _Success_(return)
-    BOOL PWNAPI assemble(_In_ const char* code, _In_ const size_t code_size, _Out_ std::vector<BYTE>& bytes)
+    bool PWNAPI assemble(_In_ const char* code, _In_ const size_t code_size, _Out_ std::vector<u8>& bytes)
     {
         switch (pwn::context::arch)
         {
@@ -152,11 +154,11 @@ Returns:
             break;
         }
 
-        return FALSE;
+        return false;
     }
 
 
-    std::vector<BYTE> assemble(_In_ const char* code, _In_ const size_t code_size)
+    std::vector<u8> assemble(_In_ const char* code, _In_ const size_t code_size)
     {
         switch (pwn::context::arch)
         {

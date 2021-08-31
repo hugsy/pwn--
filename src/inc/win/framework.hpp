@@ -17,3 +17,8 @@
 #ifndef _NTSTATUS_
 #include <ntstatus.h>
 #endif
+
+
+#ifndef UnusedParameter
+#define UnusedParameter UNREFERENCED_PARAMETER
+#endif // UnusedParameter

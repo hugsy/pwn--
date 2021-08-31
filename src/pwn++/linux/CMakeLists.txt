@@ -23,6 +23,14 @@ set_property(TARGET pwn++ PROPERTY CXX_STANDARD 17)
 
 add_compile_definitions(DEBUG)
 
+if(NOT INCLUDE_DISASSEMBLER)
+    add_compile_definitions(PWN_NO_DISASSEMBLER)
+endif()
+
+if(NOT INCLUDE_ASSEMBLER)
+    add_compile_definitions(PWN_NO_ASSEMBLER)
+endif()
+
 target_include_directories(pwn++ PUBLIC ${COMMON_HEADER_DIR} ${HEADER_DIR})
 target_include_directories(pwn++ PRIVATE ${COMMON_SOURCE_DIR} ${SOURCE_DIR})
 

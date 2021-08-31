@@ -81,9 +81,13 @@ perror(_In_ const std::wstring &prefix);
 /// <param name="Status"></param>
 void PWNAPI
 ntperror(_In_ const wchar_t *prefix, _In_ NTSTATUS Status);
-} // namespace pwn::log
 #endif
 
+} // namespace pwn::log
+
+///
+/// Convenience logging macros
+///
 #define dbg(fmt, ...) pwn::log::xlog(pwn::log::log_level_t::LOG_DEBUG, fmt, ##__VA_ARGS__)
 #define info(fmt, ...) pwn::log::xlog(pwn::log::log_level_t::LOG_INFO, fmt, ##__VA_ARGS__)
 #define ok(fmt, ...) pwn::log::xlog(pwn::log::log_level_t::LOG_SUCCESS, fmt, ##__VA_ARGS__)
