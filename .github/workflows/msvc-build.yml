@@ -14,7 +14,7 @@ jobs:
     name: "${{ matrix.configuration }} build pwn++ for ${{ matrix.os }}/${{ matrix.platform }}"
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: ['windows-latest', 'ubuntu-latest']
         platform: ['x64']
@@ -53,6 +53,7 @@ jobs:
       shell: bash
       run: |
         ln -s ../pwn++ ../pwn--
+        mkdir ./build
         cd ./build
         cmake ../src -DINCLUDE_ASSEMBLER=OFF -DINCLUDE_DISASSEMBLER=OFF
         make -j${{ env.NB_CPU }}
