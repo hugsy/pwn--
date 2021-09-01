@@ -4,14 +4,11 @@ Example file to create a simple AppContainer for containing any PE binary.
 
 --*/
 
-#include "..\pwn++\pwn.h"
+#include <pwn.hpp>
 
 #include <iostream>
 #include <exception>
 #include <filesystem>
-
-
-using namespace pwn::log;
 
 namespace ctx = pwn::context;
 
@@ -24,7 +21,7 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
         return EXIT_FAILURE;
     }
 
-    ctx::set_log_level(log_level_t::LOG_DEBUG);
+    ctx::set_log_level(pwn::log::log_level_t::LOG_DEBUG);
 
     const std::wstring containerName{ L"appcontainer-" + pwn::utils::random::alnum(10) };
     const std::wstring processName{ argv[1] };
@@ -71,7 +68,7 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
             //
             // initialize the appcontainer with the given capabilities
             //
-            pwn::process::appcontainer::AppContainer app(containerName, processName, capabilities);
+            pwn::win::process::appcontainer::AppContainer app(containerName, processName, capabilities);
 
             if (argc >= 3)
             {
@@ -94,7 +91,7 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
                         info(L"trying to add access to file/directory '%s'...\n", value.c_str());
                         if (!app.allow_file_or_directory(std::filesystem::absolute(value).c_str()))
                         {
-                            perror(L"allow_file_or_directory()");
+                            pwn::log::perror(L"allow_file_or_directory()");
                             break;
                         }
                         else
@@ -114,7 +111,7 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
                         info(L"trying to add access to registry '%s'...\n", value.c_str());
                         if (!app.allow_registry_key(value))
                         {
-                            perror(L"allow_registry_key()");
+                            pwn::log::perror(L"allow_registry_key()");
                             break;
                         }
                         else
@@ -131,13 +128,13 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
             if (!app.spawn())
             {
                 err(L"failed to launch '%s'\n", processName.c_str());
-                perror(L"appcontainer::spawn()");
+                pwn::log::perror(L"appcontainer::spawn()");
                 return EXIT_FAILURE;
             }
 
             app.join();
             app.restore_acls();
-        } 
+        }
         while (0);
     }
     catch (std::runtime_error& e)
@@ -145,6 +142,6 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
         err(L"container initialization failed: %S\n", e.what());
         return EXIT_FAILURE;
     }
-    
+
     return EXIT_SUCCESS;
 }

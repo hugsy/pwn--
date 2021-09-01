@@ -2,19 +2,19 @@
 
 #include "common.hpp"
 
-static const u64 __magic = 0xdeadbeef;
-static auto dummy        = []()
+static const u64 ______magic = 0xdeadbeef;
+static auto _______dummy        = []()
 {
-    throw __magic;
+    throw ______magic;
 };
 
 namespace pwn::utils
 {
-template<typename T, typename D = decltype(dummy)>
+template<typename T, typename D = decltype(_______dummy)>
 class GenericHandle
 {
 public:
-    GenericHandle(T h = nullptr, D d = dummy) : m_handle(h), m_closure_function(d)
+    GenericHandle(T h = nullptr, D d = _______dummy) : m_handle(h), m_closure_function(d)
     {
     }
 
@@ -51,7 +51,7 @@ public:
             }
             catch ( u64 e )
             {
-                if ( e == __magic )
+                if ( e == ______magic )
                 {
 #ifdef __linux__
                     close(m_handle);

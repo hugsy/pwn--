@@ -38,6 +38,8 @@ add_library(pwn++ SHARED ${SOURCE_FILES})
 #     target_compile_options(pwn++ PRIVATE /MT)
 # endif(DEBUG)
 
+add_compile_options(/W3 /WX /Wall)
+# add_compile_options(/W3 /WX /Wall /sdl /guard:cf /guard:ehcont /CETCOMPAT)
 
 # TODO: use proper vcpkg envvar way
 set(VCPKG_ROOT "C:\\tools\\vcpkg\\installed")

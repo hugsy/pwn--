@@ -2,19 +2,9 @@ set (PWN_VERSION_MAJOR 0)
 set (PWN_VERSION_MINOR 1)
 set (PWN_VERSION_STR "${PWN_VERSION_MAJOR}.${PWN_VERSION_MINOR}")
 
-
-if(MSVC)
-    add_compile_options(/W3 /WX)
-else()
-    add_compile_options(-W -Wall -Werror)
-endif(MSVC)
-
-
 include (GenerateExportHeader)
 
-
 find_program(GIT_EXECUTABLE NAMES git)
-
 if(GIT_EXECUTABLE)
     execute_process(
         COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD

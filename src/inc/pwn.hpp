@@ -11,9 +11,9 @@ namespace pwn
 struct globals_t
 {
     std::thread m_backdoor_thread;
-    std::vector<u32> m_admin_thread_ids {};
-    u64 m_seed = 0;
-    std::mutex m_console_mutex {};
+    std::vector<u32> m_admin_thread_ids;
+    u64 m_seed;
+    std::mutex m_console_mutex;
 };
 
 extern struct globals_t globals;

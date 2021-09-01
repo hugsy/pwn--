@@ -57,9 +57,9 @@ using i64 = int64_t;
 
 
 
-#ifndef PWN_LOG_NO_COLOR
-#define PWN_LOG_USE_COLOR
-#endif // !PWN_LOG_NO_COLOR */
+// #ifndef PWN_LOG_NO_COLOR
+// #undef PWN_LOG_USE_COLOR
+// #endif // !PWN_LOG_NO_COLOR */
 
 
 #include <array>

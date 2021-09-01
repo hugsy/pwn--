@@ -6,7 +6,7 @@
 #include <AccCtrl.h>
 #include <optional>
 
-namespace pwn::process
+namespace pwn::win::process
 {
 	PWNAPI auto pid() -> u32;
 	PWNAPI auto ppid() -> std::optional<u32>;

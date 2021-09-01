@@ -1,4 +1,4 @@
-#include "..\pwn++\pwn.h"
+#include <pwn.hpp>
 
 using namespace pwn::log;
 namespace ctx = pwn::context;
@@ -18,7 +18,7 @@ auto wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 	if (h)
 	{
 		auto sz = ::GetFileSize(h.get(), nullptr);
-		std::vector<BYTE> bytes(sz);
+		std::vector<u8> bytes(sz);
 		DWORD dummy;
 		if (::ReadFile(h.get(), bytes.data(), sz, &dummy, nullptr))
 			pwn::utils::hexdump(bytes);

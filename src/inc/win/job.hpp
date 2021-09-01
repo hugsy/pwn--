@@ -32,7 +32,7 @@ public:
     Job& operator+=(u32 ProcessId)&
     {
         if(!add_process(ProcessId))
-            throw std::exception("cannot add process");
+            throw std::runtime_error("cannot add process");
 
         return *this;
     }

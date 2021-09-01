@@ -24,3 +24,5 @@
 #define __x86_64__
 #endif
 
+
+#cmakedefine PWN_LOG_USE_COLOR@
