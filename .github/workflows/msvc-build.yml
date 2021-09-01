@@ -64,7 +64,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.dll build\tests\${{ matrix.configuration }}\
+        Copy-Item -Verbose build\src\pwn++\win\${{ matrix.configuration }}\pwn++.dll build\tests\${{ matrix.configuration }}\
         Start-Process build\tests\${{ matrix.configuration }}\unit_tests.exe
 
 
@@ -79,9 +79,9 @@ jobs:
       shell: pwsh
       run: |
         New-Item -Type Directory -Name artifact\
-        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.lib artifact\
-        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.dll artifact\
-        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.pdb artifact\
+        Copy-Item -Verbose build\src\pwn++\win\${{ matrix.configuration }}\pwn++.lib artifact\
+        Copy-Item -Verbose build\src\pwn++\win\${{ matrix.configuration }}\pwn++.dll artifact\
+        Copy-Item -Verbose build\src\pwn++\win\${{ matrix.configuration }}\pwn++.pdb artifact\
 
         New-Item -Type Directory -Name artifact\include\
         New-Item -Type Directory -Name artifact\include\win\
@@ -89,9 +89,9 @@ jobs:
         Copy-Item src\inc\win\*.hpp artifact\include\win\
 
         New-Item -Type Directory -Name artifact\tools\
-        Copy-Item tools\win\AppContainMe\AppContainMe.exe artifact\tools\
-        Copy-Item tools\win\HexdumpFile\HexdumpFile.exe artifact\tools\
-        Copy-Item tools\win\ProcessReparent\ProcessReparent.exe artifact\tools\
+        Copy-Item build\tools\win\AppContainMe\${{ matrix.configuration }}/AppContainMe.exe artifact\tools\
+        Copy-Item build\tools\win\HexdumpFile\${{ matrix.configuration }}/HexdumpFile.exe artifact\tools\
+        Copy-Item build\tools\win\ProcessReparent\${{ matrix.configuration }}/ProcessReparent.exe artifact\tools\
 
 
     - name: Prepare Linux artifact
@@ -100,7 +100,7 @@ jobs:
       shell: bash
       run: |
         mkdir -p artifact/include/linux/
-        cp -v build/pwn++/linux/libpwn++.so artifact/
+        cp -v build/src/pwn++/linux/libpwn++.so artifact/
         cp -v src/inc/*.hpp artifact/include/
         cp -v src/inc/linux/*.hpp artifact/include/linux/
 
