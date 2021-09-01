@@ -64,8 +64,8 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Copy-Item -Verbose build\src\pwn++\win\${{ matrix.configuration }}\pwn++.dll build\tests\${{ matrix.configuration }}\
-        Start-Process build\tests\${{ matrix.configuration }}\unit_tests.exe
+        Copy-Item -Verbose build\src\pwn++\win\${{ matrix.configuration }}\pwn++.dll build\src\tests\${{ matrix.configuration }}\
+        Start-Process build\src\tests\${{ matrix.configuration }}\unit_tests.exe
 
 
     - name: Perform CodeQL Analysis
