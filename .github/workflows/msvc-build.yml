@@ -71,8 +71,8 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       shell: pwsh
       run: |
-        cp -v build/src/pwn++/linux/${{ matrix.configuration }}/libpwn++.so build/src/tests/${{ matrix.configuration }}/
-        build/src/tests/${{ matrix.configuration }}/unit_tests
+        cp -v build/src/pwn++/linux/libpwn++.so build/src/tests/
+        build/src/tests/unit_tests
 
     - name: Perform CodeQL Analysis
       if: matrix.os == 'windows-latest'
