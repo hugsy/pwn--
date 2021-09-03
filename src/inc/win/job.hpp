@@ -14,7 +14,7 @@ namespace pwn::win::job
 class Job
 {
 public:
-    pwn::win::job::Job(_In_ LPCWSTR name = nullptr) : m_name(name)
+    Job(_In_ LPCWSTR name = nullptr) : m_name(name)
     {
         HANDLE hJob = ::CreateJobObject(nullptr, name);
         if ( !hJob && ::GetLastError() == ERROR_ALREADY_EXISTS )

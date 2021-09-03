@@ -41,6 +41,7 @@ set(
     ${COMMON_SOURCE_DIR}/crypto.cpp
     ${COMMON_SOURCE_DIR}/asm.cpp
     ${COMMON_SOURCE_DIR}/disasm.cpp
+    ${COMMON_SOURCE_DIR}/tube.cpp
 )
 
 
@@ -69,6 +70,7 @@ set(
     ${COMMON_HEADER_DIR}/crypto.hpp
     ${COMMON_HEADER_DIR}/asm.hpp
     ${COMMON_HEADER_DIR}/disasm.hpp
+    ${COMMON_HEADER_DIR}/tube.hpp
 )
 
 
@@ -83,12 +85,12 @@ message(STATUS "CMAKE_EXE_LINKER_FLAGS:            ${CMAKE_EXE_LINKER_FLAGS}")
 message(STATUS "CMAKE_EXE_LINKER_FLAGS_RELEASE:    ${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
 message(STATUS "CMAKE_SHARED_LINKER_FLAGS:         ${CMAKE_SHARED_LINKER_FLAGS}")
 message(STATUS "CMAKE_SHARED_LINKER_FLAGS_RELEASE: ${CMAKE_SHARED_LINKER_FLAGS_RELEASE}")
-message(STATUS "CMAKE_TOOLCHAIN_FILE:              ${CMAKE_TOOLCHAIN_FILE}")
 message(STATUS "CMAKE_SYSTEM_PROCESSOR:            ${CMAKE_SYSTEM_PROCESSOR}")
 message(STATUS "CMAKE_SYSTEM_NAME:                 ${CMAKE_SYSTEM_NAME}")
 
 message(STATUS "INCLUDE_ASSEMBLER:                 ${INCLUDE_ASSEMBLER}")
 message(STATUS "INCLUDE_DISASSEMBLER:              ${INCLUDE_DISASSEMBLER}")
+message(STATUS "DEBUG:                             ${DEBUG}")
 
 if (WIN32)
     add_subdirectory(win)

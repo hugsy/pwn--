@@ -375,26 +375,16 @@ base64_decode(_In_ std::string const &in) -> std::optional<std::vector<u8>>
 
 
 auto
-widestring_to_string(_In_ const std::wstring &ws) -> std::string
+widestring_to_string(_In_ std::wstring const&  ws) -> std::string
 {
-    std::string s;
-    for (auto c : ws)
-    {
-        s += (char)c;
-    }
-    return s;
+    return std::string( ws.begin(), ws.end() );
 }
 
 
 auto
 string_to_widestring(_In_ const std::string &s) -> std::wstring
 {
-    std::wstring ws;
-    for (auto c : s)
-    {
-        ws += (wchar_t)c;
-    }
-    return ws;
+    return std::wstring(s.begin(), s.end());
 }
 
 
@@ -493,7 +483,8 @@ string_to_bytes(_In_ std::string const &str) -> std::vector<u8>
     std::transform(
         str.begin(),
         str.end(),
-        std::back_inserter(out), [](char const c) { return c; }
+        std::back_inserter(out),
+        [](char const c) { return c; }
     );
     return out;
 }

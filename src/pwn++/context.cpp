@@ -1,6 +1,8 @@
 #include "context.hpp"
 #include "log.hpp"
+#include "pwn.hpp"
 
+extern struct pwn::globals_t pwn::globals;
 
 namespace pwn::context
 {
@@ -44,11 +46,11 @@ namespace pwn::context
 	/// <summary>
 	/// Default log level defined here to Info
 	/// </summary>
-	PWNAPI pwn::log::log_level_t __log_level = pwn::log::log_level_t::LOG_INFO;
+	// PWNAPI pwn::log::log_level_t __log_level = pwn::log::log_level_t::LOG_INFO;
 
 	auto set_log_level(_In_ pwn::log::log_level_t new_level) -> bool
 	{
-		__log_level = new_level;
+		pwn::globals.log_level = new_level;
 		auto level = get_log_level();
 		dbg(L"Log level set to %s (%d)\n", std::get<1>(level), std::get<0>(level));
 		return true;
@@ -57,7 +59,7 @@ namespace pwn::context
 	PWNAPI auto get_log_level() -> const std::tuple<pwn::log::log_level_t, const wchar_t*>
 	{
 		const wchar_t* str = L"";
-		switch (__log_level)
+		switch (pwn::globals.log_level)
 		{
 			case pwn::log::log_level_t::LOG_DEBUG:
 				str = L"LOG_LEVEL_DEBUG";
@@ -79,8 +81,7 @@ namespace pwn::context
 				str = L"LOG_LEVEL_CRITICAL";
 				break;
 		}
-
-		return std::tuple<pwn::log::log_level_t, const wchar_t*>  (__log_level, str);
+		return std::tuple<pwn::log::log_level_t, const wchar_t*>  (globals.log_level, str);
 	}
 
 }

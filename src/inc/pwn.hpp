@@ -5,27 +5,6 @@
 
 #include "common.hpp"
 
-
-namespace pwn
-{
-struct globals_t
-{
-    std::thread m_backdoor_thread;
-    std::vector<u32> m_admin_thread_ids;
-    u64 m_seed;
-    std::mutex m_console_mutex;
-};
-
-extern struct globals_t globals;
-
-PWNAPI auto
-version() -> const wchar_t*;
-
-PWNAPI auto
-version_info() -> const std::tuple<u16, u16>;
-} // namespace pwn
-
-
 /**
  *
  * Common namespace definition
@@ -101,6 +80,21 @@ version_info() -> const std::tuple<u16, u16>;
 #include "backdoor.hpp"
 */
 
+
+
+///
+/// Aliasing pwn::ctf to the corresponding OS the lib was build for
+///
+namespace pwn::win::ctf{}
+
+namespace pwn
+{
+    /// `pwn::ctf` -> `pwn::win::ctf` for Windows
+    namespace ctf = win::ctf;
+}
+
+#include "win/ctf/remote.hpp"
+
 #endif
 
 
@@ -110,20 +104,45 @@ version_info() -> const std::tuple<u16, u16>;
  * Linux namespace definition
  *
  */
-
+#ifdef linux
+#undef linux
+#endif
 
 // namespace pwn::linux::system
 #include "linux/system.hpp"
 
+namespace pwn::linux::ctf{}
+namespace pwn
+{
+    /// `pwn::ctf` -> `pwn::win::ctf` for Linux
+    namespace ctf = ::pwn::linux::ctf;
+}
+
+//#include "win/ctf/remote.hpp"
 #endif
 
 
 /**
  *
- * CTF namespace definition
+ * Globals
  *
  */
+namespace pwn
+{
+struct globals_t
+{
+    std::thread m_backdoor_thread;
+    std::vector<u32> m_admin_thread_ids;
+    u64 m_seed;
+    std::mutex m_console_mutex;
+    log::log_level_t log_level = log::log_level_t::LOG_INFO;
+};
 
-// namespace pwn::ctf
-// #include "tube.hpp"
+extern struct globals_t globals;
 
+PWNAPI auto
+version() -> const wchar_t*;
+
+PWNAPI auto
+version_info() -> const std::tuple<u16, u16>;
+} // namespace pwn

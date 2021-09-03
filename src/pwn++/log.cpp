@@ -7,6 +7,7 @@
 #include "pwn.hpp"
 #include "context.hpp"
 
+extern struct pwn::globals_t pwn::globals;
 
 namespace pwn::log
 {
@@ -14,7 +15,7 @@ namespace pwn::log
 void PWNAPI
 xlog(_In_ log_level_t level, _In_ const wchar_t *args_list, ...)
 {
-    if (level < pwn::context::__log_level)
+    if (level < pwn::globals.log_level)
     {
         return;
     }
@@ -56,14 +57,21 @@ xlog(_In_ log_level_t level, _In_ const wchar_t *args_list, ...)
     va_start(args, args_list);
 
     globals.m_console_mutex.lock();
-    {
-#if defined(__PWN_WINDOWS_BUILD__)
+#if defined(__PWNLIB_WINDOWS_BUILD__)
     ::_snwprintf_s(fmt.get(), fmt_len, _TRUNCATE, L"%s %s", prio, args_list);
-#elif defined(__PWN_LINUX_BUILD__)
-    ::snwprintf(fmt.get(), fmt_len, L"%s %s", prio, args_list);
+#elif defined(__PWNLIB_LINUX_BUILD__)
+    ::swprintf(fmt.get(), fmt_len, L"%s %s", prio, args_list);
 #endif
-    ::vfwprintf(stderr, fmt.get(), args);
-    ::fflush(stderr);
+
+    if (pwn::globals.log_level >= log::log_level_t::LOG_ERROR)
+    {
+        ::vfwprintf(stderr, fmt.get(), args);
+        ::fflush(stderr);
+    }
+    else
+    {
+        ::vfwprintf(stdout, fmt.get(), args);
+        ::fflush(stdout);
     }
     globals.m_console_mutex.unlock();
 

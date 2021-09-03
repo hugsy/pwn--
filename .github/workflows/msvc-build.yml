@@ -67,6 +67,12 @@ jobs:
         Copy-Item -Verbose build\src\pwn++\win\${{ matrix.configuration }}\pwn++.dll build\src\tests\${{ matrix.configuration }}\
         Start-Process build\src\tests\${{ matrix.configuration }}\unit_tests.exe
 
+    - name: Run Linux tests
+      if: matrix.os == 'ubuntu-latest'
+      shell: pwsh
+      run: |
+        cp -v build/src/pwn++/linux/${{ matrix.configuration }}/libpwn++.so build/src/tests/${{ matrix.configuration }}/
+        build/src/tests/${{ matrix.configuration }}/unit_tests
 
     - name: Perform CodeQL Analysis
       if: matrix.os == 'windows-latest'
@@ -103,6 +109,7 @@ jobs:
         cp -v build/src/pwn++/linux/libpwn++.so artifact/
         cp -v src/inc/*.hpp artifact/include/
         cp -v src/inc/linux/*.hpp artifact/include/linux/
+        mkdir -p artifact/tools/
 
     - name: Publish artifact
       id: publish_artifact_mini

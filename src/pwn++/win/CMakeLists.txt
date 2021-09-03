@@ -14,6 +14,7 @@ set(
     ${HEADER_DIR}/registry.hpp
     ${HEADER_DIR}/kernel.hpp
     ${HEADER_DIR}/job.hpp
+    ${SOURCE_DIR}/ctf/remote.hpp
 )
 
 set(SOURCE_DIR ${COMMON_SOURCE_DIR}/win)
@@ -27,6 +28,7 @@ set(
     ${SOURCE_DIR}/cpu.cpp
     ${SOURCE_DIR}/kernel.cpp
     ${SOURCE_DIR}/job.cpp
+    ${SOURCE_DIR}/ctf/remote.cpp
 )
 
 
