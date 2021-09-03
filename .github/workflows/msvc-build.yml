@@ -3,7 +3,7 @@ name: CI Build for MSVC
 env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
   REPO: hugsy/pwn--
-  RUN_URL: "https://github.com/hugsy/pwn--/actions/"
+  RUN_URL: "https://github.com/hugsy/pwn--/actions/${{ env.GITHUB_RUN_ID }}"
   NB_CPU: "$env:NUMBER_OF_PROCESSORS"
   VCPKG_INSTALL_PATH: "$env:VCPKG_INSTALLATION_ROOT/installed"
   VERBOSE: "1"
@@ -125,10 +125,12 @@ jobs:
         nodetail: true
         title: SUCCESS building `${{ github.ref }}` for ${{ matrix.os }}/${{ matrix.platform }} [${{ matrix.configuration }}]
         description: |
-          [Job #${{ github.run_number }}] `${{ env.GITHUB_SHA_SHORT }}` in `${{ env.GITHUB_REF_SLUG }}` was built with success for ${{ matrix.platform }}/${{ matrix.configuration }}
-
-          ---
-          See ${{ env.RUN_URL }} for details
+          [Job #${{ github.run_number }}] The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ env.GITHUB_ACTOR }} on ${{ env.GITHUB_REPOSITORY }} succeeded:
+          ● Commit https://github.com/${{ env.REPO }}/commit/${{ env.GITHUB_SHA }}
+          ● Branch `${{ env.GITHUB_REF_SLUG }}`
+          ● Platform ${{ matrix.platform }} / ${{ matrix.os }}
+          ● Configuation ${{ matrix.configuration }}
+          ● Run details: ${{ env.RUN_URL }}
         color: 0x00ff00
         username: ${{ github.actor }} via GithubBot
         avatar_url: ${{ github.actor.avatar_url }}
@@ -140,10 +142,12 @@ jobs:
         nodetail: true
         title: FAILED building `${{ github.ref }}` for ${{ matrix.os }}/${{ matrix.platform }} [${{ matrix.configuration }}]
         description: |
-          [Job #${{ github.run_number }}] Failed to build `${{ env.GITHUB_SHA_SHORT }}` in `${{  env.GITHUB_REF_SLUG }}` for ${{ matrix.platform }}/${{ matrix.configuration }}
-
-          ---
-          See ${{ env.RUN_URL }} for details
+          [Job #${{ github.run_number }}] The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ env.GITHUB_ACTOR }} on ${{ env.GITHUB_REPOSITORY }} failed:
+          ● Commit https://github.com/${{ env.REPO }}/commit/${{ env.GITHUB_SHA }}
+          ● Branch `${{ env.GITHUB_REF_SLUG }}`
+          ● Platform ${{ matrix.platform }} / ${{ matrix.os }}
+          ● Configuation ${{ matrix.configuration }}
+          ● Run details: ${{ env.RUN_URL }}          
         color: 0xff0000
         username: ${{ github.actor }} via GithubBot
         avatar_url: ${{ github.actor.avatar_url }}
@@ -254,7 +258,7 @@ jobs:
         nodetail: true
         title: Full build `${{ github.ref }}` succeeded for ${{ matrix.configuration }}/${{ matrix.platform }}
         description: |
-          [Job:${{ github.run_number }}] `${{ env.GITHUB_SHA_SHORT }}` in `${{ env.GITHUB_REF_SLUG }}` was built with success for ${{ matrix.platform }}/${{ matrix.configuration }}
+          [Job:${{ github.run_number }}] The CI `${{ env.GITHUB_SHA }}` in `${{ env.GITHUB_REF_SLUG }}` initiated by ${{ env.GITHUB_ACTOR }} on ${{ env.GITHUB_REPOSITORY }} was built with success for ${{ matrix.platform }}/${{ matrix.configuration }}
 
           ---
           See ${{ env.RUN_URL }} for details
@@ -269,7 +273,7 @@ jobs:
         nodetail: true
         title: CI full build failed on `${{ github.ref }}` for ${{ matrix.configuration }}/${{ matrix.platform }}
         description: |
-          [Job:${{ github.run_number }}] Failed to build `${{ env.GITHUB_SHA_SHORT }}` in `${{  env.GITHUB_REF_SLUG }}` for ${{ matrix.platform }}/${{ matrix.configuration }}
+          [Job:${{ github.run_number }}] Failed to build `${{ env.GITHUB_SHA }}` in `${{  env.GITHUB_REF_SLUG }}` for ${{ matrix.platform }}/${{ matrix.configuration }}
 
           ---
           See ${{ env.RUN_URL }} for details
