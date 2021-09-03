@@ -120,14 +120,14 @@ jobs:
     - name: Notify on success
       if: ${{ success() }}
       env:
-        RUN_URL: "https://github.com/${{ env.REPO }}/runs/${{ env.GITHUB_RUN_ID }}"
+        RUN_URL: "https://github.com/${{ env.REPO }}/runs/${{ github.run_id }}"
       uses: sarisia/actions-status-discord@v1
       with:
         nodetail: true
         title: SUCCESS building `${{ github.ref }}` for ${{ matrix.os }}/${{ matrix.platform }} [${{ matrix.configuration }}]
         description: |
           [Job #${{ github.run_number }}] The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ env.GITHUB_ACTOR }} on ${{ env.GITHUB_REPOSITORY }} succeeded:
-          ● Commit https://github.com/${{ env.REPO }}/commit/${{ env.GITHUB_SHA }}
+          ● Commit https://github.com/${{ env.REPO }}/commit/${{ env.GITHUB_SHA_SHORT }}
           ● Branch `${{ env.GITHUB_REF_SLUG }}`
           ● Platform ${{ matrix.platform }} / ${{ matrix.os }}
           ● Configuation ${{ matrix.configuration }}
@@ -139,7 +139,7 @@ jobs:
     - name: Notify on test failure
       if: ${{ failure() }}
       env:
-        RUN_URL: "https://github.com/${{ env.REPO }}/runs/${{ env.GITHUB_RUN_ID }}"
+        RUN_URL: "https://github.com/${{ env.REPO }}/runs/${{ github.run_id }}"
       uses: sarisia/actions-status-discord@v1
       with:
         nodetail: true
