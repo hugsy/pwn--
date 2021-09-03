@@ -78,7 +78,7 @@ pwn::win::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_
         if ( cache_data.size() >= size )
         {
             dbg(L"recv2 %d bytes\n", cache_data.size());
-            if ( pwn::globals::log_level == pwn::log::log_level_t::LOG_DEBUG )
+            if ( std::get<0>(pwn::context::get_log_level()) == pwn::log::log_level_t::LOG_DEBUG )
             {
                 pwn::utils::hexdump(cache_data);
             }
