@@ -19,8 +19,7 @@ jobs:
         os: ['windows-latest', 'ubuntu-latest']
         platform: ['x64']
         configuration: ['RelWithDebInfo']
-    env:
-      RUN_URL: "https://github.com/${{ env.REPO }}/runs/${{ env.GITHUB_RUN_ID }}"
+
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
@@ -120,6 +119,8 @@ jobs:
 
     - name: Notify on success
       if: ${{ success() }}
+      env:
+        RUN_URL: "https://github.com/${{ env.REPO }}/runs/${{ env.GITHUB_RUN_ID }}"
       uses: sarisia/actions-status-discord@v1
       with:
         nodetail: true
@@ -137,6 +138,8 @@ jobs:
 
     - name: Notify on test failure
       if: ${{ failure() }}
+      env:
+        RUN_URL: "https://github.com/${{ env.REPO }}/runs/${{ env.GITHUB_RUN_ID }}"
       uses: sarisia/actions-status-discord@v1
       with:
         nodetail: true
