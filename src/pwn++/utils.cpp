@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <ctime>
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <type_traits>
 
@@ -22,7 +23,7 @@ namespace
 void
 __hexdump(_In_ const u8* data, _In_ size_t size)
 {
-    wchar_t ascii[17] = {0};
+    u8 ascii[17] = {0};
     u32 i;
     u32 j;
     size &= 0xffffffff;
@@ -33,18 +34,18 @@ __hexdump(_In_ const u8* data, _In_ size_t size)
 
         if (ascii[0] == 0u)
         {
-            ::wprintf(L"%04lx   ", i);
+            std::cout << std::setfill('0') << std::setw(4) << std::noshowbase << std::hex << (int)i << "   ";
         }
 
-        ::wprintf(L"%02X ", c);
+        std::cout << std::setfill('0') << std::setw(2) << std::uppercase << std::noshowbase <<  std::hex << (int)c << " ";
         ascii[i % 16] = (c >= 0x20 && c <= 0x7e) ? c : '.';
 
         if ((i + 1) % 8 == 0 || i + 1 == size)
         {
-            ::wprintf(L" ");
+            std::cout << " ";
             if ((i + 1) % 16 == 0)
             {
-                ::wprintf(L"|  %s \n", ascii);
+                std::cout << "|  " << ascii << std::endl;
                 ::memset(ascii, 0, sizeof(ascii));
             }
             else if (i + 1 == size)
@@ -52,15 +53,13 @@ __hexdump(_In_ const u8* data, _In_ size_t size)
                 ascii[(i + 1) % 16] = '\0';
                 if ((i + 1) % 16 <= 8)
                 {
-                    ::wprintf(L" ");
+                    std::cout << " ";
                 }
-
                 for (j = (i + 1) % 16; j < 16; ++j)
                 {
-                    ::wprintf(L"   ");
+                    std::cout << "   ";
                 }
-
-                ::wprintf(L"|  %s \n", ascii);
+                std::cout << "|  " << ascii << std::endl;
             }
         }
     }
