@@ -23,7 +23,7 @@ namespace
 void
 __hexdump(_In_ const u8* data, _In_ size_t size)
 {
-    u8 ascii[17] = {0};
+    wchar_t ascii[17] = {0};
     u32 i;
     u32 j;
     size &= 0xffffffff;
@@ -34,18 +34,18 @@ __hexdump(_In_ const u8* data, _In_ size_t size)
 
         if (ascii[0] == 0u)
         {
-            std::cout << std::setfill('0') << std::setw(4) << std::noshowbase << std::hex << (int)i << "   ";
+            std::wcout << std::setfill((wchar_t)'0') << std::setw(4) << std::noshowbase << std::hex << (int)i << "   ";
         }
 
-        std::cout << std::setfill('0') << std::setw(2) << std::uppercase << std::noshowbase <<  std::hex << (int)c << " ";
+        std::wcout << std::setfill((wchar_t)'0') << std::setw(2) << std::uppercase << std::noshowbase <<  std::hex << (int)c << " ";
         ascii[i % 16] = (c >= 0x20 && c <= 0x7e) ? c : '.';
 
         if ((i + 1) % 8 == 0 || i + 1 == size)
         {
-            std::cout << " ";
+            std::wcout << " ";
             if ((i + 1) % 16 == 0)
             {
-                std::cout << "|  " << ascii << std::endl;
+                std::wcout << "|  " << ascii << std::endl;
                 ::memset(ascii, 0, sizeof(ascii));
             }
             else if (i + 1 == size)
@@ -53,18 +53,18 @@ __hexdump(_In_ const u8* data, _In_ size_t size)
                 ascii[(i + 1) % 16] = '\0';
                 if ((i + 1) % 16 <= 8)
                 {
-                    std::cout << " ";
+                    std::wcout << " ";
                 }
                 for (j = (i + 1) % 16; j < 16; ++j)
                 {
-                    std::cout << "   ";
+                    std::wcout << "   ";
                 }
-                std::cout << "|  " << ascii << std::endl;
+                std::wcout << "|  " << ascii << std::endl;
             }
         }
     }
 
-    std::cout << std::flush;
+    std::wcout << std::flush;
 }
 
 const std::string b64_charset =
@@ -289,9 +289,8 @@ random::alnum(_In_ u32 length) -> std::wstring
 void
 hexdump(_In_ const u8* Buffer, _In_ size_t BufferSize)
 {
-    pwn::globals.m_console_mutex.lock();
+    std::lock_guard<std::mutex> guard(pwn::globals.m_console_mutex);
     __hexdump(Buffer, BufferSize);
-    pwn::globals.m_console_mutex.unlock();
 }
 
 
@@ -417,6 +416,38 @@ join(_In_ const std::vector<std::wstring> &args) -> std::wstring // todo: replac
     for(auto const& x : args)
         res += std::wstring{x};
     return res;
+}
+
+template<typename T, typename N>
+auto
+strippable_string(_In_ T const& in, _In_ N const& chars_to_strip) -> T
+{
+    auto end_it = in.rbegin();
+    while(true)
+    {
+        for(auto c : chars_to_strip)
+        {
+            if (*end_it == c)
+                end_it++;
+        }
+    }
+    return T(in.begin(), end_it.base());
+}
+
+
+auto
+strip(_In_ std::wstring const& str) -> std::wstring
+{
+   std::vector<wchar_t> chars_to_strip = {' ', '\r', '\n'};
+   return strippable_string(str, chars_to_strip);
+}
+
+
+auto
+strip(_In_ std::string const& str) -> std::string
+{
+   std::vector<char> chars_to_strip = {' ', '\r', '\n'};
+   return strippable_string(str, chars_to_strip);
 }
 
 

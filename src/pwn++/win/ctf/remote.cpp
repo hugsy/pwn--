@@ -110,6 +110,7 @@ pwn::win::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_
             {
                 pwn::utils::hexdump(&network_data[0], sz);
             }
+
         }
     }
     return network_data;

@@ -1,4 +1,5 @@
 #include "tube.hpp"
+#include "pwn.hpp"
 
 #include <chrono>
 #include <iostream>
@@ -8,6 +9,8 @@
 
 #include "utils.hpp"
 using namespace std::literals::chrono_literals;
+
+extern struct pwn::globals_t pwn::globals;
 
 
 auto
@@ -201,18 +204,25 @@ Tube::interactive()
                 {
                     try
                     {
-                        auto in = recv(PWN_TUBE_PIPE_DEFAULT_SIZE);
-                        std::cout << std::string(in.begin(), in.end());
+                        auto raw_input = recv(PWN_TUBE_PIPE_DEFAULT_SIZE);
+                        auto input = std::string(raw_input.begin(), raw_input.end());
 
-                        if ( in.size() < PWN_TUBE_PIPE_DEFAULT_SIZE )
+                        {
+                            std::lock_guard<std::mutex> guard(pwn::globals.m_console_mutex);
+                            std::wcout << pwn::utils::string_to_widestring(input);
+                            std::wcout.flush();
+                        }
+
+                        if ( raw_input.size() < PWN_TUBE_PIPE_DEFAULT_SIZE )
                         {
                             break;
                         }
 
                         std::this_thread::sleep_for(0.1s); // for debug, remove later
                     }
-                    catch ( ... )
+                    catch (std::exception const& e)
                     {
+                        err(L"Unexpected exception caught, reason: %s\n", e.what());
                         break;
                     }
                 }
@@ -221,10 +231,14 @@ Tube::interactive()
 
     while ( __bReplLoop )
     {
-        std::string cmd;
-        std::cout << PWN_INTERACTIVE_PROMPT;
-        std::getline(std::cin, cmd);
+        {
+            std::lock_guard<std::mutex> guard(pwn::globals.m_console_mutex);
+            std::wcout << PWN_INTERACTIVE_PROMPT;
+            std::wcout.flush();
+        }
 
+        std::string cmd;
+        std::getline(std::cin, cmd);
         if ( cmd == "quit" )
         {
             __bReplLoop = false;

@@ -6,6 +6,7 @@ set(
     HEADER_FILES
     ${COMMON_HEADER_FILES}
     ${HEADER_DIR}/system.hpp
+    ${SOURCE_DIR}/ctf/remote.hpp
 )
 
 set(SOURCE_DIR ${COMMON_SOURCE_DIR}/linux)
@@ -13,6 +14,7 @@ set(
     SOURCE_FILES
     ${COMMON_SOURCE_FILES}
     ${SOURCE_DIR}/system.cpp
+    ${SOURCE_DIR}/ctf/remote.cpp
 )
 
 add_library(pwn++ SHARED ${SOURCE_FILES})

@@ -48,6 +48,8 @@ namespace pwn::utils
     PWNAPI auto to_widestring(_In_ const char* str) -> std::wstring;
     PWNAPI auto split(_In_ const std::wstring& ws, _In_ wchar_t delim) -> std::vector<std::wstring>;
     PWNAPI auto join(_In_ const std::vector<std::wstring>& args) -> std::wstring;
+    PWNAPI auto strip(_In_ std::wstring const& args) -> std::wstring;
+    PWNAPI auto strip(_In_ std::string const& args) -> std::string;
 
     namespace path
     {

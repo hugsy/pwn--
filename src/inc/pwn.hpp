@@ -104,21 +104,17 @@ namespace pwn
  * Linux namespace definition
  *
  */
-#ifdef linux
-#undef linux
-#endif
-
 // namespace pwn::linux::system
 #include "linux/system.hpp"
 
 namespace pwn::linux::ctf{}
 namespace pwn
 {
-    /// `pwn::ctf` -> `pwn::win::ctf` for Linux
-    namespace ctf = ::pwn::linux::ctf;
+    /// `pwn::ctf` -> `pwn::linux::ctf` for Linux
+    namespace ctf = linux::ctf;
 }
 
-//#include "win/ctf/remote.hpp"
+#include "linux/ctf/remote.hpp"
 #endif
 
 

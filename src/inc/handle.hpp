@@ -8,6 +8,12 @@ static auto _______dummy        = []()
     throw ______magic;
 };
 
+#ifdef __linux__
+#define InvalidHandleValue    -1
+#else
+#define InvalidHandleValue    INVALID_HANDLE_VALUE
+#endif
+
 namespace pwn::utils
 {
 template<typename T, typename D = decltype(_______dummy)>
@@ -27,7 +33,7 @@ public:
 
     operator bool() const
     {
-        return m_handle != nullptr && m_handle != INVALID_HANDLE_VALUE;
+        return m_handle != nullptr && m_handle != InvalidHandleValue;
     }
 
 
@@ -66,7 +72,7 @@ public:
         return res;
     }
 
-    T m_handle;
+    T m_handle = nullptr;
 
 protected:
     D m_closure_function;
