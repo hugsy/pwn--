@@ -41,6 +41,11 @@
 #define __countof(x) (sizeof(x)/sizeof(x[0]))
 #endif
 
+#ifndef MIN
+#define MIN(x, y) (((size_t)x) < ((size_t)y))
+#endif
+
+
 #include <cstdint>
 
 using u8 = uint8_t;

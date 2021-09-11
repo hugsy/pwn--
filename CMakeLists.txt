@@ -13,12 +13,12 @@ set(LICENSE MIT)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-option(DEBUG                  "Enable Debug"                                ON)
-option(DISABLE_LOG_COLOR      "Disable ANSI color codes in log messages"    OFF)
-option(INCLUDE_ASSEMBLER      "Compile with keystone-engine support"        OFF)
-option(INCLUDE_DISASSEMBLER   "Compile with capstone-engine support"        OFF)
-option(INCLUDE_BACKDOOR       "Enable the lua vm backdoor"                  OFF)
-option(BUILD_TOOLKIT          "Compile the standalone exes"                 ON)
+option(DEBUG                       "Enable Debug"                                                                          ON)
+option(DISABLE_LOG_COLOR           "Disable ANSI color codes in log messages"                                              OFF)
+option(INCLUDE_ASSEMBLER           "Compile with keystone-engine support (significantly increase the library size)"        OFF)
+option(INCLUDE_DISASSEMBLER        "Compile with capstone-engine support (significantly increase the library size)"        OFF)
+option(INCLUDE_BACKDOOR            "Enable the lua vm backdoor"                                                            OFF)
+option(BUILD_TOOLKIT               "Compile the standalone exes"                                                           ON)
 
 
 #

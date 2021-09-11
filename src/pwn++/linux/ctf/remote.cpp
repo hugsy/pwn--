@@ -20,10 +20,6 @@
 #include "utils.hpp"
 
 
-#ifndef MIN
-#define MIN(x,y) (((size_t)x<(size_t)y)?x:y)
-#endif
-
 ///
 /// Remote
 ///

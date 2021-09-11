@@ -24,15 +24,9 @@
 /// namespace pwn::crypto
 #include "crypto.hpp"
 
-/// namespace pwn::assm
-#ifndef PWN_NO_DISASSEMBLER
-#include "disasm.hpp"
-#endif
-
-#ifndef PWN_NO_ASSEMBLER
+/// namespace pwn::assm & namespace pwn::disassm
 #include "asm.hpp"
-#endif // !PWN_NO_ASSEMBLER
-
+#include "disasm.hpp"
 
 
 #ifdef __PWNLIB_WINDOWS_BUILD__
