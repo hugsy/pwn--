@@ -17,9 +17,16 @@ _Note_: the original `PwnLib` was written around Windows 7 for feature testing. 
 
 ## Requirement
 
+### Windows
+
  - x86 → [MSVC 16+ x86 Redistributable](https://aka.ms/vs/16/release/vc_redist.x86.exe)
  - x64 → [MSVC 16+ x64 Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe)
 
+
+### Linux
+ 
+  - None (AFAIK)
+  
 
 ## Get started
 
