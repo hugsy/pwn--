@@ -1,6 +1,6 @@
 #include "log.hpp"
-#include "win/process.hpp"
-#include "win/system.hpp"
+#include "win32/process.hpp"
+#include "win32/system.hpp"
 
 using namespace pwn::log;
 

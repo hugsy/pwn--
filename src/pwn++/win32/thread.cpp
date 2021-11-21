@@ -1,4 +1,4 @@
-#include "win/thread.hpp"
+#include "win32/thread.hpp"
 
 #include "handle.hpp"
 #include "utils.hpp"
@@ -27,7 +27,12 @@ pwn::win::thread::get_name(_In_ i32 dwThreadId) -> std::optional<std::wstring>
 
     UNICODE_STRING us    = {0};
     ULONG ReturnedLength = 0;
-    auto Status          = ::NtQueryInformationThread(hThread.get(), (THREADINFOCLASS)ThreadNameInformation, &us, sizeof(UNICODE_STRING), &ReturnedLength);
+    auto Status          = ::NtQueryInformationThread(
+        hThread.get(),
+        (THREADINFOCLASS)ThreadNameInformation,
+        &us,
+        sizeof(UNICODE_STRING),
+        &ReturnedLength);
 
     // empty value ?
     if ( NT_SUCCESS(Status) )
@@ -49,8 +54,7 @@ pwn::win::thread::get_name(_In_ i32 dwThreadId) -> std::optional<std::wstring>
         (THREADINFOCLASS)ThreadNameInformation,
         buffer.get(),
         ReturnedLength,
-        nullptr
-    );
+        nullptr);
     if ( !NT_SUCCESS(Status) )
     {
         pwn::log::ntperror(L"NtQueryInformationThread2()", Status);
@@ -58,7 +62,7 @@ pwn::win::thread::get_name(_In_ i32 dwThreadId) -> std::optional<std::wstring>
     }
 
     auto u = reinterpret_cast<PUNICODE_STRING>(buffer.get());
-    return std::wstring(u->Buffer, u->Length/sizeof(wchar_t));
+    return std::wstring(u->Buffer, u->Length / sizeof(wchar_t));
 }
 
 
@@ -93,5 +97,6 @@ pwn::win::thread::set_name(_In_ std::wstring const& name, _In_ i32 dwThreadId) -
     ::RtlInitUnicodeString(&us, (PWSTR)name.c_str());
 
     auto Status = ::NtSetInformationThread(hThread.get(), ThreadNameInformation, &us, sizeof(UNICODE_STRING));
-    return SUCCEEDED(Status);
+
+    return !!(Status == STATUS_SUCCESS);
 }

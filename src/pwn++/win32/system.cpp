@@ -1,13 +1,13 @@
-#include "win\system.hpp"
+#include "win32\system.hpp"
 
 #include <tlhelp32.h>
 
 #include <optional>
 #include <stdexcept>
 
-#include "log.hpp"
 #include "handle.hpp"
-#include "win\nt.hpp"
+#include "log.hpp"
+#include "win32\nt.hpp"
 
 
 using namespace pwn::log;
@@ -71,7 +71,7 @@ ppid(_In_ u32 dwProcessId) -> std::optional<u32>
         } while ( ::Process32Next(hProcessSnap.get(), &pe) );
     }
 
-    if (dwPpid < 0)
+    if ( dwPpid < 0 )
         return std::nullopt;
 
     return dwPpid;
@@ -103,13 +103,7 @@ pidof(_In_ const std::wstring& name) -> std::optional<u32>
 
         do
         {
-            auto hProcess = pwn::utils::GenericHandle(
-                ::OpenProcess(
-                    PROCESS_QUERY_LIMITED_INFORMATION,
-                    false,
-                    pe32.th32ProcessID
-                )
-            );
+            auto hProcess = pwn::utils::GenericHandle(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pe32.th32ProcessID));
             if ( !hProcess )
             {
                 continue;
@@ -123,7 +117,7 @@ pidof(_In_ const std::wstring& name) -> std::optional<u32>
         } while ( ::Process32NextW(hProcessSnap.get(), &pe32) != 0 );
     } while ( false );
 
-    if (dwPid < 0)
+    if ( dwPid < 0 )
         return std::nullopt;
 
     return dwPid;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.hpp"
-#include "win/nt.hpp"
+#include "win32/nt.hpp"
 
 #include <AccCtrl.h>
 #include <optional>

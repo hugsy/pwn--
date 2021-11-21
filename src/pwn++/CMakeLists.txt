@@ -93,7 +93,7 @@ message(STATUS "INCLUDE_DISASSEMBLER:              ${INCLUDE_DISASSEMBLER}")
 message(STATUS "DEBUG:                             ${DEBUG}")
 
 if (WIN32)
-    add_subdirectory(win)
+    add_subdirectory(win32)
 else()
     add_subdirectory(linux)
 endif(WIN32)

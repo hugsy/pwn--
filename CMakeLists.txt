@@ -18,7 +18,7 @@ option(DISABLE_LOG_COLOR           "Disable ANSI color codes in log messages"   
 option(INCLUDE_ASSEMBLER           "Compile with keystone-engine support (significantly increase the library size)"        OFF)
 option(INCLUDE_DISASSEMBLER        "Compile with capstone-engine support (significantly increase the library size)"        OFF)
 option(INCLUDE_BACKDOOR            "Enable the lua vm backdoor"                                                            OFF)
-option(BUILD_TOOLKIT               "Compile the standalone exes"                                                           ON)
+option(BUILD_TOOLKIT               "Compile the executables of pwn++ toolkit"                                                           ON)
 
 
 #

@@ -2,7 +2,7 @@
 # Windows (msvc) specific definitions
 #
 
-set(HEADER_DIR ${COMMON_HEADER_DIR}/win)
+set(HEADER_DIR ${COMMON_HEADER_DIR}/win32)
 set(
     HEADER_FILES
     ${COMMON_HEADER_FILES}
@@ -17,7 +17,7 @@ set(
     ${SOURCE_DIR}/ctf/remote.hpp
 )
 
-set(SOURCE_DIR ${COMMON_SOURCE_DIR}/win)
+set(SOURCE_DIR ${COMMON_SOURCE_DIR}/win32)
 set(
     SOURCE_FILES
     ${COMMON_SOURCE_FILES}
@@ -47,7 +47,7 @@ add_compile_options(/W3 /WX /Wall)
 set(VCPKG_ROOT "C:\\tools\\vcpkg\\installed")
 
 if(INCLUDE_ASSEMBLER)
-    # find_package(keystone-static REQUIRED)
+    find_package(keystone-static REQUIRED)
     set(KS_INCLUDE_DIR "${VCPKG_ROOT}\\x64-windows-static\\include\\")
     if(DEBUG)
         target_link_libraries(pwn++ PRIVATE "${VCPKG_ROOT}\\x64-windows-static\\debug\\lib\\keystone.lib")
@@ -60,7 +60,7 @@ endif(INCLUDE_ASSEMBLER)
 
 
 if(INCLUDE_DISASSEMBLER)
-    # find_package(capstone-static REQUIRED)
+    find_package(capstone-static REQUIRED)
     set(CS_INCLUDE_DIR "${VCPKG_ROOT}\\x64-windows-static\\include\\")
     if(DEBUG)
         target_link_libraries(pwn++ PRIVATE "${VCPKG_ROOT}\\x64-windows-static\\debug\\lib\\capstone.lib")

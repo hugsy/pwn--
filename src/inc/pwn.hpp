@@ -37,25 +37,25 @@
  */
 
 /// namespace pwn::win::system
-#include "win/system.hpp"
+#include "win32/system.hpp"
 
 /// namespace pwn::win::process
-#include "win/process.hpp"
+#include "win32/process.hpp"
 
 /// namespace pwn::win::thread
-#include "win/thread.hpp"
+#include "win32/thread.hpp"
 
 /// namespace pwn::win::cpu
-#include "win/cpu.hpp"
+#include "win32/cpu.hpp"
 
 /// namespace pwn::win::registry
-#include "win/registry.hpp"
+#include "win32/registry.hpp"
 
 /// namespace pwn::win::kernel
-#include "win/kernel.hpp"
+#include "win32/kernel.hpp"
 
 /// namespace pwn::win::job
-#include "win/job.hpp"
+#include "win32/job.hpp"
 
 /*
 /// namespace pwn::service
@@ -87,7 +87,7 @@ namespace pwn
     namespace ctf = win::ctf;
 }
 
-#include "win/ctf/remote.hpp"
+#include "win32/ctf/remote.hpp"
 
 #endif
 

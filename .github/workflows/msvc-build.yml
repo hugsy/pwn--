@@ -6,6 +6,7 @@ env:
   NB_CPU: "$env:NUMBER_OF_PROCESSORS"
   VCPKG_INSTALL_PATH: "$env:VCPKG_INSTALLATION_ROOT/installed"
   VERBOSE: "1"
+  FLAGS: "-DDEBUG=OFF -DDISABLE_LOG_COLOR=OFF -DINCLUDE_ASSEMBLER=OFF -DINCLUDE_DISASSEMBLER=OFF -DBUILD_TOOLKIT=ON"
 
 on: [push, pull_request]
 
@@ -43,7 +44,7 @@ jobs:
         Invoke-VisualStudio2019${{ matrix.platform }}
         New-Item -Type Directory -Name build
         Set-Location .\build
-        cmake .. -DINCLUDE_ASSEMBLER=OFF -DINCLUDE_DISASSEMBLER=OFF
+        cmake .. ${{ env.CMAKE_FLAGS }}
         msbuild.exe ALL_BUILD.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
         Set-Location ..
 
@@ -55,7 +56,7 @@ jobs:
         ln -s ../pwn++ ../pwn--
         mkdir ./build
         cd ./build
-        cmake .. -DINCLUDE_ASSEMBLER=OFF -DINCLUDE_DISASSEMBLER=OFF
+        cmake .. ${{ env.CMAKE_FLAGS }}
         make
         cd ..
 
@@ -63,7 +64,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Copy-Item -Verbose build\src\pwn++\win\${{ matrix.configuration }}\pwn++.dll build\src\tests\${{ matrix.configuration }}\
+        Copy-Item -Verbose build\src\pwn++\win32\${{ matrix.configuration }}\pwn++.dll build\src\tests\${{ matrix.configuration }}\
         Start-Process build\src\tests\${{ matrix.configuration }}\unit_tests.exe
 
     - name: Run Linux tests
@@ -84,19 +85,19 @@ jobs:
       shell: pwsh
       run: |
         New-Item -Type Directory -Name artifact\
-        Copy-Item -Verbose build\src\pwn++\win\${{ matrix.configuration }}\pwn++.lib artifact\
-        Copy-Item -Verbose build\src\pwn++\win\${{ matrix.configuration }}\pwn++.dll artifact\
-        Copy-Item -Verbose build\src\pwn++\win\${{ matrix.configuration }}\pwn++.pdb artifact\
+        Copy-Item -Verbose build\src\pwn++\win32\${{ matrix.configuration }}\pwn++.lib artifact\
+        Copy-Item -Verbose build\src\pwn++\win32\${{ matrix.configuration }}\pwn++.dll artifact\
+        Copy-Item -Verbose build\src\pwn++\win32\${{ matrix.configuration }}\pwn++.pdb artifact\
 
         New-Item -Type Directory -Name artifact\include\
-        New-Item -Type Directory -Name artifact\include\win\
+        New-Item -Type Directory -Name artifact\include\win32\
         Copy-Item src\inc\*.hpp artifact\include\
-        Copy-Item src\inc\win\*.hpp artifact\include\win\
+        Copy-Item src\inc\win32\*.hpp artifact\include\win32\
 
         New-Item -Type Directory -Name artifact\tools\
-        Copy-Item build\tools\win\AppContainMe\${{ matrix.configuration }}/AppContainMe.exe artifact\tools\
-        Copy-Item build\tools\win\HexdumpFile\${{ matrix.configuration }}/HexdumpFile.exe artifact\tools\
-        Copy-Item build\tools\win\ProcessReparent\${{ matrix.configuration }}/ProcessReparent.exe artifact\tools\
+        Copy-Item build\tools\win32\AppContainMe\${{ matrix.configuration }}/AppContainMe.exe artifact\tools\
+        Copy-Item build\tools\win32\HexdumpFile\${{ matrix.configuration }}/HexdumpFile.exe artifact\tools\
+        Copy-Item build\tools\win32\ProcessReparent\${{ matrix.configuration }}/ProcessReparent.exe artifact\tools\
 
 
     - name: Prepare Linux artifact
@@ -221,7 +222,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.dll build\tests\${{ matrix.configuration }}\
+        Copy-Item -Verbose build\pwn++\win32\${{ matrix.configuration }}\pwn++.dll build\tests\${{ matrix.configuration }}\
         build\tests\${{ matrix.configuration }}\\unit_tests.exe
 
 
@@ -231,13 +232,13 @@ jobs:
       shell: pwsh
       run: |
         New-Item -Type Directory -Name artifact\
-        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.lib artifact\
-        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.dll artifact\
-        Copy-Item -Verbose build\pwn++\win\${{ matrix.configuration }}\pwn++.pdb artifact\
+        Copy-Item -Verbose build\pwn++\win32\${{ matrix.configuration }}\pwn++.lib artifact\
+        Copy-Item -Verbose build\pwn++\win32\${{ matrix.configuration }}\pwn++.dll artifact\
+        Copy-Item -Verbose build\pwn++\win32\${{ matrix.configuration }}\pwn++.pdb artifact\
         New-Item -Type Directory -Name artifact\include\
-        New-Item -Type Directory -Name artifact\include\win\
+        New-Item -Type Directory -Name artifact\include\win32\
         Copy-Item src\inc\*.hpp artifact\include\
-        Copy-Item src\inc\win\*.hpp artifact\include\win\
+        Copy-Item src\inc\win32\*.hpp artifact\include\win32\
 
     - name: Prepare Linux artifact
       id: prepare_artifact_full_linux
