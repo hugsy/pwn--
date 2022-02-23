@@ -60,16 +60,13 @@ endif(INCLUDE_ASSEMBLER)
 
 
 if(INCLUDE_DISASSEMBLER)
-    find_package(capstone-static REQUIRED)
-    set(CS_INCLUDE_DIR "${VCPKG_ROOT}\\x64-windows-static\\include\\")
-    if(DEBUG)
-        target_link_libraries(pwn++ PRIVATE "${VCPKG_ROOT}\\x64-windows-static\\debug\\lib\\capstone.lib")
-    else()
-        target_link_libraries(pwn++ PRIVATE "${VCPKG_ROOT}\\x64-windows-static\\lib\\capstone.lib")
-    endif(DEBUG)
+    target_link_libraries(pwn++ PRIVATE Zydis)
+    set(ZYDIS_INCLUDE_DIR ${PWNLIB_ROOT_DIR}/deps/zydis/include)
+    set(EXTRA_HEADER_DIR ${ZYDIS_INCLUDE_DIR})
 else()
     add_compile_definitions(PWN_NO_DISASSEMBLER)
 endif(INCLUDE_DISASSEMBLER)
+
 
 target_precompile_headers(pwn++ PRIVATE ${HEADER_DIR}/pch.hpp)
 
@@ -77,7 +74,7 @@ target_compile_options(pwn++ PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
 target_compile_features(pwn++ PRIVATE cxx_std_17)
 
 target_include_directories(pwn++ PUBLIC ${COMMON_HEADER_DIR} ${HEADER_DIR})
-target_include_directories(pwn++ PRIVATE ${COMMON_SOURCE_DIR} ${SOURCE_DIR} ${KS_INCLUDE_DIR})
+target_include_directories(pwn++ PRIVATE ${COMMON_SOURCE_DIR} ${SOURCE_DIR} ${EXTRA_HEADER_DIR})
 
 target_sources(pwn++ PRIVATE ${SOURCE_FILES})
 
@@ -94,6 +91,7 @@ add_compile_definitions(UNICODE)
 
 target_link_libraries(
     pwn++
+
     PRIVATE
     ws2_32.lib
     userenv.lib

@@ -7,21 +7,22 @@
 #include <vector>
 #include <string>
 
+#define DEFAULT_BASE_ADDRESS 0x40000
 
 namespace pwn::disasm
 {
-    typedef struct _insn_t
-    {
-        uintptr_t address;
-        uint16_t size;
-        u8 bytes[24];
-        std::wstring mnemonic;
-        std::wstring operands;
-    } insn_t;
+    PWNAPI
+    void
+    disassemble(_In_ const u8* code, _In_ const size_t code_size);
 
-    _Success_(return) bool PWNAPI disassemble(_In_ const u8* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns);
-    _Success_(return) bool PWNAPI x64(_In_ const u8* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns);
-    _Success_(return) bool PWNAPI x86(_In_ const u8* code, _In_ const size_t code_size, _Out_ std::vector<insn_t>& insns);
+    PWNAPI
+    void
+    x64(_In_ const u8* code, _In_ const size_t code_size);
+
+    PWNAPI
+    void
+    x86(_In_ const u8* code, _In_ const size_t code_size);
+
 }
 
 #endif /* PWN_NO_DISASSEMBLER */

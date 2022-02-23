@@ -6,7 +6,8 @@ if(NOT DISABLE_LOG_COLOR)
     add_compile_definitions(PWN_LOG_USE_COLOR)
 endif()
 
-# list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+set(PWNLIB_SRC_DIR ${PWNLIB_ROOT_DIR}/src)
 
 
 #

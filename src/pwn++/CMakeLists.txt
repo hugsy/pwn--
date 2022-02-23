@@ -31,7 +31,7 @@ endif(GIT_EXECUTABLE)
 #
 # Collect all common source files
 #
-set(COMMON_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/../pwn++)
+set(COMMON_SOURCE_DIR ${PWNLIB_SRC_DIR}/pwn++)
 set(
     COMMON_SOURCE_FILES
     ${COMMON_SOURCE_DIR}/log.cpp
@@ -45,7 +45,7 @@ set(
 )
 
 
-set(COMMON_HEADER_DIR ${CMAKE_CURRENT_LIST_DIR}/../inc)
+set(COMMON_HEADER_DIR ${PWNLIB_SRC_DIR}/inc)
 
 
 #
@@ -74,7 +74,6 @@ set(
 )
 
 
-
 #
 # Print out cmake compile info
 #
@@ -91,6 +90,7 @@ message(STATUS "CMAKE_SYSTEM_NAME:                 ${CMAKE_SYSTEM_NAME}")
 message(STATUS "INCLUDE_ASSEMBLER:                 ${INCLUDE_ASSEMBLER}")
 message(STATUS "INCLUDE_DISASSEMBLER:              ${INCLUDE_DISASSEMBLER}")
 message(STATUS "DEBUG:                             ${DEBUG}")
+
 
 if (WIN32)
     add_subdirectory(win32)

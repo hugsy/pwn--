@@ -520,11 +520,15 @@ string_to_bytes(_In_ std::string const &str) -> std::vector<u8>
 }
 
 
-/*++
-
-Create a DeBruijn cyclic pattern
-
- --*/
+/**
+ * @brief Create a DeBruijn cyclic pattern
+ *
+ * @param dwSize
+ * @param dwPeriod
+ * @param buffer
+ * @return true
+ * @return false
+ */
 auto
 cyclic(_In_ u32 dwSize, _In_ u32 dwPeriod, _Out_ std::vector<u8> &buffer) -> bool
 {
@@ -576,11 +580,13 @@ cyclic(_In_ u32 dwSize) -> std::vector<u8>
 }
 
 
-/*++
-
-C++17 port of flat() from pwnlib
-
---*/
+/**
+ * @brief C++17 port of flat() from pwnlib
+ *
+ * @tparam T
+ * @param v
+ * @return std::vector<u8>
+ */
 template <typename T>
 auto
 __pack(_In_ T v) -> std::vector<u8>
@@ -589,17 +595,19 @@ __pack(_In_ T v) -> std::vector<u8>
     pwn::context::endianess_t endian = pwn::context::endian;
     if (endian == pwn::context::endianess_t::little)
     {
-        for (int i = sizeof(T) - 1; i >= 0; i--)
+        for (auto i = sizeof(T) - 1; i >= 0; i--)
         {
             out.push_back((v >> (8 * i)) & 0xff);
         }
     }
-    /*
     else
     {
-        TODO: big endian
+        for (auto i = 0; i < sizeof(T); i++)
+        {
+            out.push_back((v >> (8 * i)) & 0xff);
+        }
     }
-    */
+
     return out;
 }
 
