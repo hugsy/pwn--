@@ -6,7 +6,7 @@ env:
   NB_CPU: "$env:NUMBER_OF_PROCESSORS"
   VCPKG_INSTALL_PATH: "$env:VCPKG_INSTALLATION_ROOT/installed"
   VERBOSE: "1"
-  FLAGS: "-DDEBUG=OFF -DDISABLE_LOG_COLOR=OFF -DINCLUDE_ASSEMBLER=OFF -DINCLUDE_DISASSEMBLER=OFF -DBUILD_TOOLKIT=ON"
+  CMAKE_FLAGS: "-DDEBUG=OFF -DDISABLE_LOG_COLOR=OFF -DINCLUDE_ASSEMBLER=OFF -DINCLUDE_DISASSEMBLER=OFF -DBUILD_TOOLKIT=ON"
 
 on: [push, pull_request]
 
@@ -34,22 +34,24 @@ jobs:
       uses: github/codeql-action/init@v1
       with:
         languages: cpp
-      if: matrix.os == 'windows-latest'
+      if: matrix.os == 'ubuntu-latest'
 
+    - name: Add msbuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
+      with:
+        msbuild-architecture: ${{ matrix.platform }}
+      if: matrix.os == 'windows-latest'
 
     - name: Build pwn++.dll
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        Import-Module .\.github\Invoke-VS.ps1
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
-        Invoke-VisualStudio2019${{ matrix.platform }}
         New-Item -Type Directory -Name build
         Set-Location .\build
         cmake .. ${{ env.CMAKE_FLAGS }}
         msbuild.exe ALL_BUILD.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
         Set-Location ..
-
 
     - name: Build libpwn++.so
       if: matrix.os == 'ubuntu-latest'
@@ -59,7 +61,7 @@ jobs:
         mkdir ./build
         cd ./build
         cmake .. ${{ env.CMAKE_FLAGS }}
-        make
+        make -j${{ env.NB_CPU }}
         cd ..
 
     - name: Run Windows tests
@@ -77,7 +79,7 @@ jobs:
         build/src/tests/unit_tests
 
     - name: Perform CodeQL Analysis
-      if: matrix.os == 'windows-latest'
+      if: matrix.os == 'ubuntu-latest'
       uses: github/codeql-action/analyze@v1
 
 
@@ -156,135 +158,6 @@ jobs:
           ● Platform  ${{ matrix.os }}-${{ matrix.platform }}
           ● Configuration ${{ matrix.configuration }}
           ● Run details: ${{ env.RUN_URL }}
-        color: 0xff0000
-        username: ${{ github.actor }} via GithubBot
-        avatar_url: ${{ github.actor.avatar_url }}
-
-
-  full_build:
-    name: "${{ matrix.configuration }} full build pwn++ (+asm +disasm) for ${{ matrix.os }}/${{ matrix.platform }}"
-    if: false # temporary disabled
-
-    strategy:
-      fail-fast: true
-      matrix:
-        os: ['windows-latest']
-        platform: ['x64']
-        configuration: ['RelWithDebInfo']
-
-    runs-on: ${{ matrix.os }}
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Inject slug/short variables
-      uses: rlespinasse/github-slug-action@v3.x
-
-    - uses: actions/cache@v1
-      id: vcpkg_cache
-      env:
-        cache-name: cache-deps
-      with:
-       key: ${{ runner.os }}-vcpkg-${{ matrix.platform }}-${{ hashFiles('**/PACKAGES') }}
-       path: |
-          ${{ env.VCPKG_INSTALL_PATH }}
-       restore-keys:
-          ${{ runner.os }}-vcpkg-${{ env.cache-name }}-
-          ${{ runner.os }}-vcpkg-
-          ${{ runner.os }}-${{ env.cache-name }}-
-          ${{ runner.os }}-
-
-    - name: Install vcpkg
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: |
-        vcpkg integrate install
-
-    - name: Install dependencies
-      if: matrix.os == 'windows-latest' && steps.vcpkg_cache.outputs.cache-hit != 'true'
-      shell: pwsh
-      run: |
-        vcpkg install keystone:${{ matrix.platform }}-windows-static
-        vcpkg install capstone[x86,arm,arm64]:${{ matrix.platform }}-windows-static
-
-    - name: Build pwn++ dll
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: |
-        Import-Module .\.github\Invoke-VS.ps1
-        New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
-        Invoke-VisualStudio2019${{ matrix.platform }}
-        New-Item -Type Directory -Name build
-        Set-Location .\build
-        cmake .. -DINCLUDE_ASSEMBLER=ON -DINCLUDE_DISASSEMBLER=ON
-        msbuild.exe ALL_BUILD.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
-        Set-Location ..
-
-
-    - name: Run Windows tests
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: |
-        Copy-Item -Verbose build\pwn++\win32\${{ matrix.configuration }}\pwn++.dll build\tests\${{ matrix.configuration }}\
-        build\tests\${{ matrix.configuration }}\\unit_tests.exe
-
-
-    - name: Prepare Windows artifact
-      id: prepare_artifact_full_win
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: |
-        New-Item -Type Directory -Name artifact\
-        Copy-Item -Verbose build\pwn++\win32\${{ matrix.configuration }}\pwn++.lib artifact\
-        Copy-Item -Verbose build\pwn++\win32\${{ matrix.configuration }}\pwn++.dll artifact\
-        Copy-Item -Verbose build\pwn++\win32\${{ matrix.configuration }}\pwn++.pdb artifact\
-        New-Item -Type Directory -Name artifact\include\
-        New-Item -Type Directory -Name artifact\include\win32\
-        Copy-Item src\inc\*.hpp artifact\include\
-        Copy-Item src\inc\win32\*.hpp artifact\include\win32\
-
-    - name: Prepare Linux artifact
-      id: prepare_artifact_full_linux
-      if: matrix.os == 'ubuntu-latest'
-      shell: bash
-      run: |
-        mkdir -p artifact/include/linux/
-        cp -v build/pwn++/linux/${{ matrix.configuration }}/libpwn++.so artifact/
-        cp -v src/inc/*.hpp artifact/include/
-        cp -v src/inc/linux/*.hpp artifact/include/linux/
-
-    - name: Publish artifact
-      id: publish_artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: pwn++_mini_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_${{ matrix.platform }}_${{ env.GITHUB_SHA_SHORT }}
-        path: artifact/
-
-    - name: Notify on success
-      if: ${{ success() }}
-      uses: sarisia/actions-status-discord@v1
-      with:
-        nodetail: true
-        title: Full build `${{ github.ref }}` succeeded for ${{ matrix.configuration }}/${{ matrix.platform }}
-        description: |
-          [Job:${{ github.run_number }}] The CI `${{ env.GITHUB_SHA }}` in `${{ env.GITHUB_REF_SLUG }}` initiated by ${{ env.GITHUB_ACTOR }} on ${{ env.GITHUB_REPOSITORY }} was built with success for ${{ matrix.platform }}/${{ matrix.configuration }}
-
-          ---
-          See ${{ env.RUN_URL }} for details
-        color: 0x00ff00
-        username: ${{ github.actor }} via GithubBot
-        avatar_url: ${{ github.actor.avatar_url }}
-
-    - name: Notify on test failure
-      if: ${{ failure() }}
-      uses: sarisia/actions-status-discord@v1
-      with:
-        nodetail: true
-        title: CI full build failed on `${{ github.ref }}` for ${{ matrix.configuration }}/${{ matrix.platform }}
-        description: |
-          [Job:${{ github.run_number }}] Failed to build `${{ env.GITHUB_SHA }}` in `${{  env.GITHUB_REF_SLUG }}` for ${{ matrix.platform }}/${{ matrix.configuration }}
-
-          ---
-          See ${{ env.RUN_URL }} for details
         color: 0xff0000
         username: ${{ github.actor }} via GithubBot
         avatar_url: ${{ github.actor.avatar_url }}

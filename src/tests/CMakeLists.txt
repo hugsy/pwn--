@@ -17,17 +17,18 @@ if(MSVC)
     set(TEST_DIR ${COMMON_TEST_DIR}/win)
     set(
         SOURCE_FILES
+
         ${SOURCE_FILES}
         ${TEST_DIR}/pwn_win_system.cpp
         ${TEST_DIR}/pwn_win_thread.cpp
     )
 
-    add_compile_definitions(_UNICODE)
-    add_compile_definitions(UNICODE)
+    add_compile_definitions(_UNICODE UNICODE)
 else()
     set(TEST_DIR ${COMMON_TEST_DIR}/linux)
     set(
         SOURCE_FILES
+
         ${SOURCE_FILES}
         ${TEST_DIR}/pwn_linux_system.cpp
     )
@@ -44,3 +45,7 @@ endif()
 add_executable(unit_tests ${SOURCE_FILES})
 target_include_directories(unit_tests PUBLIC ${TEST_DIR}/)
 target_link_libraries(unit_tests pwn++)
+
+add_custom_command(TARGET unit_tests POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    $<TARGET_FILE:pwn++> $<TARGET_FILE_DIR:unit_tests>)
