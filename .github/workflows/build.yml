@@ -64,6 +64,7 @@ jobs:
         ln -s ../pwn++ ../pwn--
 
     - name: Build pwn++ library
+      run: |
         mkdir ./build
         cd ./build
         cmake .. ${{ env.CMAKE_FLAGS }}
