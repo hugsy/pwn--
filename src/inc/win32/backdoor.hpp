@@ -13,8 +13,12 @@
 namespace pwn::backdoor
 {
 
-_Success_(return ) PWNAPI bool start();
+_Success_(return )
+PWNAPI bool
+start();
 
-_Success_(return ) PWNAPI bool stop();
+_Success_(return )
+PWNAPI bool
+stop();
 
 }; // namespace pwn::backdoor

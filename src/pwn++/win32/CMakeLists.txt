@@ -2,10 +2,12 @@
 # Windows (msvc) specific definitions
 #
 
-set(HEADER_DIR ${COMMON_HEADER_DIR}/win32)
+set(HEADER_DIR ${PWNLIB_SRC_HDR_DIR}/win32)
 set(
     HEADER_FILES
+
     ${COMMON_HEADER_FILES}
+
     ${HEADER_DIR}/framework.hpp
     ${HEADER_DIR}/system.hpp
     ${HEADER_DIR}/process.hpp
@@ -14,13 +16,17 @@ set(
     ${HEADER_DIR}/registry.hpp
     ${HEADER_DIR}/kernel.hpp
     ${HEADER_DIR}/job.hpp
-    ${SOURCE_DIR}/ctf/remote.hpp
+    ${HEADER_DIR}/backdoor.hpp
+
+    ${HEADER_DIR}/ctf/remote.hpp
 )
 
-set(SOURCE_DIR ${COMMON_SOURCE_DIR}/win32)
+set(SOURCE_DIR ${PWNLIB_SRC_LIB_DIR}/win32)
 set(
     SOURCE_FILES
+
     ${COMMON_SOURCE_FILES}
+
     ${SOURCE_DIR}/dllmain.cpp
     ${SOURCE_DIR}/system.cpp
     ${SOURCE_DIR}/process.cpp
@@ -28,39 +34,27 @@ set(
     ${SOURCE_DIR}/cpu.cpp
     ${SOURCE_DIR}/kernel.cpp
     ${SOURCE_DIR}/job.cpp
+    ${SOURCE_DIR}/backdoor.cpp
+
     ${SOURCE_DIR}/ctf/remote.cpp
 )
 
 
-add_library(pwn++ SHARED ${SOURCE_FILES})
+add_library(${CMAKE_PROJECT_NAME} SHARED ${SOURCE_FILES})
 
-# if(DEBUG)
-#     target_compile_options(pwn++ PRIVATE /MTd)
-# else()
-#     target_compile_options(pwn++ PRIVATE /MT)
-# endif(DEBUG)
+set(CMAKE_SHARED_LINKER_FLAGS "/DEBUG:FULL /WX /RELEASE /SUBSYSTEM:Console /MANIFEST:NO /DLL /profile /guard:cf /DEBUGTYPE:cv,fixup /LARGEADDRESSAWARE")
+add_compile_options(/std:c++latest /W3 /WX /Wall /CETCOMPAT /diagnostics:caret /W4 /WX  /d1FastFail /guard:cf /Z7 /Gm- /Gy /Zp8 /permissive- /Zl /ZH:SHA_256)
 
-add_compile_options(/W3 /WX /Wall)
-# add_compile_options(/W3 /WX /Wall /sdl /guard:cf /guard:ehcont /CETCOMPAT)
-
-# TODO: use proper vcpkg envvar way
-set(VCPKG_ROOT "C:\\tools\\vcpkg\\installed")
 
 if(INCLUDE_ASSEMBLER)
-    find_package(keystone-static REQUIRED)
-    set(KS_INCLUDE_DIR "${VCPKG_ROOT}\\x64-windows-static\\include\\")
-    if(DEBUG)
-        target_link_libraries(pwn++ PRIVATE "${VCPKG_ROOT}\\x64-windows-static\\debug\\lib\\keystone.lib")
-    else()
-        target_link_libraries(pwn++ PRIVATE "${VCPKG_ROOT}\\x64-windows-static\\lib\\keystone.lib")
-    endif(DEBUG)
-else()
+    # target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE asmlib)
+# else()
     add_compile_definitions(PWN_NO_ASSEMBLER)
 endif(INCLUDE_ASSEMBLER)
 
 
 if(INCLUDE_DISASSEMBLER)
-    target_link_libraries(pwn++ PRIVATE Zydis)
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Zydis)
     set(ZYDIS_INCLUDE_DIR ${PWNLIB_ROOT_DIR}/deps/zydis/include)
     set(EXTRA_HEADER_DIR ${ZYDIS_INCLUDE_DIR})
 else()
@@ -68,29 +62,36 @@ else()
 endif(INCLUDE_DISASSEMBLER)
 
 
-target_precompile_headers(pwn++ PRIVATE ${HEADER_DIR}/pch.hpp)
+target_precompile_headers(${CMAKE_PROJECT_NAME} PRIVATE ${PWNLIB_SRC_HDR_DIR}/pch.hpp)
 
-target_compile_options(pwn++ PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>")
-target_compile_features(pwn++ PRIVATE cxx_std_17)
+target_compile_features(${CMAKE_PROJECT_NAME} PRIVATE cxx_std_20)
+target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE "$<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>")
 
-target_include_directories(pwn++ PUBLIC ${COMMON_HEADER_DIR} ${HEADER_DIR})
-target_include_directories(pwn++ PRIVATE ${COMMON_SOURCE_DIR} ${SOURCE_DIR} ${EXTRA_HEADER_DIR})
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${COMMON_HEADER_DIR} ${HEADER_DIR})
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${COMMON_SOURCE_DIR} ${SOURCE_DIR} ${EXTRA_HEADER_DIR})
 
-target_sources(pwn++ PRIVATE ${SOURCE_FILES})
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${SOURCE_FILES})
 
-GENERATE_EXPORT_HEADER(
-    pwn++
-    BASE_NAME pwn++
-    EXPORT_MACRO_NAME PWN_EXPORT
-    EXPORT_FILE_NAME pwn_export.hpp
+
+#
+# Generate the build export header from cmake
+#
+include(GenerateExportHeader)
+
+generate_export_header(
+    ${CMAKE_PROJECT_NAME}
+    BASE_NAME ${CMAKE_PROJECT_NAME}
+    EXPORT_FILE_NAME ${COMMON_HEADER_DIR}/pwn_export.hpp
     STATIC_DEFINE pwn_built_as_static
+    EXPORT_MACRO_NAME PWNAPI
+    NO_EXPORT_MACRO_NAME PWN_NO_EXPORT
+    DEPRECATED_MACRO_NAME PWN_DEPRECATED
 )
 
-add_compile_definitions(_UNICODE)
-add_compile_definitions(UNICODE)
+add_compile_definitions(_UNICODE UNICODE)
 
 target_link_libraries(
-    pwn++
+    ${CMAKE_PROJECT_NAME}
 
     PRIVATE
     ws2_32.lib
@@ -100,3 +101,10 @@ target_link_libraries(
     Rpcrt4.lib
     ntdll.lib
 )
+
+
+#
+# Installation directives
+#
+install(TARGETS ${CMAKE_PROJECT_NAME} DESTINATION lib)
+install(FILES ${HEADER_FILES} DESTINATION include/${CMAKE_PROJECT_NAME})

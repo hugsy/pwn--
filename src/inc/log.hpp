@@ -1,5 +1,9 @@
 #pragma once
 
+#include <format>
+#include <iostream>
+#include <mutex>
+#include <source_location>
 #include <string>
 
 #include "common.hpp"
@@ -31,56 +35,91 @@
 #endif
 
 
-#define _PWN_LOG_LEVEL_DEBUG 0
-#define _PWN_LOG_LEVEL_INFO 1
-#define _PWN_LOG_LEVEL_WARN 2
-#define _PWN_LOG_LEVEL_ERROR 3
-#define _PWN_LOG_LEVEL_CRITICAL 4
-
-
 namespace pwn::log
 {
-enum class log_level_t
+enum class log_level_t : u8
 {
-    LOG_DEBUG    = _PWN_LOG_LEVEL_DEBUG,
-    LOG_INFO     = _PWN_LOG_LEVEL_INFO,
-    LOG_OK       = _PWN_LOG_LEVEL_INFO,
-    LOG_SUCCESS  = _PWN_LOG_LEVEL_INFO,
-    LOG_WARN     = _PWN_LOG_LEVEL_WARN,
-    LOG_WARNING  = _PWN_LOG_LEVEL_WARN,
-    LOG_ERR      = _PWN_LOG_LEVEL_ERROR,
-    LOG_ERROR    = _PWN_LOG_LEVEL_ERROR,
-    LOG_CRITICAL = _PWN_LOG_LEVEL_CRITICAL
+    LOG_DEBUG,
+    LOG_INFO,
+    LOG_OK,
+    LOG_SUCCESS,
+    LOG_WARNING,
+    LOG_ERROR,
+    LOG_CRITICAL,
 };
 
 
-/// <summary>
-/// Generic logging function.
+///
+/// @brief Generic logging function.
 /// Note: prefer using the macros `dbg`, `info`, `ok`, `warn` and `err`
-/// </summary>
-/// <param name="level"></param>
-/// <param name="args_list"></param>
-/// <param name=""></param>
-void PWNAPI
-xlog(_In_ log_level_t level, _In_ const wchar_t *args_list, ...);
+///
+/// @param [inout] level
+/// @param [inout] location
+/// @param [inout] args
+///
+template<typename... Args>
+void
+xlog(
+    _In_ log_level_t level,
+    _In_ const std::source_location& location,
+    _In_ std::wstring const& fmt,
+    _In_ Args&&... args)
+{
+    const wchar_t* prio;
+    switch ( level )
+    {
+    case log_level_t::LOG_DEBUG:
+        prio = COLOR_BOLD L"[DEBUG] " COLOR_RESET;
+        break;
+
+    case log_level_t::LOG_INFO:
+        prio = COLOR_BOLD COLOR_FG_CYAN L"[INFO] " COLOR_RESET;
+        break;
+
+    case log_level_t::LOG_WARNING:
+        prio = COLOR_BOLD COLOR_FG_YELLOW L"[WARN] " COLOR_RESET;
+        break;
+
+    case log_level_t::LOG_ERROR:
+        prio = COLOR_BOLD COLOR_FG_RED L"[ERROR] " COLOR_RESET;
+        break;
+
+    case log_level_t::LOG_CRITICAL:
+        prio = COLOR_BOLD COLOR_FG_MAGENTA L"[CRITICAL] " COLOR_RESET;
+        break;
+
+    default:
+        return;
+    }
+
+    std::wostringstream stream;
+    stream << prio << L" (" << location.file_name() << L":" << location.line() << L":" << location.function_name()
+           << "()] ";
+
+
+    stream << std::vformat(std::wstring_view(fmt), std::make_wformat_args(args...)) << std::endl;
+    std::wcerr << stream.str() << std::flush;
+}
 
 
 #ifdef __PWNLIB_WINDOWS_BUILD__
-/// <summary>
-/// Basic equivalent of Linux Glibc's `perror`
-/// </summary>
-/// <param name="prefix"></param>
+///
+/// @brief Basic equivalent of Linux Glibc's `perror`
+///
+/// @param [inout] prefix
+///
 void PWNAPI
-perror(_In_ const std::wstring &prefix);
+perror(_In_ const std::wstring& prefix);
 
 
-/// <summary>
-/// `perror` but for NTSTATUS.
-/// </summary>
-/// <param name="prefix"></param>
-/// <param name="Status"></param>
+///
+/// @brief `perror` but for NTSTATUS.
+///
+/// @param [inout] prefix
+/// @param [inout] Status
+///
 void PWNAPI
-ntperror(_In_ const wchar_t *prefix, _In_ NTSTATUS Status);
+ntperror(_In_ const wchar_t* prefix, _In_ NTSTATUS Status);
 #endif
 
 } // namespace pwn::log
@@ -88,8 +127,19 @@ ntperror(_In_ const wchar_t *prefix, _In_ NTSTATUS Status);
 ///
 /// Convenience logging macros
 ///
-#define dbg(fmt, ...) pwn::log::xlog(pwn::log::log_level_t::LOG_DEBUG, fmt, ##__VA_ARGS__)
-#define info(fmt, ...) pwn::log::xlog(pwn::log::log_level_t::LOG_INFO, fmt, ##__VA_ARGS__)
-#define ok(fmt, ...) pwn::log::xlog(pwn::log::log_level_t::LOG_SUCCESS, fmt, ##__VA_ARGS__)
-#define warn(fmt, ...) pwn::log::xlog(pwn::log::log_level_t::LOG_WARNING, fmt, ##__VA_ARGS__)
-#define err(fmt, ...) pwn::log::xlog(pwn::log::log_level_t::LOG_ERROR, fmt, ##__VA_ARGS__)
+#define dbg(...) pwn::log::xlog(pwn::log::log_level_t::LOG_DEBUG, std::source_location::current(), ##__VA_ARGS__)
+#define info(...) pwn::log::xlog(pwn::log::log_level_t::LOG_INFO, std::source_location::current(), ##__VA_ARGS__)
+#define ok(...) pwn::log::xlog(pwn::log::log_level_t::LOG_SUCCESS, std::source_location::current(), ##__VA_ARGS__)
+#define warn(...) pwn::log::xlog(pwn::log::log_level_t::LOG_WARNING, std::source_location::current(), ##__VA_ARGS__)
+#define err(...) pwn::log::xlog(pwn::log::log_level_t::LOG_ERROR, std::source_location::current(), ##__VA_ARGS__)
+
+
+///
+/// toString()-like traits
+///
+std::wostream&
+operator<<(std::wostream& wos, Architecture a);
+
+
+std::wostream&
+operator<<(std::wostream& wos, Endianess e);

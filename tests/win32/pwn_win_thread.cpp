@@ -6,7 +6,7 @@
 
 TEST_CASE("set/get thread names", "[" NS "]")
 {
-    wchar_t * const expected_name = L"TestThreadName";
+    std::wstring const expected_name = L"TestThreadName";
 
     SECTION("Get the initial name of thread (expecting none)")
     {
@@ -20,6 +20,6 @@ TEST_CASE("set/get thread names", "[" NS "]")
         auto const thread_name = pwn::win::thread::get_name();
         REQUIRE(thread_name.has_value());
         REQUIRE(thread_name.value() == expected_name);
-        REQUIRE(thread_name.value().length() == wcslen(expected_name));
+        REQUIRE(thread_name.value().length() == expected_name.length());
     }
 }

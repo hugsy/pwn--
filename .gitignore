@@ -355,6 +355,7 @@ MigrationBackup/
 build
 build-linux
 build-win32
+src/inc/pwn_export.hpp
 src/inc/constants.hpp
 src/_build
 src/_build

@@ -3,15 +3,14 @@ name: CI Build for MSVC
 env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
   REPO: hugsy/pwn--
-  VCPKG_INSTALL_PATH: "$env:VCPKG_INSTALLATION_ROOT/installed"
   VERBOSE: "1"
-  CMAKE_FLAGS: "-DDEBUG=OFF -DDISABLE_LOG_COLOR=OFF -DINCLUDE_ASSEMBLER=OFF -DINCLUDE_DISASSEMBLER=OFF -DBUILD_TOOLKIT=ON"
+  CMAKE_FLAGS: "-DDEBUG=OFF -DDISABLE_LOG_COLOR=OFF -DINCLUDE_ASSEMBLER=OFF -DINCLUDE_DISASSEMBLER=ON -DBUILD_TOOLKIT=ON"
 
 on: [push, pull_request]
 
 jobs:
   mini_build:
-    name: "${{ matrix.configuration }} build pwn++ for ${{ matrix.os }}/${{ matrix.platform }}"
+    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.configuration }}"
 
     strategy:
       fail-fast: false
@@ -52,81 +51,43 @@ jobs:
         msbuild-architecture: ${{ matrix.platform }}
       if: matrix.os == 'windows-latest'
 
-    - name: Build pwn++.dll
+    - name: Prepare Windows environment
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
-        New-Item -Type Directory -Name build
-        Set-Location .\build
-        cmake .. ${{ env.CMAKE_FLAGS }}
-        msbuild.exe ALL_BUILD.vcxproj -nologo /maxCpuCount:${{ env.NB_CPU }} /verbosity:n /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }}
-        Set-Location ..
 
     - name: Build libpwn++.so
       if: matrix.os == 'ubuntu-latest'
       shell: bash
       run: |
         ln -s ../pwn++ ../pwn--
+
+    - name: Build pwn++ library
         mkdir ./build
         cd ./build
         cmake .. ${{ env.CMAKE_FLAGS }}
-        make -j${{ env.NB_CPU }}
+        cmake --build . --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }} --target tests
         cd ..
 
-    - name: Run Windows tests
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
+    - name: Run tests
       run: |
-        Copy-Item -Verbose build\src\pwn++\win32\${{ matrix.configuration }}\pwn++.dll build\src\tests\${{ matrix.configuration }}\
-        Start-Process build\src\tests\${{ matrix.configuration }}\unit_tests.exe
-
-    - name: Run Linux tests
-      if: matrix.os == 'ubuntu-latest'
-      shell: pwsh
-      run: |
-        cp -v build/src/pwn++/linux/libpwn++.so build/src/tests/
-        build/src/tests/unit_tests
+        cd build/tests
+        ctest --parallel=${{ env.NB_CPU }} --extra-verbose --cfg=${{ matrix.configuration }}
+        cd ../..
 
     - name: Perform CodeQL Analysis
       if: matrix.os == 'ubuntu-latest'
       uses: github/codeql-action/analyze@v1
 
-
-    - name: Prepare Windows artifact
-      id: prepare_artifact_mini_win
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
+    - name: Prepare artifact
       run: |
-        New-Item -Type Directory -Name artifact\
-        Copy-Item -Verbose build\src\pwn++\win32\${{ matrix.configuration }}\pwn++.lib artifact\
-        Copy-Item -Verbose build\src\pwn++\win32\${{ matrix.configuration }}\pwn++.dll artifact\
-        Copy-Item -Verbose build\src\pwn++\win32\${{ matrix.configuration }}\pwn++.pdb artifact\
-
-        New-Item -Type Directory -Name artifact\include\
-        New-Item -Type Directory -Name artifact\include\win32\
-        Copy-Item src\inc\*.hpp artifact\include\
-        Copy-Item src\inc\win32\*.hpp artifact\include\win32\
-
-        New-Item -Type Directory -Name artifact\tools\
-        Copy-Item build\tools\win32\AppContainMe\${{ matrix.configuration }}/AppContainMe.exe artifact\tools\
-        Copy-Item build\tools\win32\HexdumpFile\${{ matrix.configuration }}/HexdumpFile.exe artifact\tools\
-        Copy-Item build\tools\win32\ProcessReparent\${{ matrix.configuration }}/ProcessReparent.exe artifact\tools\
-
-
-    - name: Prepare Linux artifact
-      id: prepare_artifact_mini_linux
-      if: matrix.os == 'ubuntu-latest'
-      shell: bash
-      run: |
-        mkdir -p artifact/include/linux/
-        cp -v build/src/pwn++/linux/libpwn++.so artifact/
-        cp -v src/inc/*.hpp artifact/include/
-        cp -v src/inc/linux/*.hpp artifact/include/linux/
-        mkdir -p artifact/tools/
+        mkdir artifact
+        cd build
+        cmake --install . --config ${{ matrix.configuration }} --prefix ../artifact --verbose
+        cd ..
 
     - name: Publish artifact
-      id: publish_artifact_mini
       uses: actions/upload-artifact@v2
       with:
         name: pwn++_mini_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_${{ matrix.platform }}_${{ env.GITHUB_SHA_SHORT }}
