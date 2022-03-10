@@ -1,8 +1,8 @@
 #include "linux/ctf/remote.hpp"
 
+#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <arpa/inet.h>
 
 #include <algorithm>
 #include <functional>
@@ -23,7 +23,11 @@
 ///
 /// Remote
 ///
-pwn::linux::ctf::Remote::Remote(_In_ std::wstring const& host, _In_ u16 port) : m_host(host), m_port(port), m_protocol(L"tcp"), m_socket(-1)
+pwn::linux::ctf::Remote::Remote(_In_ std::wstring const& host, _In_ u16 port) :
+    m_host(host),
+    m_port(port),
+    m_protocol(L"tcp"),
+    m_socket(-1)
 {
     if ( !connect() )
     {
@@ -62,7 +66,7 @@ auto
 pwn::linux::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) -> std::vector<u8>
 {
     std::vector<u8> cache_data;
-    size_t idx = 0;
+    size_t idx    = 0;
     bool is_debug = (std::get<0>(pwn::context::get_log_level()) == pwn::log::log_level_t::LOG_DEBUG);
 
     size = MIN(size, PWN_TUBE_PIPE_DEFAULT_SIZE);
@@ -79,7 +83,7 @@ pwn::linux::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAUL
         if ( cache_data.size() >= size )
         {
             dbg(L"recv2 %d bytes\n", cache_data.size());
-            if (is_debug)
+            if ( is_debug )
             {
                 pwn::utils::hexdump(cache_data);
             }
@@ -107,7 +111,7 @@ pwn::linux::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAUL
         {
             network_data.resize(sz);
             dbg(L"recv %d bytes\n", sz);
-            if (is_debug)
+            if ( is_debug )
             {
                 pwn::utils::hexdump(&network_data[0], sz);
             }
@@ -166,8 +170,8 @@ pwn::linux::ctf::Remote::connect() -> bool
 
     sockaddr_in sin = {0};
     sin.sin_family  = AF_INET;
-    sin.sin_port = htons(m_port);
-    inet_pton(AF_INET, pwn::utils::widestring_to_string(m_host).c_str(), &sin.sin_addr.s_addr);
+    sin.sin_port    = htons(m_port);
+    inet_pton(AF_INET, pwn::utils::to_string(m_host).c_str(), &sin.sin_addr.s_addr);
 
     if ( ::connect(m_socket, (struct sockaddr*)&sin, sizeof(sin)) < 0 )
     {

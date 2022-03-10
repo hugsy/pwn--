@@ -1,51 +1,49 @@
-set (PWN_VERSION_MAJOR 0)
-set (PWN_VERSION_MINOR 1)
-set (PWN_VERSION_STR "${PWN_VERSION_MAJOR}.${PWN_VERSION_MINOR}")
+set(PWNLIB_SRC_LIB_DIR ${PWNLIB_SRC_DIR}/pwn++ CACHE INTERNAL "PWNLIB_SRC_LIB_DIR")
+set(PWNLIB_SRC_HDR_DIR ${PWNLIB_SRC_DIR}/inc CACHE INTERNAL "PWNLIB_SRC_HDR_DIR")
 
-include (GenerateExportHeader)
 
-find_program(GIT_EXECUTABLE NAMES git)
-if(GIT_EXECUTABLE)
+#
+# If `git` is found, declare the branch/commit hash for debugging
+#
+find_package(Git)
+if(Git_FOUND)
     execute_process(
         COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
         OUTPUT_VARIABLE GIT_RELEASE_BRANCH
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
     execute_process(
         COMMAND ${GIT_EXECUTABLE} log -n 1 --pretty=format:%t
         OUTPUT_VARIABLE GIT_RELEASE_COMMIT
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
 
     string(STRIP "${GIT_RELEASE_BRANCH}" GIT_RELEASE_BRANCH)
     string(STRIP "${GIT_RELEASE_COMMIT}" GIT_RELEASE_COMMIT)
 
-    if(NOT GIT_RELEASE_BRANCH STREQUAL "master")
-        set (PWN_VERSION_REL "${GIT_RELEASE_BRANCH}:${GIT_RELEASE_COMMIT}")
-        set (PWN_VERSION_STR "${PWN_VERSION_MAJOR}.${PWN_VERSION_MINOR}-${PWN_VERSION_REL}")
-    endif()
-
-endif(GIT_EXECUTABLE)
+    set (PWN_VERSION_REL "${GIT_RELEASE_BRANCH}:${GIT_RELEASE_COMMIT}")
+endif()
 
 
 #
 # Collect all common source files
 #
-set(COMMON_SOURCE_DIR ${PWNLIB_SRC_DIR}/pwn++)
+set(COMMON_SOURCE_DIR ${PWNLIB_SRC_LIB_DIR})
 set(
     COMMON_SOURCE_FILES
+
+    ${COMMON_SOURCE_DIR}/asm.cpp
+    ${COMMON_SOURCE_DIR}/context.cpp
+    ${COMMON_SOURCE_DIR}/crypto.cpp
+    ${COMMON_SOURCE_DIR}/disasm.cpp
     ${COMMON_SOURCE_DIR}/log.cpp
     ${COMMON_SOURCE_DIR}/pwn.cpp
-    ${COMMON_SOURCE_DIR}/context.cpp
-    ${COMMON_SOURCE_DIR}/utils.cpp
-    ${COMMON_SOURCE_DIR}/crypto.cpp
-    ${COMMON_SOURCE_DIR}/asm.cpp
-    ${COMMON_SOURCE_DIR}/disasm.cpp
     ${COMMON_SOURCE_DIR}/tube.cpp
+    ${COMMON_SOURCE_DIR}/utils.cpp
 )
 
 
-set(COMMON_HEADER_DIR ${PWNLIB_SRC_DIR}/inc)
+set(COMMON_HEADER_DIR ${PWNLIB_SRC_HDR_DIR})
 
 
 #
@@ -63,14 +61,19 @@ configure_file(
 #
 set(
     COMMON_HEADER_FILES
-    ${COMMON_HEADER_DIR}/constants.hpp
-    ${COMMON_HEADER_DIR}/common.hpp
-    ${COMMON_HEADER_DIR}/utils.hpp
-    ${COMMON_HEADER_DIR}/handle.hpp
-    ${COMMON_HEADER_DIR}/crypto.hpp
+
+    ${COMMON_HEADER_DIR}/pch.hpp
+    ${COMMON_HEADER_DIR}/pwn_export.hpp
+
     ${COMMON_HEADER_DIR}/asm.hpp
+    ${COMMON_HEADER_DIR}/common.hpp
+    ${COMMON_HEADER_DIR}/constants.hpp
+    ${COMMON_HEADER_DIR}/crypto.hpp
     ${COMMON_HEADER_DIR}/disasm.hpp
+    ${COMMON_HEADER_DIR}/log.hpp
+    ${COMMON_HEADER_DIR}/handle.hpp
     ${COMMON_HEADER_DIR}/tube.hpp
+    ${COMMON_HEADER_DIR}/utils.hpp
 )
 
 
@@ -90,6 +93,16 @@ message(STATUS "CMAKE_SYSTEM_NAME:                 ${CMAKE_SYSTEM_NAME}")
 message(STATUS "INCLUDE_ASSEMBLER:                 ${INCLUDE_ASSEMBLER}")
 message(STATUS "INCLUDE_DISASSEMBLER:              ${INCLUDE_DISASSEMBLER}")
 message(STATUS "DEBUG:                             ${DEBUG}")
+
+
+if(NOT INCLUDE_DISASSEMBLER)
+    add_compile_definitions(PWN_NO_DISASSEMBLER)
+endif()
+
+
+if(NOT INCLUDE_ASSEMBLER)
+    add_compile_definitions(PWN_NO_ASSEMBLER)
+endif()
 
 
 if (WIN32)

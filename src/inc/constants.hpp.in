@@ -1,15 +1,19 @@
 #pragma once
 
+#include "pch.hpp"
 
-#define __PWNLIB_NAME__              L"@PROGNAME@"
-#define __PWNLIB_AUTHOR__            L"@AUTHOR@"
-#define __PWNLIB_LICENSE__           L"@LICENSE@"
-#define __PWNLIB_VERSION_MAJOR__     @PWN_VERSION_MAJOR@
-#define __PWNLIB_VERSION_MINOR__     @PWN_VERSION_MINOR@
-#define __PWNLIB_VERSION__	         L"@PWN_VERSION_STR@"
-#define __PWNLIB_TARGET_ARCH__       L"@CMAKE_SYSTEM_PROCESSOR@"
-#define __PWNLIB_TARGET_OS__         L"@CMAKE_SYSTEM_NAME@"
-#define __PWNLIB_TARGET__            L"@CMAKE_SYSTEM_NAME@" L"/" L"@CMAKE_SYSTEM_PROCESSOR@"
+// clang-format off
+#define __PWNLIB_NAME__                L"@PROJECT_NAME@"
+#define __PWNLIB_AUTHOR__              L"@PROJECT_AUTHOR@"
+#define __PWNLIB_LICENSE__             L"@PROJECT_LICENSE@"
+#define __PWNLIB_VERSION_MAJOR__       @PROJECT_VERSION_MAJOR@
+#define __PWNLIB_VERSION_MINOR__       @PROJECT_VERSION_MINOR@
+#define __PWNLIB_VERSION_PATCH__       @PROJECT_VERSION_PATCH@
+#define __PWNLIB_VERSION_RELEASE__     L"@PWN_VERSION_REL@"
+#define __PWNLIB_VERSION__	           L"@PROJECT_VERSION@"
+#define __PWNLIB_TARGET_ARCH__         L"@CMAKE_SYSTEM_PROCESSOR@"
+#define __PWNLIB_TARGET_OS__           L"@CMAKE_SYSTEM_NAME@"
+#define __PWNLIB_TARGET__              L"@CMAKE_SYSTEM_NAME@" L"/" L"@CMAKE_SYSTEM_PROCESSOR@"
 
 
 #if defined(__linux__)
@@ -19,10 +23,96 @@
 #endif
 
 
-
-#ifndef __x86_64__
-#define __x86_64__
-#endif
-
-
 #cmakedefine PWN_LOG_USE_COLOR@
+
+// clang-format on
+
+
+///
+/// @brief Endianess class definition, with its wstring representation
+///
+enum class Endianess
+{
+    unknown,
+    little,
+    big,
+};
+
+
+///
+/// @brief Architecture class definition, with its wstring representation
+///
+
+enum class ArchitectureIndex
+{
+    unknown,
+    x86,
+    x64,
+    arm,
+    arm_thumb,
+    arm64,
+    mips,
+    mips64,
+};
+
+
+class Architecture
+{
+public:
+    constexpr Architecture() noexcept :
+        m_id(ArchitectureIndex::unknown),
+        m_name(L""),
+        m_ptrsize(0),
+        m_endianess(Endianess::unknown)
+    {
+    }
+
+    constexpr Architecture(ArchitectureIndex id, const std::wstring& name, size_t ptrsize, Endianess endian) noexcept :
+        m_id(id),
+        m_name(name),
+        m_ptrsize(ptrsize),
+        m_endianess(endian)
+    {
+    }
+
+    constexpr const ArchitectureIndex
+    id() const
+    {
+        return m_id;
+    }
+
+    constexpr const std::wstring_view&
+    name() const
+    {
+        return m_name;
+    }
+
+    constexpr size_t
+    ptrsize() const
+    {
+        return m_ptrsize;
+    }
+
+    constexpr Endianess
+    endian() const
+    {
+        return m_endianess;
+    }
+
+private:
+    const ArchitectureIndex m_id;
+    const size_t m_ptrsize;
+    const std::wstring_view m_name;
+    const Endianess m_endianess;
+};
+
+
+const std::array<std::shared_ptr<Architecture>, 7> Architectures = {
+    std::make_shared<Architecture>(ArchitectureIndex::x86, L"x86", 4, Endianess::little),
+    std::make_shared<Architecture>(ArchitectureIndex::x64, L"x86-64", 8, Endianess::little),
+    std::make_shared<Architecture>(ArchitectureIndex::arm, L"ARM", 4, Endianess::little),
+    std::make_shared<Architecture>(ArchitectureIndex::arm_thumb, L"ARM-Thumb", 2, Endianess::little),
+    std::make_shared<Architecture>(ArchitectureIndex::arm64, L"AARCH64", 8, Endianess::little),
+    std::make_shared<Architecture>(ArchitectureIndex::mips, L"MIPS", 4, Endianess::little),
+    std::make_shared<Architecture>(ArchitectureIndex::mips64, L"MIPS64", 8, Endianess::little),
+};

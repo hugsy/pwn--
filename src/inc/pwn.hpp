@@ -70,22 +70,24 @@
 /// namespace pwn::windows::rpc
 #include "rpc.hpp"
 
+*/
 // namespace pwn::backdoor
 #include "backdoor.hpp"
-*/
-
+#include "thread.hpp"
 
 
 ///
 /// Aliasing pwn::ctf to the corresponding OS the lib was build for
 ///
-namespace pwn::win::ctf{}
+namespace pwn::win::ctf
+{
+}
 
 namespace pwn
 {
-    /// `pwn::ctf` -> `pwn::win::ctf` for Windows
-    namespace ctf = win::ctf;
-}
+/// `pwn::ctf` -> `pwn::win::ctf` for Windows
+namespace ctf = win::ctf;
+} // namespace pwn
 
 #include "win32/ctf/remote.hpp"
 
@@ -101,12 +103,14 @@ namespace pwn
 // namespace pwn::linux::system
 #include "linux/system.hpp"
 
-namespace pwn::linux::ctf{}
+namespace pwn::linux::ctf
+{
+}
 namespace pwn
 {
-    /// `pwn::ctf` -> `pwn::linux::ctf` for Linux
-    namespace ctf = linux::ctf;
-}
+/// `pwn::ctf` -> `pwn::linux::ctf` for Linux
+namespace ctf = linux::ctf;
+} // namespace pwn
 
 #include "linux/ctf/remote.hpp"
 #endif
@@ -126,9 +130,34 @@ struct globals_t
     u64 m_seed;
     std::mutex m_console_mutex;
     log::log_level_t log_level = log::log_level_t::LOG_INFO;
+
+    std::shared_ptr<Architecture> architecture;
+    Endianess endianess;
+    usize ptrsize;
+    usize instruction_size;
+
+    globals_t()
+    {
+        m_seed = std::chrono::system_clock::now().time_since_epoch().count();
+        std::srand(m_seed);
+    };
+
+    void
+    set(ArchitectureIndex idx)
+    {
+        architecture = Architectures.at((int)idx);
+        endianess    = architecture->endian();
+        ptrsize      = architecture->ptrsize();
+    }
+
+    void
+    set(Endianess end)
+    {
+        endianess = end;
+    }
 };
 
-extern struct globals_t globals;
+extern PWNAPI struct globals_t globals;
 
 PWNAPI auto
 version() -> const wchar_t*;

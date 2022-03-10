@@ -1,12 +1,12 @@
 #include "tube.hpp"
-#include "pwn.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <iterator>
-#include <algorithm>
 #include <thread>
 
+#include "pwn.hpp"
 #include "utils.hpp"
 using namespace std::literals::chrono_literals;
 
@@ -205,11 +205,11 @@ Tube::interactive()
                     try
                     {
                         auto raw_input = recv(PWN_TUBE_PIPE_DEFAULT_SIZE);
-                        auto input = std::string(raw_input.begin(), raw_input.end());
+                        auto input     = std::string(raw_input.begin(), raw_input.end());
 
                         {
                             std::lock_guard<std::mutex> guard(pwn::globals.m_console_mutex);
-                            std::wcout << pwn::utils::string_to_widestring(input);
+                            std::wcout << pwn::utils::to_widestring(input);
                             std::wcout.flush();
                         }
 
@@ -220,9 +220,9 @@ Tube::interactive()
 
                         std::this_thread::sleep_for(0.1s); // for debug, remove later
                     }
-                    catch (std::exception const& e)
+                    catch ( std::exception const& e )
                     {
-                        err(L"Unexpected exception caught, reason: %s\n", e.what());
+                        err(L"Unexpected exception caught, reason: {}\n", pwn::utils::to_widestring(e.what()));
                         break;
                     }
                 }

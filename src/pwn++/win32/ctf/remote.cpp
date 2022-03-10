@@ -12,18 +12,27 @@
 #include <thread>
 #include <utility>
 
+// clang-format off
+#include "pwn.hpp"
 #include "handle.hpp"
 #include "log.hpp"
 #include "tube.hpp"
 #include "utils.hpp"
+// clang-format on
 
 #pragma comment(lib, "ws2_32.lib")
+
+extern struct pwn::globals_t pwn::globals;
 
 
 ///
 /// Remote
 ///
-pwn::win::ctf::Remote::Remote(_In_ std::wstring const& host, _In_ u16 port) : m_host(host), m_port(port), m_protocol(L"tcp"), m_socket(INVALID_SOCKET)
+pwn::win::ctf::Remote::Remote(_In_ std::wstring const& host, _In_ u16 port) :
+    m_host(host),
+    m_port(port),
+    m_protocol(L"tcp"),
+    m_socket(INVALID_SOCKET)
 {
     if ( !connect() )
     {
@@ -49,7 +58,7 @@ pwn::win::ctf::Remote::__send_internal(_In_ std::vector<u8> const& out) -> size_
     }
 
     dbg(L"sent %d bytes\n", out.size());
-    if ( std::get<0>(pwn::context::get_log_level()) == pwn::log::log_level_t::LOG_DEBUG )
+    if ( pwn::globals.log_level == pwn::log::log_level_t::LOG_DEBUG )
     {
         pwn::utils::hexdump(out);
     }
@@ -78,7 +87,7 @@ pwn::win::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_
         if ( cache_data.size() >= size )
         {
             dbg(L"recv2 %d bytes\n", cache_data.size());
-            if ( std::get<0>(pwn::context::get_log_level()) == pwn::log::log_level_t::LOG_DEBUG )
+            if ( pwn::globals.log_level == pwn::log::log_level_t::LOG_DEBUG )
             {
                 pwn::utils::hexdump(cache_data);
             }
@@ -102,15 +111,14 @@ pwn::win::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_
     else
     {
         size_t sz = cache_data.size() + res;
-        if(sz)
+        if ( sz )
         {
             network_data.resize(sz);
             dbg(L"recv %d bytes\n", sz);
-            if ( std::get<0>(pwn::context::get_log_level()) == pwn::log::log_level_t::LOG_DEBUG )
+            if ( pwn::globals.log_level == pwn::log::log_level_t::LOG_DEBUG )
             {
                 pwn::utils::hexdump(&network_data[0], sz);
             }
-
         }
     }
     return network_data;
@@ -174,7 +182,7 @@ pwn::win::ctf::Remote::connect() -> bool
 
     sockaddr_in sin = {0};
     sin.sin_family  = AF_INET;
-    inet_pton(AF_INET, pwn::utils::widestring_to_string(m_host).c_str(), &sin.sin_addr.s_addr);
+    inet_pton(AF_INET, pwn::utils::to_string(m_host).c_str(), &sin.sin_addr.s_addr);
     sin.sin_port = htons(m_port);
 
     if ( ::connect(m_socket, (SOCKADDR*)&sin, sizeof(sin)) == SOCKET_ERROR )
@@ -224,83 +232,94 @@ pwn::win::ctf::Remote::reconnect() -> bool
 ///
 /// Process
 ///
-    auto
-    pwn::win::ctf::Process::__send_internal(_In_ std::vector<u8> const& out) -> size_t
+auto
+pwn::win::ctf::Process::__send_internal(_In_ std::vector<u8> const& out) -> size_t
+{
+    DWORD dwRead  = 0;
+    auto bSuccess = ::WriteFile(m_ChildPipeStdin, &out[0], out.size() & 0xffffffff, &dwRead, nullptr);
+    if ( bSuccess == 0 )
     {
-        DWORD dwRead  = 0;
-        auto bSuccess = ::WriteFile(m_ChildPipeStdin, &out[0], out.size() & 0xffffffff, &dwRead, nullptr);
-        if ( bSuccess == 0 )
-        {
-            pwn::log::perror(L"ReadFile()");
-        }
-
-        return dwRead;
+        pwn::log::perror(L"ReadFile()");
     }
 
+    return dwRead;
+}
 
-    auto
-    pwn::win::ctf::Process::__recv_internal(_In_ size_t size) -> std::vector<u8>
+
+auto
+pwn::win::ctf::Process::__recv_internal(_In_ size_t size) -> std::vector<u8>
+{
+    DWORD dwRead;
+    std::vector<u8> out;
+
+    size = min(size, PWN_TUBE_PIPE_DEFAULT_SIZE) & 0xffffffff;
+    out.resize(size);
+
+    auto bSuccess = ::ReadFile(m_ChildPipeStdout, &out[0], size & 0xffffffff, &dwRead, nullptr);
+    if ( bSuccess == 0 )
     {
-        DWORD dwRead;
-        std::vector<u8> out;
-
-        size = min(size, PWN_TUBE_PIPE_DEFAULT_SIZE) & 0xffffffff;
-        out.resize(size);
-
-        auto bSuccess = ::ReadFile(m_ChildPipeStdout, &out[0], size & 0xffffffff, &dwRead, nullptr);
-        if ( bSuccess == 0 )
-        {
-            pwn::log::perror(L"ReadFile()");
-        }
-
-        return out;
+        pwn::log::perror(L"ReadFile()");
     }
 
+    return out;
+}
 
-    auto
-    pwn::win::ctf::Process::__peek_internal() -> size_t
+
+auto
+pwn::win::ctf::Process::__peek_internal() -> size_t
+{
+    throw std::exception("not implemented");
+}
+
+
+auto
+pwn::win::ctf::Process::create_pipes() -> bool
+{
+    SECURITY_ATTRIBUTES sa  = {0};
+    sa.nLength              = sizeof(SECURITY_ATTRIBUTES);
+    sa.bInheritHandle       = 1;
+    sa.lpSecurityDescriptor = nullptr;
+
+    return (CreatePipe(&m_ParentStdin, &m_ChildPipeStdin, &sa, 0) != 0) &&
+           (CreatePipe(&m_ParentStdout, &m_ChildPipeStdout, &sa, 0) != 0) &&
+           (SetHandleInformation(m_ChildPipeStdout, HANDLE_FLAG_INHERIT, 0) != 0);
+}
+
+
+auto
+pwn::win::ctf::Process::spawn_process() -> bool
+{
+    if ( !create_pipes() )
     {
-        throw std::exception("not implemented");
-    }
-
-
-    auto
-    pwn::win::ctf::Process::create_pipes() -> bool
-    {
-        SECURITY_ATTRIBUTES sa  = {0};
-        sa.nLength              = sizeof(SECURITY_ATTRIBUTES);
-        sa.bInheritHandle       = 1;
-        sa.lpSecurityDescriptor = nullptr;
-
-        return (CreatePipe(&m_ParentStdin, &m_ChildPipeStdin, &sa, 0) != 0) && (CreatePipe(&m_ParentStdout, &m_ChildPipeStdout, &sa, 0) != 0) && (SetHandleInformation(m_ChildPipeStdout, HANDLE_FLAG_INHERIT, 0) != 0);
-    }
-
-
-    auto
-    pwn::win::ctf::Process::spawn_process() -> bool
-    {
-        if ( !create_pipes() )
-        {
-            err(L"failed to create pipes\n");
-            return false;
-        }
-
-        STARTUPINFO si         = {0};
-        PROCESS_INFORMATION pi = {nullptr};
-
-        si.cb         = sizeof(STARTUPINFO);
-        si.hStdError  = m_ChildPipeStdout;
-        si.hStdOutput = m_ChildPipeStdout;
-        si.hStdInput  = m_ChildPipeStdin;
-        si.dwFlags |= STARTF_USESTDHANDLES;
-
-        if ( ::CreateProcessW(nullptr, m_commandline.data(), nullptr, nullptr, 1, 0, nullptr, nullptr, reinterpret_cast<LPSTARTUPINFOW>(&si), reinterpret_cast<LPPROCESS_INFORMATION>(&pi)) != 0 )
-        {
-            //m_hProcess = pwn::utils::GenericHandle(pi.hProcess);
-            ::CloseHandle(pi.hThread);
-            return true;
-        }
-
+        err(L"failed to create pipes\n");
         return false;
     }
 
+    STARTUPINFO si         = {0};
+    PROCESS_INFORMATION pi = {nullptr};
+
+    si.cb         = sizeof(STARTUPINFO);
+    si.hStdError  = m_ChildPipeStdout;
+    si.hStdOutput = m_ChildPipeStdout;
+    si.hStdInput  = m_ChildPipeStdin;
+    si.dwFlags |= STARTF_USESTDHANDLES;
+
+    if ( ::CreateProcessW(
+             nullptr,
+             m_commandline.data(),
+             nullptr,
+             nullptr,
+             1,
+             0,
+             nullptr,
+             nullptr,
+             reinterpret_cast<LPSTARTUPINFOW>(&si),
+             reinterpret_cast<LPPROCESS_INFORMATION>(&pi)) != 0 )
+    {
+        // m_hProcess = pwn::utils::GenericHandle(pi.hProcess);
+        ::CloseHandle(pi.hThread);
+        return true;
+    }
+
+    return false;
+}

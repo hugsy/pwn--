@@ -1,7 +1,7 @@
 #include "pwn.hpp"
 
 
-struct pwn::globals_t pwn::globals;
+PWNAPI struct pwn::globals_t pwn::globals;
 
 auto
 pwn::version() -> const wchar_t*
@@ -16,5 +16,3 @@ pwn::version_info() -> const std::tuple<u16, u16>
     const std::tuple<u16, u16> out(__PWNLIB_VERSION_MAJOR__, __PWNLIB_VERSION_MINOR__);
     return out;
 }
-
-

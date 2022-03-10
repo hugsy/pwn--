@@ -1,8 +1,8 @@
 #include "win32/thread.hpp"
 
 #include "handle.hpp"
+#include "log.hpp"
 #include "utils.hpp"
-
 
 _Success_(return != std::nullopt)
 auto
