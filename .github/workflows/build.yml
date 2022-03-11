@@ -57,7 +57,7 @@ jobs:
       run: |
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
 
-    - name: Build libpwn++.so
+    - name: Prepare Linux environment
       if: matrix.os == 'ubuntu-latest'
       shell: bash
       run: |
