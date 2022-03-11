@@ -1,7 +1,13 @@
 name: "Discord Notification"
-on: [push, pull_request, issues]
+
+on:  
+  issues:
+  push:
+    branches:
+      - main
 env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+
 
 jobs:
   notify:
