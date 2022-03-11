@@ -3,7 +3,7 @@
 
 | View | Code | Build | Talk |
 |:---:|:---:|:---:|:---:|
-| [![Read code](https://img.shields.io/badge/Code-Read%20pwn++-brightgreen?logo=visualstudiocode)](https://github.dev/hugsy/pwn--) | [![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/hugsy/pwn--) | [![CI - MSVC](https://github.com/hugsy/pwn--/workflows/CI%20Build%20for%20MSVC/badge.svg)](https://github.com/hugsy/pwn--/actions?query=workflow%3A%22CI+Build+for+MSVC%22) | [![Discord](https://img.shields.io/badge/Discord-pwn%2b%2b-purple)](https://discord.gg/5HmwPxy3HP) |
+| [![Read code](https://img.shields.io/badge/Code-Read%20pwn++-brightgreen?logo=visualstudiocode)](https://github.dev/hugsy/pwn--) | [![Open in Visual Studio Code](https://img.shields.io/static/v1?logo=visualstudiocode&label=&message=Open%20in%20VSCode&labelColor=2c2c32&color=007acc&logoColor=007acc)](https://open.vscode.dev/hugsy/pwn--) | [![CI - MSVC](https://github.com/hugsy/pwn--/workflows/CI%20Build%20for%20MSVC/badge.svg)](https://github.com/hugsy/pwn--/actions?query=workflow%3A%22CI+Build+for+MSVC%22) | [![Discord](https://img.shields.io/badge/Discord-pwn%2b%2b-purple)](https://discord.gg/5HmwPxy3HP) |
 
 
 A (bad) C++17 rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL, battery-included pwn kit for Windows.
