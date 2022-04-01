@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <type_traits>
 #include <variant>
 
 #include "common.hpp"
@@ -110,6 +111,73 @@ hexdump(_In_ const u8* Buffer, _In_ size_t BufferSize);
 PWNAPI void
 hexdump(_In_ const std::vector<u8>& bytes);
 
-PWNAPI void
+
+///
+/// @brief Pause the execution
+///
+void PWNAPI
 pause();
+
+
+///
+/// @brief Const-Expr representation of bitmasks
+///
+/// @tparam T
+/// @tparam std::enable_if<std::is_enum<T>::value>::type
+///
+template<typename T, typename = typename std::enable_if<std::is_enum<T>::value>::type>
+class BitMask
+{
+    using N = typename std::underlying_type<T>::type;
+
+    static constexpr N
+    get(T a)
+    {
+        return static_cast<N>(a);
+    }
+
+    explicit constexpr BitMask(N a) : m_val(a)
+    {
+    }
+
+public:
+    constexpr BitMask() : m_val(0)
+    {
+    }
+
+    constexpr BitMask(T a) : m_val(get(a))
+    {
+    }
+
+    constexpr BitMask
+    operator|(T t)
+    {
+        return BitMask(m_val | get(t));
+    }
+
+    constexpr bool
+    operator&(T t)
+    {
+        return m_val & get(t);
+    }
+
+    constexpr N const
+    get() const
+    {
+        return m_val;
+    }
+
+private:
+    N m_val = 0;
+};
+
+
+template<class T, typename = typename std::enable_if<std::is_enum<T>::value>::type>
+constexpr BitMask<T>
+operator|(T lhs, T rhs)
+{
+    return BitMask<T> {lhs} | rhs;
+}
+
+
 } // namespace pwn::utils

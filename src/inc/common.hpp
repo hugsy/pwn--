@@ -43,31 +43,47 @@ using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 
-#ifdef __PWNLIB_WINDOWS_BUILD__
-
-// todo: port to linux too
-template<typename M, typename P>
-auto
-LoadModuleOrThrow(M hMod, P lpszProcName)
+namespace
 {
-    auto address = ::GetProcAddress(hMod, lpszProcName);
-    if ( !address )
-    {
-        throw std::exception((std::string("Error importing: ") + std::string(lpszProcName)).c_str());
-    }
-    return address;
+auto static inline __LoadLibraryWrapper(wchar_t const* name)
+{
+#if defined(__PWNLIB_WINDOWS_BUILD__)
+    return ::LoadLibraryW(name);
+#elif defined(__PWNLIB_LINUX_BUILD__)
+    return dlopen(name, RTLD_LAZY);
+#else
+#error "invalid os"
+#endif
 }
 
 
-// todo: samesies
-#define IMPORT_EXTERNAL_FUNCTION(DLLFILE, FUNCNAME, RETTYPE, ...)                                                      \
-    typedef RETTYPE(WINAPI* CONCAT(t_, FUNCNAME))(__VA_ARGS__);                                                        \
-    template<typename... Ts>                                                                                           \
-    auto FUNCNAME(Ts... ts)                                                                                            \
-    {                                                                                                                  \
-        const static CONCAT(t_, FUNCNAME) func =                                                                       \
-            (CONCAT(t_, FUNCNAME))LoadModuleOrThrow((LoadLibraryW(DLLFILE), GetModuleHandleW(DLLFILE)), #FUNCNAME);    \
-        return func(std::forward<Ts>(ts)...);                                                                          \
-    }
-
+template<typename M>
+auto inline __GetProcAddrWrapper(M hMod, std::string_view const& lpszProcName)
+{
+#if defined(__PWNLIB_WINDOWS_BUILD__)
+    auto address = ::GetProcAddress(hMod, lpszProcName.data());
+#elif defined(__PWNLIB_LINUX_BUILD__)
+    auto address = dlsym(hMod, lpszProcName.data());
+#else
+#error "invalid os"
 #endif
+    if ( !address )
+    {
+        std::stringstream ss;
+        ss << "Error importing '" << lpszProcName << "'";
+        throw std::runtime_error(ss.str());
+    }
+    return address;
+}
+} // namespace
+
+
+#define IMPORT_EXTERNAL_FUNCTION(Dll, Func, Ret, ...)                                                                  \
+    typedef Ret(NTAPI* CONCAT(pwnFn_, Func))(__VA_ARGS__);                                                             \
+                                                                                                                       \
+    template<typename... Ts>                                                                                           \
+    auto Func(Ts... ts)->Ret                                                                                           \
+    {                                                                                                                  \
+        auto __func = (pwnFn_##Func)__GetProcAddrWrapper(__LoadLibraryWrapper(Dll), STR(Func));                        \
+        return __func(std::forward<Ts>(ts)...);                                                                        \
+    }

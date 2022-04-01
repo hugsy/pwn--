@@ -1,8 +1,8 @@
 # pwn++
 
 
-| View | Code | Build | Talk |
-|:---:|:---:|:---:|:---:|
+|                                                               View                                                               |                                                                                                      Code                                                                                                      |                                                                                    Build                                                                                    |                                                Talk                                                |
+| :------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------: |
 | [![Read code](https://img.shields.io/badge/Code-Read%20pwn++-brightgreen?logo=visualstudiocode)](https://github.dev/hugsy/pwn--) | [![Open in Visual Studio Code](https://img.shields.io/static/v1?logo=visualstudiocode&label=&message=Open%20in%20VSCode&labelColor=2c2c32&color=007acc&logoColor=007acc)](https://open.vscode.dev/hugsy/pwn--) | [![CI - MSVC](https://github.com/hugsy/pwn--/workflows/CI%20Build%20for%20MSVC/badge.svg)](https://github.com/hugsy/pwn--/actions?query=workflow%3A%22CI+Build+for+MSVC%22) | [![Discord](https://img.shields.io/badge/Discord-pwn%2b%2b-purple)](https://discord.gg/5HmwPxy3HP) |
 
 
@@ -24,9 +24,9 @@ _Note_: the original `PwnLib` was written around Windows 7 for feature testing. 
 
 
 ### Linux
- 
+
   - None (AFAIK)
-  
+
 
 ## Get started
 
@@ -70,19 +70,19 @@ Basic examples of what the lib offers:
 namespace ctx = pwn::context;
 auto wmain() -> int
 {
-	auto version = pwn::version_info();
-	ok(L"running pwn++ v%d.%02d\n", std::get<0>(version), std::get<1>(version));
+    auto version = pwn::version_info();
+    ok(L"running pwn++ v%d.%02d\n", std::get<0>(version), std::get<1>(version));
 
-	ctx::set_arch(pwn::context::arch_t::x64);
+    ctx::set_arch(pwn::context::arch_t::x64);
 
-	dbg(L"The default log_level is INFO, this message will never appear!\n");
-	ctx::set_log_level(pwn::log::log_level_t::LOG_DEBUG);
-	dbg(L"Now it will!\n");
+    dbg(L"The default log_level is INFO, this message will never appear!\n");
+    ctx::set_log_level(pwn::log::log_level_t::LOG_DEBUG);
+    dbg(L"Now it will!\n");
 
-	ok(L"Everything is awesome!\n");
-	warn(L"Alright, stop! Collaborate and listen...\n");
-	err(L"Can't touch this!\n");
-	return 0;
+    ok(L"Everything is awesome!\n");
+    warn(L"Alright, stop! Collaborate and listen...\n");
+    err(L"Can't touch this!\n");
+    return 0;
 }
 ```
 
@@ -107,17 +107,17 @@ PS C:\Users\User> .\test.exe
 #include <pwn++\pwn.h>
 int wmain()
 {
-	std::vector<BYTE> buf;
+    std::vector<BYTE> buf;
 
-	ok(L"pwntools.utils.cyclic() with a period of 4, and a length of 0x20 bytes\n");
-	if ( pwn::utils::cyclic(0x20, 4, buf) )
-		pwn::utils::hexdump(buf);
+    ok(L"pwntools.utils.cyclic() with a period of 4, and a length of 0x20 bytes\n");
+    if ( pwn::utils::cyclic(0x20, 4, buf) )
+        pwn::utils::hexdump(buf);
 
-	ok(L"nice, now with period=sizeof(PTR)\n");
-	if ( pwn::utils::cyclic(0x30, buf) )
-		pwn::utils::hexdump(buf);
+    ok(L"nice, now with period=sizeof(PTR)\n");
+    if ( pwn::utils::cyclic(0x30, buf) )
+        pwn::utils::hexdump(buf);
 
-	return 0;
+    return 0;
 }
 ```
 
@@ -141,23 +141,23 @@ using namespace pwn::utils;
 
 int wmain()
 {
-	std::string a("AAAA");
-	std::wstring b(L"BBBB");
+    std::string a("AAAA");
+    std::wstring b(L"BBBB");
 
-	auto args = std::vector<flattenable_t>{
-		a,
-		"AAAA",
-		b,
-		L"BBBB",
-		p8(0x43),
-		p8(0x43),
-		p16(0x4343),
-		p32(0x43434343),
-		p64(0x4444444444444444)
-	};
+    auto args = std::vector<flattenable_t>{
+        a,
+        "AAAA",
+        b,
+        L"BBBB",
+        p8(0x43),
+        p8(0x43),
+        p16(0x4343),
+        p32(0x43434343),
+        p64(0x4444444444444444)
+    };
 
-	hexdump( flatten(args) );
-	return 0;
+    hexdump( flatten(args) );
+    return 0;
 }
 ```
 
@@ -173,14 +173,14 @@ int wmain()
 #include <pwn++\pwn.h>
 int wmain()
 {
-	ok(L"random::byte=%x\n", pwn::utils::random::byte());
-	ok(L"random::word=%x\n", pwn::utils::random::word());
-	ok(L"random::dword=%x\n", pwn::utils::random::dword());
-	ok(L"random::qword=%x\n", pwn::utils::random::qword());
-	pwn::utils::hexdump(pwn::utils::random::buffer(16));
-	ok(L"random::string=%s\n", pwn::utils::random::string(16).c_str());
-	ok(L"random::alnum=%s\n", pwn::utils::random::alnum(16).c_str());
-	return 0;
+    ok(L"random::byte=%x\n", pwn::utils::random::byte());
+    ok(L"random::word=%x\n", pwn::utils::random::word());
+    ok(L"random::dword=%x\n", pwn::utils::random::dword());
+    ok(L"random::qword=%x\n", pwn::utils::random::qword());
+    pwn::utils::hexdump(pwn::utils::random::buffer(16));
+    ok(L"random::string=%s\n", pwn::utils::random::string(16).c_str());
+    ok(L"random::alnum=%s\n", pwn::utils::random::alnum(16).c_str());
+    return 0;
 }
 ```
 
@@ -190,13 +190,13 @@ int wmain()
 #include <pwn++\pwn.h>
 int wmain()
 {
-	info(L"computer_name=%s\n", pwn::system::name().c_str());
-	info(L"pagesize=0x%x\n", pwn::system::pagesize());
-	info(L"pid=%d\n", pwn::process::pid());
-	info(L"ppid=%d\n", pwn::process::ppid());
-	info(L"pidof('explorer.exe')=%d\n", pwn::system::pidof(std::wstring(L"explorer.exe"));
-	info(L"nb_cores=%ld\n", pwn::cpu::nb_cores());
-	return 0;
+    info(L"computer_name=%s\n", pwn::system::name().c_str());
+    info(L"pagesize=0x%x\n", pwn::system::pagesize());
+    info(L"pid=%d\n", pwn::process::pid());
+    info(L"ppid=%d\n", pwn::process::ppid());
+    info(L"pidof('explorer.exe')=%d\n", pwn::system::pidof(std::wstring(L"explorer.exe"));
+    info(L"nb_cores=%ld\n", pwn::cpu::nb_cores());
+    return 0;
 }
 ```
 
@@ -210,12 +210,12 @@ Powered by [capstone-engine](http://www.capstone-engine.org/)
 #include <pwn++\pwn.h>
 int wmain()
 {
-	const uint8_t* code = "\x90\x48\x31\xc0\xcc\xc3";
-	std::vector<pwn::disasm::insn_t> insns;
-	pwn::disasm::x64(code, ::strlen(code), insns);
-	for (auto insn : insns)
-		ok(L"0x%08x:\t%s\t\t%s\n", insn.address, insn.mnemonic.c_str(), insn.operands.c_str());
-	return 0;
+    const uint8_t* code = "\x90\x48\x31\xc0\xcc\xc3";
+    std::vector<pwn::disasm::insn_t> insns;
+    pwn::disasm::x64(code, ::strlen(code), insns);
+    for (auto insn : insns)
+        ok(L"0x%08x:\t%s\t\t%s\n", insn.address, insn.mnemonic.c_str(), insn.operands.c_str());
+    return 0;
 }
 ```
 
@@ -236,11 +236,11 @@ Powered by [keystone-engine](http://www.keystone-engine.org/)
 #include <pwn++\pwn.h>
 int wmain()
 {
-	const uint8_t code[] = "xor rax, rax; inc rax; nop; ret";
-	std::vector<BYTE> bytes;
-	pwn::assm::x64(code, ::strlen(code), bytes);
-	pwn::utils::hexdump(bytes);
-	return 0;
+    const uint8_t code[] = "xor rax, rax; inc rax; nop; ret";
+    std::vector<BYTE> bytes;
+    pwn::assm::x64(code, ::strlen(code), bytes);
+    pwn::utils::hexdump(bytes);
+    return 0;
 }
 ```
 
@@ -257,8 +257,8 @@ Outputs
 #include <pwn++\pwn.h>
 void wmain()
 {
-	info(L"peb() is at %p\n", pwn::process::peb());
-	info(L"teb() is at %p\n", pwn::process::teb());
+    info(L"peb() is at %p\n", pwn::process::peb());
+    info(L"teb() is at %p\n", pwn::process::teb());
 }
 ```
 
@@ -270,7 +270,7 @@ Via `pwn::process::execv()`, basic wrapper over `::CreateProcess()`
 #include <pwn++\pwn.h>
 int wmain()
 {
-	return pwn::process::execv(L"cmd.exe") == TRUE;
+    return pwn::process::execv(L"cmd.exe") == TRUE;
 }
 ```
 
@@ -280,8 +280,8 @@ Or `ShellExecute` style:
 #include <pwn++\pwn.h>
 int wmain()
 {
-	pwn::process::system(L"ms-settings:");
-	return 0;
+    pwn::process::system(L"ms-settings:");
+    return 0;
 }
 ```
 
@@ -293,15 +293,15 @@ Cheap way to spawn a `NT AUTHORITY\SYSTEM` process from Admin prompt
 #include <pwn++\pwn.h>
 int wmain()
 {
-	auto ppid = pwn::system::pidof(L"winlogon.exe");
-	info(L"found winlogon pid=%lu\n", ppid);
-	auto hProcess = pwn::process::execv(L"cmd.exe", ppid);
-	if(hProcess)
-	{
-		auto h = pwn::utils::GenericHandle(hProcess.value());
-		::WaitForSingleObject(h.get(), INFINITE);
-	}
-	return 0;
+    auto ppid = pwn::system::pidof(L"winlogon.exe");
+    info(L"found winlogon pid=%lu\n", ppid);
+    auto hProcess = pwn::process::execv(L"cmd.exe", ppid);
+    if(hProcess)
+    {
+        auto h = pwn::utils::GenericHandle(hProcess.value());
+        ::WaitForSingleObject(h.get(), INFINITE);
+    }
+    return 0;
 }
 ```
 
@@ -327,13 +327,13 @@ nt authority\system
 #include <pwn++\pwn.h>
 int wmain()
 {
-	auto hProcess = pwn::process::execv(L"notepad.exe hello.txt");
-	if ( hProcess )
-	{
-		auto h = pwn::utils::GenericHandle(hProcess.value());
-		::Sleep(5*1000);
-		pwn::process::kill(h.get());
-	}
+    auto hProcess = pwn::process::execv(L"notepad.exe hello.txt");
+    if ( hProcess )
+    {
+        auto h = pwn::utils::GenericHandle(hProcess.value());
+        ::Sleep(5*1000);
+        pwn::process::kill(h.get());
+    }
 }
 ```
 
@@ -343,10 +343,10 @@ int wmain()
 #include <pwn++\pwn.h>
 void wmain()
 {
-	auto pid = pwn::system::pidof(L"explorer.exe");
-	ok(L"is_elevated: %s\n", BOOL_AS_STR(pwn::process::is_elevated(pid)));
-	ok(L"has_privilege(SeDebugPrivilege): %s\n", BOOL_AS_STR(pwn::process::has_privilege(L"SeDebugPrivilege", pid)));
-	ok(L"has_privilege(SeChangeNotifyPrivilege): %s\n", BOOL_AS_STR(pwn::process::has_privilege(L"SeChangeNotifyPrivilege", pid)));
+    auto pid = pwn::system::pidof(L"explorer.exe");
+    ok(L"is_elevated: %s\n", BOOL_AS_STR(pwn::process::is_elevated(pid)));
+    ok(L"has_privilege(SeDebugPrivilege): %s\n", BOOL_AS_STR(pwn::process::has_privilege(L"SeDebugPrivilege", pid)));
+    ok(L"has_privilege(SeChangeNotifyPrivilege): %s\n", BOOL_AS_STR(pwn::process::has_privilege(L"SeChangeNotifyPrivilege", pid)));
 }
 ```
 
@@ -357,11 +357,11 @@ void wmain()
 #include <pwn++\pwn.h>
 void wmain()
 {
-	auto integrity = pwn::process::get_integrity_level();
-	if ( integrity )
-		ok(L"integrity set to '%s'\n", integrity.value().c_str());
-	else
-		perror(L"pwn::process::get_integrity_level()");
+    auto integrity = pwn::process::get_integrity_level();
+    if ( integrity )
+        ok(L"integrity set to '%s'\n", integrity.value().c_str());
+    else
+        perror(L"pwn::process::get_integrity_level()");
 }
 ```
 
@@ -373,25 +373,25 @@ void wmain()
 
 void wmain()
 {
-	/// against a specific process
-	auto peb_loc = (ULONG_PTR)pwn::process::peb();
-	auto peb_cnt = pwn::process::mem::read(peb_loc, 0x10);
-	pwn::utils::hexdump(peb_cnt);
-	std::vector<BYTE> new_peb = { 0x13, 0x37, 0x13, 0x37 };
-	pwn::process::mem::write(peb_loc, new_peb);
-	peb_cnt = pwn::process::mem::read(peb_loc, 0x10);
-	pwn::utils::hexdump(peb_cnt);
+    /// against a specific process
+    auto peb_loc = (ULONG_PTR)pwn::process::peb();
+    auto peb_cnt = pwn::process::mem::read(peb_loc, 0x10);
+    pwn::utils::hexdump(peb_cnt);
+    std::vector<BYTE> new_peb = { 0x13, 0x37, 0x13, 0x37 };
+    pwn::process::mem::write(peb_loc, new_peb);
+    peb_cnt = pwn::process::mem::read(peb_loc, 0x10);
+    pwn::utils::hexdump(peb_cnt);
 
-	/// or on this process
-	auto p = pwn::process::mem::alloc(0x100, L"rwx");
-	ok(L"allocated(rwx) at %p\n", p);
-	pwn::process::mem::free(p);
-	p = pwn::process::mem::alloc(0x100, L"rx");
-	ok(L"allocated(rx) at %p\n", p);
-	pwn::process::mem::free(p);
-	p = pwn::process::mem::alloc(0x100, L"rw");
-	ok(L"allocated(rw) at %p\n", p);
-	pwn::process::mem::free(p);
+    /// or on this process
+    auto p = pwn::process::mem::alloc(0x100, L"rwx");
+    ok(L"allocated(rwx) at %p\n", p);
+    pwn::process::mem::free(p);
+    p = pwn::process::mem::alloc(0x100, L"rx");
+    ok(L"allocated(rx) at %p\n", p);
+    pwn::process::mem::free(p);
+    p = pwn::process::mem::alloc(0x100, L"rw");
+    ok(L"allocated(rw) at %p\n", p);
+    pwn::process::mem::free(p);
 }
 ```
 
@@ -419,23 +419,23 @@ Also supports capabilities, see [`AppContainMe`](/AppContainMe) for a better exa
 
 void wmain()
 {
-	/// create a notepad process and add it to an anonymous job
-	HANDLE hProcess;
-	auto ppid = pwn::process::ppid();
-	if( pwn::process::execv(L"notepad.exe", ppid, &hProcess) )
-	{
-		auto hp = pwn::utils::GenericHandle(hProcess);
+    /// create a notepad process and add it to an anonymous job
+    HANDLE hProcess;
+    auto ppid = pwn::process::ppid();
+    if( pwn::process::execv(L"notepad.exe", ppid, &hProcess) )
+    {
+        auto hp = pwn::utils::GenericHandle(hProcess);
 
-		auto hJob = pwn::utils::GenericHandle( pwn::job::create() );
-		if( hJob )
-		{
-			auto pid = pwn::system::pid(hp.Get());
-			pwn::job::add_process(hJob, pid);
-			::WaitForSingleObject(hp.Get(), INFINITE);
-		}
+        auto hJob = pwn::utils::GenericHandle( pwn::job::create() );
+        if( hJob )
+        {
+            auto pid = pwn::system::pid(hp.Get());
+            pwn::job::add_process(hJob, pid);
+            ::WaitForSingleObject(hp.Get(), INFINITE);
+        }
 
-		// pwn::job::close(hJob); // not necessary because of RAII
-	}
+        // pwn::job::close(hJob); // not necessary because of RAII
+    }
 }
 ```
 
@@ -446,32 +446,32 @@ void wmain()
 
 void wmain()
 {
-	/// dword value
-	{
-	std::wstring sub_key(L"Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon");
-	std::wstring reg_dword(L"FirstLogon");
-	DWORD value = -1;
-	if ( pwn::reg::read_dword(pwn::reg::hkcu(), sub_key, reg_dword, &value) == ERROR_SUCCESS )
-		ok(L"FirstLogon=%d\n", value);
-	}
+    /// dword value
+    {
+    std::wstring sub_key(L"Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon");
+    std::wstring reg_dword(L"FirstLogon");
+    DWORD value = -1;
+    if ( pwn::reg::read_dword(pwn::reg::hkcu(), sub_key, reg_dword, &value) == ERROR_SUCCESS )
+        ok(L"FirstLogon=%d\n", value);
+    }
 
-	/// string value
-	{
-		std::wstring sub_key(L"SYSTEM\\Software\\Microsoft");
-		std::wstring reg_sz(L"BuildLab");
-		std::wstring BuildLab;
-		if ( pwn::reg::read_wstring(pwn::reg::hklm(), sub_key, reg_sz, BuildLab) == ERROR_SUCCESS )
-			ok(L"BuildLab=%s\n", BuildLab.c_str());
-	}
+    /// string value
+    {
+        std::wstring sub_key(L"SYSTEM\\Software\\Microsoft");
+        std::wstring reg_sz(L"BuildLab");
+        std::wstring BuildLab;
+        if ( pwn::reg::read_wstring(pwn::reg::hklm(), sub_key, reg_sz, BuildLab) == ERROR_SUCCESS )
+            ok(L"BuildLab=%s\n", BuildLab.c_str());
+    }
 
-	/// binary value
-	{
-		std::wstring sub_key(L"SYSTEM\\RNG");
-		std::wstring reg_sz(L"Seed");
-		std::vector<BYTE> Seed;
-		if ( pwn::reg::read_binary(pwn::reg::hklm(), sub_key, reg_sz, Seed) == ERROR_SUCCESS )
-			pwn::utils::hexdump(Seed);
-	}
+    /// binary value
+    {
+        std::wstring sub_key(L"SYSTEM\\RNG");
+        std::wstring reg_sz(L"Seed");
+        std::vector<BYTE> Seed;
+        if ( pwn::reg::read_binary(pwn::reg::hklm(), sub_key, reg_sz, Seed) == ERROR_SUCCESS )
+            pwn::utils::hexdump(Seed);
+    }
 ```
 
 
@@ -485,12 +485,12 @@ void wmain()
 
 void wmain()
 {
-	for ( auto& p : pwn::process::list() )
-	{
-		std::wstring integrity;
-		pwn::process::get_integrity_level(p.pid, integrity);
-		ok(L"%d -> %s (i=%s)\n", p.pid, p.name.c_str(), integrity.c_str());
-	}
+    for ( auto& p : pwn::process::list() )
+    {
+        std::wstring integrity;
+        pwn::process::get_integrity_level(p.pid, integrity);
+        ok(L"%d -> %s (i=%s)\n", p.pid, p.name.c_str(), integrity.c_str());
+    }
 }
 ```
 
@@ -506,12 +506,12 @@ Namespace: `pwn::kernel`
 
 void wmain()
 {
-	for ( auto& mod : pwn::kernel::modules() )
-	{
-		auto name = std::get<0>(mod);
-		auto addr = std::get<1>(mod);
-		ok(L"%s -> %p\n", name.c_str(), addr);
-	}
+    for ( auto& mod : pwn::kernel::modules() )
+    {
+        auto name = std::get<0>(mod);
+        auto addr = std::get<1>(mod);
+        ok(L"%s -> %p\n", name.c_str(), addr);
+    }
 }
 ```
 
@@ -522,14 +522,14 @@ void wmain()
 
 void wmain()
 {
-	auto out = pwn::kernel::shellcode::steal_system_token();
-	ok(L"compiled sc:\n");
-	pwn::utils::hexdump(out);
-	auto mem = pwn::process::mem::alloc(0x1000, L"rwx");
-	ok(L"allocated %p\n", mem);
-	pwn::process::mem::write(mem, out);
-	ok(L"written sc at %p\n", mem);
-	pwn::process::mem::free(mem);
+    auto out = pwn::kernel::shellcode::steal_system_token();
+    ok(L"compiled sc:\n");
+    pwn::utils::hexdump(out);
+    auto mem = pwn::process::mem::alloc(0x1000, L"rwx");
+    ok(L"allocated %p\n", mem);
+    pwn::process::mem::write(mem, out);
+    ok(L"written sc at %p\n", mem);
+    pwn::process::mem::free(mem);
 }
 ```
 
@@ -545,15 +545,15 @@ Namespace: `pwn::windows::service`
 
 void wmain()
 {
-	for ( auto service : pwn::service::list() )
-	{
-		ok(L"Name='%s' Display='%s' Type=%d Status=%d\n",
-			service.Name.c_str(),
-			service.DisplayName.c_str(),
-			service.Type,
-			service.Status
-		);
-	}
+    for ( auto service : pwn::service::list() )
+    {
+        ok(L"Name='%s' Display='%s' Type=%d Status=%d\n",
+            service.Name.c_str(),
+            service.DisplayName.c_str(),
+            service.Type,
+            service.Status
+        );
+    }
 }
 ```
 
@@ -570,16 +570,16 @@ Namespace: `pwn::windows::alpc`
 
 void wmain()
 {
-	auto server = pwn::utils::GenericHandle(
-		pwn::windows::alpc::server::listen(L"\\RPC Control\\lotzofun")
-	);
+    auto server = pwn::utils::GenericHandle(
+        pwn::windows::alpc::server::listen(L"\\RPC Control\\lotzofun")
+    );
 
-	if ( server )
-	{
-		ok(L"server created port (handle=%p)\n", server.Get());
-		auto recv = pwn::windows::alpc::send_and_receive(server.Get());
-		// pwn::windows::alpc::close(server); // not necessary because of RAII
-	}
+    if ( server )
+    {
+        ok(L"server created port (handle=%p)\n", server.Get());
+        auto recv = pwn::windows::alpc::send_and_receive(server.Get());
+        // pwn::windows::alpc::close(server); // not necessary because of RAII
+    }
 }
 ```
 
@@ -591,16 +591,16 @@ void wmain()
 
 void wmain()
 {
-	auto client = pwn::utils::GenericHandle(
-		pwn::windows::alpc::client::connect(L"\\RPC Control\\lotzofun")
-	);
+    auto client = pwn::utils::GenericHandle(
+        pwn::windows::alpc::client::connect(L"\\RPC Control\\lotzofun")
+    );
 
-	if ( client )
-	{
-		ok(L"client connected to epmapper (handle=%p)\n", client.Get());
-		pwn::windows::alpc::send_and_receive(client, { 0x41, 0x41, 0x41, 0x41 });
-		// pwn::windows::alpc::close(client); // not necessary because of RAII
-	}
+    if ( client )
+    {
+        ok(L"client connected to epmapper (handle=%p)\n", client.Get());
+        pwn::windows::alpc::send_and_receive(client, { 0x41, 0x41, 0x41, 0x41 });
+        // pwn::windows::alpc::close(client); // not necessary because of RAII
+    }
 }
 ```
 
@@ -635,13 +635,13 @@ Temporary
 #include <pwn++\pwn.h>
 auto wmain() -> int
 {
-	try
-	{
-		auto d = pwn::fs::make_tmpdir()
-		ok(L"created temp dir %s\n", d);
-	}
-	catch(...){}
-	return 0;
+    try
+    {
+        auto d = pwn::fs::make_tmpdir()
+        ok(L"created temp dir %s\n", d);
+    }
+    catch(...){}
+    return 0;
 }
 ```
 
@@ -652,9 +652,9 @@ Recursively
 
 auto wmain() -> int
 {
-	if (!pwn::fs::mkdir(L"a\\crazy\\path\\that\\doesnt\\exist"))
-		perror(L"fs::mkdir()");
-	return 0;
+    if (!pwn::fs::mkdir(L"a\\crazy\\path\\that\\doesnt\\exist"))
+        perror(L"fs::mkdir()");
+    return 0;
 }
 ```
 
@@ -675,7 +675,7 @@ auto wmain() -> int
         case FILE_ACTION_MODIFIED:           ok(L"FILE_ACTION_MODIFIED '%s'\n", info->FileName); break;
         case FILE_ACTION_RENAMED_OLD_NAME:   ok(L"FILE_ACTION_RENAMED_OLD_NAME '%s'\n", info->FileName); break;
         case FILE_ACTION_RENAMED_NEW_NAME:   ok(L"FILE_ACTION_RENAMED_NEW_NAME '%s'\n", info->FileName); break;
-		default: return false;
+        default: return false;
         }
         return true;
     };
@@ -695,18 +695,18 @@ auto wmain() -> int
 
 auto wmain() -> int
 {
-	{
-		if(!pwn::utils::GenericHandle( pwn::fs::touch(L"myfile.txt") ))
-			return -1;
-	}
+    {
+        if(!pwn::utils::GenericHandle( pwn::fs::touch(L"myfile.txt") ))
+            return -1;
+    }
 
-	auto l = pwn::utils::GenericHandle( pwn::fs::create_symlink(L"mylink.txt", L"myfile.txt") );
-	if(!l)
-		return -2;
+    auto l = pwn::utils::GenericHandle( pwn::fs::create_symlink(L"mylink.txt", L"myfile.txt") );
+    if(!l)
+        return -2;
 
-	ok(L"created link '%s' -> '%s'\n", L"mylink.txt", L"myfile.txt");
+    ok(L"created link '%s' -> '%s'\n", L"mylink.txt", L"myfile.txt");
 
-	return 0;
+    return 0;
 }
 ```
 
@@ -728,41 +728,41 @@ auto wmain() -> int
 
 using `IMPORT_EXTERNAL_FUNCTION` macro, then copy/paste the definition (from MSDN, ReactOS, Pinvoke, NirSoft, etc.)
 
-```c
+```cpp
 #include <pwn++\pwn.h>
 
 IMPORT_EXTERNAL_FUNCTION( \
-	L"ntdll.dll", \
-	ZwCreateEnclave, \
-	NTSTATUS, \
-	HANDLE  hProcess, \
-	LPVOID  lpAddress, \
-	ULONGLONG ZeroBits, \
-	SIZE_T  dwSize, \
-	SIZE_T  dwInitialCommitment, \
-	DWORD   flEnclaveType, \
-	LPCVOID lpEnclaveInformation, \
-	DWORD   dwInfoLength, \
-	LPDWORD lpEnclaveError \
+    L"ntdll.dll", \
+    ZwCreateEnclave, \
+    NTSTATUS, \
+    HANDLE  hProcess, \
+    LPVOID  lpAddress, \
+    ULONGLONG ZeroBits, \
+    SIZE_T  dwSize, \
+    SIZE_T  dwInitialCommitment, \
+    DWORD   flEnclaveType, \
+    LPCVOID lpEnclaveInformation, \
+    DWORD   dwInfoLength, \
+    LPDWORD lpEnclaveError \
 );
 
 void wmain()
 {
-	auto addr = 0x010000;
-	ENCLAVE_CREATE_INFO_VBS enc = {0};
-	auto res = ZwCreateEnclave(
-		::GetCurrentProcess(),
-		&addr,
-		-1,
-		0x1000,
-		0x2000,
-		ENCLAVE_TYPE_VBS,
-		&enc,
-		sizeof(enc),
-		nullptr
-	);
-	if(res == STATUS_SUCCESS)
-	  ok(L"enclave allocated\n");
+    auto addr = 0x010000;
+    ENCLAVE_CREATE_INFO_VBS enc = {0};
+    auto res = ZwCreateEnclave(
+        ::GetCurrentProcess(),
+        &addr,
+        -1,
+        0x1000,
+        0x2000,
+        ENCLAVE_TYPE_VBS,
+        &enc,
+        sizeof(enc),
+        nullptr
+    );
+    if(res == STATUS_SUCCESS)
+      ok(L"enclave allocated\n");
 }
 ```
 
