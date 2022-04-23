@@ -2,11 +2,7 @@
 # Build Windows test tools
 #
 
-# todo:
-# - harden with: add_compile_options(/W3 /WX /Wall /Wall /sdl /guard:cf /guard:ehcont /CETCOMPAT)
-
 set(PWNLIB_TOOLS_WIN32_DIR ${PWNLIB_TOOLS_DIR}/win32 CACHE INTERNAL "PWNLIB_TOOLS_WIN32_DIR")
-
 
 set(
     WIN32_TOOLS
@@ -19,23 +15,17 @@ set(
 
 
 foreach(TOOL_DIR ${WIN32_TOOLS})
-    add_executable(${TOOL_DIR} ${PWNLIB_TOOLS_WIN32_DIR}/${TOOL_DIR}/main.cpp)
+    add_executable(${TOOL_DIR} WIN32 ${PWNLIB_TOOLS_WIN32_DIR}/${TOOL_DIR}/main.cpp)
     add_dependencies(${TOOL_DIR} ${CMAKE_PROJECT_NAME})
 
-    if(NOT INCLUDE_DISASSEMBLER)
-        add_compile_definitions(PWN_NO_DISASSEMBLER)
-    endif()
+    if(DEBUG)
+        target_compile_definitions(${TOOL_DIR} PRIVATE _DEBUG DEBUG)
+    endif(DEBUG)
 
-    if(NOT INCLUDE_ASSEMBLER)
-        add_compile_definitions(PWN_NO_ASSEMBLER)
-    endif()
-
-    add_compile_definitions(_UNICODE UNICODE)
-
-    target_include_directories(${TOOL_DIR} PUBLIC $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INCLUDE_DIRECTORIES>)
-    target_link_libraries(${TOOL_DIR} PRIVATE $<TARGET_LINKER_FILE:${CMAKE_PROJECT_NAME}>)
-
+    target_compile_options(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_OPTIONS>)
+    target_compile_definitions(${TOOL_DIR} PRIVATE _UNICODE UNICODE)
+    target_include_directories(${TOOL_DIR} PRIVATE ${CMAKE_PROJECT_NAME})
+    target_link_options(${TOOL_DIR} PRIVATE /SUBSYSTEM:Console /LARGEADDRESSAWARE)
+    target_link_libraries(${TOOL_DIR} PRIVATE ${CMAKE_PROJECT_NAME})
     install(TARGETS ${TOOL_DIR} DESTINATION tools)
-
-    unset(SOURCE_FILES)
 endforeach()

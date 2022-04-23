@@ -8,8 +8,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 project(
     pwn++
-    LANGUAGES CXX
-    VERSION 0.1.0
     DESCRIPTION "A (toy) Windows & Linux pwn library to play with modern C++."
     HOMEPAGE_URL https://github.com/hugsy/pwn--
 )
