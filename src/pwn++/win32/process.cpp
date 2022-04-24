@@ -1,5 +1,6 @@
-#include "log.hpp"
 #include "win32/process.hpp"
+
+#include "log.hpp"
 #include "win32/system.hpp"
 
 using namespace pwn::log;
@@ -61,18 +62,18 @@ list() -> std::vector<std::tuple<std::wstring, u32>>
     int count = 0;
     std::vector<std::tuple<std::wstring, u32>> processes;
 
-    for (;;)
+    for ( ;; )
     {
         pids = std::make_unique<DWORD[]>(maxCount);
         DWORD actualSize;
-        if (::EnumProcesses((PDWORD)pids.get(), maxCount * sizeof(DWORD), &actualSize) == 0)
+        if ( ::EnumProcesses((PDWORD)pids.get(), maxCount * sizeof(DWORD), &actualSize) == 0 )
         {
             break;
         }
 
         count = actualSize / sizeof(u32);
 
-        if (count < maxCount)
+        if ( count < maxCount )
         {
             break; // need to resize
         }
@@ -80,18 +81,18 @@ list() -> std::vector<std::tuple<std::wstring, u32>>
         maxCount *= 2;
     }
 
-    for (int i = 0; i < count; i++)
+    for ( int i = 0; i < count; i++ )
     {
         u32 pid = pids[i];
         pwn::utils::GenericHandle hProcess(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid));
-        if (!hProcess)
+        if ( !hProcess )
         {
             continue;
         }
 
         WCHAR exeName[MAX_PATH] = {0};
-        DWORD size  = MAX_PATH;
-        DWORD count = ::QueryFullProcessImageName(hProcess.get(), 0, exeName, &size);
+        DWORD size              = MAX_PATH;
+        DWORD count             = ::QueryFullProcessImageName(hProcess.get(), 0, exeName, &size);
 
         processes.emplace_back(exeName, pid);
     }
@@ -100,7 +101,9 @@ list() -> std::vector<std::tuple<std::wstring, u32>>
 }
 
 
-_Success_(return == ERROR_SUCCESS) auto get_integrity_level(_In_ u32 dwProcessId, _Out_ std::wstring &IntegrityLevelName) -> u32
+_Success_(return == ERROR_SUCCESS)
+auto
+get_integrity_level(_In_ u32 dwProcessId, _Out_ std::wstring& IntegrityLevelName) -> u32
 {
     u32 dwRes            = ERROR_SUCCESS;
     u32 dwIntegrityLevel = SECURITY_MANDATORY_MEDIUM_RID;
@@ -108,14 +111,14 @@ _Success_(return == ERROR_SUCCESS) auto get_integrity_level(_In_ u32 dwProcessId
     do
     {
         auto hProcessHandle = pwn::utils::GenericHandle(::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, dwProcessId));
-        if (!hProcessHandle)
+        if ( !hProcessHandle )
         {
             dwRes = ::GetLastError();
             break;
         }
 
         HANDLE hToken;
-        if (::OpenProcessToken(hProcessHandle.get(), TOKEN_QUERY, &hToken) == 0)
+        if ( ::OpenProcessToken(hProcessHandle.get(), TOKEN_QUERY, &hToken) == 0 )
         {
             dwRes = ::GetLastError();
             break;
@@ -125,10 +128,10 @@ _Success_(return == ERROR_SUCCESS) auto get_integrity_level(_In_ u32 dwProcessId
 
         DWORD dwLengthNeeded = 0;
 
-        if (::GetTokenInformation(hProcessToken.get(), TokenIntegrityLevel, nullptr, 0, &dwLengthNeeded) == 0)
+        if ( ::GetTokenInformation(hProcessToken.get(), TokenIntegrityLevel, nullptr, 0, &dwLengthNeeded) == 0 )
         {
             dwRes = ::GetLastError();
-            if (dwRes != ERROR_INSUFFICIENT_BUFFER)
+            if ( dwRes != ERROR_INSUFFICIENT_BUFFER )
             {
                 dwRes = ::GetLastError();
                 break;
@@ -143,38 +146,45 @@ _Success_(return == ERROR_SUCCESS) auto get_integrity_level(_In_ u32 dwProcessId
                 return ::LocalFree(pTokenBuffer) == nullptr;
             });
 
-        if (!pTIL)
+        if ( !pTIL )
         {
             dwRes = ::GetLastError();
             break;
         }
 
 
-        if (::GetTokenInformation(hProcessToken.get(), TokenIntegrityLevel, pTIL.get(), dwLengthNeeded, &dwLengthNeeded) == 0)
+        if ( ::GetTokenInformation(
+                 hProcessToken.get(),
+                 TokenIntegrityLevel,
+                 pTIL.get(),
+                 dwLengthNeeded,
+                 &dwLengthNeeded) == 0 )
         {
             dwRes = ::GetLastError();
-            if (dwRes != ERROR_INSUFFICIENT_BUFFER)
+            if ( dwRes != ERROR_INSUFFICIENT_BUFFER )
             {
                 dwRes = ::GetLastError();
                 break;
             }
         }
 
-        dwIntegrityLevel = *::GetSidSubAuthority(pTIL.get()->Label.Sid, (u32)(UCHAR)(*::GetSidSubAuthorityCount(pTIL.get()->Label.Sid) - 1));
+        dwIntegrityLevel = *::GetSidSubAuthority(
+            pTIL.get()->Label.Sid,
+            (u32)(UCHAR)(*::GetSidSubAuthorityCount(pTIL.get()->Label.Sid) - 1));
 
-        if (dwIntegrityLevel == SECURITY_MANDATORY_LOW_RID)
+        if ( dwIntegrityLevel == SECURITY_MANDATORY_LOW_RID )
         {
             IntegrityLevelName = L"Low";
         }
-        else if (SECURITY_MANDATORY_MEDIUM_RID < dwIntegrityLevel && dwIntegrityLevel < SECURITY_MANDATORY_HIGH_RID)
+        else if ( SECURITY_MANDATORY_MEDIUM_RID < dwIntegrityLevel && dwIntegrityLevel < SECURITY_MANDATORY_HIGH_RID )
         {
             IntegrityLevelName = L"Medium";
         }
-        else if (dwIntegrityLevel >= SECURITY_MANDATORY_HIGH_RID)
+        else if ( dwIntegrityLevel >= SECURITY_MANDATORY_HIGH_RID )
         {
             IntegrityLevelName = L"High";
         }
-        else if (dwIntegrityLevel >= SECURITY_MANDATORY_SYSTEM_RID)
+        else if ( dwIntegrityLevel >= SECURITY_MANDATORY_SYSTEM_RID )
         {
             IntegrityLevelName = L"System";
         }
@@ -185,13 +195,15 @@ _Success_(return == ERROR_SUCCESS) auto get_integrity_level(_In_ u32 dwProcessId
 
         dwRes = ERROR_SUCCESS;
 
-    } while (0);
+    } while ( 0 );
 
     return dwRes;
 }
 
 
-_Success_(return == ERROR_SUCCESS) auto get_integrity_level(_Out_ std::wstring &IntegrityLevelName) -> u32
+_Success_(return == ERROR_SUCCESS)
+auto
+get_integrity_level(_Out_ std::wstring& IntegrityLevelName) -> u32
 {
     return get_integrity_level(::GetCurrentProcessId(), IntegrityLevelName);
 }
@@ -201,7 +213,7 @@ auto
 get_integrity_level() -> std::optional<std::wstring>
 {
     std::wstring IntegrityLevelName;
-    if (get_integrity_level(::GetCurrentProcessId(), IntegrityLevelName) == ERROR_SUCCESS)
+    if ( get_integrity_level(::GetCurrentProcessId(), IntegrityLevelName) == ERROR_SUCCESS )
     {
         return IntegrityLevelName;
     }
@@ -209,16 +221,18 @@ get_integrity_level() -> std::optional<std::wstring>
 }
 
 
-_Success_(return ) auto execv(_In_ const wchar_t *lpCommandLine, _In_ u32 dwParentPid, _Out_ LPHANDLE lpNewProcessHandle) -> bool
+_Success_(return )
+auto
+execv(_In_ const wchar_t* lpCommandLine, _In_ u32 dwParentPid, _Out_ LPHANDLE lpNewProcessHandle) -> bool
 {
     HANDLE hParentProcess = nullptr;
     STARTUPINFOEX si      = {
-        {0},
+             {0},
     };
     PROCESS_INFORMATION pi = {
         nullptr,
     };
-    u32 dwFlags     = EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE;
+    u32 dwFlags       = EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE;
     si.StartupInfo.cb = sizeof(STARTUPINFOEX);
 
     size_t cmd_len = ::wcslen(lpCommandLine);
@@ -226,19 +240,26 @@ _Success_(return ) auto execv(_In_ const wchar_t *lpCommandLine, _In_ u32 dwPare
     auto cmd = std::make_unique<WCHAR[]>(cmd_len + 1);
     ::RtlCopyMemory(cmd.get(), lpCommandLine, 2 * cmd_len);
 
-    if (dwParentPid != 0u)
+    if ( dwParentPid != 0u )
     {
         hParentProcess = ::OpenProcess(PROCESS_CREATE_PROCESS, FALSE, dwParentPid);
-        if (hParentProcess != nullptr)
+        if ( hParentProcess != nullptr )
         {
             size_t AttrListSize = 0;
             ::InitializeProcThreadAttributeList(nullptr, 1, 0, &AttrListSize);
             si.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)::HeapAlloc(::GetProcessHeap(), 0, AttrListSize);
-            if (si.lpAttributeList != nullptr)
+            if ( si.lpAttributeList != nullptr )
             {
                 ::InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0, &AttrListSize);
-                ::UpdateProcThreadAttribute(si.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS, &hParentProcess, sizeof(HANDLE), nullptr, nullptr);
-                dbg(L"Spawning '%s' with PPID=%d...\n", cmd.get(), dwParentPid);
+                ::UpdateProcThreadAttribute(
+                    si.lpAttributeList,
+                    0,
+                    PROC_THREAD_ATTRIBUTE_PARENT_PROCESS,
+                    &hParentProcess,
+                    sizeof(HANDLE),
+                    nullptr,
+                    nullptr);
+                dbg(L"Spawning '{}' with PPID=%d...\n", cmd.get(), dwParentPid);
             }
         }
         else
@@ -248,32 +269,33 @@ _Success_(return ) auto execv(_In_ const wchar_t *lpCommandLine, _In_ u32 dwPare
     }
     else
     {
-        dbg(L"Spawning '%s'...\n", cmd.get());
+        dbg(L"Spawning '{}'...\n", cmd.get());
     }
 
-    if (::CreateProcess(nullptr, cmd.get(), nullptr, nullptr, 1, dwFlags, nullptr, nullptr, (LPSTARTUPINFO)&si, &pi) == 0)
+    if ( ::CreateProcess(nullptr, cmd.get(), nullptr, nullptr, 1, dwFlags, nullptr, nullptr, (LPSTARTUPINFO)&si, &pi) ==
+         0 )
     {
         perror(L"CreateProcess()");
         return FALSE;
     }
 
     ::CloseHandle(pi.hThread);
-    if (dwParentPid != 0u)
+    if ( dwParentPid != 0u )
     {
-        if (si.lpAttributeList != nullptr)
+        if ( si.lpAttributeList != nullptr )
         {
             ::DeleteProcThreadAttributeList(si.lpAttributeList);
             ::HeapFree(::GetProcessHeap(), 0, si.lpAttributeList);
         }
 
-        if (hParentProcess != nullptr)
+        if ( hParentProcess != nullptr )
         {
             ::CloseHandle(hParentProcess);
         }
     }
 
-    dbg(L"'%s' spawned with PID %d\n", lpCommandLine, pi.dwProcessId);
-    if (lpNewProcessHandle != nullptr)
+    dbg(L"'{}' spawned with PID %d\n", lpCommandLine, pi.dwProcessId);
+    if ( lpNewProcessHandle != nullptr )
     {
         *lpNewProcessHandle = pi.hProcess;
     }
@@ -287,10 +309,10 @@ _Success_(return ) auto execv(_In_ const wchar_t *lpCommandLine, _In_ u32 dwPare
 
 
 auto
-execv(_In_ const wchar_t *lpCommandLine, _In_ u32 dwParentPid) -> std::optional<HANDLE>
+execv(_In_ const wchar_t* lpCommandLine, _In_ u32 dwParentPid) -> std::optional<HANDLE>
 {
     HANDLE hProcess = INVALID_HANDLE_VALUE;
-    if (execv(lpCommandLine, dwParentPid, &hProcess) != 0)
+    if ( execv(lpCommandLine, dwParentPid, &hProcess) != 0 )
     {
         return hProcess;
     }
@@ -298,21 +320,27 @@ execv(_In_ const wchar_t *lpCommandLine, _In_ u32 dwParentPid) -> std::optional<
 }
 
 
-_Success_(return ) auto system(_In_ const std::wstring &lpCommandLine, _In_ const std::wstring &operation) -> bool
+_Success_(return )
+auto
+system(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operation) -> bool
 {
     auto args = pwn::utils::split(lpCommandLine, L' ');
-    auto cmd{args[0]};
+    auto cmd {args[0]};
     args.erase(args.begin());
     auto params = pwn::utils::join(args);
 
-    return static_cast<bool>(reinterpret_cast<long long>(::ShellExecuteW(nullptr, operation.c_str(), cmd.c_str(), params.c_str(), nullptr, SW_SHOW)) > 32);
+    return static_cast<bool>(
+        reinterpret_cast<long long>(
+            ::ShellExecuteW(nullptr, operation.c_str(), cmd.c_str(), params.c_str(), nullptr, SW_SHOW)) > 32);
 }
 
 
-_Success_(return ) auto kill(_In_ u32 dwProcessPid) -> bool
+_Success_(return )
+auto
+kill(_In_ u32 dwProcessPid) -> bool
 {
     HANDLE hProcess = ::OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessPid);
-    if (hProcess == nullptr)
+    if ( hProcess == nullptr )
     {
         return FALSE;
     }
@@ -320,7 +348,9 @@ _Success_(return ) auto kill(_In_ u32 dwProcessPid) -> bool
 }
 
 
-_Success_(return ) auto kill(_In_ HANDLE hProcess) -> bool
+_Success_(return )
+auto
+kill(_In_ HANDLE hProcess) -> bool
 {
     dbg(L"attempting to kill %u (pid=%u)\n", hProcess, ::GetProcessId(hProcess));
     bool res = ::TerminateProcess(hProcess, EXIT_FAILURE);
@@ -329,7 +359,9 @@ _Success_(return ) auto kill(_In_ HANDLE hProcess) -> bool
 }
 
 
-_Success_(return != nullptr) auto cmd() -> HANDLE
+_Success_(return != nullptr)
+auto
+cmd() -> HANDLE
 {
     auto hProcess = execv(L"cmd.exe");
     return hProcess ? hProcess.value() : INVALID_HANDLE_VALUE;
@@ -369,7 +401,7 @@ auto
 mem::write(_In_ HANDLE hProcess, _In_ uptr Address, _In_ u8* Data, _In_ size_t DataLength) -> size_t
 {
     size_t dwNbWritten;
-    if (::WriteProcessMemory(hProcess, reinterpret_cast<LPVOID>(Address), Data, DataLength, &dwNbWritten) != FALSE)
+    if ( ::WriteProcessMemory(hProcess, reinterpret_cast<LPVOID>(Address), Data, DataLength, &dwNbWritten) != FALSE )
     {
         return dwNbWritten;
     }
@@ -383,13 +415,13 @@ mem::write(_In_ uptr Address, _In_ u8* Data, _In_ size_t DataLength) -> size_t
 }
 
 auto
-mem::write(_In_ HANDLE hProcess, _In_ uptr Address, _In_ std::vector<u8> &Data) -> size_t
+mem::write(_In_ HANDLE hProcess, _In_ uptr Address, _In_ std::vector<u8>& Data) -> size_t
 {
     return mem::write(hProcess, Address, Data.data(), Data.size());
 }
 
 auto
-mem::write(_In_ uptr Address, _In_ std::vector<u8> &Data) -> size_t
+mem::write(_In_ uptr Address, _In_ std::vector<u8>& Data) -> size_t
 {
     return mem::write(::GetCurrentProcess(), Address, Data.data(), Data.size());
 }
@@ -408,7 +440,7 @@ mem::read(_In_ HANDLE hProcess, _In_ uptr Address, _In_ size_t DataLength) -> st
     std::vector<u8> out;
     size_t dwNbRead;
     ::ReadProcessMemory(hProcess, reinterpret_cast<LPVOID>(Address), tmp.get(), DataLength, &dwNbRead);
-    for (size_t i = 0; i < dwNbRead; i++)
+    for ( size_t i = 0; i < dwNbRead; i++ )
     {
         out.push_back(tmp[i]);
     }
@@ -432,24 +464,24 @@ auto
 mem::alloc(_In_ HANDLE hProcess, _In_ size_t Size, _In_ const wchar_t Permission[3], _In_opt_ uptr Address) -> uptr
 {
     auto flProtect = 0;
-    if (wcscmp(Permission, L"r") == 0)
+    if ( wcscmp(Permission, L"r") == 0 )
     {
         flProtect |= PAGE_READONLY;
     }
-    if (wcscmp(Permission, L"rx") == 0)
+    if ( wcscmp(Permission, L"rx") == 0 )
     {
         flProtect |= PAGE_EXECUTE_READ;
     }
-    if (wcscmp(Permission, L"rw") == 0)
+    if ( wcscmp(Permission, L"rw") == 0 )
     {
         flProtect |= PAGE_READWRITE;
     }
-    if (wcscmp(Permission, L"rwx") == 0)
+    if ( wcscmp(Permission, L"rwx") == 0 )
     {
         flProtect |= PAGE_EXECUTE_READWRITE;
     }
     auto buf = (uptr)::VirtualAllocEx(hProcess, reinterpret_cast<LPVOID>(Address), Size, MEM_COMMIT, flProtect);
-    if (buf != 0u)
+    if ( buf != 0u )
     {
         ::ZeroMemory(reinterpret_cast<LPVOID>(buf), Size);
     }
@@ -486,13 +518,15 @@ mem::free(_In_ uptr Address) -> uptr
 
 
 --*/
-_Success_(return ) auto is_elevated(_In_opt_ u32 dwPid) -> bool
+_Success_(return )
+auto
+is_elevated(_In_opt_ u32 dwPid) -> bool
 {
     HANDLE hProcessToken = nullptr;
     bool bRes            = FALSE;
 
     HANDLE hProcess = dwPid != 0u ? ::OpenProcess(PROCESS_QUERY_INFORMATION, 0, dwPid) : ::GetCurrentProcess();
-    if (hProcess == nullptr)
+    if ( hProcess == nullptr )
     {
         perror(L"OpenProcess()");
         return FALSE;
@@ -500,7 +534,7 @@ _Success_(return ) auto is_elevated(_In_opt_ u32 dwPid) -> bool
 
     do
     {
-        if (::OpenProcessToken(hProcess, TOKEN_QUERY, &hProcessToken) == 0)
+        if ( ::OpenProcessToken(hProcess, TOKEN_QUERY, &hProcessToken) == 0 )
         {
             perror(L"OpenProcessToken()");
             break;
@@ -508,17 +542,22 @@ _Success_(return ) auto is_elevated(_In_opt_ u32 dwPid) -> bool
 
         TOKEN_ELEVATION TokenInfo = {0};
         DWORD dwReturnLength      = 0;
-        if (::GetTokenInformation(hProcessToken, TokenElevation, &TokenInfo, sizeof(TOKEN_ELEVATION), &dwReturnLength) == 0)
+        if ( ::GetTokenInformation(
+                 hProcessToken,
+                 TokenElevation,
+                 &TokenInfo,
+                 sizeof(TOKEN_ELEVATION),
+                 &dwReturnLength) == 0 )
         {
             perror(L"GetTokenInformation()");
             break;
         }
 
         bRes = TokenInfo.TokenIsElevated;
-    } while (0);
+    } while ( 0 );
 
 
-    if (hProcessToken != nullptr)
+    if ( hProcessToken != nullptr )
     {
         ::CloseHandle(hProcessToken);
     }
@@ -527,40 +566,49 @@ _Success_(return ) auto is_elevated(_In_opt_ u32 dwPid) -> bool
 }
 
 
-_Success_(return ) auto add_privilege(_In_ const wchar_t *lpszPrivilegeName, _In_opt_ u32 dwPid) -> bool
+_Success_(return )
+auto
+add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_ u32 dwPid) -> bool
 {
     HANDLE hToken = INVALID_HANDLE_VALUE;
     bool bRes     = FALSE;
 
     HANDLE hProcess = dwPid != 0u ? ::OpenProcess(PROCESS_QUERY_INFORMATION, 0, dwPid) : ::GetCurrentProcess();
-    if (hProcess == nullptr)
+    if ( hProcess == nullptr )
     {
         perror(L"OpenProcess()");
         return FALSE;
     }
 
     bRes = ::OpenProcessToken(hProcess, TOKEN_ADJUST_PRIVILEGES, &hToken);
-    if (bRes != 0)
+    if ( bRes != 0 )
     {
         LUID Luid = {
             0,
         };
 
         bRes = ::LookupPrivilegeValue(nullptr, lpszPrivilegeName, &Luid);
-        if (bRes != 0)
+        if ( bRes != 0 )
         {
             size_t nBufferSize = sizeof(TOKEN_PRIVILEGES) + 1 * sizeof(LUID_AND_ATTRIBUTES);
             auto buffer        = std::make_unique<u8[]>(nBufferSize);
-            if (buffer)
+            if ( buffer )
             {
                 auto NewState                      = (PTOKEN_PRIVILEGES)buffer.get();
                 NewState->PrivilegeCount           = 1;
                 NewState->Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
                 NewState->Privileges[0].Luid       = Luid;
 
-                bRes = static_cast<bool>(::AdjustTokenPrivileges(hToken, FALSE, NewState, 0, (PTOKEN_PRIVILEGES) nullptr, (PDWORD) nullptr) != 0);
+                bRes = static_cast<bool>(
+                    ::AdjustTokenPrivileges(
+                        hToken,
+                        FALSE,
+                        NewState,
+                        0,
+                        (PTOKEN_PRIVILEGES) nullptr,
+                        (PDWORD) nullptr) != 0);
 
-                if (bRes != 0)
+                if ( bRes != 0 )
                 {
                     bRes = static_cast<bool>(GetLastError() != ERROR_NOT_ALL_ASSIGNED);
                 }
@@ -570,7 +618,7 @@ _Success_(return ) auto add_privilege(_In_ const wchar_t *lpszPrivilegeName, _In
         CloseHandle(hToken);
     }
 
-    if (hProcess != nullptr)
+    if ( hProcess != nullptr )
     {
         ::CloseHandle(hProcess);
     }
@@ -590,7 +638,9 @@ Arguments:
 Return Value:
     Returns TRUE if the current has the privilege
 --*/
-_Success_(return ) auto has_privilege(_In_ const wchar_t *lpwszPrivilegeName, _In_opt_ u32 dwPid) -> bool
+_Success_(return )
+auto
+has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt_ u32 dwPid) -> bool
 {
     LUID Luid = {
         0,
@@ -599,14 +649,14 @@ _Success_(return ) auto has_privilege(_In_ const wchar_t *lpwszPrivilegeName, _I
     BOOL bHasPriv = FALSE;
     HANDLE hToken = nullptr;
 
-    if (dwPid == 0u)
+    if ( dwPid == 0u )
     {
         dwPid = ::GetCurrentProcessId();
     }
 
     auto hProcess = pwn::utils::GenericHandle(::OpenProcess(PROCESS_QUERY_INFORMATION, 0, dwPid));
 
-    if (!hProcess)
+    if ( !hProcess )
     {
         perror(L"OpenProcess()");
         return FALSE;
@@ -614,10 +664,10 @@ _Success_(return ) auto has_privilege(_In_ const wchar_t *lpwszPrivilegeName, _I
 
     do
     {
-        dbg(L"Checking for '%s' for PID=%d...\n", lpwszPrivilegeName, dwPid);
+        dbg(L"Checking for '{}' for PID=%d...\n", lpwszPrivilegeName, dwPid);
 
         bRes = LookupPrivilegeValue(nullptr, lpwszPrivilegeName, &Luid);
-        if (bRes == 0)
+        if ( bRes == 0 )
         {
             perror(L"LookupPrivilegeValue");
             break;
@@ -634,24 +684,24 @@ _Success_(return ) auto has_privilege(_In_ const wchar_t *lpwszPrivilegeName, _I
         PrivSet.Privilege[0]   = PrivAttr;
 
         bRes = ::OpenProcessToken(hProcess.get(), TOKEN_QUERY, &hToken);
-        if (bRes == 0)
+        if ( bRes == 0 )
         {
             perror(L"OpenProcessToken");
             break;
         }
 
         bRes = ::PrivilegeCheck(hToken, &PrivSet, &bHasPriv);
-        if (bRes == 0)
+        if ( bRes == 0 )
         {
             perror(L"PrivilegeCheck");
             break;
         }
 
         bRes = bHasPriv;
-    } while (0);
+    } while ( 0 );
 
 
-    if (hToken != nullptr)
+    if ( hToken != nullptr )
     {
         ::CloseHandle(hToken);
     }
@@ -660,17 +710,26 @@ _Success_(return ) auto has_privilege(_In_ const wchar_t *lpwszPrivilegeName, _I
 }
 
 
-appcontainer::AppContainer::AppContainer(_In_ std::wstring container_name, _In_ std::wstring executable_path, _In_ std::vector<WELL_KNOWN_SID_TYPE> desired_capabilities)
-    : m_ExecutablePath(std::move(executable_path)),
-      m_ContainerName(std::move(container_name)),
-      m_Capabilities(std::move(desired_capabilities))
+appcontainer::AppContainer::AppContainer(
+    _In_ std::wstring container_name,
+    _In_ std::wstring executable_path,
+    _In_ std::vector<WELL_KNOWN_SID_TYPE> desired_capabilities) :
+    m_ExecutablePath(std::move(executable_path)),
+    m_ContainerName(std::move(container_name)),
+    m_Capabilities(std::move(desired_capabilities))
 {
-    auto hRes = ::CreateAppContainerProfile(m_ContainerName.c_str(), m_ContainerName.c_str(), m_ContainerName.c_str(), nullptr, 0, &m_AppContainerSid);
+    auto hRes = ::CreateAppContainerProfile(
+        m_ContainerName.c_str(),
+        m_ContainerName.c_str(),
+        m_ContainerName.c_str(),
+        nullptr,
+        0,
+        &m_AppContainerSid);
 
-    if (FAILED(hRes))
+    if ( FAILED(hRes) )
     {
         hRes = ::DeriveAppContainerSidFromAppContainerName(m_ContainerName.c_str(), &m_AppContainerSid);
-        if (FAILED(hRes))
+        if ( FAILED(hRes) )
         {
             throw std::runtime_error("DeriveAppContainerSidFromAppContainerName() failed");
         }
@@ -684,19 +743,19 @@ appcontainer::AppContainer::AppContainer(_In_ std::wstring container_name, _In_ 
     m_SidAsString = str;
     ::LocalFree(str);
 
-    dbg(L"sid=%s\n", m_SidAsString.c_str());
+    dbg(L"sid={}\n", m_SidAsString.c_str());
 
     //
     // Get the folder path
     //
     PWSTR path;
-    if (SUCCEEDED(::GetAppContainerFolderPath(m_SidAsString.c_str(), &path)))
+    if ( SUCCEEDED(::GetAppContainerFolderPath(m_SidAsString.c_str(), &path)) )
     {
         m_FolderPath = path;
         ::CoTaskMemFree(path);
     }
 
-    dbg(L"folder_path=%s\n", m_FolderPath.c_str());
+    dbg(L"folder_path={}\n", m_FolderPath.c_str());
 
 
     //
@@ -705,19 +764,19 @@ appcontainer::AppContainer::AppContainer(_In_ std::wstring container_name, _In_ 
     m_SecurityCapabilities.AppContainerSid = m_AppContainerSid;
     auto dwNumberOfDesiredAttributes       = (u32)m_Capabilities.size();
 
-    if (dwNumberOfDesiredAttributes != 0u)
+    if ( dwNumberOfDesiredAttributes != 0u )
     {
         //
         // populate the entries
         //
         auto dwNumberOfValidDesiredAttributes = 0;
         auto DesiredAttributes                = std::make_unique<SID_AND_ATTRIBUTES[]>(dwNumberOfDesiredAttributes);
-        for (size_t i = 0; i < dwNumberOfDesiredAttributes; i++)
+        for ( size_t i = 0; i < dwNumberOfDesiredAttributes; i++ )
         {
-            auto &Attribute = DesiredAttributes[i];
+            auto& Attribute = DesiredAttributes[i];
             auto Sid        = std::make_unique<u8[]>(SECURITY_MAX_SID_SIZE);
             DWORD cbSid     = SECURITY_MAX_SID_SIZE;
-            if (::CreateWellKnownSid(m_Capabilities.at(i), nullptr, Sid.get(), &cbSid) == 0)
+            if ( ::CreateWellKnownSid(m_Capabilities.at(i), nullptr, Sid.get(), &cbSid) == 0 )
             {
                 continue;
             }
@@ -733,11 +792,15 @@ appcontainer::AppContainer::AppContainer(_In_ std::wstring container_name, _In_ 
         // fill up the security capabilities
         //
 
-        if (dwNumberOfValidDesiredAttributes != 0)
+        if ( dwNumberOfValidDesiredAttributes != 0 )
         {
             m_SecurityCapabilities.CapabilityCount = dwNumberOfValidDesiredAttributes;
-            m_SecurityCapabilities.Capabilities    = (PSID_AND_ATTRIBUTES) new u8[dwNumberOfValidDesiredAttributes * sizeof(SID_AND_ATTRIBUTES)];
-            ::RtlCopyMemory(m_SecurityCapabilities.Capabilities, DesiredAttributes.get(), dwNumberOfValidDesiredAttributes * sizeof(SID_AND_ATTRIBUTES));
+            m_SecurityCapabilities.Capabilities =
+                (PSID_AND_ATTRIBUTES) new u8[dwNumberOfValidDesiredAttributes * sizeof(SID_AND_ATTRIBUTES)];
+            ::RtlCopyMemory(
+                m_SecurityCapabilities.Capabilities,
+                DesiredAttributes.get(),
+                dwNumberOfValidDesiredAttributes * sizeof(SID_AND_ATTRIBUTES));
         }
     }
 
@@ -747,7 +810,7 @@ appcontainer::AppContainer::AppContainer(_In_ std::wstring container_name, _In_ 
     //
     size_t size = 0;
     ::InitializeProcThreadAttributeList(nullptr, 1, 0, &size);
-    if (size == 0u)
+    if ( size == 0u )
     {
         throw std::runtime_error("InitializeProcThreadAttributeList() failed");
     }
@@ -755,12 +818,19 @@ appcontainer::AppContainer::AppContainer(_In_ std::wstring container_name, _In_ 
     m_StartupInfo.StartupInfo.cb  = sizeof(STARTUPINFOEX);
     m_StartupInfo.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)::new u8[size];
 
-    if (::InitializeProcThreadAttributeList(m_StartupInfo.lpAttributeList, 1, 0, &size) == 0)
+    if ( ::InitializeProcThreadAttributeList(m_StartupInfo.lpAttributeList, 1, 0, &size) == 0 )
     {
         throw std::runtime_error("InitializeProcThreadAttributeList() failed");
     }
 
-    if (::UpdateProcThreadAttribute(m_StartupInfo.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES, &m_SecurityCapabilities, sizeof(m_SecurityCapabilities), nullptr, nullptr) == 0)
+    if ( ::UpdateProcThreadAttribute(
+             m_StartupInfo.lpAttributeList,
+             0,
+             PROC_THREAD_ATTRIBUTE_SECURITY_CAPABILITIES,
+             &m_SecurityCapabilities,
+             sizeof(m_SecurityCapabilities),
+             nullptr,
+             nullptr) == 0 )
     {
         throw std::runtime_error("UpdateProcThreadAttribute() failed");
     }
@@ -769,50 +839,60 @@ appcontainer::AppContainer::AppContainer(_In_ std::wstring container_name, _In_ 
 
 appcontainer::AppContainer::~AppContainer()
 {
-    dbg(L"freeing container '%s'\n", m_SidAsString.c_str());
+    dbg(L"freeing container '{}'\n", m_SidAsString.c_str());
 
-    if (m_SecurityCapabilities.CapabilityCount != 0u)
+    if ( m_SecurityCapabilities.CapabilityCount != 0u )
     {
-        for (u32 i = 0; i < m_SecurityCapabilities.CapabilityCount; i++)
+        for ( u32 i = 0; i < m_SecurityCapabilities.CapabilityCount; i++ )
         {
             delete[] m_SecurityCapabilities.Capabilities[i].Sid;
         }
-        delete[](u8 *) m_SecurityCapabilities.Capabilities;
+        delete[](u8*) m_SecurityCapabilities.Capabilities;
     }
 
-    if (m_StartupInfo.lpAttributeList != nullptr)
+    if ( m_StartupInfo.lpAttributeList != nullptr )
     {
-        delete[](u8 *) m_StartupInfo.lpAttributeList;
+        delete[](u8*) m_StartupInfo.lpAttributeList;
     }
 
-    if (m_AppContainerSid != nullptr)
+    if ( m_AppContainerSid != nullptr )
     {
         ::FreeSid(m_AppContainerSid);
     }
 }
 
 
-_Success_(return ) auto appcontainer::AppContainer::allow_file_or_directory(_In_ const std::wstring &file_or_directory_name) -> bool
+_Success_(return )
+auto
+appcontainer::AppContainer::allow_file_or_directory(_In_ const std::wstring& file_or_directory_name) -> bool
 {
     return allow_file_or_directory(file_or_directory_name.c_str());
 }
 
-_Success_(return ) auto appcontainer::AppContainer::allow_file_or_directory(_In_ const wchar_t *file_or_directory_name) -> bool
+_Success_(return )
+auto
+appcontainer::AppContainer::allow_file_or_directory(_In_ const wchar_t* file_or_directory_name) -> bool
 {
     return set_named_object_access((PWSTR)file_or_directory_name, SE_FILE_OBJECT, GRANT_ACCESS, FILE_ALL_ACCESS);
 }
 
-_Success_(return ) auto appcontainer::AppContainer::allow_registry_key(_In_ const std::wstring &regkey) -> bool
+_Success_(return )
+auto
+appcontainer::AppContainer::allow_registry_key(_In_ const std::wstring& regkey) -> bool
 {
     return allow_file_or_directory(regkey.c_str());
 }
 
-_Success_(return ) auto appcontainer::AppContainer::allow_registry_key(_In_ const wchar_t *regkey) -> bool
+_Success_(return )
+auto
+appcontainer::AppContainer::allow_registry_key(_In_ const wchar_t* regkey) -> bool
 {
     return set_named_object_access((PWSTR)regkey, SE_REGISTRY_KEY, GRANT_ACCESS, FILE_ALL_ACCESS);
 }
 
-_Success_(return ) auto appcontainer::AppContainer::spawn() -> bool
+_Success_(return )
+auto
+appcontainer::AppContainer::spawn() -> bool
 {
     auto length     = m_ExecutablePath.length();
     auto sz         = length * 2;
@@ -820,11 +900,21 @@ _Success_(return ) auto appcontainer::AppContainer::spawn() -> bool
     ::ZeroMemory(lpwCmdLine.get(), sz + 2);
     ::memcpy(lpwCmdLine.get(), m_ExecutablePath.c_str(), sz);
 
-    dbg(L"launching '%s' in container '%s'\n", lpwCmdLine.get(), m_SidAsString.c_str());
+    dbg(L"launching '{}' in container '{}'\n", lpwCmdLine.get(), m_SidAsString.c_str());
 
-    auto bRes = ::CreateProcessW(nullptr, (LPWSTR)lpwCmdLine.get(), nullptr, nullptr, 0, EXTENDED_STARTUPINFO_PRESENT, nullptr, nullptr, (LPSTARTUPINFO)&m_StartupInfo, &m_ProcessInfo);
+    auto bRes = ::CreateProcessW(
+        nullptr,
+        (LPWSTR)lpwCmdLine.get(),
+        nullptr,
+        nullptr,
+        0,
+        EXTENDED_STARTUPINFO_PRESENT,
+        nullptr,
+        nullptr,
+        (LPSTARTUPINFO)&m_StartupInfo,
+        &m_ProcessInfo);
 
-    if (m_StartupInfo.lpAttributeList != nullptr)
+    if ( m_StartupInfo.lpAttributeList != nullptr )
     {
         ::DeleteProcThreadAttributeList(m_StartupInfo.lpAttributeList);
     }
@@ -833,7 +923,13 @@ _Success_(return ) auto appcontainer::AppContainer::spawn() -> bool
 }
 
 
-_Success_(return ) auto appcontainer::AppContainer::set_named_object_access(_In_ PWSTR ObjectName, _In_ SE_OBJECT_TYPE ObjectType, _In_ ACCESS_MODE AccessMode, _In_ ACCESS_MASK AccessMask) -> bool
+_Success_(return )
+auto
+appcontainer::AppContainer::set_named_object_access(
+    _In_ PWSTR ObjectName,
+    _In_ SE_OBJECT_TYPE ObjectType,
+    _In_ ACCESS_MODE AccessMode,
+    _In_ ACCESS_MASK AccessMask) -> bool
 {
     bool bRes    = FALSE;
     PACL pOldAcl = nullptr;
@@ -847,8 +943,16 @@ _Success_(return ) auto appcontainer::AppContainer::set_named_object_access(_In_
         //
         // Get the old ACEs
         //
-        dwRes = ::GetNamedSecurityInfo(ObjectName, ObjectType, DACL_SECURITY_INFORMATION, nullptr, nullptr, &pOldAcl, nullptr, &pSD);
-        if (dwRes != ERROR_SUCCESS)
+        dwRes = ::GetNamedSecurityInfo(
+            ObjectName,
+            ObjectType,
+            DACL_SECURITY_INFORMATION,
+            nullptr,
+            nullptr,
+            &pOldAcl,
+            nullptr,
+            &pSD);
+        if ( dwRes != ERROR_SUCCESS )
         {
             break;
         }
@@ -867,7 +971,7 @@ _Success_(return ) auto appcontainer::AppContainer::set_named_object_access(_In_
         Access.Trustee.TrusteeType              = TRUSTEE_IS_GROUP;
 
         dwRes = ::SetEntriesInAcl(1, &Access, pOldAcl, &pNewAcl);
-        if (dwRes != ERROR_SUCCESS)
+        if ( dwRes != ERROR_SUCCESS )
         {
             break;
         }
@@ -875,9 +979,19 @@ _Success_(return ) auto appcontainer::AppContainer::set_named_object_access(_In_
         //
         // Apply to the object
         //
-        dbg(L"%s access to object '%s' by container '%s'\n", AccessMode == GRANT_ACCESS ? L"Allowing" : L"Denying", ObjectName, m_SidAsString.c_str());
-        dwRes = ::SetNamedSecurityInfo(ObjectName, ObjectType, DACL_SECURITY_INFORMATION, nullptr, nullptr, pNewAcl, nullptr);
-        if (dwRes != ERROR_SUCCESS)
+        dbg(L"{} access to object '{}' by container '{}'\n",
+            AccessMode == GRANT_ACCESS ? L"Allowing" : L"Denying",
+            ObjectName,
+            m_SidAsString.c_str());
+        dwRes = ::SetNamedSecurityInfo(
+            ObjectName,
+            ObjectType,
+            DACL_SECURITY_INFORMATION,
+            nullptr,
+            nullptr,
+            pNewAcl,
+            nullptr);
+        if ( dwRes != ERROR_SUCCESS )
         {
             break;
         }
@@ -889,14 +1003,14 @@ _Success_(return ) auto appcontainer::AppContainer::set_named_object_access(_In_
         m_OriginalAcls.emplace_back(ObjectName, ObjectType, pOldAcl);
 
         bRes = TRUE;
-    } while (0);
+    } while ( 0 );
 
-    if (pNewAcl != nullptr)
+    if ( pNewAcl != nullptr )
     {
         ::LocalFree(pNewAcl);
     }
 
-    if (pSD != nullptr)
+    if ( pSD != nullptr )
     {
         ::LocalFree(pSD);
     }
@@ -905,27 +1019,39 @@ _Success_(return ) auto appcontainer::AppContainer::set_named_object_access(_In_
 }
 
 
-_Success_(return ) auto appcontainer::AppContainer::join(_In_ u32 dwTimeout) -> bool
+_Success_(return )
+auto
+appcontainer::AppContainer::join(_In_ u32 dwTimeout) -> bool
 {
     return ::WaitForSingleObject(m_ProcessInfo.hProcess, dwTimeout) != 0;
 }
 
 
-_Success_(return ) auto appcontainer::AppContainer::restore_acls() -> bool
+_Success_(return )
+auto
+appcontainer::AppContainer::restore_acls() -> bool
 {
     bool bRes = TRUE;
 
-    for (auto &acl : m_OriginalAcls)
+    for ( auto& acl : m_OriginalAcls )
     {
-        auto const &ObjectName = std::get<0>(acl);
-        auto const &ObjectType = std::get<1>(acl);
-        auto const &pOldAcl    = std::get<2>(acl);
-        dbg(L"restoring original acl for '%s'\n", ObjectName.c_str());
-        bRes &= static_cast<int>(::SetNamedSecurityInfo((PWSTR)ObjectName.c_str(), ObjectType, DACL_SECURITY_INFORMATION, nullptr, nullptr, pOldAcl, nullptr) == ERROR_SUCCESS);
+        auto const& ObjectName = std::get<0>(acl);
+        auto const& ObjectType = std::get<1>(acl);
+        auto const& pOldAcl    = std::get<2>(acl);
+        dbg(L"restoring original acl for '{}'\n", ObjectName.c_str());
+        bRes &= static_cast<int>(
+            ::SetNamedSecurityInfo(
+                (PWSTR)ObjectName.c_str(),
+                ObjectType,
+                DACL_SECURITY_INFORMATION,
+                nullptr,
+                nullptr,
+                pOldAcl,
+                nullptr) == ERROR_SUCCESS);
     }
 
     return bRes;
 }
 
 
-}
+} // namespace pwn::win::process

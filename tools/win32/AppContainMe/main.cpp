@@ -17,8 +17,8 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 {
     if ( argc < 2 )
     {
-        err(L"syntax\n\t%s 'process_to_run.exe arg1 arg2' [d:\\allowed\\path1 d:\\allowed\\path2] [c:Capability1 "
-            L"c:Capability2]\n");
+        err(L"Syntax\n\t{} PROCESS [ARG1 [ARG2...]] [d:\\allowed\\path1 d:\\allowed\\path2] [c:Capability1 "
+            L"c:Capability2]\n", argv[0]);
         return EXIT_FAILURE;
     }
 

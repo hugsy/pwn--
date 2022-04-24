@@ -93,9 +93,14 @@ xlog(
     }
 
     std::wostringstream stream;
-    stream << prio << L" (" << location.file_name() << L":" << location.line() << L":" << location.function_name()
-           << "()] ";
+    stream << prio;
 
+    if (level == log_level_t::LOG_DEBUG)
+    {
+        stream << L"{" << location.file_name() << L":" << location.line() << L":" << location.function_name()
+               << L"()";
+    }
+    stream << L"} ";
 
     stream << std::vformat(std::wstring_view(fmt), std::make_wformat_args(args...)) << std::endl;
     std::wcerr << stream.str() << std::flush;
