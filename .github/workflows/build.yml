@@ -17,7 +17,7 @@ jobs:
       matrix:
         os: ['windows-latest', 'ubuntu-latest']
         platform: ['x64']
-        configuration: ['RelWithDebInfo']
+        configuration: ['Debug', 'RelWithDebInfo']
 
     runs-on: ${{ matrix.os }}
     steps:
