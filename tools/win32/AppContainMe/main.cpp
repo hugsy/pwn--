@@ -18,11 +18,12 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
     if ( argc < 2 )
     {
         err(L"Syntax\n\t{} PROCESS [ARG1 [ARG2...]] [d:\\allowed\\path1 d:\\allowed\\path2] [c:Capability1 "
-            L"c:Capability2]\n", argv[0]);
+            L"c:Capability2]\n",
+            argv[0]);
         return EXIT_FAILURE;
     }
 
-    pwn::globals.set(ArchitectureIndex::x64);
+    pwn::globals.set(ArchitectureType::x64);
     pwn::globals.log_level = pwn::log::log_level_t::LOG_DEBUG;
 
     const std::wstring containerName {L"appcontainer-" + pwn::utils::random::alnum(10)};

@@ -95,10 +95,9 @@ xlog(
     std::wostringstream stream;
     stream << prio;
 
-    if (level == log_level_t::LOG_DEBUG)
+    if ( level == log_level_t::LOG_DEBUG )
     {
-        stream << L"{" << location.file_name() << L":" << location.line() << L":" << location.function_name()
-               << L"()";
+        stream << L"{" << location.file_name() << L":" << location.line() << L":" << location.function_name() << L"()";
     }
     stream << L"} ";
 
@@ -137,14 +136,3 @@ ntperror(_In_ const wchar_t* prefix, _In_ NTSTATUS Status);
 #define ok(...) pwn::log::xlog(pwn::log::log_level_t::LOG_SUCCESS, std::source_location::current(), ##__VA_ARGS__)
 #define warn(...) pwn::log::xlog(pwn::log::log_level_t::LOG_WARNING, std::source_location::current(), ##__VA_ARGS__)
 #define err(...) pwn::log::xlog(pwn::log::log_level_t::LOG_ERROR, std::source_location::current(), ##__VA_ARGS__)
-
-
-///
-/// toString()-like traits
-///
-std::wostream&
-operator<<(std::wostream& wos, Architecture a);
-
-
-std::wostream&
-operator<<(std::wostream& wos, Endianess e);

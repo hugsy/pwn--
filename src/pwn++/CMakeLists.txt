@@ -35,6 +35,7 @@ set(
     COMMON_SOURCE_FILES
 
     ${COMMON_SOURCE_DIR}/asm.cpp
+    ${COMMON_SOURCE_DIR}/architecture.cpp
     ${COMMON_SOURCE_DIR}/context.cpp
     ${COMMON_SOURCE_DIR}/crypto.cpp
     ${COMMON_SOURCE_DIR}/disasm.cpp
@@ -65,7 +66,7 @@ set(
     COMMON_HEADER_FILES
 
     ${COMMON_HEADER_DIR}/pwn_export.hpp
-
+    ${COMMON_HEADER_DIR}/architecture.hpp
     ${COMMON_HEADER_DIR}/asm.hpp
     ${COMMON_HEADER_DIR}/common.hpp
     ${COMMON_HEADER_DIR}/constants.hpp

@@ -108,10 +108,10 @@ disassemble(_In_ const u8* code, _In_ const size_t code_size)
 {
     switch ( pwn::globals.architecture->id() )
     {
-    case ArchitectureIndex::x86:
+    case ArchitectureType::x86:
         return x86(code, code_size);
 
-    case ArchitectureIndex::x64:
+    case ArchitectureType::x64:
         return x64(code, code_size);
 
     default:

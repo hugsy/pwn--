@@ -6,7 +6,11 @@
 // some dummy tests
 //
 
+#pragma warning(push)
+#pragma warning(disable : 4005) // Disable macro re-definition warnings
 #include <pwn.hpp>
+#pragma warning(pop)
+
 #define NS "pwn"
 
 TEST_CASE("check version", "[" NS "]")

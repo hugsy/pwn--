@@ -3,7 +3,9 @@
 #include <mutex>
 #include <thread>
 
+#include "architecture.hpp"
 #include "common.hpp"
+
 
 /**
  *
@@ -143,11 +145,15 @@ struct globals_t
     };
 
     void
-    set(ArchitectureIndex idx)
+    set(ArchitectureType type)
     {
-        architecture = Architectures.at((int)idx);
+        architecture = Architectures.at(type);
         endianess    = architecture->endian();
         ptrsize      = architecture->ptrsize();
+
+        std::wostringstream wos {L"Selecting architecture "};
+        wos << architecture.get();
+        dbg(wos.str());
     }
 
     void
@@ -164,4 +170,5 @@ version() -> const wchar_t*;
 
 PWNAPI auto
 version_info() -> const std::tuple<u16, u16>;
+
 } // namespace pwn

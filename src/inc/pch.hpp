@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstring>
 #include <exception>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <optional>

@@ -67,9 +67,11 @@ if(DEBUG)
     target_compile_options(
         ${PROJECT_NAME}
         PUBLIC
-            /DEBUG:FULL /sdl /WX /Gy /Gm- /permissive-
+            /sdl /WX /Gy /Gm- /permissive-
         )
     target_link_options(${PROJECT_NAME}
+        PUBLIC
+            /DEBUG:FULL
         PRIVATE
             /profile /DEBUGTYPE:cv,fixup
     )

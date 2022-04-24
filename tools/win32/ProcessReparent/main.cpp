@@ -6,7 +6,7 @@ namespace ctx = pwn::context;
 auto
 wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 {
-    pwn::globals.set(ArchitectureIndex::x64);
+    pwn::globals.set(ArchitectureType::x64);
     pwn::globals.log_level = pwn::log::log_level_t::LOG_DEBUG;
 
     const auto target_process = (argc >= 2) ? std::wstring(argv[1]) : std::wstring(L"cmd.exe");
