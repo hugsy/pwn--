@@ -1,12 +1,18 @@
 #pragma once
 
-#include "pch.hpp"
+#include <algorithm>
+#include <array>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+
+#include "common.hpp"
 
 
 ///
 /// @brief Endianess class definition, with its wstring representation
 ///
-enum class Endianess
+enum class Endianess : uint8_t
 {
     unknown,
     little,
@@ -18,7 +24,7 @@ enum class Endianess
 /// @brief Architecture class definition, with its wstring representation
 ///
 
-enum class ArchitectureType
+enum class ArchitectureType : uint8_t
 {
     unknown,
     x86,
@@ -32,74 +38,26 @@ enum class ArchitectureType
 };
 
 
-class Architecture
+struct Architecture
 {
-public:
-    constexpr Architecture() noexcept :
-        m_id(ArchitectureType::unknown),
-        m_name(L""),
-        m_ptrsize(0),
-        m_endianess(Endianess::unknown)
-    {
-    }
-
-    constexpr Architecture(ArchitectureType id, const std::wstring& name, size_t ptrsize, Endianess endian) noexcept :
-        m_id(id),
-        m_name(name),
-        m_ptrsize(ptrsize),
-        m_endianess(endian)
-    {
-    }
-
-    constexpr const ArchitectureType
-    id() const
-    {
-        return m_id;
-    }
-
-    constexpr const std::wstring_view&
-    name() const
-    {
-        return m_name;
-    }
-
-    constexpr size_t
-    ptrsize() const
-    {
-        return m_ptrsize;
-    }
-
-    constexpr Endianess
-    endian() const
-    {
-        return m_endianess;
-    }
-
-private:
-    const ArchitectureType m_id;
-    const size_t m_ptrsize;
-    const std::wstring_view m_name;
-    const Endianess m_endianess;
+    ArchitectureType id;
+    std::wstring_view name;
+    size_t ptrsize;
+    Endianess endian;
 };
 
 
-const std::map<ArchitectureType, std::shared_ptr<Architecture>> Architectures = {
+static constexpr std::array<std::pair<std::string_view, Architecture>, 2> Architectures {{
+    {"x64", {ArchitectureType::x64, L"x64", 8, Endianess::little}},
+    {"x86", {ArchitectureType::x86, L"x86", 4, Endianess::little}},
+}};
 
-#define AddArchitecture(__i, __n, __p, __e)                                                                            \
-    {                                                                                                                  \
-        ArchitectureType::__i, std::make_shared<Architecture>(ArchitectureType::__i, __n, __p, Endianess::__e)         \
-    }
 
-    AddArchitecture(x86, L"x86", 4, little),
-    AddArchitecture(x64, L"x86-64", 8, little),
-    AddArchitecture(arm, L"ARM", 4, little),
-    AddArchitecture(arm_thumb, L"ARM-Thumb", 2, little),
-    AddArchitecture(arm64, L"AARCH64", 8, little),
-    AddArchitecture(mips, L"MIPS", 4, little),
-    AddArchitecture(mips64, L"MIPS64", 8, little),
-
-#undef AddArchitecture
-};
+Architecture static inline lookup_architecture(const std::string_view sv)
+{
+    static constexpr auto map = CMap<std::string_view, Architecture, Architectures.size()> {{Architectures}};
+    return map.at(sv);
+}
 
 
 ///

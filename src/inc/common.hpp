@@ -87,3 +87,37 @@ auto inline __GetProcAddrWrapper(M hMod, std::string_view const& lpszProcName)
         auto __func = (pwnFn_##Func)__GetProcAddrWrapper(__LoadLibraryWrapper(Dll), STR(Func));                        \
         return __func(std::forward<Ts>(ts)...);                                                                        \
     }
+
+
+///
+/// @brief A constexpr map
+///
+/// @tparam Key
+/// @tparam Value
+/// @tparam Size
+///
+template<typename Key, typename Value, std::size_t Size>
+struct CMap
+{
+    std::array<std::pair<Key, Value>, Size> data;
+
+    [[nodiscard]] constexpr Value
+    at(const Key& key) const
+    {
+        const auto itr = std::find_if(
+            cbegin(data),
+            cend(data),
+            [&key](const auto& v)
+            {
+                return v.first == key;
+            });
+        if ( itr != end(data) )
+        {
+            return itr->second;
+        }
+        else
+        {
+            throw std::range_error("Not Found");
+        }
+    }
+};

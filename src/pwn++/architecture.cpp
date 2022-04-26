@@ -4,7 +4,7 @@
 std::wostream&
 operator<<(std::wostream& wos, Architecture const& a)
 {
-    switch ( a.id() )
+    switch ( a.id )
     {
     case ArchitectureType::x86:
         wos << L"i386";

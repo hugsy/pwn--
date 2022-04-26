@@ -35,7 +35,7 @@
 /**
  *
  * Windows namespace definition
- *
+ * -> pwn::win
  */
 
 /// namespace pwn::win::system
@@ -133,7 +133,7 @@ struct globals_t
     std::mutex m_console_mutex;
     log::log_level_t log_level = log::log_level_t::LOG_INFO;
 
-    std::shared_ptr<Architecture> architecture;
+    Architecture architecture;
     Endianess endianess;
     usize ptrsize;
     usize instruction_size;
@@ -142,17 +142,18 @@ struct globals_t
     {
         m_seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::srand(m_seed);
+        set("x64");
     };
 
     void
-    set(ArchitectureType type)
+    set(std::string_view type)
     {
-        architecture = Architectures.at(type);
-        endianess    = architecture->endian();
-        ptrsize      = architecture->ptrsize();
+        architecture = lookup_architecture(type);
+        endianess    = architecture.endian;
+        ptrsize      = architecture.ptrsize;
 
         std::wostringstream wos {L"Selecting architecture "};
-        wos << architecture.get();
+        wos << architecture;
         dbg(wos.str());
     }
 
@@ -163,6 +164,9 @@ struct globals_t
     }
 };
 
+///
+/// @brief The global context information are stored in this global variable
+///
 extern PWNAPI struct globals_t globals;
 
 PWNAPI auto

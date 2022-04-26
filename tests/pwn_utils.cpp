@@ -58,7 +58,7 @@ TEST_CASE("cyclic", "[" NS "]")
     SECTION("cyclic buffer with period determined from architecture")
     {
         std::vector<u8> buf;
-        pwn::globals.set(ArchitectureType::x64);
+        pwn::globals.set("x64");
         REQUIRE(pwn::utils::cyclic(0x30, buf));
         REQUIRE(buf.size() == 0x30);
         pwn::utils::hexdump(buf);
