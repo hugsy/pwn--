@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mutex>
+#include <ranges>
 #include <thread>
 
 #include "architecture.hpp"
@@ -146,15 +147,29 @@ struct globals_t
     };
 
     void
-    set(std::string_view type)
+    set(std::string_view const& type)
     {
-        architecture = lookup_architecture(type);
-        endianess    = architecture.endian;
-        ptrsize      = architecture.ptrsize;
+        const std::string _t {type};
+        this->set(pwn::utils::to_widestring(_t));
+    }
 
-        std::wostringstream wos {L"Selecting architecture "};
-        wos << architecture;
-        dbg(wos.str());
+    void
+    set(std::wstring_view const& type)
+    {
+        try
+        {
+            architecture = lookup_architecture(type);
+            endianess    = architecture.endian;
+            ptrsize      = architecture.ptrsize;
+
+            dbg(L"Selecting {}", architecture);
+        }
+        catch ( std::range_error const& e )
+        {
+            err(L"Invalid architecture '{}'. Value must be in:", type);
+            for ( auto const& name : std::views::keys(Architectures) )
+                std::wcout << L"- " << std::setw(9) << name << std::endl;
+        }
     }
 
     void

@@ -23,7 +23,7 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
         return EXIT_FAILURE;
     }
 
-    pwn::globals.set(ArchitectureType::x64);
+    pwn::globals.set("x64");
     pwn::globals.log_level = pwn::log::log_level_t::LOG_DEBUG;
 
     const std::wstring containerName {L"appcontainer-" + pwn::utils::random::alnum(10)};

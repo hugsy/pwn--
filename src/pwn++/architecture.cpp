@@ -40,7 +40,7 @@ operator<<(std::wostream& wos, Endianess e)
         wos << L"little";
         break;
     case Endianess::big:
-        wos << "big";
+        wos << L"big";
         break;
     default:
         wos.setstate(std::ios_base::failbit);

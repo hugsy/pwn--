@@ -45,7 +45,7 @@ using i64 = int64_t;
 
 namespace
 {
-auto static inline __LoadLibraryWrapper(wchar_t const* name)
+auto static inline LoadLibraryWrapper(wchar_t const* name)
 {
 #if defined(__PWNLIB_WINDOWS_BUILD__)
     return ::LoadLibraryW(name);
@@ -58,7 +58,7 @@ auto static inline __LoadLibraryWrapper(wchar_t const* name)
 
 
 template<typename M>
-auto inline __GetProcAddrWrapper(M hMod, std::string_view const& lpszProcName)
+auto inline GetProcAddressWrapper(M hMod, std::string_view const& lpszProcName)
 {
 #if defined(__PWNLIB_WINDOWS_BUILD__)
     auto address = ::GetProcAddress(hMod, lpszProcName.data());
@@ -84,13 +84,14 @@ auto inline __GetProcAddrWrapper(M hMod, std::string_view const& lpszProcName)
     template<typename... Ts>                                                                                           \
     auto Func(Ts... ts)->Ret                                                                                           \
     {                                                                                                                  \
-        auto __func = (pwnFn_##Func)__GetProcAddrWrapper(__LoadLibraryWrapper(Dll), STR(Func));                        \
+        auto __func = (pwnFn_##Func)GetProcAddressWrapper(LoadLibraryWrapper(Dll), STR(Func));                         \
         return __func(std::forward<Ts>(ts)...);                                                                        \
     }
 
 
 ///
 /// @brief A constexpr map
+/// @link https://xuhuisun.com/post/c++-weekly-2-constexpr-map/
 ///
 /// @tparam Key
 /// @tparam Value
@@ -120,4 +121,94 @@ struct CMap
             throw std::range_error("Not Found");
         }
     }
+};
+
+
+///
+/// @brief A constexpr generic buffer
+/// @link https://www.cppstories.com/2021/constexpr-new-cpp20/
+///
+/// @tparam T
+///
+template<typename T>
+class CBuffer
+{
+public:
+    constexpr CBuffer(size_t n) noexcept : size_(n), mem_(new T[n])
+    {
+    }
+    constexpr ~CBuffer() noexcept
+    {
+        delete[] mem_;
+    }
+
+    constexpr CBuffer(const CBuffer& other) noexcept : size_(other.size_)
+    {
+        if ( &other != this )
+        {
+            mem_ = new T[size_];
+            std::copy(other.mem_, other.mem_ + size_, mem_);
+        }
+    }
+
+    constexpr CBuffer(CBuffer&& other) noexcept
+    {
+        if ( &other != this )
+        {
+            mem_        = other.mem_;
+            size_       = other.size_;
+            other.mem_  = nullptr;
+            other.size_ = 0;
+        }
+    }
+
+    constexpr CBuffer&
+    operator=(const CBuffer& other) noexcept
+    {
+        if ( &other != this )
+        {
+            mem_ = new T[size_];
+            std::copy(other.mem_, other.mem_ + size_, mem_);
+        }
+        return *this;
+    }
+
+    constexpr CBuffer&
+    operator=(CBuffer&& other) noexcept
+    {
+        if ( &other != this )
+        {
+            mem_        = other.mem_;
+            size_       = other.size_;
+            other.mem_  = nullptr;
+            other.size_ = 0;
+        }
+        return *this;
+    }
+
+    constexpr T&
+    operator[](size_t id) noexcept
+    {
+        return mem_[id];
+    }
+    constexpr const T&
+    operator[](size_t id) const noexcept
+    {
+        return mem_[id];
+    }
+
+    constexpr T*
+    data() const noexcept
+    {
+        return mem_;
+    }
+    constexpr size_t
+    size() const noexcept
+    {
+        return size_;
+    }
+
+private:
+    T* mem_ {nullptr};
+    size_t size_ {0};
 };
