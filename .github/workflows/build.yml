@@ -22,7 +22,7 @@ jobs:
           - runs-on: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
-            version: 11
+            compiler_version: 11
 
     runs-on: ${{ matrix.os }}
     steps:
