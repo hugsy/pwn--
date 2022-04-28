@@ -4,7 +4,7 @@ env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
   REPO: hugsy/pwn--
   VERBOSE: "1"
-  CMAKE_FLAGS: "-DDEBUG=OFF -DDISABLE_LOG_COLOR=OFF -DINCLUDE_ASSEMBLER=OFF -DINCLUDE_DISASSEMBLER=ON -DBUILD_TOOLKIT=ON"
+  CMAKE_FLAGS: "-DDEBUG=OFF -DDISABLE_LOG_COLOR=OFF -DINCLUDE_ASSEMBLER=OFF -DINCLUDE_DISASSEMBLER=ON -DBUILD_TOOLKIT=ON -DBUILD_TESTING=ON"
 
 on: [push, pull_request]
 
@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['windows-latest', 'ubuntu-latest']
+        os: ['windows-latest'] # 'linux-latest' removed since gcc-15 nor clang-15 supports std::format
         platform: ['x64']
         configuration: ['Debug']
         include:
@@ -43,6 +43,7 @@ jobs:
         CXX: ${{ matrix.cpp_compiler}}-${{ matrix.compiler_version }}
       run: |
         echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
+        sudo apt update && sudo apt install -y ${CC} ${CXX}
         echo "CC=${CC}" >> $GITHUB_ENV
         echo "CXX=${CXX}" >> $GITHUB_ENV
 
@@ -78,13 +79,13 @@ jobs:
         mkdir ./build
         cd ./build
         cmake .. ${{ env.CMAKE_FLAGS }}
-        cmake --build . --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }} --target tests
+        cmake --build . --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }}
         cd ..
 
     - name: Run tests
       run: |
         cd build/tests
-        ctest --parallel=${{ env.NB_CPU }} --extra-verbose --cfg=${{ matrix.configuration }}
+        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ matrix.configuration }}
         cd ../..
 
     - name: Perform CodeQL Analysis

@@ -57,10 +57,16 @@ target_compile_options(
     -Wconversion -Wfloat-equal -Wformat-type-confusion -Widiomatic-parentheses -Wimplicit-fallthrough
     -Wloop-analysis -Wpointer-arith -Wshift-sign-overflow -Wshorten-64-to-32 -Wswitch-enum
     -Wtautological-constant-in-range-compare -Wunreachable-code-aggressive  -D_FORTIFY_SOURCE=2
-    -fstack-protector-strong -fsanitize=safe-stack -fPIE -fstack-clash-protection -Wl,-z,relro
-    -Wl,-z,now -Wl,-z,noexecstack -Wl,-z,separate-code
+    -fstack-protector-strong -fPIE -fstack-clash-protection -fsanitize=safe-stack
 )
 
+
+target_link_options(
+    ${PROJECT_NAME}
+    PRIVATE
+    -Wl,-z,relro
+    -Wl,-z,now -Wl,-z,noexecstack -Wl,-z,separate-code
+)
 
 
 set_target_properties(
