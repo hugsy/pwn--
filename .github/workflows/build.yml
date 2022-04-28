@@ -43,6 +43,7 @@ jobs:
         CXX: ${{ matrix.cpp_compiler}}-${{ matrix.compiler_version }}
       run: |
         echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
+        sudo apt update && sudo apt install -y ${CC} ${CXX}
         echo "CC=${CC}" >> $GITHUB_ENV
         echo "CXX=${CXX}" >> $GITHUB_ENV
 
