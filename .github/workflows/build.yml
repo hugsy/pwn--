@@ -17,7 +17,12 @@ jobs:
       matrix:
         os: ['windows-latest', 'ubuntu-latest']
         platform: ['x64']
-        configuration: ['Debug', 'RelWithDebInfo']
+        configuration: ['Debug']
+        include:
+          - runs-on: ubuntu-latest
+            c_compiler: gcc
+            cpp_compiler: g++
+            version: 11
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -32,9 +37,14 @@ jobs:
       if: matrix.os == 'windows-latest'
 
     - name: Sets Linux specific environment variables
+      if: matrix.os == 'ubuntu-latest'
+      env:
+        CC:  ${{ matrix.c_compiler}}-${{ matrix.compiler_version }}
+        CXX: ${{ matrix.cpp_compiler}}-${{ matrix.compiler_version }}
       run: |
         echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
-      if: matrix.os == 'ubuntu-latest'
+        echo "CC=${CC}" >> $GITHUB_ENV
+        echo "CXX=${CXX}" >> $GITHUB_ENV
 
     - name: Inject slug/short variables
       uses: rlespinasse/github-slug-action@v3.x
