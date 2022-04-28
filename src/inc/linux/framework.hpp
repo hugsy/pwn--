@@ -13,11 +13,12 @@
 
 #define _Success_(c)
 
-#include <unistd.h>
-#include <stdio.h>
 #include <stdarg.h>
-#include <string.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <dlfcn.h
 
 #ifndef MAX_PATH
 #define MAX_PATH 260
