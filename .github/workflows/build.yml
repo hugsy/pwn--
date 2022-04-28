@@ -85,7 +85,7 @@ jobs:
     - name: Run tests
       run: |
         cd build/tests
-        ctest --parallel=${{ env.NB_CPU }} --extra-verbose --cfg=${{ matrix.configuration }}
+        ctest --parallel=${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ matrix.configuration }}
         cd ../..
 
     - name: Perform CodeQL Analysis
