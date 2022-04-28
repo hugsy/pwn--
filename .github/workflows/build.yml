@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['windows-latest', 'ubuntu-latest']
+        os: ['windows-latest'] # 'linux-latest' removed since gcc-15 nor clang-15 supports std::format
         platform: ['x64']
         configuration: ['Debug']
         include:
