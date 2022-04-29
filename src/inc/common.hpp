@@ -1,5 +1,8 @@
 #pragma once
 
+#include <type_traits>
+#include <utility>
+
 #include "constants.hpp"
 #include "pwn_export.hpp"
 
@@ -212,3 +215,101 @@ private:
     T* mem_ {nullptr};
     size_t size_ {0};
 };
+
+
+///
+/// @brief constexpr bitmask class
+///
+/// @tparam T
+/// @tparam std::enable_if<std::is_enum<T>::value>::type
+///
+template<typename T, typename = typename std::enable_if<std::is_enum<T>::value>::type>
+class CBitMask
+{
+    using N = typename std::underlying_type<T>::type;
+
+    static constexpr N
+    get(T a)
+    {
+        return static_cast<N>(a);
+    }
+
+    explicit constexpr CBitMask(N a) : m_val(a)
+    {
+    }
+
+public:
+    constexpr CBitMask() : m_val(0)
+    {
+    }
+
+    constexpr CBitMask(T a) : m_val(get(a))
+    {
+    }
+
+    constexpr CBitMask
+    operator|(T t)
+    {
+        return CBitMask(m_val | get(t));
+    }
+
+    constexpr bool
+    operator&(T t)
+    {
+        return m_val & get(t);
+    }
+
+    constexpr N const
+    get() const
+    {
+        return m_val;
+    }
+
+private:
+    N m_val = 0;
+};
+
+
+///
+/// @brief Rust-like type of error handling
+///
+enum class SuccessType
+{
+    Success,
+};
+
+enum class ErrorType
+{
+    Error,
+    RuntimeError,
+    InvalidInput,
+};
+
+template<class T>
+using Result = std::pair<std::variant<SuccessType, ErrorType>, std::optional<T>>;
+
+struct Err : Result<int>
+{
+    Err(ErrorType ErrCode) : Result<int>(ErrCode, std::nullopt)
+    {
+    }
+};
+
+template<class T>
+struct Ok : Result<T>
+{
+    Ok(T value) : Result<T>(SuccessType::Success, value)
+    {
+    }
+};
+
+template<class T>
+inline bool
+Success(Result<T> const& f)
+{
+    if ( auto const c = std::get_if<SuccessType>(&f.first); c == SuccessType::Success )
+    {
+        return true;
+    }
+    return false;
+}

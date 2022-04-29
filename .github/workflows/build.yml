@@ -15,14 +15,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['windows-latest'] # 'linux-latest' removed since gcc-15 nor clang-15 supports std::format
+        os: ['windows-latest'] # 'linux-latest' removed since gcc-11 nor clang-15 supports std::format
         platform: ['x64']
         configuration: ['Debug']
         include:
           - runs-on: ubuntu-latest
-            c_compiler: gcc
-            cpp_compiler: g++
-            compiler_version: 11
+            c_compiler: ['gcc-11', 'clang-15']
+            cpp_compiler: ['g++-11, 'clang++-15']
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -39,8 +38,8 @@ jobs:
     - name: Sets Linux specific environment variables
       if: matrix.os == 'ubuntu-latest'
       env:
-        CC:  ${{ matrix.c_compiler}}-${{ matrix.compiler_version }}
-        CXX: ${{ matrix.cpp_compiler}}-${{ matrix.compiler_version }}
+        CC:  ${{ matrix.c_compiler}}
+        CXX: ${{ matrix.cpp_compiler}}
       run: |
         echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
         sudo apt update && sudo apt install -y ${CC} ${CXX}

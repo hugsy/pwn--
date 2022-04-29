@@ -3,15 +3,15 @@
 #include "common.hpp"
 
 static const u64 ______magic = 0xdeadbeef;
-static auto _______dummy        = []()
+static auto _______dummy     = []()
 {
     throw ______magic;
 };
 
 #ifdef __linux__
-#define InvalidHandleValue    -1
+#define InvalidHandleValue -1
 #else
-#define InvalidHandleValue    INVALID_HANDLE_VALUE
+#define InvalidHandleValue INVALID_HANDLE_VALUE
 #endif
 
 namespace pwn::utils
@@ -20,7 +20,7 @@ template<typename T, typename D = decltype(_______dummy)>
 class GenericHandle
 {
 public:
-    GenericHandle(T h = nullptr, D d = _______dummy) : m_handle(h), m_closure_function(d)
+    constexpr GenericHandle(T h = nullptr, D d = _______dummy) : m_handle(h), m_closure_function(d)
     {
     }
 
@@ -30,12 +30,20 @@ public:
         close();
     }
 
+    // TODO: missing Copy Constructor
+    // TODO: missing Move Constructor
 
     operator bool() const
     {
         return m_handle != nullptr && m_handle != InvalidHandleValue;
     }
 
+    // Direct affectation
+    auto
+    operator=(T const& other)
+    {
+        m_handle = other;
+    }
 
     [[nodiscard]] auto
     get() const -> T

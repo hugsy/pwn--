@@ -5,6 +5,7 @@
 
 using namespace pwn::log;
 
+
 #include <accctrl.h>
 #include <aclapi.h>
 #include <psapi.h>
@@ -12,11 +13,14 @@ using namespace pwn::log;
 #include <shellapi.h>
 #include <userenv.h>
 
+#include <filesystem>
 #include <stdexcept>
 #include <utility>
 
 #include "handle.hpp"
 #include "utils.hpp"
+
+namespace fs = std::filesystem;
 
 
 ///
@@ -39,6 +43,63 @@ x86_get_teb();
 
 namespace pwn::win::process
 {
+
+
+Process::Process(u32 pid) : m_pid(pid)
+{
+    // Process PPID
+    {
+        auto ppid = pwn::win::system::ppid(pid);
+        if ( !ppid )
+            throw std::runtime_error("could not read ppid");
+        m_ppid = ppid.value();
+    }
+
+    // Full path
+    {
+        hProcess = ::OpenProcess(MAXIMUM_ALLOWED, false, pid);
+        if ( !hProcess )
+        {
+            throw std::runtime_error("could not OpenProcess(MAXIMUM_ALLOWED)");
+        }
+
+        wchar_t exeName[MAX_PATH] = {0};
+        DWORD size                = __countof(exeName);
+        DWORD count               = ::QueryFullProcessImageName(hProcess.get(), 0, exeName, &size);
+
+        m_path = std::wstring {exeName};
+    }
+
+    // Integrity
+    {
+        m_integrity_level = get_integrity_level(pid);
+    }
+}
+
+u32 const
+Process::ppid() const
+{
+    return m_ppid;
+}
+
+u32 const
+Process::pid() const
+{
+    return m_pid;
+}
+
+fs::path const
+Process::path() const
+{
+    return fs::path {m_path};
+}
+
+Process::Integrity const
+Process::integrity() const
+{
+    return m_integrity_level;
+}
+
 
 auto
 pid() -> u32
@@ -84,14 +145,14 @@ list() -> std::vector<std::tuple<std::wstring, u32>>
     for ( int i = 0; i < count; i++ )
     {
         u32 pid = pids[i];
-        pwn::utils::GenericHandle hProcess(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid));
+        pwn::utils::GenericHandle hProcess(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid));
         if ( !hProcess )
         {
             continue;
         }
 
         WCHAR exeName[MAX_PATH] = {0};
-        DWORD size              = MAX_PATH;
+        DWORD size              = __countof(exeName);
         DWORD count             = ::QueryFullProcessImageName(hProcess.get(), 0, exeName, &size);
 
         processes.emplace_back(exeName, pid);
@@ -101,16 +162,17 @@ list() -> std::vector<std::tuple<std::wstring, u32>>
 }
 
 
-_Success_(return == ERROR_SUCCESS)
 auto
-get_integrity_level(_In_ u32 dwProcessId, _Out_ std::wstring& IntegrityLevelName) -> u32
+get_integrity_level(const u32 pid = -1) -> Process::Integrity
 {
+    auto IntegrityLevel  = Process::Integrity::Unknown;
     u32 dwRes            = ERROR_SUCCESS;
     u32 dwIntegrityLevel = SECURITY_MANDATORY_MEDIUM_RID;
+    DWORD dwProcessId    = (pid == -1) ? ::GetCurrentProcessId() : pid;
 
     do
     {
-        auto hProcessHandle = pwn::utils::GenericHandle(::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, dwProcessId));
+        auto hProcessHandle = pwn::utils::GenericHandle(::OpenProcess(PROCESS_QUERY_INFORMATION, false, dwProcessId));
         if ( !hProcessHandle )
         {
             dwRes = ::GetLastError();
@@ -138,25 +200,12 @@ get_integrity_level(_In_ u32 dwProcessId, _Out_ std::wstring& IntegrityLevelName
             }
         }
 
-        auto pTokenBuffer = reinterpret_cast<PTOKEN_MANDATORY_LABEL>(::LocalAlloc(LPTR, dwLengthNeeded));
-        auto pTIL         = pwn::utils::GenericHandle(
-            pTokenBuffer,
-            [&]()
-            {
-                return ::LocalFree(pTokenBuffer) == nullptr;
-            });
-
-        if ( !pTIL )
-        {
-            dwRes = ::GetLastError();
-            break;
-        }
-
+        auto pTokenBuffer = std::make_unique<TOKEN_MANDATORY_LABEL[]>(dwLengthNeeded);
 
         if ( ::GetTokenInformation(
                  hProcessToken.get(),
                  TokenIntegrityLevel,
-                 pTIL.get(),
+                 pTokenBuffer.get(),
                  dwLengthNeeded,
                  &dwLengthNeeded) == 0 )
         {
@@ -168,56 +217,33 @@ get_integrity_level(_In_ u32 dwProcessId, _Out_ std::wstring& IntegrityLevelName
             }
         }
 
+
         dwIntegrityLevel = *::GetSidSubAuthority(
-            pTIL.get()->Label.Sid,
-            (u32)(UCHAR)(*::GetSidSubAuthorityCount(pTIL.get()->Label.Sid) - 1));
+            pTokenBuffer.get()->Label.Sid,
+            (u32)(UCHAR)(*::GetSidSubAuthorityCount(pTokenBuffer.get()->Label.Sid) - 1));
 
         if ( dwIntegrityLevel == SECURITY_MANDATORY_LOW_RID )
         {
-            IntegrityLevelName = L"Low";
+            IntegrityLevel = Process::Integrity::Low;
         }
         else if ( SECURITY_MANDATORY_MEDIUM_RID < dwIntegrityLevel && dwIntegrityLevel < SECURITY_MANDATORY_HIGH_RID )
         {
-            IntegrityLevelName = L"Medium";
+            IntegrityLevel = Process::Integrity::Medium;
         }
         else if ( dwIntegrityLevel >= SECURITY_MANDATORY_HIGH_RID )
         {
-            IntegrityLevelName = L"High";
+            IntegrityLevel = Process::Integrity::High;
         }
         else if ( dwIntegrityLevel >= SECURITY_MANDATORY_SYSTEM_RID )
         {
-            IntegrityLevelName = L"System";
-        }
-        else
-        {
-            IntegrityLevelName = L"Unknown";
+            IntegrityLevel = Process::Integrity::System;
         }
 
         dwRes = ERROR_SUCCESS;
 
     } while ( 0 );
 
-    return dwRes;
-}
-
-
-_Success_(return == ERROR_SUCCESS)
-auto
-get_integrity_level(_Out_ std::wstring& IntegrityLevelName) -> u32
-{
-    return get_integrity_level(::GetCurrentProcessId(), IntegrityLevelName);
-}
-
-
-auto
-get_integrity_level() -> std::optional<std::wstring>
-{
-    std::wstring IntegrityLevelName;
-    if ( get_integrity_level(::GetCurrentProcessId(), IntegrityLevelName) == ERROR_SUCCESS )
-    {
-        return IntegrityLevelName;
-    }
-    return std::nullopt;
+    return IntegrityLevel;
 }
 
 

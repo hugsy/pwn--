@@ -3,6 +3,9 @@
 #ifndef PWN_NO_DISASSEMBLER
 #include <Zydis/Zydis.h>
 
+#include <string>
+#include <vector>
+
 using namespace pwn::log;
 
 extern struct pwn::globals_t pwn::globals;
@@ -10,9 +13,10 @@ extern struct pwn::globals_t pwn::globals;
 
 namespace pwn::disasm
 {
-// private
+
 namespace
 {
+
 std::vector<std::wstring>
 disassemble_to_string(
     _In_ ZydisMachineMode arch,
@@ -65,14 +69,14 @@ print_disassembled_code(
 } // namespace
 
 
-/**
- * @brief x86 specific disassembly function
- *
- * @param [in] code code the code to disassemble
- * @param [in] code_size code_size is the size of code
- *
- * @return
- */
+///
+/// @brief x86 specific disassembly function
+///
+/// @param [in] code code the code to disassemble
+/// @param [in] code_size code_size is the size of code
+///
+/// @return
+///
 void
 x86(_In_ const u8* code, _In_ const size_t code_size)
 {
@@ -80,14 +84,14 @@ x86(_In_ const u8* code, _In_ const size_t code_size)
 }
 
 
-/**
- * @brief x64 specific disassembly function
- *
- * @param [inout] code code the code to disassemble
- * @param [inout] code_size code_size is the size of code
- *
- * @return
- */
+///
+/// @brief x64 specific disassembly function
+///
+/// @param [inout] code code the code to disassemble
+/// @param [inout] code_size code_size is the size of code
+///
+/// @return
+///
 void
 x64(_In_ const u8* code, _In_ const size_t code_size)
 {
@@ -95,14 +99,14 @@ x64(_In_ const u8* code, _In_ const size_t code_size)
 }
 
 
-/**
- * @brief Generic function for disassemble code based on the context
- *
- * @param [inout] code code the code to disassemble
- * @param [inout] code_size code_size is the size of code
- *
- * @return
- */
+///
+/// @brief Generic function for disassemble code based on the context
+///
+/// @param [inout] code code the code to disassemble
+/// @param [inout] code_size code_size is the size of code
+///
+/// @return
+///
 void
 disassemble(_In_ const u8* code, _In_ const size_t code_size)
 {
