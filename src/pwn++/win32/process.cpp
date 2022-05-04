@@ -43,29 +43,129 @@ x86_get_teb();
 
 namespace pwn::win::process
 {
-
-
-Process::Process(u32 pid) : m_pid(pid)
+Process::Memory::Memory() : Memory(nullptr)
 {
+}
+
+Process::Memory::Memory(SharedHandle h) : m_process_handle(h)
+{
+}
+
+auto
+Process::Memory::read(uptr const Address, usize Length) -> Result<std::vector<u8>>
+{
+    auto out = std::vector<u8>(Length);
+    size_t dwNbRead;
+    if ( ::ReadProcessMemory(
+             m_process_handle->get(),
+             reinterpret_cast<LPVOID>(Address),
+             out.data(),
+             Length,
+             &dwNbRead) == false )
+    {
+        perror(L"ReadProcessMemory()");
+        return Err(ErrorType::Code::RuntimeError);
+    }
+
+    return Ok(out);
+}
+
+auto
+Process::Memory::memset(uptr const address, const size_t size, const u8 val) -> Result<usize>
+{
+    auto data = std::vector<u8>(size);
+    std::fill(data.begin(), data.end(), val);
+    return write(address, data);
+}
+
+auto
+Process::Memory::write(uptr const Address, std::vector<u8> data) -> Result<usize>
+{
+    size_t dwNbWritten;
+    if ( ::WriteProcessMemory(
+             m_process_handle->get(),
+             reinterpret_cast<LPVOID>(Address),
+             data.data(),
+             data.size(),
+             &dwNbWritten) != false )
+    {
+        perror(L"WriteProcessMemory()");
+        return Err(ErrorType::Code::RuntimeError);
+    }
+
+    return Ok(dwNbWritten);
+}
+
+auto
+Process::Memory::allocate(const size_t Size, const wchar_t Permission[3], const uptr ForcedMappingAddress)
+    -> Result<uptr>
+{
+    u32 flProtect = 0;
+    if ( wcscmp(Permission, L"r") == 0 )
+    {
+        flProtect |= PAGE_READONLY;
+    }
+    if ( wcscmp(Permission, L"rx") == 0 )
+    {
+        flProtect |= PAGE_EXECUTE_READ;
+    }
+    if ( wcscmp(Permission, L"rw") == 0 )
+    {
+        flProtect |= PAGE_READWRITE;
+    }
+    if ( wcscmp(Permission, L"rwx") == 0 )
+    {
+        flProtect |= PAGE_EXECUTE_READWRITE;
+    }
+    auto buffer = (uptr)::VirtualAllocEx(
+        m_process_handle->get(),
+        nullptr,
+        Size,
+        MEM_COMMIT | MEM_RESERVE,
+        flProtect ? flProtect : PAGE_GUARD);
+    if ( buffer == 0u )
+    {
+        return Err();
+    }
+
+    memset(buffer, Size, 0x00);
+    return Ok(buffer);
+}
+
+auto
+Process::Memory::free(const uptr Address) -> bool
+{
+    return ::VirtualFreeEx(m_process_handle->get(), reinterpret_cast<LPVOID>(Address), 0, MEM_RELEASE) == 0;
+}
+
+
+Process::Process() : Process(::GetCurrentProcessId(), false)
+{
+}
+
+Process::Process(u32 pid, bool kill_on_delete) :
+    m_pid(pid),
+    m_kill_on_delete(kill_on_delete),
+    m_peb(nullptr),
+    m_teb(nullptr)
+{
+    m_is_self = m_pid == ::GetCurrentProcessId();
+
     // Process PPID
     {
         auto ppid = pwn::win::system::ppid(pid);
-        if ( !ppid )
-            throw std::runtime_error("could not read ppid");
-        m_ppid = ppid.value();
+        m_ppid    = ppid ? ppid.value() : -1;
     }
 
     // Full path
     {
-        hProcess = ::OpenProcess(MAXIMUM_ALLOWED, false, pid);
-        if ( !hProcess )
-        {
-            throw std::runtime_error("could not OpenProcess(MAXIMUM_ALLOWED)");
-        }
+        m_process_handle =
+            std::make_shared<pwn::utils::GenericHandle<HANDLE>>(::OpenProcess(MAXIMUM_ALLOWED, false, pid));
+        m_memory = Memory(m_process_handle);
 
         wchar_t exeName[MAX_PATH] = {0};
         DWORD size                = __countof(exeName);
-        DWORD count               = ::QueryFullProcessImageName(hProcess.get(), 0, exeName, &size);
+        DWORD count               = ::QueryFullProcessImageName(m_process_handle->get(), 0, exeName, &size);
 
         m_path = std::wstring {exeName};
     }
@@ -73,6 +173,15 @@ Process::Process(u32 pid) : m_pid(pid)
     // Integrity
     {
         m_integrity_level = get_integrity_level(pid);
+    }
+}
+
+Process::~Process()
+{
+    if ( m_kill_on_delete )
+    {
+        ::TerminateProcess(m_process_handle->get(), EXIT_FAILURE);
+        ::WaitForSingleObject(m_process_handle->get(), INFINITE);
     }
 }
 
@@ -98,6 +207,113 @@ Process::Integrity const
 Process::integrity() const
 {
     return m_integrity_level;
+}
+
+Process::Memory&
+Process::memory()
+{
+    return m_memory;
+}
+
+PPEB
+Process::peb()
+{
+    if ( !m_peb )
+    {
+        auto res = memory().read((uptr)(teb() + FIELD_OFFSET(TEB, ProcessEnvironmentBlock)), sizeof(PVOID));
+        if ( Success(res) )
+        {
+            auto val = Value(res);
+            m_peb    = (PPEB)val.data();
+        }
+
+        if ( !m_peb )
+        {
+            throw std::runtime_error("PEB could not be set");
+        }
+    }
+    return m_peb;
+}
+
+PTEB
+Process::teb()
+{
+    if ( !m_teb )
+    {
+        if ( m_is_self )
+        {
+            m_teb = NtCurrentTeb();
+        }
+        else
+        {
+
+            const std::vector<u8> sc = {
+                // clang-format off
+                0x48, 0x8d, 0x0d, 0x10, 0x00, 0x00, 0x00, // lea rcx, [rip+0x100]
+                0x65, 0x48, 0xa1, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // mov rax, gs:0x30
+                0x48, 0x89, 0x01, // mov [rcx], rax
+                0x48, 0x31, 0xc0, 0xfe, 0xc0, // xor rax, rax; inc al
+                0xc3 // ret
+                // clang-format on
+            };
+            auto const ptr = Value(memory().allocate(0x1000, L"rwx"));
+            memory().write(ptr, sc);
+
+            {
+                DWORD ExitCode = 0;
+                auto hProcess {pwn::utils::GenericHandle(::CreateRemoteThreadEx(
+                    m_process_handle->get(),
+                    nullptr,
+                    0,
+                    reinterpret_cast<LPTHREAD_START_ROUTINE>(ptr),
+                    nullptr,
+                    0,
+                    nullptr,
+                    nullptr))};
+                ::WaitForSingleObject(hProcess.get(), INFINITE);
+                if ( ::GetExitCodeThread(hProcess.get(), &ExitCode) && ExitCode == 1 )
+                {
+                    auto foo = memory().read(ptr + 0x100, sizeof(PVOID));
+                }
+            }
+            memory().free(ptr);
+        }
+
+        if ( !m_teb )
+        {
+            throw std::runtime_error("TEB could not be set");
+        }
+    }
+    return m_teb;
+}
+
+
+std::wostream&
+operator<<(std::wostream& wos, const Process::Integrity i)
+{
+    switch ( i )
+    {
+    case Process::Integrity::Low:
+        wos << L"INTEGRITY_LOW";
+        break;
+
+    case Process::Integrity::Medium:
+        wos << L"INTEGRITY_MEDIUM";
+        break;
+
+    case Process::Integrity::High:
+        wos << L"INTEGRITY_HIGH";
+        break;
+
+    case Process::Integrity::System:
+        wos << L"INTEGRITY_SYSTEM";
+        break;
+
+    default:
+        wos << L"INTEGRITY_UNKNOWN";
+        break;
+    }
+    return wos;
 }
 
 
@@ -201,7 +417,6 @@ get_integrity_level(const u32 pid = -1) -> Process::Integrity
         }
 
         auto pTokenBuffer = std::make_unique<TOKEN_MANDATORY_LABEL[]>(dwLengthNeeded);
-
         if ( ::GetTokenInformation(
                  hProcessToken.get(),
                  TokenIntegrityLevel,
@@ -209,10 +424,8 @@ get_integrity_level(const u32 pid = -1) -> Process::Integrity
                  dwLengthNeeded,
                  &dwLengthNeeded) == 0 )
         {
-            dwRes = ::GetLastError();
-            if ( dwRes != ERROR_INSUFFICIENT_BUFFER )
+            if ( ::GetLastError() != ERROR_INSUFFICIENT_BUFFER )
             {
-                dwRes = ::GetLastError();
                 break;
             }
         }
@@ -226,20 +439,18 @@ get_integrity_level(const u32 pid = -1) -> Process::Integrity
         {
             IntegrityLevel = Process::Integrity::Low;
         }
-        else if ( SECURITY_MANDATORY_MEDIUM_RID < dwIntegrityLevel && dwIntegrityLevel < SECURITY_MANDATORY_HIGH_RID )
+        else if ( SECURITY_MANDATORY_MEDIUM_RID <= dwIntegrityLevel && dwIntegrityLevel < SECURITY_MANDATORY_HIGH_RID )
         {
             IntegrityLevel = Process::Integrity::Medium;
         }
-        else if ( dwIntegrityLevel >= SECURITY_MANDATORY_HIGH_RID )
+        else if ( dwIntegrityLevel == SECURITY_MANDATORY_HIGH_RID )
         {
             IntegrityLevel = Process::Integrity::High;
         }
-        else if ( dwIntegrityLevel >= SECURITY_MANDATORY_SYSTEM_RID )
+        else if ( dwIntegrityLevel == SECURITY_MANDATORY_SYSTEM_RID )
         {
             IntegrityLevel = Process::Integrity::System;
         }
-
-        dwRes = ERROR_SUCCESS;
 
     } while ( 0 );
 
@@ -258,13 +469,12 @@ execv(_In_ const wchar_t* lpCommandLine, _In_ u32 dwParentPid, _Out_ LPHANDLE lp
     PROCESS_INFORMATION pi = {
         nullptr,
     };
-    u32 dwFlags       = EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE;
+    const u32 dwFlags = EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE;
     si.StartupInfo.cb = sizeof(STARTUPINFOEX);
 
-    size_t cmd_len = ::wcslen(lpCommandLine);
-
-    auto cmd = std::make_unique<WCHAR[]>(cmd_len + 1);
-    ::RtlCopyMemory(cmd.get(), lpCommandLine, 2 * cmd_len);
+    const size_t cmd_len = ::wcslen(lpCommandLine);
+    auto command_line    = std::make_unique<wchar_t[]>(cmd_len + 1);
+    ::RtlCopyMemory(command_line.get(), lpCommandLine, sizeof(wchar_t) * cmd_len);
 
     if ( dwParentPid != 0u )
     {
@@ -285,7 +495,7 @@ execv(_In_ const wchar_t* lpCommandLine, _In_ u32 dwParentPid, _Out_ LPHANDLE lp
                     sizeof(HANDLE),
                     nullptr,
                     nullptr);
-                dbg(L"Spawning '{}' with PPID=%d...\n", cmd.get(), dwParentPid);
+                dbg(L"Spawning '{}' with PPID=%d...\n", command_line.get(), dwParentPid);
             }
         }
         else
@@ -295,11 +505,20 @@ execv(_In_ const wchar_t* lpCommandLine, _In_ u32 dwParentPid, _Out_ LPHANDLE lp
     }
     else
     {
-        dbg(L"Spawning '{}'...\n", cmd.get());
+        dbg(L"Spawning '{}'...\n", command_line.get());
     }
 
-    if ( ::CreateProcess(nullptr, cmd.get(), nullptr, nullptr, 1, dwFlags, nullptr, nullptr, (LPSTARTUPINFO)&si, &pi) ==
-         0 )
+    if ( ::CreateProcess(
+             nullptr,
+             command_line.get(),
+             nullptr,
+             nullptr,
+             1,
+             dwFlags,
+             nullptr,
+             nullptr,
+             (LPSTARTUPINFO)&si,
+             &pi) == 0 )
     {
         perror(L"CreateProcess()");
         return FALSE;

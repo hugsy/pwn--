@@ -97,9 +97,11 @@ xlog(
 
     if ( level == log_level_t::LOG_DEBUG )
     {
-        stream << L"{" << location.file_name() << L":" << location.line() << L":" << location.function_name() << L"()";
+        stream << L"{";
+        stream << location.file_name() << L":" << location.line() << L":";
+        stream << location.function_name() << L"()";
+        stream << L"} ";
     }
-    stream << L"} ";
 
     stream << std::vformat(std::wstring_view(fmt), std::make_wformat_args(args...)) << std::endl;
     std::wcerr << stream.str() << std::flush;
@@ -113,7 +115,7 @@ xlog(
 /// @param [inout] prefix
 ///
 void PWNAPI
-perror(_In_ const std::wstring& prefix);
+perror(_In_ const std::wstring_view& prefix);
 
 
 ///
@@ -123,7 +125,7 @@ perror(_In_ const std::wstring& prefix);
 /// @param [inout] Status
 ///
 void PWNAPI
-ntperror(_In_ const wchar_t* prefix, _In_ NTSTATUS Status);
+ntperror(_In_ const std::wstring_view& prefix, _In_ NTSTATUS Status);
 #endif
 
 } // namespace pwn::log

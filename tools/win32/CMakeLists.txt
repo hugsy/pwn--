@@ -8,9 +8,10 @@ set(
     WIN32_TOOLS
 
     AppContainMe
+    BasicExample
+    ExploitTemplate
     HexdumpFile
     ProcessReparent
-    ExploitTemplate
 )
 
 

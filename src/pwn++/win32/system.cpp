@@ -79,16 +79,16 @@ ppid(_In_ u32 dwProcessId) -> std::optional<u32>
 
 
 auto
-pidof(_In_ const std::wstring& name) -> std::optional<u32>
+pidof(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>
 {
     auto hProcessSnap = pwn::utils::GenericHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
     if ( !hProcessSnap )
     {
         perror(L"CreateToolhelp32Snapshot()");
-        return std::nullopt;
+        return Err(ErrorType::Code::RuntimeError);
     }
 
-    i32 dwPid = -1;
+    std::vector<u32> pids;
 
     do
     {
@@ -103,24 +103,23 @@ pidof(_In_ const std::wstring& name) -> std::optional<u32>
 
         do
         {
-            auto hProcess = pwn::utils::GenericHandle(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pe32.th32ProcessID));
+            auto hProcess =
+                pwn::utils::GenericHandle(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pe32.th32ProcessID));
             if ( !hProcess )
             {
                 continue;
             }
 
-            if ( ::wcscmp(name.c_str(), pe32.szExeFile) == 0 )
+            const std::wstring currentProcessName {pe32.szExeFile};
+            if ( targetProcessName == currentProcessName )
             {
-                dwPid = pe32.th32ProcessID;
-                break;
+                pids.push_back(pe32.th32ProcessID);
             }
-        } while ( ::Process32NextW(hProcessSnap.get(), &pe32) != 0 );
+
+        } while ( ::Process32Next(hProcessSnap.get(), &pe32) != 0 );
     } while ( false );
 
-    if ( dwPid < 0 )
-        return std::nullopt;
-
-    return dwPid;
+    return Ok(pids);
 }
 
 

@@ -150,7 +150,7 @@ struct globals_t
     set(std::string_view const& type)
     {
         const std::string _t {type};
-        this->set(pwn::utils::to_widestring(_t));
+        set(pwn::utils::to_widestring(_t));
     }
 
     void
@@ -176,6 +176,16 @@ struct globals_t
     set(Endianess end)
     {
         endianess = end;
+    }
+
+    void
+    set(log::log_level_t new_log_level)
+    {
+        log_level = new_log_level;
+        if ( log_level == log::log_level_t::LOG_DEBUG )
+        {
+            dbg(L"Setting DEBUG log level");
+        }
     }
 };
 

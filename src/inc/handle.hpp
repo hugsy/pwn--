@@ -2,11 +2,8 @@
 
 #include "common.hpp"
 
-static const u64 ______magic = 0xdeadbeef;
-static auto _______dummy     = []()
-{
-    throw ______magic;
-};
+static const u64 ___magic = 0xdeadbeefdeadbeef;
+static auto ___dummy      = []() {};
 
 #ifdef __linux__
 #define InvalidHandleValue -1
@@ -16,11 +13,11 @@ static auto _______dummy     = []()
 
 namespace pwn::utils
 {
-template<typename T, typename D = decltype(_______dummy)>
+template<typename T, typename D = decltype(___dummy)>
 class GenericHandle
 {
 public:
-    constexpr GenericHandle(T h = nullptr, D d = _______dummy) : m_handle(h), m_closure_function(d)
+    constexpr GenericHandle(T h = nullptr, D d = ___dummy) : m_handle(h), m_onCloseCallback(d)
     {
     }
 
@@ -59,22 +56,22 @@ public:
 
         if ( bool(m_handle) )
         {
-            try
+            const uptr p1 = *((uptr*)&m_onCloseCallback);
+            const uptr p2 = *((uptr*)&___dummy);
+            if ( p1 != p2 )
             {
-                m_closure_function();
+                m_onCloseCallback();
             }
-            catch ( u64 e )
+            else
             {
-                if ( e == ______magic )
-                {
 #ifdef __linux__
-                    close(m_handle);
+                close(m_handle);
 #else
-                    ::CloseHandle(m_handle);
+                ::CloseHandle(m_handle);
 #endif
-                }
             }
             m_handle = nullptr;
+            res      = true;
         }
 
         return res;
@@ -83,6 +80,7 @@ public:
     T m_handle = nullptr;
 
 protected:
-    D m_closure_function;
+    D m_onCloseCallback;
 };
+
 } // namespace pwn::utils

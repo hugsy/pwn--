@@ -3,7 +3,9 @@
 #include <AccCtrl.h>
 
 #include <filesystem>
+#include <iostream>
 #include <optional>
+#include <string>
 
 #include "common.hpp"
 #include "handle.hpp"
@@ -11,13 +13,47 @@
 
 namespace fs = std::filesystem;
 
+using SharedHandle = std::shared_ptr<pwn::utils::GenericHandle<HANDLE>>;
+
 namespace pwn::win::process
 {
 
 class Process
 {
+    class Memory
+    {
+    public:
+        Memory();
+        Memory(SharedHandle h);
+
+        auto
+        read(uptr const Address, usize Length) -> Result<std::vector<u8>>;
+
+        auto
+        write(uptr const Address, std::vector<u8> data) -> Result<usize>;
+
+        auto
+        memset(uptr const address, const size_t size, const u8 val = 0x00) -> Result<uptr>;
+
+        auto
+        allocate(const size_t Size, const wchar_t Permission[3] = L"rwx", const uptr ForcedMappingAddress = 0)
+            -> Result<uptr>;
+
+        auto
+        free(const uptr Address) -> bool;
+
+    private:
+        SharedHandle m_process_handle;
+    };
+
+    class Privilege
+    {
+    };
+
+    using Privileges = std::vector<Privilege>;
+
 public:
-    enum class Integrity
+    enum class Integrity : int
     {
         Unknown,
         Low,
@@ -26,7 +62,9 @@ public:
         System
     };
 
-    Process(u32 pid);
+    Process();
+    Process(u32, bool = false);
+    ~Process();
 
     fs::path const
     path() const;
@@ -40,16 +78,32 @@ public:
     u32 const
     pid() const;
 
+    Memory&
+    memory();
+
     auto
     operator<=>(Process const&) const = default;
+
+    PPEB
+    peb();
+
+    PTEB
+    teb();
 
 private:
     u32 m_pid;
     u32 m_ppid;
     std::wstring m_path;
     Integrity m_integrity_level;
-    pwn::utils::GenericHandle<HANDLE> hProcess;
+    Memory m_memory;
+    SharedHandle m_process_handle;
+    Privileges m_privileges;
+    bool m_kill_on_delete;
+    bool m_is_self;
+    PPEB m_peb;
+    PTEB m_teb;
 };
+
 
 PWNAPI auto
 pid() -> u32;
@@ -58,7 +112,7 @@ PWNAPI auto
 ppid() -> std::optional<u32>;
 
 PWNAPI auto
-list() -> std::vector<std::tuple<std::wstring, u32> >;
+list() -> std::vector<std::tuple<std::wstring, u32>>;
 
 PWNAPI auto
 get_integrity_level(const u32 dwProcessId) -> Process::Integrity;
@@ -183,7 +237,7 @@ private:
     std::wstring m_ContainerName;
     std::wstring m_ExecutablePath;
     std::vector<WELL_KNOWN_SID_TYPE> m_Capabilities;
-    std::vector<std::tuple<std::wstring, SE_OBJECT_TYPE, PACL> > m_OriginalAcls;
+    std::vector<std::tuple<std::wstring, SE_OBJECT_TYPE, PACL>> m_OriginalAcls;
     std::wstring m_SidAsString;
     std::wstring m_FolderPath;
 
@@ -194,3 +248,40 @@ private:
 };
 } // namespace appcontainer
 } // namespace pwn::win::process
+
+
+std::wostream&
+operator<<(std::wostream& wos, const pwn::win::process::Process::Integrity i);
+
+template<>
+struct std::formatter<pwn::win::process::Process::Integrity, wchar_t> : std::formatter<std::wstring, wchar_t>
+{
+    auto
+    format(pwn::win::process::Process::Integrity i, wformat_context& ctx)
+    {
+        std::wstring wstr;
+        switch ( i )
+        {
+        case pwn::win::process::Process::Integrity::Low:
+            wstr = L"INTEGRITY_LOW";
+            break;
+
+        case pwn::win::process::Process::Integrity::Medium:
+            wstr = L"INTEGRITY_MEDIUM";
+            break;
+
+        case pwn::win::process::Process::Integrity::High:
+            wstr = L"INTEGRITY_HIGH";
+            break;
+
+        case pwn::win::process::Process::Integrity::System:
+            wstr = L"INTEGRITY_SYSTEM";
+            break;
+
+        default:
+            wstr = L"INTEGRITY_UNKNOWN";
+            break;
+        }
+        return std::formatter<wstring, wchar_t>::format(std::format(wstr), ctx);
+    }
+};

@@ -273,43 +273,87 @@ private:
 ///
 /// @brief Rust-like type of error handling
 ///
-enum class SuccessType
+struct ErrorType
 {
-    Success,
-};
+    enum class Code
+    {
+        GenericError,
+        RuntimeError,
+        InvalidInput,
+        InvalidParameter,
+        UnexpectedType,
+    };
 
-enum class ErrorType
-{
-    Error,
-    RuntimeError,
-    InvalidInput,
+    Code m_code;
+    u32 m_errno;
 };
 
 template<class T>
-using Result = std::pair<std::variant<SuccessType, ErrorType>, std::optional<T>>;
+using SuccessType = std::optional<T>;
 
-struct Err : Result<int>
+template<class T>
+using Result = std::variant<SuccessType<T>, ErrorType>;
+
+struct Err : ErrorType
 {
-    Err(ErrorType ErrCode) : Result<int>(ErrCode, std::nullopt)
+    Err(ErrorType::Code ErrCode = ErrorType::Code::GenericError) :
+#ifdef _WIN32
+        ErrorType(ErrCode, ::GetLastError())
+#else
+        ErrorType(ErrCode, errno)
+#endif
     {
     }
 };
 
 template<class T>
-struct Ok : Result<T>
+struct Ok : SuccessType<T>
 {
-    Ok(T value) : Result<T>(SuccessType::Success, value)
+    Ok(T value) : SuccessType<T>(value)
     {
     }
 };
 
 template<class T>
-inline bool
+constexpr bool
 Success(Result<T> const& f)
 {
-    if ( auto const c = std::get_if<SuccessType>(&f.first); c == SuccessType::Success )
+    if ( const SuccessType<T>* c = std::get_if<SuccessType<T>>(&f); c != nullptr )
     {
         return true;
     }
     return false;
 }
+
+template<class T>
+constexpr T const&
+Value(Result<T> const& f)
+{
+    if ( const SuccessType<T>* c = std::get_if<SuccessType<T>>(&f); c != nullptr && c->has_value() )
+    {
+        return c->value();
+    }
+    throw std::bad_variant_access();
+}
+
+template<class T>
+constexpr ErrorType const&
+Error(Result<T> const& f)
+{
+    if ( const ErrorType* c = std::get_if<ErrorType>(&f); c != nullptr )
+    {
+        return *c;
+    }
+    throw std::bad_variant_access();
+}
+
+
+template<>
+struct std::formatter<ErrorType, wchar_t> : std::formatter<std::wstring, wchar_t>
+{
+    auto
+    format(ErrorType const a, wformat_context& ctx)
+    {
+        return formatter<wstring, wchar_t>::format(std::format(L"ERROR_{}", a), ctx);
+    }
+};
