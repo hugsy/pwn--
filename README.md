@@ -43,8 +43,8 @@ In your C++ file, just include `pwn.h` and link with `pwn++.dll`.
 Then compile your binary linked with the lib (make sure you're at least C++17 compliant):
 
 ```bash
-C:\> cl.exe whatever.cc /std:c++17
-C:\> clang.exe whatever.cc -std=c++17
+C:\> cl.exe whatever.cc /std:c++20
+C:\> clang.exe whatever.cc -std=c++20
 ```
 
 ### Better start
