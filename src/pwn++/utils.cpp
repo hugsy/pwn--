@@ -15,6 +15,14 @@
 extern struct pwn::globals_t pwn::globals;
 
 
+#define PWN_UTILS_LOWER_CHARSET "abcdefghijklmnopqrstuvwxyz"
+#define PWN_UTILS_UPPER_CHARSET "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+#define PWN_UTILS_DIGITS_CHARSET "0123456789"
+#define PWN_UTILS_UPPER_LOWER_CHARSET PWN_UTILS_LOWER_CHARSET PWN_UTILS_UPPER_CHARSET
+#define PWN_UTILS_ALNUM_CHARSET PWN_UTILS_UPPER_LOWER_CHARSET PWN_UTILS_DIGITS_CHARSET
+#define PWN_UTILS_PRINTABLE_CHARSET PWN_UTILS_ALNUM_CHARSET "!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ "
+
+
 namespace pwn::utils
 {
 
@@ -22,33 +30,32 @@ namespace
 {
 // home-made ugly hexdump
 // TODO: improve at some point
-void
-__hexdump(_In_ const u8* data, _In_ size_t size)
+std::wostringstream
+__hexdump(const u8* data, const size_t sz)
 {
+    std::wostringstream wos;
     wchar_t ascii[17] = {0};
-    u32 i;
-    u32 j;
-    size &= 0xffffffff;
+    const u32 size    = sz & 0xffffffff;
 
-    for ( i = 0; i < size; ++i )
+    for ( u32 i = 0; i < size; ++i )
     {
-        auto c = data[i];
+        auto const c = data[i];
 
         if ( ascii[0] == 0u )
         {
-            std::wcout << std::setfill((wchar_t)'0') << std::setw(4) << std::noshowbase << std::hex << (int)i << "   ";
+            wos << std::setfill((wchar_t)'0') << std::setw(4) << std::noshowbase << std::hex << (int)i << "   ";
         }
 
-        std::wcout << std::setfill((wchar_t)'0') << std::setw(2) << std::uppercase << std::noshowbase << std::hex
-                   << (int)c << " ";
+        wos << std::setfill((wchar_t)'0') << std::setw(2) << std::uppercase << std::noshowbase << std::hex << (int)c
+            << " ";
         ascii[i % 16] = (c >= 0x20 && c <= 0x7e) ? c : '.';
 
         if ( (i + 1) % 8 == 0 || i + 1 == size )
         {
-            std::wcout << " ";
+            wos << " ";
             if ( (i + 1) % 16 == 0 )
             {
-                std::wcout << "|  " << ascii << std::endl;
+                wos << "|  " << ascii << std::endl;
                 ::memset(ascii, 0, sizeof(ascii));
             }
             else if ( i + 1 == size )
@@ -56,71 +63,24 @@ __hexdump(_In_ const u8* data, _In_ size_t size)
                 ascii[(i + 1) % 16] = '\0';
                 if ( (i + 1) % 16 <= 8 )
                 {
-                    std::wcout << " ";
+                    wos << " ";
                 }
-                for ( j = (i + 1) % 16; j < 16; ++j )
+                for ( u32 j = (i + 1) % 16; j < 16; ++j )
                 {
-                    std::wcout << "   ";
+                    wos << "   ";
                 }
-                std::wcout << "|  " << ascii << std::endl;
+                wos << "|  " << ascii << std::endl;
             }
         }
     }
 
-    std::wcout << std::flush;
+    return wos;
 }
 
-const std::string b64_charset =
+constexpr std::string_view b64_charset =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
-
-
-const std::vector<i8> b64_inverted_table = {
-    62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0,  1,  2,  3,  4,
-    5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1,
-    26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51};
-
-
-inline auto
-b64_is_valid_char(unsigned char c) -> bool
-{
-    return ((isalnum(c) != 0) || (c == '+') || (c == '/') || (c == '='));
-}
-
-
-inline auto
-b64_encoded_size(size_t inlen) -> size_t
-{
-    size_t ret = inlen;
-    if ( inlen % 3 != 0 )
-        ret += 3 - (inlen % 3);
-    ret /= 3;
-    ret *= 4;
-    return ret;
-}
-
-inline auto
-b64_decoded_size(const char* in) -> size_t
-{
-    if ( in == nullptr )
-        return 0;
-
-    size_t len = strlen(in);
-    size_t ret = len / 4 * 3;
-    for ( size_t i = len; (i--) > 0; )
-    {
-        if ( in[i] == '=' )
-        {
-            ret--;
-        }
-        else
-        {
-            break;
-        }
-    }
-    return ret;
-}
 
 
 //
@@ -137,22 +97,6 @@ xorshift64() -> u64
     return seed;
 }
 
-/*
-auto
-xorshift128() -> u32
-{
-    static u32 x = 123456789;
-    static u32 y = 362436069;
-    static u32 z = 521288629;
-    static u32 w = 88675123;
-    u32 t;
-    t        = x ^ (x << 11);
-    x        = y;
-    y        = z;
-    z        = w;
-    return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
-}
-*/
 
 /*++
 
@@ -206,10 +150,16 @@ __create_cyclic_buffer(
 
 
 void
-random::seed()
+random::seed(std::optional<u64> seed)
 {
-    // g_seed = 1;
-    pwn::globals.m_seed = time(nullptr);
+    if ( seed )
+    {
+        pwn::globals.m_seed = seed.value();
+    }
+    else
+    {
+        pwn::globals.m_seed = time(nullptr);
+    }
 }
 
 
@@ -221,7 +171,7 @@ random::rand() -> u64
 
 
 auto
-random::rand(_In_ u32 min, _In_ u32 max) -> u64
+random::rand(u64 const max, u64 const min) noexcept -> u64
 {
     return (xorshift64() + min) % max;
 }
@@ -294,34 +244,48 @@ random::alnum(_In_ u32 length) -> std::wstring
 
 
 void
-hexdump(_In_ const u8* Buffer, _In_ size_t BufferSize)
+hexdump(const u8* Buffer, const size_t BufferSize)
 {
-    std::lock_guard<std::mutex> guard(pwn::globals.m_console_mutex);
-    __hexdump(Buffer, BufferSize);
+    auto hexstr = __hexdump(Buffer, BufferSize);
+
+    {
+        std::lock_guard<std::mutex> guard(pwn::globals.m_console_mutex);
+        std::wcout << hexstr.str() << std::endl;
+    }
 }
 
 
 void
-hexdump(_In_ const std::vector<u8>& bytes)
+hexdump(const std::vector<u8>& bytes)
 {
     hexdump((const u8*)bytes.data(), bytes.size());
 }
 
 
 auto
-base64_encode(_In_ std::vector<u8> const& bytes) -> std::string
+base64_encode(std::vector<u8> const& bytes) noexcept -> Result<std::string>
 {
     return base64_encode(bytes.data(), bytes.size());
 }
 
 
 auto
-base64_encode(_In_ const u8* in, _In_ size_t len) -> std::string
+base64_encode(const u8* in, const usize len) noexcept -> Result<std::string>
 {
-    if ( in == nullptr || len == 0 )
-        throw std::runtime_error("invalid input");
+    auto encoded_size = [](const usize inlen) -> usize
+    {
+        size_t ret = inlen;
+        if ( inlen % 3 != 0 )
+            ret += 3 - (inlen % 3);
+        ret /= 3;
+        ret *= 4;
+        return ret;
+    };
 
-    size_t elen        = b64_encoded_size(len);
+    if ( in == nullptr || len == 0 )
+        return Err(ErrorType::Code::InvalidParameter);
+
+    const usize elen   = encoded_size(len);
     auto output_buffer = std::make_unique<u8[]>(elen + 1);
     auto out           = output_buffer.get();
     memset(out, 0, elen + 1);
@@ -343,29 +307,60 @@ base64_encode(_In_ const u8* in, _In_ size_t len) -> std::string
 
 
 auto
-base64_decode(_In_ std::string const& in) -> std::optional<std::vector<u8>>
+base64_decode(std::string_view const& in) noexcept -> Result<std::vector<u8>>
 {
-    size_t len    = in.size();
-    size_t outlen = b64_decoded_size(in.c_str());
+    const std::array<i8, 80> b64_inverted_table = {
+        62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0,  1,  2,  3,  4,
+        5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1,
+        26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51};
 
-    if ( !len || !outlen || len % 4 != 0 )
-        return std::nullopt;
+    auto decoded_size = [&in]() -> usize
+    {
+        const usize len = in.size();
+        usize ret       = len / 4 * 3;
+        for ( size_t i = len; (i--) > 0; )
+        {
+            if ( in[i] == '=' )
+            {
+                ret--;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return ret;
+    };
+
+    auto is_valid_char = [](unsigned char c) -> bool
+    {
+        return ((std::isalnum(c) != 0) || (c == '+') || (c == '/') || (c == '='));
+    };
+
+    const usize len    = in.size();
+    const usize outlen = decoded_size();
+
+    if ( !len || !outlen )
+        return Err(ErrorType::Code::InvalidParameter);
+
+    if ( len % 4 != 0 )
+        return Err(ErrorType::Code::ArithmeticError);
 
     for ( size_t i = 0; i < len; i++ )
     {
-        if ( !b64_is_valid_char(in[i]) )
+        if ( is_valid_char(in.at(i)) == false )
         {
-            return std::nullopt;
+            return Err(ErrorType::Code::IllegalValue);
         }
     }
 
     std::vector<u8> out(outlen, 0);
     for ( size_t i = 0, j = 0; i < len; i += 4, j += 3 )
     {
-        int v = b64_inverted_table[in[i] - 43];
-        v     = (v << 6) | b64_inverted_table[in[i + 1] - 43];
-        v     = in[i + 2] == '=' ? v << 6 : (v << 6) | b64_inverted_table[in[i + 2] - 43];
-        v     = in[i + 3] == '=' ? v << 6 : (v << 6) | b64_inverted_table[in[i + 3] - 43];
+        int v = b64_inverted_table.at(in.at(i) - 43);
+        v     = (v << 6) | b64_inverted_table.at(in.at(i + 1) - 43);
+        v     = in[i + 2] == '=' ? v << 6 : (v << 6) | b64_inverted_table.at(in.at(i + 2) - 43);
+        v     = in[i + 3] == '=' ? v << 6 : (v << 6) | b64_inverted_table.at(in.at(i + 3) - 43);
 
         out[j] = (v >> 16) & 0xFF;
         if ( in[i + 2] != '=' )
@@ -374,7 +369,7 @@ base64_decode(_In_ std::string const& in) -> std::optional<std::vector<u8>>
             out[j + 2] = v & 0xFF;
     }
 
-    return out;
+    return Ok(out);
 }
 
 
@@ -395,7 +390,14 @@ to_string(_In_ std::wstring const& wstr) -> std::string
 
 
 auto
-to_widestring(_In_ std::string const& str) -> std::wstring
+to_wstring(std::string_view const& str) noexcept -> std::wstring
+{
+    return to_widestring(str);
+}
+
+
+auto
+to_widestring(std::string_view const& str) noexcept -> std::wstring
 {
     std::wstring out;
     std::transform(
@@ -466,55 +468,6 @@ strip(_In_ std::string const& str) -> std::string
 {
     const std::array<char, 3> chars_to_strip = {' ', '\r', '\n'};
     return strippable_string(str, chars_to_strip);
-}
-
-
-auto
-path::abspath(_In_ const std::wstring& path) -> std::wstring
-{
-#if defined(__PWNLIB_WINDOWS_BUILD__)
-    auto res = std::wstring();
-    res.resize(MAX_PATH + 1);
-    ::GetFullPathNameW(path.c_str(), MAX_PATH, &res[0], nullptr);
-    return res;
-#elif defined(__PWNLIB_LINUX_BUILD__)
-    auto out = realpath(to_string(path).c_str(), nullptr);
-    return to_widestring(out);
-#endif
-}
-
-
-auto
-startswith(_In_ const std::string& str, _In_ const std::string& pattern) -> bool
-{
-    return static_cast<bool>(str.size() >= pattern.size() && str.compare(0, pattern.size(), pattern) == 0);
-    return str.starts_with(pattern.c_str());
-}
-
-
-auto
-startswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern) -> bool
-{
-    // return static_cast<bool>(str.size() >= pattern.size() && str.compare(0, pattern.size(), pattern) == 0);
-    return str.starts_with(pattern.c_str());
-}
-
-
-auto
-endswith(_In_ const std::string& str, _In_ const std::string& pattern) -> bool
-{
-    // return static_cast<bool>(
-    //     str.size() >= pattern.size() && str.compare(str.size() - pattern.size(), pattern.size(), pattern) == 0);
-    return str.ends_with(pattern.c_str());
-}
-
-
-auto
-endswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern) -> bool
-{
-    // return static_cast<bool>(str.size() >= pattern.size() && str.compare(str.size() - pattern.size(), pattern.size(),
-    // pattern) == 0);
-    return str.ends_with(pattern.c_str());
 }
 
 
@@ -633,16 +586,22 @@ p8(_In_ u8 v) -> std::vector<u8>
 {
     return __pack(v);
 }
+
+
 auto
 p16(_In_ u16 v) -> std::vector<u8>
 {
     return __pack(v);
 }
+
+
 auto
 p32(_In_ u32 v) -> std::vector<u8>
 {
     return __pack(v);
 }
+
+
 auto
 p64(_In_ u64 v) -> std::vector<u8>
 {

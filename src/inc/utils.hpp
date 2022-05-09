@@ -8,108 +8,303 @@
 #include "context.hpp"
 
 
-#define PWN_UTILS_LOWER_CHARSET "abcdefghijklmnopqrstuvwxyz"
-#define PWN_UTILS_UPPER_CHARSET "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-#define PWN_UTILS_DIGITS_CHARSET "0123456789"
-#define PWN_UTILS_UPPER_LOWER_CHARSET PWN_UTILS_LOWER_CHARSET PWN_UTILS_UPPER_CHARSET
-#define PWN_UTILS_ALNUM_CHARSET PWN_UTILS_UPPER_LOWER_CHARSET PWN_UTILS_DIGITS_CHARSET
-#define PWN_UTILS_PRINTABLE_CHARSET PWN_UTILS_ALNUM_CHARSET "!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ "
-
-
 using flattenable_t = std::variant<std::string, std::wstring, std::vector<u8>>;
 
 namespace pwn::utils
 {
 namespace random
 {
+///
+/// @brief (Re-)Seed the internal PRNG
+///
 PWNAPI void
-seed();
+seed(std::optional<u64> seed = std::nullopt);
+
+
+///
+/// @brief Get the next pseudo random number.
+///
+/// @return a pseudo random number
+///
 PWNAPI auto
 rand() -> u64;
+
+
+///
+/// @brief Same as `rand()` but within an interval
+///
+/// @param max a u64 value, the maximum interval value
+/// @param min a u64 value, the minimum interval value. If not provided, `0`
+/// @return u64
+///
 PWNAPI auto
-rand(_In_ u32 min, _In_ u32 max) -> u64;
+rand(u64 const max, u64 const min) noexcept -> u64;
+
+
+///
+/// @brief
+///
 PWNAPI auto
 byte() -> u8;
+
+
+///
+/// @brief
+///
 PWNAPI auto
 word() -> u16;
+
+
+///
+/// @brief
+///
 PWNAPI auto
 dword() -> u32;
+
+
+///
+/// @brief
+///
 PWNAPI auto
 qword() -> u64;
+
+
+///
+/// @brief
+///
 PWNAPI auto
 string(_In_ u32 length) -> std::wstring;
+
+
+///
+/// @brief
+///
 PWNAPI auto
 alnum(_In_ u32 length) -> std::wstring;
+
+
+///
+/// @brief
+///
 PWNAPI auto
 buffer(_In_ u32 length) -> std::vector<u8>;
 } // namespace random
 
-PWNAPI auto
-base64_encode(_In_ const u8* bytes_to_encode, _In_ size_t in_len) -> std::string;
-PWNAPI auto
-base64_encode(_In_ std::vector<u8> const& bytes) -> std::string;
-PWNAPI auto
-base64_decode(_In_ std::string const& encoded_string) -> std::optional<std::vector<u8>>;
 
+///
+/// @brief Encode a buffer of a given size to base64
+///
+/// @param buffer the buffer to encode
+/// @param buffer_length the buffer expected size
+/// @return Result<std::string> a b64 string on success, Err() type otherwise
+///
 PWNAPI auto
-to_widestring(_In_ const std::string& s) -> std::wstring;
+base64_encode(const u8* buffer, const size_t buffer_length) noexcept -> Result<std::string>;
+
+
+///
+/// @brief Encode a vector of bytes to base64
+///
+/// @param bytes the vector to encode
+/// @return Result<std::string> a b64 string on success, Err() type otherwise
+///
 PWNAPI auto
-to_string(_In_ const std::wstring& ws) -> std::string;
+base64_encode(std::vector<u8> const& bytes) noexcept -> Result<std::string>;
+
+
+///
+/// @brief Decode a base64 string
+///
+/// @param encoded_string
+/// @return Result<std::vector<u8>> a vector of bytes on success, Err() type otherwise
+///
+PWNAPI auto
+base64_decode(std::string_view const& encoded_string) noexcept -> Result<std::vector<u8>>;
+
+
+///
+/// @brief Convert a `std::string` to `std::wstring`
+///
+/// @param str the string to convert
+/// @return std::wstring
+///
+PWNAPI auto
+to_widestring(const std::string_view& str) noexcept -> std::wstring;
+
+
+///
+/// @brief Alias for `pwn::utils::to_widestring`
+///
+/// @param str the string to convert
+/// @return std::wstring
+///
+PWNAPI auto
+to_wstring(const std::string_view& str) noexcept -> std::wstring;
+
+
+///
+/// @brief
+///
+PWNAPI auto
+to_string(const std::wstring_view& ws) -> std::string;
+
+
+///
+/// @brief
+///
 PWNAPI auto
 wstring_to_bytes(_In_ const std::wstring& str) -> std::vector<u8>;
+
+
+///
+/// @brief
+///
 PWNAPI auto
 string_to_bytes(_In_ std::string const& str) -> std::vector<u8>;
+
+///
+/// @brief
+///
 PWNAPI auto
-to_widestring(_In_ std::string const& str) -> std::wstring;
+to_wstring(std::string_view const& str) noexcept -> std::wstring;
+
+///
+/// @brief
+///
+PWNAPI auto
+to_widestring(std::string_view const& str) noexcept -> std::wstring;
+
+///
+/// @brief
+///
 PWNAPI auto
 split(_In_ const std::wstring& ws, _In_ wchar_t delim) -> std::vector<std::wstring>;
+
+///
+/// @brief
+///
 PWNAPI auto
 join(_In_ const std::vector<std::wstring>& args) -> std::wstring;
+
+///
+/// @brief
+///
 PWNAPI auto
 strip(_In_ std::wstring const& args) -> std::wstring;
+
+///
+/// @brief
+///
 PWNAPI auto
 strip(_In_ std::string const& args) -> std::string;
 
-namespace path
-{
-PWNAPI auto
-abspath(_In_ const std::wstring& path) -> std::wstring;
-}
 
+///
+/// @brief
+///
 PWNAPI auto
 startswith(_In_ const std::string& str, _In_ const std::string& pattern) -> bool;
+
+///
+/// @brief
+///
 PWNAPI auto
 startswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern) -> bool;
+
+///
+/// @brief
+///
 PWNAPI auto
 endswith(_In_ const std::string& str, _In_ const std::string& pattern) -> bool;
+
+///
+/// @brief
+///
 PWNAPI auto
 endswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern) -> bool;
 
+
+///
+/// @brief
+///
 PWNAPI auto
 p8(_In_ u8 v) -> std::vector<u8>;
+
+///
+/// @brief
+///
 PWNAPI auto
 p16(_In_ u16 v) -> std::vector<u8>;
+
+///
+/// @brief
+///
 PWNAPI auto
 p32(_In_ u32 v) -> std::vector<u8>;
+
+///
+/// @brief
+///
 PWNAPI auto
 p64(_In_ u64 v) -> std::vector<u8>;
 
-PWNAPI auto
-flatten(_In_ const std::vector<flattenable_t>& args) -> std::vector<u8>;
 
+///
+/// @brief
+///
+/// @param args
+/// @return std::vector<u8>
+///
+PWNAPI auto
+flatten(const std::vector<flattenable_t>& args) -> std::vector<u8>;
+
+
+///
+/// @brief
+///
+/// @param dwSize
+/// @param dwPeriod
+/// @param buffer
+/// @return true
+/// @return false
+///
 PWNAPI auto
 cyclic(_In_ u32 dwSize, _In_ u32 dwPeriod, _Out_ std::vector<u8>& buffer) -> bool;
+
+///
+/// @brief
+///
 PWNAPI auto
 cyclic(_In_ u32 dwSize, _In_ u32 dwPeriod) -> std::vector<u8>;
+
+///
+/// @brief
+///
 PWNAPI auto
 cyclic(_In_ u32 dwSize, _Out_ std::vector<u8>& buffer) -> bool;
+
+///
+/// @brief
+///
 PWNAPI auto
 cyclic(_In_ u32 dwSize) -> std::vector<u8>;
 
+
+///
+/// @brief Prints a hexdump of the given buffer and size
+///
+/// @param Buffer
+/// @param BufferSize
+///
 PWNAPI void
-hexdump(_In_ const u8* Buffer, _In_ size_t BufferSize);
+hexdump(const u8* Buffer, const size_t BufferSize);
+
+
+///
+/// @brief
+///
 PWNAPI void
-hexdump(_In_ const std::vector<u8>& bytes);
+hexdump(const std::vector<u8>& bytes);
 
 
 ///

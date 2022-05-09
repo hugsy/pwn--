@@ -282,6 +282,10 @@ struct ErrorType
         InvalidInput,
         InvalidParameter,
         UnexpectedType,
+        ArithmeticError,
+        OverflowError,
+        UnderflowError,
+        IllegalValue,
     };
 
     Code m_code;
