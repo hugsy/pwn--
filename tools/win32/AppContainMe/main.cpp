@@ -50,7 +50,7 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
             for ( int i = 2; i < argc; i++ )
             {
                 std::wstring arg {argv[i]};
-                if ( !pwn::utils::startswith(arg, L"c:") )
+                if ( arg.starts_with(L"c:") == false )
                     continue;
 
                 std::wstring value(arg.substr(2));
@@ -78,7 +78,7 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
                 {
                     std::wstring arg {argv[i]};
 
-                    if ( pwn::utils::startswith(arg, std::wstring(L"d:")) )
+                    if ( arg.starts_with(L"d:") )
                     {
                         const std::filesystem::path value(arg.substr(2));
                         if ( !std::filesystem::is_regular_file(value) && !std::filesystem::is_directory(value) )
@@ -104,7 +104,7 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
                         continue;
                     }
 
-                    if ( pwn::utils::startswith(arg, std::wstring(L"r:")) )
+                    if ( arg.starts_with(L"r:") )
                     {
                         std::wstring value(arg.substr(2));
                         //

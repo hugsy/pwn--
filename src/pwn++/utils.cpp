@@ -374,7 +374,7 @@ base64_decode(std::string_view const& in) noexcept -> Result<std::vector<u8>>
 
 
 auto
-to_string(_In_ std::wstring const& wstr) -> std::string
+to_string(_In_ std::wstring_view const& wstr) -> std::string
 {
     std::string out;
     std::transform(
@@ -472,7 +472,7 @@ strip(_In_ std::string const& str) -> std::string
 
 
 auto
-wstring_to_bytes(_In_ std::wstring const& str) -> std::vector<u8>
+wstring_to_bytes(_In_ std::wstring_view const& str) -> std::vector<u8>
 {
     std::vector<u8> out;
     for ( wchar_t i : str )
@@ -484,7 +484,7 @@ wstring_to_bytes(_In_ std::wstring const& str) -> std::vector<u8>
 }
 
 auto
-string_to_bytes(_In_ std::string const& str) -> std::vector<u8>
+string_to_bytes(_In_ std::string_view const& str) -> std::vector<u8>
 {
     std::vector<u8> out;
     std::transform(

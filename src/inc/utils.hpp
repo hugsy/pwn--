@@ -153,14 +153,14 @@ to_string(const std::wstring_view& ws) -> std::string;
 /// @brief
 ///
 PWNAPI auto
-wstring_to_bytes(_In_ const std::wstring& str) -> std::vector<u8>;
+wstring_to_bytes(_In_ const std::wstring_view& str) -> std::vector<u8>;
 
 
 ///
 /// @brief
 ///
 PWNAPI auto
-string_to_bytes(_In_ std::string const& str) -> std::vector<u8>;
+string_to_bytes(_In_ std::string_view const& str) -> std::vector<u8>;
 
 ///
 /// @brief

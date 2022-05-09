@@ -11,11 +11,12 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
 
     const auto target_process = (argc >= 2) ? std::wstring(argv[1]) : std::wstring(L"cmd.exe");
 
-    auto ppid = pwn::win::system::pidof(L"winlogon.exe");
-    if ( ppid )
+    auto res = pwn::win::system::pidof(L"winlogon.exe");
+    if ( Success(res) )
     {
-        info(L"found winlogon pid={}\n", ppid.value());
-        std::optional<HANDLE> hProcess = pwn::win::process::execv(target_process.c_str(), ppid.value());
+        auto ppid = Value(res).front();
+        info(L"found winlogon pid={}\n", ppid);
+        std::optional<HANDLE> hProcess = pwn::win::process::execv(target_process.c_str(), ppid);
         if ( hProcess )
         {
             auto h = pwn::utils::GenericHandle(hProcess.value());
