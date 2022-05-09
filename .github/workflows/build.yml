@@ -20,8 +20,8 @@ jobs:
         configuration: ['Debug']
         include:
           - runs-on: ubuntu-latest
-            c_compiler: ['gcc-11', 'clang-15']
-            cpp_compiler: ['g++-11, 'clang++-15']
+            c_compiler: clang-15
+            cpp_compiler: clang++-15
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -38,7 +38,7 @@ jobs:
     - name: Sets Linux specific environment variables
       if: matrix.os == 'ubuntu-latest'
       env:
-        CC:  ${{ matrix.c_compiler}}
+        CC:  ${{ matrix.c_compiler}}-
         CXX: ${{ matrix.cpp_compiler}}
       run: |
         echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
