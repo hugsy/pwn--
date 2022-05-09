@@ -215,12 +215,18 @@ Process::memory()
     return m_memory;
 }
 
+const HANDLE
+Process::handle() const
+{
+    return m_process_handle->get();
+}
+
 PPEB
 Process::peb()
 {
     if ( !m_peb )
     {
-        auto res = memory().read((uptr)(teb() + FIELD_OFFSET(TEB, ProcessEnvironmentBlock)), sizeof(PVOID));
+        auto res = memory().read((uptr)(teb() + FIELD_OFFSET(TEB, ProcessEnvironmentBlock)), sizeof(uptr));
         if ( Success(res) )
         {
             auto val = Value(res);
@@ -249,7 +255,7 @@ Process::teb()
 
             const std::vector<u8> sc = {
                 // clang-format off
-                0x48, 0x8d, 0x0d, 0x10, 0x00, 0x00, 0x00, // lea rcx, [rip+0x100]
+                0x48, 0x8d, 0x0d, 0x80, 0x00, 0x00, 0x00, // lea rcx, [rip+0x80]
                 0x65, 0x48, 0xa1, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // mov rax, gs:0x30
                 0x48, 0x89, 0x01, // mov [rcx], rax
                 0x48, 0x31, 0xc0, 0xfe, 0xc0, // xor rax, rax; inc al
@@ -273,7 +279,11 @@ Process::teb()
                 ::WaitForSingleObject(hProcess.get(), INFINITE);
                 if ( ::GetExitCodeThread(hProcess.get(), &ExitCode) && ExitCode == 1 )
                 {
-                    auto foo = memory().read(ptr + 0x100, sizeof(PVOID));
+                    auto res = memory().read(ptr + 0x80, sizeof(uptr));
+                    if ( Success(res) )
+                    {
+                        m_teb = ((PTEB)Value(res).data());
+                    }
                 }
             }
             memory().free(ptr);

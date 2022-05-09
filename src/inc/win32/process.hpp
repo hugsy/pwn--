@@ -90,6 +90,9 @@ public:
     PTEB
     teb();
 
+    const HANDLE
+    handle() const;
+
 private:
     u32 m_pid;
     u32 m_ppid;

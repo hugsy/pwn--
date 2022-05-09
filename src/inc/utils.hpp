@@ -119,4 +119,10 @@ void PWNAPI
 pause();
 
 
+///
+/// @brief Breakpoint the execution
+///
+void
+debugbreak();
+
 } // namespace pwn::utils
