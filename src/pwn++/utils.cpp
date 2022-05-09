@@ -691,8 +691,16 @@ flatten(_In_ const std::vector<flattenable_t>& args) -> std::vector<u8>
 void
 pause()
 {
-    dbg(L"Pausing, press enter to resume...\n");
+    dbg(L"Pausing, press enter to resume...");
     std::cin.get();
+}
+
+
+void
+debugbreak()
+{
+    dbg(L"Breakpointing...");
+    DebugBreak();
 }
 
 } // namespace pwn::utils
