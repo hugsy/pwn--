@@ -35,8 +35,8 @@ perror(_In_ const std::wstring_view& prefix)
         sysMsgSz,
         nullptr);
 
-    auto sysMsgStr = std::wstring(sysMsg.begin(), sysMsg.end());
-    sysMsgStr.shrink_to_fit();
+    const usize max_len = ::wcslen((wchar_t*)sysMsg.data());
+    auto sysMsgStr      = std::wstring(sysMsg.begin(), sysMsg.begin() + max_len * sizeof(wchar_t));
     err(L"{}, errcode={:#x}: {}", prefix, eNum, sysMsgStr);
 }
 

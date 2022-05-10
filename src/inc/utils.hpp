@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <optional>
 #include <type_traits>
 #include <variant>
@@ -9,6 +10,45 @@
 
 
 using flattenable_t = std::variant<std::string, std::wstring, std::vector<u8>>;
+
+///
+/// @brief Same as Python's `all`
+///
+/// @tparam Args an `std::integral` templating type
+/// @param args the variadic parameters to check
+/// @return true if all variadic parameters are true
+/// @return false otherwise
+///
+template<std::integral... Args>
+bool
+all(Args... args);
+
+
+///
+/// @brief Same as Python's `any`
+///
+/// @tparam Args an `std::integral` templating type
+/// @param args the variadic parameters to check
+/// @return true if any variadic parameter is true
+/// @return false otherwise
+///
+template<std::integral... Args>
+bool
+any(Args... args);
+
+
+///
+/// @brief Opposite of `all`
+///
+/// @tparam Args an `std::integral` templating type
+/// @param args the variadic parameters to check
+/// @return true if all variadic parameters are false
+/// @return false otherwise
+///
+template<std::integral... Args>
+bool
+none(Args... args);
+
 
 namespace pwn::utils
 {
@@ -99,7 +139,7 @@ buffer(_In_ u32 length) -> std::vector<u8>;
 /// @return Result<std::string> a b64 string on success, Err() type otherwise
 ///
 PWNAPI auto
-base64_encode(const u8* buffer, const size_t buffer_length) noexcept -> Result<std::string>;
+base64_encode(const u8* buffer, const size_t buffer_length) -> Result<std::string>;
 
 
 ///
@@ -109,7 +149,7 @@ base64_encode(const u8* buffer, const size_t buffer_length) noexcept -> Result<s
 /// @return Result<std::string> a b64 string on success, Err() type otherwise
 ///
 PWNAPI auto
-base64_encode(std::vector<u8> const& bytes) noexcept -> Result<std::string>;
+base64_encode(std::vector<u8> const& bytes) -> Result<std::string>;
 
 
 ///
@@ -119,7 +159,7 @@ base64_encode(std::vector<u8> const& bytes) noexcept -> Result<std::string>;
 /// @return Result<std::vector<u8>> a vector of bytes on success, Err() type otherwise
 ///
 PWNAPI auto
-base64_decode(std::string_view const& encoded_string) noexcept -> Result<std::vector<u8>>;
+base64_decode(std::string_view const& encoded_string) -> Result<std::vector<u8>>;
 
 
 ///

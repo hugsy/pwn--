@@ -23,6 +23,30 @@ extern struct pwn::globals_t pwn::globals;
 #define PWN_UTILS_PRINTABLE_CHARSET PWN_UTILS_ALNUM_CHARSET "!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ "
 
 
+template<std::integral... Args>
+bool
+all(Args... args)
+{
+    return (... && args);
+}
+
+
+template<std::integral... Args>
+bool
+any(Args... args)
+{
+    return (... || args);
+}
+
+
+template<std::integral... Args>
+bool
+none(Args... args)
+{
+    return not(... || args);
+}
+
+
 namespace pwn::utils
 {
 
@@ -31,7 +55,7 @@ namespace
 // home-made ugly hexdump
 // TODO: improve at some point
 std::wostringstream
-__hexdump(const u8* data, const size_t sz)
+__hexdump(const u8* data, const usize sz)
 {
     std::wostringstream wos;
     wchar_t ascii[17] = {0};
@@ -107,13 +131,13 @@ void
 __create_cyclic_buffer(
     _In_ u32 t,
     _In_ u32 p,
-    _In_ size_t dwSize,
+    _In_ usize dwSize,
     _In_ const std::string& Alphabet,
     _In_ u32 period,
     _In_ u32* aIndex,
     _Inout_ std::vector<u8>& lpResult)
 {
-    size_t dwAlphabetLen = Alphabet.size();
+    usize dwAlphabetLen = Alphabet.size();
 
     if ( lpResult.size() == dwSize )
     {
@@ -244,7 +268,7 @@ random::alnum(_In_ u32 length) -> std::wstring
 
 
 void
-hexdump(const u8* Buffer, const size_t BufferSize)
+hexdump(const u8* Buffer, const usize BufferSize)
 {
     auto hexstr = __hexdump(Buffer, BufferSize);
 
@@ -263,18 +287,18 @@ hexdump(const std::vector<u8>& bytes)
 
 
 auto
-base64_encode(std::vector<u8> const& bytes) noexcept -> Result<std::string>
+base64_encode(std::vector<u8> const& bytes) -> Result<std::string>
 {
     return base64_encode(bytes.data(), bytes.size());
 }
 
 
 auto
-base64_encode(const u8* in, const usize len) noexcept -> Result<std::string>
+base64_encode(const u8* in, const usize len) -> Result<std::string>
 {
     auto encoded_size = [](const usize inlen) -> usize
     {
-        size_t ret = inlen;
+        usize ret = inlen;
         if ( inlen % 3 != 0 )
             ret += 3 - (inlen % 3);
         ret /= 3;
@@ -290,7 +314,7 @@ base64_encode(const u8* in, const usize len) noexcept -> Result<std::string>
     auto out           = output_buffer.get();
     memset(out, 0, elen + 1);
 
-    for ( size_t i = 0, j = 0; i < len; i += 3, j += 4 )
+    for ( usize i = 0, j = 0; i < len; i += 3, j += 4 )
     {
         u32 v = in[i];
         v     = i + 1 < len ? v << 8 | in[i + 1] : v << 8;
@@ -307,7 +331,7 @@ base64_encode(const u8* in, const usize len) noexcept -> Result<std::string>
 
 
 auto
-base64_decode(std::string_view const& in) noexcept -> Result<std::vector<u8>>
+base64_decode(std::string_view const& in) -> Result<std::vector<u8>>
 {
     const std::array<i8, 80> b64_inverted_table = {
         62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0,  1,  2,  3,  4,
@@ -318,7 +342,7 @@ base64_decode(std::string_view const& in) noexcept -> Result<std::vector<u8>>
     {
         const usize len = in.size();
         usize ret       = len / 4 * 3;
-        for ( size_t i = len; (i--) > 0; )
+        for ( usize i = len; (i--) > 0; )
         {
             if ( in[i] == '=' )
             {
@@ -346,7 +370,7 @@ base64_decode(std::string_view const& in) noexcept -> Result<std::vector<u8>>
     if ( len % 4 != 0 )
         return Err(ErrorType::Code::ArithmeticError);
 
-    for ( size_t i = 0; i < len; i++ )
+    for ( usize i = 0; i < len; i++ )
     {
         if ( is_valid_char(in.at(i)) == false )
         {
@@ -355,7 +379,7 @@ base64_decode(std::string_view const& in) noexcept -> Result<std::vector<u8>>
     }
 
     std::vector<u8> out(outlen, 0);
-    for ( size_t i = 0, j = 0; i < len; i += 4, j += 3 )
+    for ( usize i = 0, j = 0; i < len; i += 4, j += 3 )
     {
         int v = b64_inverted_table.at(in.at(i) - 43);
         v     = (v << 6) | b64_inverted_table.at(in.at(i + 1) - 43);
