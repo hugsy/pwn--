@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include "common.hpp"
 
 static const u64 ___magic = 0xdeadbeefdeadbeef;
@@ -20,7 +22,6 @@ public:
     constexpr GenericHandle(T h = nullptr, D d = ___dummy) : m_handle(h), m_onCloseCallback(d)
     {
     }
-
 
     ~GenericHandle()
     {

@@ -46,13 +46,10 @@ class Process
         SharedHandle m_process_handle;
     };
 
-    class Privilege
-    {
-    };
-
+public:
+    using Privilege  = std::wstring;
     using Privileges = std::vector<Privilege>;
 
-public:
     enum class Integrity : int
     {
         Unknown,
@@ -63,7 +60,9 @@ public:
     };
 
     Process();
+
     Process(u32, bool = false);
+
     ~Process();
 
     fs::path const
@@ -93,6 +92,12 @@ public:
     const HANDLE
     handle() const;
 
+    auto
+    is_elevated() -> bool;
+
+    auto
+    enumerate_privileges() -> bool;
+
 private:
     u32 m_pid;
     u32 m_ppid;
@@ -118,14 +123,10 @@ PWNAPI auto
 list() -> std::vector<std::tuple<std::wstring, u32>>;
 
 PWNAPI auto
-get_integrity_level(const u32 dwProcessId) -> Process::Integrity;
-
-PWNAPI _Success_(return )
-auto
-execv(_In_ const wchar_t* lpCommandLine, _In_ u32 dwParentPid, _Out_ LPHANDLE lpNewProcessHandle) -> bool;
+get_integrity_level(const u32 pid = -1) -> Process::Integrity;
 
 PWNAPI auto
-execv(_In_ const wchar_t* lpCommandLine, _In_opt_ u32 dwParentPid = 0) -> std::optional<HANDLE>;
+execv(const std::wstring_view& CommandLine, const u32 ParentPid = 0) -> Result<std::tuple<HANDLE, HANDLE>>;
 
 _Success_(return )
 PWNAPI auto
@@ -143,53 +144,14 @@ _Success_(return != nullptr)
 PWNAPI auto
 cmd() -> HANDLE;
 
-_Success_(return )
-PWNAPI auto
-is_elevated(_In_opt_ u32 dwPid = 0) -> bool;
+
 _Success_(return )
 PWNAPI auto
 add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_ u32 dwPid = 0) -> bool;
+
 _Success_(return )
 PWNAPI auto
 has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt_ u32 dwPid = 0) -> bool;
-
-PWNAPI auto
-peb() -> PPEB;
-PWNAPI auto
-teb() -> PTEB;
-
-namespace mem
-{
-PWNAPI auto
-write(_In_ HANDLE hProcess, _In_ uptr Address, _In_ u8* Data, _In_ size_t DataLength) -> size_t;
-
-PWNAPI auto
-write(_In_ HANDLE hProcess, _In_ uptr Address, _In_ std::vector<u8>& Data) -> size_t;
-
-PWNAPI auto
-write(_In_ uptr Address, _In_ u8* Data, _In_ size_t DataLength) -> size_t;
-
-PWNAPI auto
-write(_In_ uptr Address, _In_ std::vector<u8>& Data) -> size_t;
-
-PWNAPI auto
-read(_In_ HANDLE hProcess, _In_ uptr Address, _In_ size_t DataLength) -> std::vector<u8>;
-
-PWNAPI auto
-read(_In_ uptr Address, _In_ size_t DataLength) -> std::vector<u8>;
-
-PWNAPI auto
-alloc(_In_ HANDLE hProcess, _In_ size_t Size, _In_ const wchar_t* Permission, _In_opt_ uptr Address = NULL) -> uptr;
-
-PWNAPI auto
-alloc(_In_ size_t Size, _In_ const wchar_t Permission[3], _In_opt_ uptr Address = NULL) -> uptr;
-
-PWNAPI auto
-free(_In_ HANDLE hProcess, _In_ uptr Address) -> uptr;
-
-PWNAPI auto
-free(_In_ uptr Address) -> uptr;
-} // namespace mem
 
 
 namespace appcontainer
@@ -197,45 +159,40 @@ namespace appcontainer
 class AppContainer
 {
 public:
-    PWNAPI
     AppContainer(
-        _In_ std::wstring container_name,
-        _In_ std::wstring executable_path,
-        _In_ std::vector<WELL_KNOWN_SID_TYPE> DesiredCapabilities = {});
-    PWNAPI ~AppContainer();
+        std::wstring_view const& container_name,
+        std::wstring_view const& executable_path,
+        std::vector<WELL_KNOWN_SID_TYPE> const& DesiredCapabilities = {});
+
+    ~AppContainer();
 
     _Success_(return )
-    PWNAPI auto
-    allow_file_or_directory(_In_ const wchar_t* file_or_directory_name) -> bool;
-    _Success_(return )
-    PWNAPI auto
+    auto
     allow_file_or_directory(_In_ const std::wstring& file_or_directory_name) -> bool;
 
     _Success_(return )
-    PWNAPI auto
-    allow_registry_key(_In_ const wchar_t* regkey) -> bool;
-    _Success_(return )
-    PWNAPI auto
+    auto
     allow_registry_key(_In_ const std::wstring& regkey) -> bool;
 
     _Success_(return )
-    PWNAPI auto
+    auto
     spawn() -> bool;
-    _Success_(return )
-    PWNAPI auto
-    restore_acls() -> bool;
-    _Success_(return )
-    PWNAPI auto
-    join(_In_ u32 dwTimeout = INFINITE) -> bool;
 
+    _Success_(return )
+    auto
+    restore_acls() -> bool;
+
+    _Success_(return )
+    auto
+    join(_In_ u32 dwTimeout = INFINITE) -> bool;
 
 private:
     auto
     set_named_object_access(
-        _In_ PWSTR ObjectName,
-        _In_ SE_OBJECT_TYPE ObjectType,
-        _In_ ACCESS_MODE AccessMode,
-        _In_ ACCESS_MASK AccessMask) -> bool;
+        const std::wstring& ObjectName,
+        const SE_OBJECT_TYPE ObjectType,
+        const ACCESS_MODE AccessMode,
+        const ACCESS_MASK AccessMask) -> bool;
 
     std::wstring m_ContainerName;
     std::wstring m_ExecutablePath;
