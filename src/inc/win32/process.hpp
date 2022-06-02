@@ -223,25 +223,25 @@ struct std::formatter<pwn::win::process::Process::Integrity, wchar_t> : std::for
         switch ( i )
         {
         case pwn::win::process::Process::Integrity::Low:
-            wstr = L"INTEGRITY_LOW";
+            wstr = std::format(L"INTEGRITY_LOW");
             break;
 
         case pwn::win::process::Process::Integrity::Medium:
-            wstr = L"INTEGRITY_MEDIUM";
+            wstr = std::format(L"INTEGRITY_MEDIUM");
             break;
 
         case pwn::win::process::Process::Integrity::High:
-            wstr = L"INTEGRITY_HIGH";
+            wstr = std::format(L"INTEGRITY_HIGH");
             break;
 
         case pwn::win::process::Process::Integrity::System:
-            wstr = L"INTEGRITY_SYSTEM";
+            wstr = std::format(L"INTEGRITY_SYSTEM");
             break;
 
         default:
-            wstr = L"INTEGRITY_UNKNOWN";
+            wstr = std::format(L"INTEGRITY_UNKNOWN");
             break;
         }
-        return std::formatter<wstring, wchar_t>::format(std::format(wstr), ctx);
+        return std::formatter<wstring, wchar_t>::format(wstr, ctx);
     }
 };

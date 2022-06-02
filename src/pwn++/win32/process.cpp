@@ -725,7 +725,7 @@ add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_ u32 dwPid) -> bool
     if ( hProcess == nullptr )
     {
         perror(L"OpenProcess()");
-        return FALSE;
+        return false;
     }
 
     bRes = ::OpenProcessToken(hProcess, TOKEN_ADJUST_PRIVILEGES, &hToken);
@@ -758,7 +758,7 @@ add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_ u32 dwPid) -> bool
 
                 if ( bRes != 0 )
                 {
-                    bRes = static_cast<bool>(GetLastError() != ERROR_NOT_ALL_ASSIGNED);
+                    bRes = static_cast<bool>(::GetLastError() != ERROR_NOT_ALL_ASSIGNED);
                 }
             }
         }

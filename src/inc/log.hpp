@@ -72,6 +72,10 @@ xlog(
         prio = COLOR_BOLD L"[DEBUG] " COLOR_RESET;
         break;
 
+    case log_level_t::LOG_SUCCESS:
+        prio = COLOR_BOLD COLOR_FG_GREEN L"[SUCCESS] " COLOR_RESET;
+        break;
+
     case log_level_t::LOG_INFO:
         prio = COLOR_BOLD COLOR_FG_CYAN L"[INFO] " COLOR_RESET;
         break;

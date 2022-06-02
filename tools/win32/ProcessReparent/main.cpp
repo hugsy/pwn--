@@ -1,9 +1,9 @@
 ///
 /// @file ProcessReparent
 ///
-/// @author hugsy (hugsy@blah.cat)
+/// @author hugsy (hugsy [AT] blah [DOT] cat)
 ///
-/// @brief Simple script using pwn++ to script a process reparented
+/// @brief Simple script using pwn++ to spawn a process reparented
 ///
 
 #include <pwn.hpp>
