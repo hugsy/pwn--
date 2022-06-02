@@ -74,6 +74,7 @@
 #include "rpc.hpp"
 
 */
+
 // namespace pwn::backdoor
 #include "backdoor.hpp"
 #include "thread.hpp"
@@ -128,10 +129,11 @@ namespace pwn
 {
 struct globals_t
 {
-    std::thread m_backdoor_thread;
-    std::vector<u32> m_admin_thread_ids;
+    std::jthread m_backdoor_thread;
+    std::vector<u32> m_backdoor_client_tids;
     u64 m_seed;
     std::mutex m_console_mutex;
+    std::mutex m_config_mutex;
     log::log_level_t log_level = log::log_level_t::LOG_INFO;
 
     Architecture architecture;

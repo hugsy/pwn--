@@ -286,6 +286,7 @@ struct ErrorType
         OverflowError,
         UnderflowError,
         IllegalValue,
+        NotImplementedError,
     };
 
     Code m_code;

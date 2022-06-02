@@ -1,62 +1,78 @@
 #include "backdoor.hpp"
 
+#include <mutex>
+
+#include "handle.hpp"
+#include "pwn.hpp"
+#include "utils.hpp"
+
 using namespace pwn::utils;
 
-
-
-
+typedef struct _ThreadConfig
+{
+    HANDLE hPipe;
+    HANDLE hEvent;
+} ThreadConfig;
 
 
 DWORD WINAPI
-HandleClientThread(_In_opt_ LPVOID lpThreadParams)
+HandleClientThread(LPVOID lpThreadParams)
 {
-    if (lpThreadParams == nullptr)
+    if ( lpThreadParams == nullptr )
     {
         // expected the pipe handle as parameter
         return ERROR_INVALID_PARAMETER;
     }
 
-    auto hPipe = pwn::utils::GenericHandle(
-        reinterpret_cast<HANDLE>(lpThreadParams)
-    );
+    ThreadConfig* cfg = reinterpret_cast<ThreadConfig*>(lpThreadParams);
 
-    while (true)
+    auto hPipe = pwn::utils::GenericHandle(cfg->hPipe);
+
+    ::SetEvent(cfg->hEvent);
+
+    while ( true )
     {
-        auto request_message = std::make_unique<BYTE[]>(BACKDOOR_MAX_MESSAGE_SIZE);
+        std::unique_ptr<BYTE[]> request;
+        std::unique_ptr<BYTE[]> response;
 
-        DWORD dwNumberOfByteRead;
-        auto bRes = ::ReadFile(
-            hPipe.get(),
-            request_message.get(),
-            BACKDOOR_MAX_MESSAGE_SIZE,
-            &dwNumberOfByteRead,
-            nullptr
-        );
-
-        if (bRes == 0)
+        // Wait for a command
         {
-            // failed to read, todo: handle better
-            break;
+            request = std::make_unique<BYTE[]>(PWN_BACKDOOR_MAX_MESSAGE_SIZE);
+
+            DWORD dwNumberOfByteRead;
+            auto bRes =
+                ::ReadFile(hPipe.get(), request.get(), PWN_BACKDOOR_MAX_MESSAGE_SIZE, &dwNumberOfByteRead, nullptr);
+
+            if ( bRes == false )
+            {
+                // failed to read, todo: handle better
+                pwn::log::perror(L"ReadFile()");
+                break;
+            }
         }
 
-        // ParseMessage(); // todo
-
-        auto reply_message = std::make_unique<BYTE[]>(BACKDOOR_MAX_MESSAGE_SIZE);
-
-        // auto reply_message = BuildReply(request_message); // todo
-
-        bRes = ::WriteFile(
-            hPipe.get(),
-            reply_message.get(),
-            BACKDOOR_MAX_MESSAGE_SIZE,
-            &dwNumberOfByteRead,
-            nullptr
-        );
-
-        if (bRes == 0)
+        // Parse and execute the command
         {
-            // failed to write, todo: handle better
-            break;
+            // for now just ping back
+            response = std::make_unique<BYTE[]>(PWN_BACKDOOR_MAX_MESSAGE_SIZE);
+            ::RtlCopyMemory(response.get(), request.get(), PWN_BACKDOOR_MAX_MESSAGE_SIZE);
+
+            // TODO
+        }
+
+        // Send the result (can be empty)
+        {
+            DWORD dwNumberOfByteRead;
+
+            const bool bRes =
+                ::WriteFile(hPipe.get(), response.get(), PWN_BACKDOOR_MAX_MESSAGE_SIZE, &dwNumberOfByteRead, nullptr);
+
+            if ( bRes == false )
+            {
+                // failed to write, todo: handle better
+                pwn::log::perror(L"WriteFile()");
+                break;
+            }
         }
     }
 
@@ -67,67 +83,76 @@ HandleClientThread(_In_opt_ LPVOID lpThreadParams)
 }
 
 
-
-
-
-_Success_(return ) auto pwn::backdoor::start() -> bool
+auto
+pwn::backdoor::start() -> Result<u32>
 {
-    HANDLE hThread          = INVALID_HANDLE_VALUE;
+    DWORD dwThreadId = 0;
 
-    for (;;)
+    auto hPipe = pwn::utils::GenericHandle(::CreateNamedPipeW(
+        PWN_BACKDOOR_PIPENAME,
+        PIPE_ACCESS_DUPLEX,
+        PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
+        PIPE_UNLIMITED_INSTANCES,
+        PWN_BACKDOOR_MAX_MESSAGE_SIZE,
+        PWN_BACKDOOR_MAX_MESSAGE_SIZE,
+        0,
+        nullptr));
+
+    if ( !hPipe )
     {
-        auto hPipe = ::CreateNamedPipe(
-            BACKDOOR_PIPENAME,
-            PIPE_ACCESS_DUPLEX,
-            PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
-            PIPE_UNLIMITED_INSTANCES,
-            BACKDOOR_MAX_MESSAGE_SIZE,
-            BACKDOOR_MAX_MESSAGE_SIZE,
-            0,
-            nullptr
-        );
-
-        if (hPipe == INVALID_HANDLE_VALUE)
-        {
-            return false;
-        }
-
-        auto is_connected = ::ConnectNamedPipe(hPipe, nullptr) != 0 ? true : (::GetLastError() == ERROR_PIPE_CONNECTED);
-
-        if (!is_connected)
-        {
-            ::CloseHandle(hPipe);
-            break;
-        }
-
-        DWORD dwThreadId = 0;
-
-        auto hThread = pwn::utils::GenericHandle(
-            ::CreateThread(
-                nullptr,
-                0,
-                HandleClientThread,
-                reinterpret_cast<LPVOID>(hPipe),
-                0,
-                &dwThreadId
-            )
-        );
-
-        if (!hThread || (dwThreadId == 0u))
-        {
-            break;
-        }
-
-        globals.m_admin_thread_ids.push_back(dwThreadId);
+        pwn::log::perror(L"CreateNamedPipeW()");
+        return Err(ErrorType::Code::RuntimeError);
     }
 
-    return true;
+    bool bIsConnected =
+        ::ConnectNamedPipe(hPipe.get(), nullptr) != 0 ? true : (::GetLastError() == ERROR_PIPE_CONNECTED);
+
+    if ( false == bIsConnected )
+    {
+        pwn::log::perror(L"ConnectNamedPipe()");
+        return Err(ErrorType::Code::RuntimeError);
+    }
+
+    ThreadConfig cfg;
+
+    ::DuplicateHandle(
+        ::GetCurrentProcess(),
+        reinterpret_cast<LPVOID>(hPipe.get()),
+        ::GetCurrentProcess(),
+        &cfg.hPipe,
+        DUPLICATE_SAME_ACCESS,
+        false,
+        0);
+
+    ::ResetEvent(cfg.hEvent);
+
+    auto hThread = pwn::utils::GenericHandle(::CreateThread(nullptr, 0, HandleClientThread, &cfg, 0, &dwThreadId));
+
+    if ( !hThread || (dwThreadId == 0u) )
+    {
+        pwn::log::perror(L"CreateThread()");
+        return Err(ErrorType::Code::RuntimeError);
+    }
+
+    //
+    // Wait for the thread to be ready
+    //
+    ::WaitForSingleObject(cfg.hEvent, INFINITE);
+
+    //
+    // Insert the TID in the global context
+    //
+    {
+        std::lock_guard<std::mutex> lock(pwn::globals.m_config_mutex);
+        globals.m_backdoor_client_tids.push_back(dwThreadId);
+    }
+
+    return Ok(dwThreadId);
 }
 
 
 auto
-pwn::backdoor::stop() -> bool
+pwn::backdoor::stop() -> Result<bool>
 {
-    return false;
+    return Err(ErrorType::Code::NotImplementedError);
 }
-

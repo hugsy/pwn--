@@ -21,8 +21,7 @@ OnAttachRoutine()
     // Start the backdoor thread
     //
     {
-        std::lock_guard<std::mutex> lock(pwn::globals.m_console_mutex);
-        pwn::globals.m_backdoor_thread = std::thread::thread(pwn::backdoor::start);
+        pwn::globals.m_backdoor_thread = std::jthread::jthread(pwn::backdoor::start);
         pwn::globals.m_backdoor_thread.detach();
     }
 }

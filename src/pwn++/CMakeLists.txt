@@ -92,12 +92,12 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${COMMON_HEADER_DIR})
 # Print out cmake compile info
 #
 
-message(STATUS "INCLUDE_ASSEMBLER:                 ${INCLUDE_ASSEMBLER}")
-message(STATUS "INCLUDE_DISASSEMBLER:              ${INCLUDE_DISASSEMBLER}")
+message(STATUS "PWN_INCLUDE_ASSEMBLER:                 ${PWN_INCLUDE_ASSEMBLER}")
+message(STATUS "PWN_INCLUDE_DISASSEMBLER:              ${PWN_INCLUDE_DISASSEMBLER}")
 message(STATUS "DEBUG:                             ${DEBUG}")
 
 
-if(NOT INCLUDE_DISASSEMBLER)
+if(NOT PWN_INCLUDE_DISASSEMBLER)
     target_compile_definitions(${PROJECT_NAME} PRIVATE PWN_NO_DISASSEMBLER)
 else()
     target_link_libraries(${PROJECT_NAME} PRIVATE Zydis)
@@ -105,7 +105,7 @@ else()
 endif()
 
 
-if(NOT INCLUDE_ASSEMBLER)
+if(NOT PWN_INCLUDE_ASSEMBLER)
     target_compile_definitions(${PROJECT_NAME} PRIVATE PWN_NO_ASSEMBLER)
 else()
     # TODO: use asm++ when ready
