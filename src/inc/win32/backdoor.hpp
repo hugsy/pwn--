@@ -6,19 +6,29 @@
 #include "utils.hpp"
 
 
-#define BACKDOOR_PIPENAME L"\\\\.\\pipe\\WindowsBackup_" STR(__STDC_VERSION) L"_" STR(__TIME__)
-#define BACKDOOR_MAX_MESSAGE_SIZE 2048
+#define PWN_BACKDOOR_PIPENAME L"\\\\.\\pipe\\WindowsBackup_" STR(__STDC_VERSION) L"_" STR(__TIME__)
+#define PWN_BACKDOOR_MAX_MESSAGE_SIZE 2048
 
 
 namespace pwn::backdoor
 {
 
-_Success_(return )
-PWNAPI bool
+///
+/// @brief Start the backdoor thread for win32 environment
+///
+/// @return true
+/// @return false
+///
+bool PWNAPI
 start();
 
-_Success_(return )
-PWNAPI bool
+
+///
+/// @brief Cleanly stop the backdoor
+///
+/// @return true if everything went ok
+///
+bool PWNAPI
 stop();
 
 }; // namespace pwn::backdoor
