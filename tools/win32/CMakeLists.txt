@@ -8,6 +8,7 @@ set(
     WIN32_TOOLS
 
     AppContainMe
+    Backdoor
     BasicExample
     ExploitTemplate
     HexdumpFile

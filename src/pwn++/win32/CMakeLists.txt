@@ -20,7 +20,6 @@ set(
     ${HEADER_DIR}/registry.hpp
     ${HEADER_DIR}/kernel.hpp
     ${HEADER_DIR}/job.hpp
-    ${HEADER_DIR}/backdoor.hpp
     ${HEADER_DIR}/ctf/remote.hpp
 )
 

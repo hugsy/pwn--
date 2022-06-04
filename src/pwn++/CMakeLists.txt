@@ -68,6 +68,7 @@ set(
     ${COMMON_HEADER_DIR}/pwn_export.hpp
     ${COMMON_HEADER_DIR}/architecture.hpp
     ${COMMON_HEADER_DIR}/asm.hpp
+    ${COMMON_HEADER_DIR}/backdoor.hpp
     ${COMMON_HEADER_DIR}/common.hpp
     ${COMMON_HEADER_DIR}/constants.hpp
     ${COMMON_HEADER_DIR}/crypto.hpp

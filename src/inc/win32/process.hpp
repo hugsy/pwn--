@@ -98,6 +98,13 @@ public:
     auto
     enumerate_privileges() -> bool;
 
+    friend std::wostream&
+    operator<<(std::wostream& os, const Process& p)
+    {
+        os << L"Process(Pid=" << p.pid() << L")";
+        return os;
+    }
+
 private:
     u32 m_pid;
     u32 m_ppid;

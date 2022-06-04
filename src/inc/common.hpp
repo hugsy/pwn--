@@ -287,6 +287,8 @@ struct ErrorType
         UnderflowError,
         IllegalValue,
         NotImplementedError,
+        PendingIoError,
+        ConnectionError,
     };
 
     Code m_code;
@@ -328,6 +330,23 @@ Success(Result<T> const& f)
         return true;
     }
     return false;
+}
+
+template<class T>
+constexpr bool
+Failed(Result<T> const& f)
+{
+    if ( Success(f) )
+    {
+        return false;
+    }
+
+    if ( const ErrorType* c = std::get_if<ErrorType>(&f); c != nullptr )
+    {
+        return true;
+    }
+
+    throw std::bad_variant_access();
 }
 
 template<class T>
