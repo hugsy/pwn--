@@ -98,12 +98,12 @@ namespace win = windows;
 ///
 /// Aliasing pwn::ctf to the corresponding OS the lib was build for
 ///
-namespace pwn::windows::ctf
+namespace pwn
+{
+namespace windows::ctf
 {
 }
 
-namespace pwn
-{
 /// `pwn::ctf` -> `pwn::windows::ctf` for Windows
 namespace ctf = win::ctf;
 } // namespace pwn
@@ -122,11 +122,12 @@ namespace ctf = win::ctf;
 // namespace pwn::linux::system
 #include "linux/system.hpp"
 
-namespace pwn::linux::ctf
-{
-}
 namespace pwn
 {
+namespace linux::ctf
+{
+}
+
 /// `pwn::ctf` -> `pwn::linux::ctf` for Linux
 namespace ctf = linux::ctf;
 } // namespace pwn
