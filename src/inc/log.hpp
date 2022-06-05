@@ -112,7 +112,7 @@ xlog(
 }
 
 
-#ifdef __PWNLIB_WINDOWS_BUILD__
+#ifdef PWN_BUILD_FOR_WINDOWS
 ///
 /// @brief Basic equivalent of Linux Glibc's `perror`
 ///

@@ -3,7 +3,7 @@
 #include "./catch.hpp"
 
 
-#ifndef PWN_NO_ASSEMBLER
+#if defined(PWN_INCLUDE_ASSEMBLER)
 // TEST_CASE("asm x86-x64", "[pwn::assm]")
 // {
 //     const char* code = "xor rax, rax; inc rax; nop; ret;";
@@ -21,7 +21,7 @@
 #endif
 
 
-#ifndef PWN_NO_DISASSEMBLER
+#if defined(PWN_INCLUDE_DISASSEMBLER)
 TEST_CASE("disasm x86-x64", "[pwn::disasm]")
 {
     // const u8 code1[] = {0x90, 0x48, 0x31, 0xc0, 0xcc, 0xc3};

@@ -2,7 +2,7 @@
 
 #include "common.hpp"
 
-#ifdef __PWNLIB_WINDOWS_BUILD__
+#ifdef PWN_BUILD_FOR_WINDOWS
 #define PWN_BACKDOOR_PIPENAME L"\\\\.\\pipe\\WindowsBackup_" STR(__STDC_VERSION) L"_" STR(__TIME__)
 #define PWN_BACKDOOR_MAX_MESSAGE_SIZE 2048
 #else

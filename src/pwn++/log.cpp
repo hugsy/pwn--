@@ -13,7 +13,7 @@
 namespace pwn::log
 {
 
-#ifdef __PWNLIB_WINDOWS_BUILD__
+#ifdef PWN_BUILD_FOR_WINDOWS
 ///
 /// @brief perror() style of function for Windows
 ///

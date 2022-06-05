@@ -15,10 +15,10 @@
 #define CONCAT(x, y) (x##y)
 
 
-#if defined(__PWNLIB_WINDOWS_BUILD__)
+#if defined(PWN_BUILD_FOR_WINDOWS)
 #include "win32/framework.hpp"
 
-#elif defined(__PWNLIB_LINUX_BUILD__)
+#elif defined(PWN_BUILD_FOR_LINUX)
 #include "linux/framework.hpp"
 #endif
 
@@ -50,9 +50,9 @@ namespace
 {
 auto static inline LoadLibraryWrapper(wchar_t const* name)
 {
-#if defined(__PWNLIB_WINDOWS_BUILD__)
+#if defined(PWN_BUILD_FOR_WINDOWS)
     return ::LoadLibraryW(name);
-#elif defined(__PWNLIB_LINUX_BUILD__)
+#elif defined(PWN_BUILD_FOR_LINUX)
     return dlopen(name, RTLD_LAZY);
 #else
 #error "invalid os"
@@ -63,9 +63,9 @@ auto static inline LoadLibraryWrapper(wchar_t const* name)
 template<typename M>
 auto inline GetProcAddressWrapper(M hMod, std::string_view const& lpszProcName)
 {
-#if defined(__PWNLIB_WINDOWS_BUILD__)
+#if defined(PWN_BUILD_FOR_WINDOWS)
     auto address = ::GetProcAddress(hMod, lpszProcName.data());
-#elif defined(__PWNLIB_LINUX_BUILD__)
+#elif defined(PWN_BUILD_FOR_LINUX)
     auto address = dlsym(hMod, lpszProcName.data());
 #else
 #error "invalid os"

@@ -1,6 +1,6 @@
 #include "asm.hpp"
 
-#ifndef PWN_NO_ASSEMBLER
+#if defined(PWN_INCLUDE_ASSEMBLER)
 
 // #include <stdexcept>
 

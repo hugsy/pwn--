@@ -32,7 +32,7 @@
 #include "disasm.hpp"
 
 
-#ifdef __PWNLIB_WINDOWS_BUILD__
+#ifdef PWN_BUILD_FOR_WINDOWS
 /**
  *
  * Windows namespace definition
@@ -98,7 +98,7 @@ namespace ctf = win::ctf;
 #endif
 
 
-#ifdef __PWNLIB_LINUX_BUILD__
+#ifdef PWN_BUILD_FOR_LINUX
 /**
  *
  * Linux namespace definition
@@ -201,5 +201,8 @@ version() -> const wchar_t*;
 
 PWNAPI auto
 version_info() -> const std::tuple<u16, u16>;
+
+PWNAPI auto
+banner() -> const wchar_t*;
 
 } // namespace pwn
