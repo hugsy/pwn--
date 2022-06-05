@@ -41,7 +41,8 @@ public:
         hPipe(INVALID_HANDLE_VALUE),
         hStateChangeEvent(INVALID_HANDLE_VALUE),
         request(nullptr),
-        response(nullptr)
+        response(nullptr),
+        command_number(0)
     {
         this->hStateChangeEvent = ::CreateEvent(nullptr, false, false, nullptr);
         this->State             = ThreadState::Uninitialized;
@@ -71,6 +72,7 @@ public:
     usize request_size;
     std::unique_ptr<u8[]> response;
     usize response_size;
+    usize command_number;
 
     HANDLE hThread;
     HANDLE hPipe;

