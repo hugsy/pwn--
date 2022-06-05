@@ -4,7 +4,7 @@
 #include "handle.hpp"
 
 
-namespace pwn::win::job
+namespace pwn::windows::job
 {
 
 // todo:
@@ -29,9 +29,10 @@ public:
     }
 
 
-    Job& operator+=(u32 ProcessId)&
+    Job&
+    operator+=(u32 ProcessId) &
     {
-        if(!add_process(ProcessId))
+        if ( !add_process(ProcessId) )
             throw std::runtime_error("cannot add process");
 
         return *this;
@@ -46,4 +47,4 @@ private:
     pwn::utils::GenericHandle<HANDLE> m_hJob;
     std::vector<pwn::utils::GenericHandle<HANDLE>> m_handles;
 };
-} // namespace pwn::win::job
+} // namespace pwn::windows::job

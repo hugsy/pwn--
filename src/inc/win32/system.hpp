@@ -1,9 +1,9 @@
 ///
 /// @file system.hpp
 /// @author hugsy (hugsy@blah.cat)
-/// @brief Header `for pwn::windows::system`
+/// @brief Header `for pwn::windowsdows::system`
 /// This namespace holds functions for global system manipulation. For process specific stuff, see the
-/// `pwn::windows::process` namespace.
+/// `pwn::windowsdows::process` namespace.
 ///
 
 
@@ -15,7 +15,7 @@
 #include "common.hpp"
 
 
-namespace pwn::win::system
+namespace pwn::windows::system
 {
 PWNAPI auto
 pagesize() -> u32;
@@ -40,4 +40,4 @@ modulename(_In_opt_ HMODULE hModule) -> std::optional<std::wstring>;
 
 PWNAPI auto
 filename() -> std::optional<std::wstring>;
-} // namespace pwn::win::system
+} // namespace pwn::windows::system

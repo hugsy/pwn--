@@ -1,11 +1,10 @@
-#include "../catch.hpp"
-
 #include <pwn.hpp>
-#define NS "pwn::win::system"
+
+#include "../catch.hpp"
+#define NS "pwn::windows::system"
 
 
-
-TEST_CASE( "check page size", "[" NS "]" )
+TEST_CASE("check page size", "[" NS "]")
 {
-    REQUIRE( pwn::win::system::pagesize() == 0x1000 );
+    REQUIRE(pwn::windows::system::pagesize() == 0x1000);
 }

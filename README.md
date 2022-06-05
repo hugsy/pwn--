@@ -536,7 +536,7 @@ void wmain()
 
 ### Service
 
-Namespace: `pwn::windows::service`
+Namespace: `pwn::windowsdows::service`
 
 #### Enumerate
 
@@ -561,7 +561,7 @@ void wmain()
 
 ### ALPC
 
-Namespace: `pwn::windows::alpc`
+Namespace: `pwn::windowsdows::alpc`
 
 
 #### Server
@@ -571,14 +571,14 @@ Namespace: `pwn::windows::alpc`
 void wmain()
 {
     auto server = pwn::utils::GenericHandle(
-        pwn::windows::alpc::server::listen(L"\\RPC Control\\lotzofun")
+        pwn::windowsdows::alpc::server::listen(L"\\RPC Control\\lotzofun")
     );
 
     if ( server )
     {
         ok(L"server created port (handle=%p)\n", server.Get());
-        auto recv = pwn::windows::alpc::send_and_receive(server.Get());
-        // pwn::windows::alpc::close(server); // not necessary because of RAII
+        auto recv = pwn::windowsdows::alpc::send_and_receive(server.Get());
+        // pwn::windowsdows::alpc::close(server); // not necessary because of RAII
     }
 }
 ```
@@ -592,14 +592,14 @@ void wmain()
 void wmain()
 {
     auto client = pwn::utils::GenericHandle(
-        pwn::windows::alpc::client::connect(L"\\RPC Control\\lotzofun")
+        pwn::windowsdows::alpc::client::connect(L"\\RPC Control\\lotzofun")
     );
 
     if ( client )
     {
         ok(L"client connected to epmapper (handle=%p)\n", client.Get());
-        pwn::windows::alpc::send_and_receive(client, { 0x41, 0x41, 0x41, 0x41 });
-        // pwn::windows::alpc::close(client); // not necessary because of RAII
+        pwn::windowsdows::alpc::send_and_receive(client, { 0x41, 0x41, 0x41, 0x41 });
+        // pwn::windowsdows::alpc::close(client); // not necessary because of RAII
     }
 }
 ```

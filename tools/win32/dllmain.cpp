@@ -5,7 +5,7 @@
 using namespace pwn::log;
 using namespace pwn::utils::random;
 
-using namespace pwn::win::thread;
+using namespace pwn::windows::thread;
 using namespace pwn::backdoor;
 
 

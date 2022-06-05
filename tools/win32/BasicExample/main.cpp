@@ -65,7 +65,7 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     pwn::globals.set(pwn::log::log_level_t::LOG_DEBUG);
 
-    if ( false == pwn::win::process::add_privilege(L"SeSystemEnvironmentPrivilege") )
+    if ( false == pwn::windows::process::add_privilege(L"SeSystemEnvironmentPrivilege") )
     {
         err(L"failed to acquire `SeSystemEnvironmentPrivilege` ");
         return -1;
@@ -81,7 +81,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     std::vector<u8> value(0x20);
     ULONG ReturnLength = 0x20;
 
-    auto self = pwn::win::process::Process();
+    auto self = pwn::windows::process::Process();
     // ok(L"using handle={:x}", self.handle());
     // info(
     //     L"pid={}, ppid={}, cmdline='{}' integrity={} is_elevated={}",
@@ -113,7 +113,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     pwn::utils::hexdump(value);
 
 
-    if ( false == pwn::win::process::add_privilege(L"SeSystemEnvironmentPrivilege") )
+    if ( false == pwn::windows::process::add_privilege(L"SeSystemEnvironmentPrivilege") )
     {
         err(L"failed to acquire `SeSystemEnvironmentPrivilege` ");
         return -1;
@@ -190,7 +190,7 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     // dbg(L"started self");
     // {
-    //     auto p = pwn::win::process::Process();
+    //     auto p = pwn::windows::process::Process();
     //     info(L"pid={}, ppid={}, cmdline='{}' integrity={}", p.pid(), p.ppid(), p.path().c_str(), p.integrity());
 
     //     auto res = p.memory().allocate(0x1000);
@@ -208,13 +208,13 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     // dbg(L"started notepad");
     // {
-    //     auto res = pwn::win::system::pidof(L"Notepad.exe");
+    //     auto res = pwn::windows::system::pidof(L"Notepad.exe");
     //     if ( Success(res) )
     //     {
     //         auto pids = Value(res);
     //         if ( pids.size() > 0 )
     //         {
-    //             auto p = pwn::win::process::Process(pids.front());
+    //             auto p = pwn::windows::process::Process(pids.front());
     //             info(L"pid={}, ppid={}, cmdline='{}' integrity={}", p.pid(), p.ppid(), p.path().c_str(),
     //             p.integrity()); info(L"TEB={:#x}, PEB={:#x}", (PVOID)p.teb(), (PVOID)p.peb());
     //         }

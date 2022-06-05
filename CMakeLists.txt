@@ -19,8 +19,8 @@ set(CXX_STANDARD 23)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-option(DEBUG                           "Enable Debug"                                             ON)
-option(PWN_LOG_USE_COLOR               "Use ANSI color codes in log messages"                     ON)
+option(DEBUG                           "Enable Debug"                                             OFF)
+option(PWN_LOG_USE_COLOR               "Use ANSI color codes in log messages"                     OFF)
 option(PWN_INCLUDE_ASSEMBLER           "Compile with assembler support"                           OFF)
 option(PWN_INCLUDE_DISASSEMBLER        "Compile with disassembler support"                        ON)
 option(PWN_BUILD_TOOLKIT               "Compile the executables of pwn++ toolkit"                 ON)

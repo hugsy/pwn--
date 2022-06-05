@@ -44,7 +44,7 @@ using namespace pwn::log;
 // clang-format on
 
 
-namespace pwn::win::kernel
+namespace pwn::windows::kernel
 {
 namespace shellcode
 {
@@ -307,4 +307,4 @@ get_big_pool_kaddress(_In_ u32 Tag) -> std::vector<uptr>
     return res;
 }
 
-} // namespace pwn::win::kernel
+} // namespace pwn::windows::kernel

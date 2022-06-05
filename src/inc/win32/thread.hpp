@@ -10,14 +10,23 @@ extern "C"
 
     NTSTATUS
     NTAPI
-    NtSetInformationThread(_In_ HANDLE ThreadHandle, _In_ THREADINFOCLASS ThreadInformationClass, _In_reads_bytes_(ThreadInformationLength) PVOID ThreadInformation, _In_ ULONG ThreadInformationLength);
+    NtSetInformationThread(
+        _In_ HANDLE ThreadHandle,
+        _In_ THREADINFOCLASS ThreadInformationClass,
+        _In_reads_bytes_(ThreadInformationLength) PVOID ThreadInformation,
+        _In_ ULONG ThreadInformationLength);
 
     NTSTATUS NTAPI
-    NtQueryInformationThread(IN HANDLE ThreadHandle, IN THREADINFOCLASS ThreadInformationClass, OUT PVOID ThreadInformation, IN ULONG ThreadInformationLength, OUT PULONG ReturnLength OPTIONAL);
+    NtQueryInformationThread(
+        IN HANDLE ThreadHandle,
+        IN THREADINFOCLASS ThreadInformationClass,
+        OUT PVOID ThreadInformation,
+        IN ULONG ThreadInformationLength,
+        OUT PULONG ReturnLength OPTIONAL);
 }
 
 
-namespace pwn::win::thread
+namespace pwn::windows::thread
 {
 _Success_(return != std::nullopt)
 PWNAPI auto
@@ -27,4 +36,4 @@ _Success_(return )
 PWNAPI auto
 set_name(_In_ std::wstring const& name, _In_ i32 dwThreadId = -1) -> bool;
 
-} // namespace pwn::win::thread
+} // namespace pwn::windows::thread

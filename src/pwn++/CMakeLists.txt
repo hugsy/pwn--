@@ -20,6 +20,7 @@ set(PWN_BUILD_OS                    ${CMAKE_SYSTEM_NAME})
 
 set(PWN_HAS_ASSEMBLER               ${PWN_INCLUDE_ASSEMBLER})
 set(PWN_HAS_DISASSEMBLER            ${PWN_INCLUDE_DISASSEMBLER})
+set(PWN_USE_BACKDOOR                ${PWN_ENABLE_LUA_BACKDOOR})
 
 
 

@@ -13,7 +13,7 @@
 #cmakedefine PWN_LIBRARY_VERSION               L"@PWN_LIBRARY_VERSION@"
 #cmakedefine PWN_BUILD_ARCHITECTURE            L"@PWN_BUILD_ARCHITECTURE@"
 #cmakedefine PWN_BUILD_OS                      L"@PWN_BUILD_OS@"
-#define PWN_BUILD                       PWN_BUILD_OS L"/" PWN_BUILD_ARCHITECTURE
+#define PWN_BUILD                         PWN_BUILD_OS L"/" PWN_BUILD_ARCHITECTURE
 
 #if defined(__linux__)
 #define PWN_BUILD_LINUX_MINIMUM_VERSION      5
@@ -26,5 +26,5 @@
 #cmakedefine PWN_LOG_USE_COLOR
 #cmakedefine PWN_HAS_ASSEMBLER
 #cmakedefine PWN_HAS_DISASSEMBLER
-#cmakedefine PWN_ENABLE_LUA_BACKDOOR
+#cmakedefine PWN_USE_BACKDOOR
 // clang-format on
