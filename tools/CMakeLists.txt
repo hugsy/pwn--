@@ -39,6 +39,9 @@ if(WIN32)
 
         PUBLIC
         $<TARGET_LINKER_FILE:${CMAKE_PROJECT_NAME}>
+
+        PRIVATE
+        Userenv
     )
 
 else()
