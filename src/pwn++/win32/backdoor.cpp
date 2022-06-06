@@ -10,42 +10,214 @@
 
 using namespace pwn::utils;
 
-/* the Lua interpreter */
-static lua_State* L;
 
-static int
-lua_utils_hexdump(lua_State* l)
+namespace pwn::backdoor
 {
-    double d = luaL_checknumber(l, 1);
-    lua_pushnumber(l, 0x42);
-    return 1;
-}
 
-static const luaL_Reg pwn_module_functions[] = {{"utils.hexdump", lua_utils_hexdump}, {nullptr, nullptr}};
-
-static int
-lua_open_pwnlib(lua_State* l)
+///
+/// @brief Where the LUA VM lives
+///
+namespace lua
 {
-    luaL_newlib(l, pwn_module_functions);
-    return 1;
-}
+
+//
+// Function and module registration arrays
+//
+static const luaL_Reg pwn_module_functions[]         = {{"version", pwn_version}, {nullptr, nullptr}};
+static const luaL_Reg pwn_utils_module_functions[]   = {{"hexdump", pwn_utils_hexdump}, {nullptr, nullptr}};
+static const luaL_Reg pwn_process_module_functions[] = {{"pid", pwn_process_pid}, {nullptr, nullptr}};
 
 
-static const luaL_Reg pwnlib[] = {{"pwn", lua_open_pwnlib}, {nullptr, nullptr}};
-
-LUALIB_API void
-luaL_openpwnlib(lua_State* L)
+///
+/// @brief LUA VM initialization function
+///
+lua_State*
+init()
 {
-    for ( const luaL_Reg* lib = pwnlib; lib->func; lib++ )
+    lua_State* LuaVm = nullptr;
+
+    dbg(L"[backdoor] Initializing Lua VM");
+
+    //
+    // Initialize the VM
+    //
+    LuaVm = luaL_newstate();
+
+    //
+    // Load some basic modules
+    //
+#if LUA_VERSION_NUM >= 501
+    luaL_openlibs(LuaVm);
+#else
+    luaopen_base(LuaVm);
+    luaopen_table(LuaVm);
+    luaopen_io(LuaVm);
+    luaopen_string(LuaVm);
+    luaopen_math(LuaVm);
+#endif
+
+    //
+    // Create the `pwn` module
+    //
+    luaL_newlib(LuaVm, pwn_module_functions);
+
+#define REGISTER_LUA_SUBMODULE(name)                                                                                   \
+    {                                                                                                                  \
+        luaL_newlib(LuaVm, pwn_##name##_module_functions);                                                             \
+        lua_setfield(LuaVm, -2, STR(name));                                                                            \
+    }
+
+    REGISTER_LUA_SUBMODULE(utils);
+    REGISTER_LUA_SUBMODULE(process);
+
+#undef REGISTER_LUA_SUBMODULE
+
+    //
+    // Expose the `pwn` root module
+    //
+    lua_setglobal(LuaVm, "pwn");
+
+    return LuaVm;
+} // namespace lua
+
+
+///
+/// @brief LUA VM deallocation function
+///
+void
+close(lua_State* LuaVm)
+{
+    if ( LuaVm )
     {
-        luaL_requiref(L, lib->name, lib->func, 1);
-        lua_pop(L, 1);
+        dbg(L"[backdoor] Deinitializing Lua VM");
+        lua_close(LuaVm);
+        LuaVm = nullptr;
+    }
+    else
+    {
+        warn(L"[backdoor] Lua VM is not initialized");
     }
 }
 
 
-namespace pwn::backdoor
+///
+/// @brief
+///
+/// @param cfg
+/// @param os
+/// @param index
+///
+void
+return_values(ThreadConfig* cfg, std::stringstream& os, const usize index)
 {
+    lua_State* LuaVm = cfg->pLuaVm;
+
+    if ( index == 0 )
+        return;
+
+    switch ( lua_type(LuaVm, -1) )
+    {
+    case LUA_TNIL:
+        os << "(nil)";
+        break;
+
+    case LUA_TBOOLEAN:
+        os << (lua_toboolean(LuaVm, -1) == 1) ? "true" : "false";
+        break;
+
+    case LUA_TSTRING:
+        os << lua_tostring(LuaVm, -1);
+        break;
+
+    case LUA_TNUMBER:
+        // TODO also support long, double, etc.
+        os << std::to_string(lua_tointeger(LuaVm, -1));
+        break;
+
+    default:
+        os << "<unknown>";
+    }
+    lua_pop(LuaVm, 1);
+
+    os << "\n";
+
+    return return_values(cfg, os, index - 1);
+}
+
+
+///
+/// @brief
+///
+/// @param cfg
+/// @return Result<std::string const>
+///
+auto
+execute(ThreadConfig* cfg) -> Result<std::string const>
+{
+    std::stringstream os;
+
+    lua_State* LuaVm = cfg->pLuaVm;
+    if ( !LuaVm )
+    {
+        err(L"The VM is not ready");
+        return Err(ErrorType::Code::VmNotInitialized);
+    }
+
+    const usize initial_stack_size = lua_gettop(LuaVm);
+    const std::string name         = std::format("backdoor-command-{}", cfg->command_number++);
+    const std::string request      = std::string((const char*)cfg->request.get(), cfg->request_size);
+
+    if ( request == "exit" )
+    {
+        return Err(ErrorType::Code::TerminationError);
+    }
+
+    auto LuaRc = luaL_loadbuffer(LuaVm, request.c_str(), request.size(), name.c_str());
+    if ( LuaRc )
+    {
+        std::string response = lua_tostring(LuaVm, -1);
+        lua_pop(LuaVm, 1);
+        return Ok(response);
+    }
+
+    lua_pcall(LuaVm, 0, LUA_MULTRET, 0);
+    const usize new_stack_size = lua_gettop(LuaVm);
+    const usize nb_retvalues   = (new_stack_size - initial_stack_size);
+    return_values(cfg, os, nb_retvalues);
+
+    return Ok(os.str());
+}
+
+
+//
+// Module `pwn` function definitions below
+//
+
+int
+pwn_version(lua_State* l)
+{
+    std::string version = pwn::utils::to_string(pwn::version());
+    lua_pushstring(l, version.c_str());
+    return 1;
+}
+
+
+int
+pwn_utils_hexdump(lua_State* l)
+{
+    double d = luaL_checknumber(l, 1);
+    lua_pushnil(l);
+    return 1;
+}
+
+
+int
+pwn_process_pid(lua_State* l)
+{
+    lua_pushinteger(l, pwn::windows::process::pid());
+    return 1;
+}
+} // namespace lua
 
 namespace
 {
@@ -106,81 +278,6 @@ WaitNextConnectionAsync(const HANDLE hPipe, LPOVERLAPPED oConnect) -> Result<boo
 
 
 ///
-/// @brief
-///
-/// @param os
-/// @param Nb
-///
-void
-LuaParseReturnValues(std::stringstream& os, const usize index)
-{
-    if ( index == 0 )
-        return;
-
-    switch ( lua_type(L, -1) )
-    {
-    case LUA_TNIL:
-        os << "(nil)";
-        break;
-
-    case LUA_TBOOLEAN:
-        os << (lua_toboolean(L, -1) == 1) ? "true" : "false";
-        break;
-
-    case LUA_TSTRING:
-        os << lua_tostring(L, -1);
-        break;
-
-    case LUA_TNUMBER:
-        os << std::to_string(lua_tonumber(L, -1));
-        break;
-    }
-    lua_pop(L, 1);
-
-    os << "\n";
-
-    return LuaParseReturnValues(os, index - 1);
-}
-
-
-///
-/// @brief Execute the command(s) in the Lua buffer
-///
-/// @param request
-/// @return std::string
-///
-auto
-LuaExecuteCommands(ThreadConfig* cfg) -> Result<std::string const>
-{
-    std::stringstream os;
-
-    const usize initial_stack_size = lua_gettop(L);
-    const std::string name         = std::format("backdoor-command-{}", cfg->command_number++);
-    const std::string request      = std::string((const char*)cfg->request.get(), cfg->request_size);
-
-    if ( request == "exit" )
-    {
-        return Err(ErrorType::Code::TerminationError);
-    }
-
-    auto LuaRc = luaL_loadbuffer(L, request.c_str(), request.size(), name.c_str());
-    if ( LuaRc )
-    {
-        std::string response = lua_tostring(L, -1);
-        lua_pop(L, 1);
-        return Ok(response);
-    }
-
-    lua_pcall(L, 0, LUA_MULTRET, 0);
-    const usize new_stack_size = lua_gettop(L);
-    const usize nb_retvalues   = (new_stack_size - initial_stack_size);
-    LuaParseReturnValues(os, nb_retvalues);
-
-    return Ok(os.str());
-}
-
-
-///
 /// @brief Thread routine for each new client to the pipe
 ///
 /// @param lpThreadParams
@@ -197,6 +294,7 @@ HandleClientThread(const LPVOID lpThreadParams)
 
     const auto cfg   = reinterpret_cast<pwn::backdoor::ThreadConfig*>(lpThreadParams);
     const auto hPipe = pwn::utils::GenericHandle(cfg->hPipe);
+    cfg->pLuaVm      = lua::init();
     cfg->SetState(ThreadState::ReadyToRead);
 
     while ( cfg->State != ThreadState::Stopped )
@@ -293,7 +391,7 @@ HandleClientThread(const LPVOID lpThreadParams)
         {
             DWORD dwNumberOfByteRead = 0;
 
-            auto res = LuaExecuteCommands(cfg);
+            auto res = lua::execute(cfg);
             if ( Failed(res) )
             {
                 if ( Error(res).code == ErrorType::Code::TerminationError )
@@ -330,6 +428,7 @@ HandleClientThread(const LPVOID lpThreadParams)
     dbg(L"Disconnecting session TID={}", cfg->Tid);
     ::DisconnectNamedPipe(hPipe.get());
 
+    lua::close(cfg->pLuaVm);
     return NO_ERROR;
 }
 
@@ -441,48 +540,11 @@ AllowNextClient() -> Result<bool>
 }
 
 
-void
-InitializeLuaVm()
-{
-    //
-    // Initialize the VM
-    //
-    L = luaL_newstate();
-
-    //
-    // Load some basic modules
-    //
-#if LUA_VERSION_NUM >= 501
-    luaL_openlibs(L);
-#else
-    luaopen_base(L);
-    luaopen_table(L);
-    luaopen_io(L);
-    luaopen_string(L);
-    luaopen_math(L);
-#endif
-
-    //
-    // Expose the `pwn` module
-    //
-    luaL_openpwnlib(L);
-}
-
-
-void
-TerminateLuaVm()
-{
-    lua_close(L);
-}
-
 } // namespace
 
 auto
 start() -> Result<bool>
 {
-    dbg(L"[backdoor] Initializing Lua VM");
-    InitializeLuaVm();
-
     dbg(L"Listening for connection on '{}'", PWN_BACKDOOR_PIPENAME);
 
     globals.m_backdoor_thread = std::jthread::jthread(
@@ -514,7 +576,6 @@ stop() -> Result<bool>
 
     ::WaitForMultipleObjects(sz, handles.data(), true, INFINITE);
 
-    TerminateLuaVm();
     return Ok(true);
 }
 

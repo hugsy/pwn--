@@ -289,7 +289,8 @@ struct ErrorType
         NotImplementedError,
         PendingIoError,
         ConnectionError,
-        TerminationError
+        TerminationError,
+        VmNotInitialized,
     };
 
     Code code;
