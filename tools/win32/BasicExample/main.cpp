@@ -222,7 +222,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     //     else
     //     {
     //         auto const& e = Error(res);
-    //         err(L"pidof('notepad') failed with GLE={:x}", e.m_errno);
+    //         err(L"pidof('notepad') failed with GLE={:x}", e.number);
     //     }
     // }
     // dbg(L"ended notepad");

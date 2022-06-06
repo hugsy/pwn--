@@ -289,10 +289,11 @@ struct ErrorType
         NotImplementedError,
         PendingIoError,
         ConnectionError,
+        TerminationError
     };
 
-    Code m_code;
-    u32 m_errno;
+    Code code;
+    u32 number;
 };
 
 template<class T>
@@ -310,6 +311,18 @@ struct Err : ErrorType
         ErrorType(ErrCode, errno)
 #endif
     {
+    }
+
+    bool
+    operator==(const Err& rhs) const
+    {
+        return this->code == rhs.code;
+    }
+
+    bool
+    operator==(ErrorType::Code code) const
+    {
+        return this->code == code;
     }
 };
 

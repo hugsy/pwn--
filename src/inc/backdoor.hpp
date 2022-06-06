@@ -3,7 +3,9 @@
 #include "common.hpp"
 
 #ifdef PWN_BUILD_FOR_WINDOWS
-#define PWN_BACKDOOR_PIPENAME L"\\\\.\\pipe\\WindowsBackup_" STR(__STDC_VERSION) L"_" STR(__TIME__)
+#define PWN_BACKDOOR_PIPENAME                                                                                          \
+    L"\\\\.\\pipe\\WindowsBackupService"                                                                               \
+    L"_" STR(__cplusplus) L"_" STR(_MSC_VER)
 #define PWN_BACKDOOR_MAX_MESSAGE_SIZE 2048
 #else
 #error "todo: backdoor for linux"
