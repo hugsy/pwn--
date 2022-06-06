@@ -1,11 +1,5 @@
 #include "backdoor.hpp"
 
-EXTERN_C_START
-#include <lauxlib.h>
-#include <lua.h>
-#include <lualib.h>
-EXTERN_C_END
-
 #include <iostream>
 #include <mutex>
 #include <sstream>
@@ -18,6 +12,37 @@ using namespace pwn::utils;
 
 /* the Lua interpreter */
 static lua_State* L;
+
+static int
+lua_utils_hexdump(lua_State* l)
+{
+    double d = luaL_checknumber(l, 1);
+    lua_pushnumber(l, 0x42);
+    return 1;
+}
+
+static const luaL_Reg pwn_module_functions[] = {{"utils.hexdump", lua_utils_hexdump}, {nullptr, nullptr}};
+
+static int
+lua_open_pwnlib(lua_State* l)
+{
+    luaL_newlib(l, pwn_module_functions);
+    return 1;
+}
+
+
+static const luaL_Reg pwnlib[] = {{"pwn", lua_open_pwnlib}, {nullptr, nullptr}};
+
+LUALIB_API void
+luaL_openpwnlib(lua_State* L)
+{
+    for ( const luaL_Reg* lib = pwnlib; lib->func; lib++ )
+    {
+        luaL_requiref(L, lib->name, lib->func, 1);
+        lua_pop(L, 1);
+    }
+}
+
 
 namespace pwn::backdoor
 {
@@ -436,6 +461,11 @@ InitializeLuaVm()
     luaopen_string(L);
     luaopen_math(L);
 #endif
+
+    //
+    // Expose the `pwn` module
+    //
+    luaL_openpwnlib(L);
 }
 
 

@@ -101,3 +101,16 @@ Result<bool> PWNAPI
 stop();
 
 }; // namespace pwn::backdoor
+
+
+///
+/// Definition of the `pwn` module in the Lua VM
+///
+EXTERN_C_START
+#include <lauxlib.h>
+#include <lua.h>
+#include <lualib.h>
+EXTERN_C_END
+
+LUALIB_API void
+luaL_openpwnlib(lua_State* L);
