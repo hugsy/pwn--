@@ -4,8 +4,6 @@
 
 using namespace pwn::log;
 using namespace pwn::utils::random;
-
-using namespace pwn::windows::thread;
 using namespace pwn::backdoor;
 
 
@@ -21,8 +19,11 @@ OnAttachRoutine()
     // Start the backdoor thread
     //
     {
-        pwn::globals.m_backdoor_thread = std::jthread::jthread(pwn::backdoor::start);
-        pwn::globals.m_backdoor_thread.detach();
+        auto res = pwn::backdoor::start();
+        if ( Failed(res) )
+        {
+            return;
+        }
     }
 }
 
@@ -30,13 +31,7 @@ OnAttachRoutine()
 void
 OnDetachRoutine()
 {
-    {
-        std::lock_guard<std::mutex> lock(pwn::globals.m_console_mutex);
-        //
-        // Prevents another thread to lock the mutex while we're exiting
-        //
-        pwn::backdoor::stop();
-    }
+    pwn::backdoor::stop();
 }
 
 
@@ -49,13 +44,15 @@ DllMain(_In_ HMODULE hModule, _In_ DWORD ul_reason_for_call, _In_ LPVOID lpReser
     switch ( ul_reason_for_call )
     {
     case DLL_PROCESS_ATTACH:
-    case DLL_THREAD_ATTACH:
         OnAttachRoutine();
         break;
 
-    case DLL_THREAD_DETACH:
     case DLL_PROCESS_DETACH:
         OnDetachRoutine();
+        break;
+
+    case DLL_THREAD_ATTACH:
+    case DLL_THREAD_DETACH:
         break;
     }
     return TRUE;
