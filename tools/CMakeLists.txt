@@ -56,6 +56,11 @@ else()
 endif(WIN32)
 
 
+if(PWN_ENABLE_LUA_BACKDOOR)
+    target_link_libraries(${PROJECT_NAME} PRIVATE lua::lib)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/lua/include)
+endif()
+
 
 #
 # Installation directives

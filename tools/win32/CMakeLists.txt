@@ -29,5 +29,11 @@ foreach(TOOL_DIR ${WIN32_TOOLS})
     target_include_directories(${TOOL_DIR} PRIVATE ${CMAKE_PROJECT_NAME})
     target_link_options(${TOOL_DIR} PRIVATE /SUBSYSTEM:Console /LARGEADDRESSAWARE)
     target_link_libraries(${TOOL_DIR} PRIVATE ${CMAKE_PROJECT_NAME})
+
+    if(PWN_ENABLE_LUA_BACKDOOR)
+        target_link_libraries(${TOOL_DIR} PRIVATE lua::lib)
+        target_include_directories(${TOOL_DIR} PRIVATE ${PWNLIB_ROOT_DIR}/deps/lua/include)
+    endif()
+
     install(TARGETS ${TOOL_DIR} DESTINATION tools)
 endforeach()
