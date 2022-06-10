@@ -19,18 +19,19 @@ set(CXX_STANDARD 23)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-option(DEBUG                       "Enable Debug"                                             ON)
-option(DISABLE_LOG_COLOR           "Disable ANSI color codes in log messages"                 OFF)
-option(INCLUDE_ASSEMBLER           "Compile with assembler support"                           OFF)
-option(INCLUDE_DISASSEMBLER        "Compile with disassembler support"                        ON)
-option(BUILD_TOOLKIT               "Compile the executables of pwn++ toolkit"                 ON)
-option(BUILD_TESTING               "Compile the test suite"                                   ON)
+option(DEBUG                           "Enable Debug"                                             OFF)
+option(PWN_LOG_USE_COLOR               "Use ANSI color codes in log messages"                     OFF)
+option(PWN_INCLUDE_ASSEMBLER           "Compile with assembler support"                           OFF)
+option(PWN_INCLUDE_DISASSEMBLER        "Compile with disassembler support"                        ON)
+option(PWN_BUILD_TOOLKIT               "Compile the executables of pwn++ toolkit"                 ON)
+option(PWN_BUILD_TESTING               "Compile the test suite"                                   ON)
+option(PWN_ENABLE_LUA_BACKDOOR         "Enable Lua scripting for backdoor"                        ON)
 
 
 set(PWNLIB_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 
-if(INCLUDE_ASSEMBLER)
+if(PWN_INCLUDE_ASSEMBLER)
     option(DEBUG "" ${DEBUG})
     option(BUILD_TESTING "" OFF)
     option(BUILD_TOOLKIT "" OFF)
@@ -38,13 +39,17 @@ if(INCLUDE_ASSEMBLER)
 endif()
 
 
-if(INCLUDE_DISASSEMBLER)
+if(PWN_INCLUDE_DISASSEMBLER)
     option(ZYDIS_BUILD_TOOLS "" OFF)
     option(ZYDIS_BUILD_EXAMPLES "" OFF)
     option(ZYDIS_BUILD_SHARED_LIB "" OFF)
     add_subdirectory(${PWNLIB_ROOT_DIR}/deps/zydis)
 endif()
 
+if(PWN_ENABLE_LUA_BACKDOOR)
+    option(BUILD_SHARED_LIBS "" OFF)
+    add_subdirectory(${PWNLIB_ROOT_DIR}/deps/lua)
+endif()
 
 #
 # Build library
@@ -55,7 +60,7 @@ add_subdirectory(src)
 #
 # Build unit tests
 #
-if(BUILD_TESTING)
+if(PWN_BUILD_TESTING)
     include(CTest)
     add_subdirectory(tests)
 endif()
@@ -64,6 +69,6 @@ endif()
 #
 # Build toolkit
 #
-if(BUILD_TOOLKIT)
+if(PWN_BUILD_TOOLKIT)
     add_subdirectory(tools)
 endif()

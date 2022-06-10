@@ -13,17 +13,17 @@
 
 #define _Success_(c)
 
+#include <dlfcn.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <dlfcn.h
 
 #ifndef MAX_PATH
 #define MAX_PATH 260
 #endif // MAX_PATH
 
 #ifndef UnusedParameter
-#define UnusedParameter (void)
+#define UnusedParameter(x) (void)(x)
 #endif // UnusedParameter

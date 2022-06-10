@@ -13,7 +13,7 @@
 namespace pwn::log
 {
 
-#ifdef __PWNLIB_WINDOWS_BUILD__
+#ifdef PWN_BUILD_FOR_WINDOWS
 ///
 /// @brief perror() style of function for Windows
 ///
@@ -22,12 +22,14 @@ namespace pwn::log
 void PWNAPI
 perror(_In_ const std::wstring_view& prefix)
 {
-    auto sysMsg   = std::vector<wchar_t>(1024);
-    auto eNum     = ::GetLastError();
-    auto sysMsgSz = (DWORD)sysMsg.size();
+    const u32 sysMsgSz = 1024;
+    auto sysMsg        = std::wstring();
+    sysMsg.reserve(sysMsgSz);
+    // auto sysMsg   = std::vector<wchar_t>(1024);
+    const auto eNum = ::GetLastError();
 
     ::FormatMessageW(
-        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
         nullptr,
         eNum,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
@@ -35,8 +37,8 @@ perror(_In_ const std::wstring_view& prefix)
         sysMsgSz,
         nullptr);
 
-    const usize max_len = ::wcslen((wchar_t*)sysMsg.data());
-    auto sysMsgStr      = std::wstring(sysMsg.begin(), sysMsg.begin() + max_len * sizeof(wchar_t));
+    const usize max_len  = ::wcslen((wchar_t*)sysMsg.c_str());
+    const auto sysMsgStr = std::wstring_view(sysMsg.c_str(), max_len);
     err(L"{}, errcode={:#x}: {}", prefix, eNum, sysMsgStr);
 }
 

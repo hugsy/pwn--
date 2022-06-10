@@ -70,37 +70,62 @@ pwn::crypto::crc64(std::vector<u8> const& data)
 //
 
 
-#ifdef __PWNLIB_WINDOWS_BUILD__
+#ifdef PWN_BUILD_FOR_WINDOWS
 #include <WinCrypt.h>
 
-template <typename T>
-static T __calc_hash(std::vector<u8> const& data, DWORD dwHashAlgVariant, DWORD dwProvider)
+template<typename T>
+static T
+__calc_hash(std::vector<u8> const& data, DWORD dwHashAlgVariant, DWORD dwProvider)
 {
-	T out = {};
-	DWORD n = data.size() & 0xffffffff;
-	HCRYPTPROV hProv = 0;
-	HCRYPTHASH hHash = 0;
-	DWORD cbHash = out.size() & 0xffffffff;
+    T out            = {};
+    DWORD n          = data.size() & 0xffffffff;
+    HCRYPTPROV hProv = 0;
+    HCRYPTHASH hHash = 0;
+    DWORD cbHash     = out.size() & 0xffffffff;
 
-	if (CryptAcquireContext(&hProv, nullptr, nullptr, dwProvider, CRYPT_VERIFYCONTEXT))
-	{
-		if (::CryptCreateHash(hProv, dwHashAlgVariant, 0, 0, &hHash))
-		{
-			if (::CryptHashData(hHash, data.data(), n, 0))
-			{
-				::CryptGetHashParam(hHash, HP_HASHVAL, &out[0], &cbHash, 0);
-			}
-			::CryptDestroyHash(hHash);
-		}
-		::CryptReleaseContext(hProv, 0);
-	}
-	return out;
+    if ( CryptAcquireContext(&hProv, nullptr, nullptr, dwProvider, CRYPT_VERIFYCONTEXT) )
+    {
+        if ( ::CryptCreateHash(hProv, dwHashAlgVariant, 0, 0, &hHash) )
+        {
+            if ( ::CryptHashData(hHash, data.data(), n, 0) )
+            {
+                ::CryptGetHashParam(hHash, HP_HASHVAL, &out[0], &cbHash, 0);
+            }
+            ::CryptDestroyHash(hHash);
+        }
+        ::CryptReleaseContext(hProv, 0);
+    }
+    return out;
 }
 
-std::array<u8, MD5LEN> pwn::crypto::md2(std::vector<u8> const& data) {return __calc_hash<std::array<u8, MD5LEN>>(data, CALG_MD2, PROV_RSA_FULL);}
-std::array<u8, MD5LEN> pwn::crypto::md4(std::vector<u8> const& data) {return __calc_hash<std::array<u8, MD5LEN>>(data, CALG_MD4, PROV_RSA_FULL);}
-std::array<u8, MD5LEN> pwn::crypto::md5(std::vector<u8> const& data) {return __calc_hash<std::array<u8, MD5LEN>>(data, CALG_MD5, PROV_RSA_FULL);}
-std::array<u8, SHA1LEN> pwn::crypto::sha1(std::vector<u8> const& data) {return __calc_hash<std::array<u8, SHA1LEN>>(data, CALG_SHA1, PROV_RSA_FULL);}
-std::array<u8, SHA256LEN> pwn::crypto::sha256(std::vector<u8> const& data) {return __calc_hash<std::array<u8, SHA256LEN>>(data, CALG_SHA_256, PROV_RSA_AES);}
-std::array<u8, SHA512LEN> pwn::crypto::sha512(std::vector<u8> const& data) {return __calc_hash<std::array<u8, SHA512LEN>>(data, CALG_SHA_512, PROV_RSA_AES);}
+std::array<u8, MD5LEN>
+pwn::crypto::md2(std::vector<u8> const& data)
+{
+    return __calc_hash<std::array<u8, MD5LEN>>(data, CALG_MD2, PROV_RSA_FULL);
+}
+std::array<u8, MD5LEN>
+pwn::crypto::md4(std::vector<u8> const& data)
+{
+    return __calc_hash<std::array<u8, MD5LEN>>(data, CALG_MD4, PROV_RSA_FULL);
+}
+std::array<u8, MD5LEN>
+pwn::crypto::md5(std::vector<u8> const& data)
+{
+    return __calc_hash<std::array<u8, MD5LEN>>(data, CALG_MD5, PROV_RSA_FULL);
+}
+std::array<u8, SHA1LEN>
+pwn::crypto::sha1(std::vector<u8> const& data)
+{
+    return __calc_hash<std::array<u8, SHA1LEN>>(data, CALG_SHA1, PROV_RSA_FULL);
+}
+std::array<u8, SHA256LEN>
+pwn::crypto::sha256(std::vector<u8> const& data)
+{
+    return __calc_hash<std::array<u8, SHA256LEN>>(data, CALG_SHA_256, PROV_RSA_AES);
+}
+std::array<u8, SHA512LEN>
+pwn::crypto::sha512(std::vector<u8> const& data)
+{
+    return __calc_hash<std::array<u8, SHA512LEN>>(data, CALG_SHA_512, PROV_RSA_AES);
+}
 #endif

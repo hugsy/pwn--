@@ -1,9 +1,9 @@
 ///
 /// @file ProcessReparent
 ///
-/// @author hugsy (hugsy@blah.cat)
+/// @author hugsy (hugsy [AT] blah [DOT] cat)
 ///
-/// @brief Simple script using pwn++ to script a process reparented
+/// @brief Simple script using pwn++ to spawn a process reparented
 ///
 
 #include <pwn.hpp>
@@ -20,7 +20,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     // Look for the parent process
     u32 ppid = 0;
     {
-        auto res = pwn::win::system::pidof(parent_process);
+        auto res = pwn::windows::system::pidof(parent_process);
         if ( !Success(res) )
         {
             err(L"failed to find PID of '{}'", parent_process);
@@ -33,7 +33,7 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     // Create the new process using the parent PID
     {
-        auto res = pwn::win::process::execv(target_process, ppid);
+        auto res = pwn::windows::process::execv(target_process, ppid);
         if ( !Success(res) )
         {
             err(L"failed to spawn the process");

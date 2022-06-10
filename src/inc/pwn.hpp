@@ -1,8 +1,6 @@
 #pragma once
 
-#include <mutex>
 #include <ranges>
-#include <thread>
 
 #include "architecture.hpp"
 #include "common.hpp"
@@ -14,50 +12,64 @@
  *
  */
 
-// namespace pwn::log
+/// namespace pwn::log
 #include "log.hpp"
 
-// namespace pwn::context
+/// namespace pwn::context
 #include "context.hpp"
 
-
-// namespace pwn::utils
+/// namespace pwn::utils
 #include "utils.hpp"
 
 /// namespace pwn::crypto
 #include "crypto.hpp"
 
-/// namespace pwn::assm & namespace pwn::disassm
+#ifdef PWN_HAS_ASSEMBLER
+/// namespace pwn::assm
 #include "asm.hpp"
+#endif // PWN_HAS_ASSEMBLER
+
+/// namespace pwn::disassm
+#ifdef PWN_HAS_DISASSEMBLER
 #include "disasm.hpp"
+#endif // PWN_HAS_DISASSEMBLER
 
 
-#ifdef __PWNLIB_WINDOWS_BUILD__
+#ifdef PWN_BUILD_FOR_WINDOWS
 /**
  *
  * Windows namespace definition
- * -> pwn::win
  */
+namespace pwn
+{
+namespace windows
+{
 
-/// namespace pwn::win::system
+}
+
+namespace win = windows;
+
+} // namespace pwn
+
+/// namespace pwn::windows::system
 #include "win32/system.hpp"
 
-/// namespace pwn::win::process
+/// namespace pwn::windows::process
 #include "win32/process.hpp"
 
-/// namespace pwn::win::thread
+/// namespace pwn::windows::thread
 #include "win32/thread.hpp"
 
-/// namespace pwn::win::cpu
+/// namespace pwn::windows::cpu
 #include "win32/cpu.hpp"
 
-/// namespace pwn::win::registry
+/// namespace pwn::windows::registry
 #include "win32/registry.hpp"
 
-/// namespace pwn::win::kernel
+/// namespace pwn::windows::kernel
 #include "win32/kernel.hpp"
 
-/// namespace pwn::win::job
+/// namespace pwn::windows::job
 #include "win32/job.hpp"
 
 /*
@@ -67,28 +79,32 @@
 /// namespace pwn::rpc
 #include "fs.hpp"
 
-/// namespace pwn::windows::alpc
+/// namespace pwn::windowsdows::alpc
 #include "alpc.hpp"
 
-/// namespace pwn::windows::rpc
+/// namespace pwn::windowsdows::rpc
 #include "rpc.hpp"
 
 */
+
 // namespace pwn::backdoor
+#ifdef PWN_USE_BACKDOOR
 #include "backdoor.hpp"
+#endif
+
 #include "thread.hpp"
 
 
 ///
 /// Aliasing pwn::ctf to the corresponding OS the lib was build for
 ///
-namespace pwn::win::ctf
+namespace pwn
+{
+namespace windows::ctf
 {
 }
 
-namespace pwn
-{
-/// `pwn::ctf` -> `pwn::win::ctf` for Windows
+/// `pwn::ctf` -> `pwn::windows::ctf` for Windows
 namespace ctf = win::ctf;
 } // namespace pwn
 
@@ -97,7 +113,7 @@ namespace ctf = win::ctf;
 #endif
 
 
-#ifdef __PWNLIB_LINUX_BUILD__
+#ifdef PWN_BUILD_FOR_LINUX
 /**
  *
  * Linux namespace definition
@@ -106,11 +122,12 @@ namespace ctf = win::ctf;
 // namespace pwn::linux::system
 #include "linux/system.hpp"
 
-namespace pwn::linux::ctf
-{
-}
 namespace pwn
 {
+namespace linux::ctf
+{
+}
+
 /// `pwn::ctf` -> `pwn::linux::ctf` for Linux
 namespace ctf = linux::ctf;
 } // namespace pwn
@@ -128,10 +145,11 @@ namespace pwn
 {
 struct globals_t
 {
-    std::thread m_backdoor_thread;
-    std::vector<u32> m_admin_thread_ids;
+    std::jthread m_backdoor_thread;
+    std::vector<std::shared_ptr<pwn::backdoor::ThreadConfig>> m_backdoor_clients;
     u64 m_seed;
     std::mutex m_console_mutex;
+    std::mutex m_config_mutex;
     log::log_level_t log_level = log::log_level_t::LOG_INFO;
 
     Architecture architecture;
@@ -199,5 +217,8 @@ version() -> const wchar_t*;
 
 PWNAPI auto
 version_info() -> const std::tuple<u16, u16>;
+
+PWNAPI auto
+banner() -> const wchar_t*;
 
 } // namespace pwn

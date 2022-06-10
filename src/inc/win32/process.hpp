@@ -15,7 +15,7 @@ namespace fs = std::filesystem;
 
 using SharedHandle = std::shared_ptr<pwn::utils::GenericHandle<HANDLE>>;
 
-namespace pwn::win::process
+namespace pwn::windows::process
 {
 
 class Process
@@ -97,6 +97,13 @@ public:
 
     auto
     enumerate_privileges() -> bool;
+
+    friend std::wostream&
+    operator<<(std::wostream& os, const Process& p)
+    {
+        os << L"Process(Pid=" << p.pid() << L")";
+        return os;
+    }
 
 private:
     u32 m_pid;
@@ -207,41 +214,41 @@ private:
     SECURITY_CAPABILITIES m_SecurityCapabilities = {nullptr};
 };
 } // namespace appcontainer
-} // namespace pwn::win::process
+} // namespace pwn::windows::process
 
 
 std::wostream&
-operator<<(std::wostream& wos, const pwn::win::process::Process::Integrity i);
+operator<<(std::wostream& wos, const pwn::windows::process::Process::Integrity i);
 
 template<>
-struct std::formatter<pwn::win::process::Process::Integrity, wchar_t> : std::formatter<std::wstring, wchar_t>
+struct std::formatter<pwn::windows::process::Process::Integrity, wchar_t> : std::formatter<std::wstring, wchar_t>
 {
     auto
-    format(pwn::win::process::Process::Integrity i, wformat_context& ctx)
+    format(pwn::windows::process::Process::Integrity i, wformat_context& ctx)
     {
         std::wstring wstr;
         switch ( i )
         {
-        case pwn::win::process::Process::Integrity::Low:
-            wstr = L"INTEGRITY_LOW";
+        case pwn::windows::process::Process::Integrity::Low:
+            wstr = std::format(L"INTEGRITY_LOW");
             break;
 
-        case pwn::win::process::Process::Integrity::Medium:
-            wstr = L"INTEGRITY_MEDIUM";
+        case pwn::windows::process::Process::Integrity::Medium:
+            wstr = std::format(L"INTEGRITY_MEDIUM");
             break;
 
-        case pwn::win::process::Process::Integrity::High:
-            wstr = L"INTEGRITY_HIGH";
+        case pwn::windows::process::Process::Integrity::High:
+            wstr = std::format(L"INTEGRITY_HIGH");
             break;
 
-        case pwn::win::process::Process::Integrity::System:
-            wstr = L"INTEGRITY_SYSTEM";
+        case pwn::windows::process::Process::Integrity::System:
+            wstr = std::format(L"INTEGRITY_SYSTEM");
             break;
 
         default:
-            wstr = L"INTEGRITY_UNKNOWN";
+            wstr = std::format(L"INTEGRITY_UNKNOWN");
             break;
         }
-        return std::formatter<wstring, wchar_t>::format(std::format(wstr), ctx);
+        return std::formatter<wstring, wchar_t>::format(wstr, ctx);
     }
 };

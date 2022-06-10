@@ -24,7 +24,7 @@ using namespace pwn::log;
 #define KERNEL_PROCESS_NAME WINDOWS_SYSTEM32_PATH L"ntoskrnl.exe"
 
 
-namespace pwn::win::system
+namespace pwn::windows::system
 {
 
 auto
@@ -174,4 +174,4 @@ filename() -> std::optional<std::wstring>
     return modulename(nullptr);
 }
 
-} // namespace pwn::win::system
+} // namespace pwn::windows::system

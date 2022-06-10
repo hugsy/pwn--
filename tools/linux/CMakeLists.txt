@@ -16,11 +16,11 @@ foreach(TOOL_DIR ${LINUX_TOOLS})
     add_executable(${TOOL_DIR} ${PWNLIB_TOOLS_LINUX_DIR}/${TOOL_DIR}/main.cpp)
     add_dependencies(${TOOL_DIR} ${CMAKE_PROJECT_NAME})
 
-    if(NOT INCLUDE_DISASSEMBLER)
+    if(NOT PWN_INCLUDE_DISASSEMBLER)
         add_compile_definitions(PWN_NO_DISASSEMBLER)
     endif()
 
-    if(NOT INCLUDE_ASSEMBLER)
+    if(NOT PWN_INCLUDE_ASSEMBLER)
         add_compile_definitions(PWN_NO_ASSEMBLER)
     endif()
 

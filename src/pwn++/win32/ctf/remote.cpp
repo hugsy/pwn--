@@ -28,7 +28,7 @@ extern struct pwn::globals_t pwn::globals;
 ///
 /// Remote
 ///
-pwn::win::ctf::Remote::Remote(_In_ std::wstring const& host, _In_ u16 port) :
+pwn::windows::ctf::Remote::Remote(_In_ std::wstring const& host, _In_ u16 port) :
     m_host(host),
     m_port(port),
     m_protocol(L"tcp"),
@@ -40,14 +40,14 @@ pwn::win::ctf::Remote::Remote(_In_ std::wstring const& host, _In_ u16 port) :
     }
 }
 
-pwn::win::ctf::Remote::~Remote()
+pwn::windows::ctf::Remote::~Remote()
 {
     disconnect();
 }
 
 
 auto
-pwn::win::ctf::Remote::__send_internal(_In_ std::vector<u8> const& out) -> size_t
+pwn::windows::ctf::Remote::__send_internal(_In_ std::vector<u8> const& out) -> size_t
 {
     auto res = ::send(m_socket, reinterpret_cast<const char*>(&out[0]), out.size() & 0xffff, 0);
     if ( res == SOCKET_ERROR )
@@ -68,7 +68,7 @@ pwn::win::ctf::Remote::__send_internal(_In_ std::vector<u8> const& out) -> size_
 
 
 auto
-pwn::win::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) -> std::vector<u8>
+pwn::windows::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) -> std::vector<u8>
 {
     std::vector<u8> cache_data;
     size_t idx = 0;
@@ -126,7 +126,7 @@ pwn::win::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_
 
 
 auto
-pwn::win::ctf::Remote::__peek_internal() -> size_t
+pwn::windows::ctf::Remote::__peek_internal() -> size_t
 {
     auto buf = std::make_unique<u8[]>(PWN_TUBE_PIPE_DEFAULT_SIZE);
     auto res = ::recv(m_socket, reinterpret_cast<char*>(buf.get()), PWN_TUBE_PIPE_DEFAULT_SIZE, MSG_PEEK);
@@ -141,7 +141,7 @@ pwn::win::ctf::Remote::__peek_internal() -> size_t
 
 
 auto
-pwn::win::ctf::Remote::init() -> bool
+pwn::windows::ctf::Remote::init() -> bool
 {
     WSADATA wsaData = {0};
     auto ret        = ::WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -173,7 +173,7 @@ pwn::win::ctf::Remote::init() -> bool
 
 
 auto
-pwn::win::ctf::Remote::connect() -> bool
+pwn::windows::ctf::Remote::connect() -> bool
 {
     if ( !init() )
     {
@@ -199,7 +199,7 @@ pwn::win::ctf::Remote::connect() -> bool
 
 
 auto
-pwn::win::ctf::Remote::disconnect() -> bool
+pwn::windows::ctf::Remote::disconnect() -> bool
 {
     auto res = true;
 
@@ -216,14 +216,14 @@ pwn::win::ctf::Remote::disconnect() -> bool
 
 
 auto
-pwn::win::ctf::Remote::cleanup() -> bool
+pwn::windows::ctf::Remote::cleanup() -> bool
 {
     return ::WSACleanup() != SOCKET_ERROR;
 }
 
 
 auto
-pwn::win::ctf::Remote::reconnect() -> bool
+pwn::windows::ctf::Remote::reconnect() -> bool
 {
     return disconnect() && connect();
 }
@@ -233,7 +233,7 @@ pwn::win::ctf::Remote::reconnect() -> bool
 /// Process
 ///
 auto
-pwn::win::ctf::Process::__send_internal(_In_ std::vector<u8> const& out) -> size_t
+pwn::windows::ctf::Process::__send_internal(_In_ std::vector<u8> const& out) -> size_t
 {
     DWORD dwRead  = 0;
     auto bSuccess = ::WriteFile(m_ChildPipeStdin, &out[0], out.size() & 0xffffffff, &dwRead, nullptr);
@@ -247,7 +247,7 @@ pwn::win::ctf::Process::__send_internal(_In_ std::vector<u8> const& out) -> size
 
 
 auto
-pwn::win::ctf::Process::__recv_internal(_In_ size_t size) -> std::vector<u8>
+pwn::windows::ctf::Process::__recv_internal(_In_ size_t size) -> std::vector<u8>
 {
     DWORD dwRead;
     std::vector<u8> out;
@@ -266,14 +266,14 @@ pwn::win::ctf::Process::__recv_internal(_In_ size_t size) -> std::vector<u8>
 
 
 auto
-pwn::win::ctf::Process::__peek_internal() -> size_t
+pwn::windows::ctf::Process::__peek_internal() -> size_t
 {
     throw std::exception("not implemented");
 }
 
 
 auto
-pwn::win::ctf::Process::create_pipes() -> bool
+pwn::windows::ctf::Process::create_pipes() -> bool
 {
     SECURITY_ATTRIBUTES sa  = {0};
     sa.nLength              = sizeof(SECURITY_ATTRIBUTES);
@@ -287,7 +287,7 @@ pwn::win::ctf::Process::create_pipes() -> bool
 
 
 auto
-pwn::win::ctf::Process::spawn_process() -> bool
+pwn::windows::ctf::Process::spawn_process() -> bool
 {
     if ( !create_pipes() )
     {

@@ -7,7 +7,7 @@ using namespace pwn::log;
 
 
 auto
-pwn::win::cpu::nb_cores() -> std::optional<u32>
+pwn::windows::cpu::nb_cores() -> std::optional<u32>
 {
     DWORD dwNbMax  = 0x100;
     DWORD dwLen    = dwNbMax * sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);

@@ -176,6 +176,8 @@ __create_cyclic_buffer(
 void
 random::seed(std::optional<u64> seed)
 {
+    dbg(L"Re-seeding globals");
+
     if ( seed )
     {
         pwn::globals.m_seed = seed.value();

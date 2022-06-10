@@ -41,17 +41,17 @@ else()
 endif(MSVC)
 
 
-if(NOT INCLUDE_DISASSEMBLER)
+if(NOT PWN_INCLUDE_DISASSEMBLER)
     add_compile_definitions(PWN_NO_DISASSEMBLER)
 endif()
 
 
-if(NOT INCLUDE_ASSEMBLER)
+if(NOT PWN_INCLUDE_ASSEMBLER)
     add_compile_definitions(PWN_NO_ASSEMBLER)
 endif()
 
 add_executable(tests ${SOURCE_FILES})
-add_dependencies(tests ${CMAKE_PROJECT_NAME})
+add_dependencies(tests pwn++)
 
 add_test(
     NAME tests
@@ -65,11 +65,11 @@ set_target_properties(
 )
 
 target_compile_features(tests PRIVATE cxx_std_23)
-target_include_directories(tests PUBLIC ${TEST_DIR} $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INCLUDE_DIRECTORIES>)
-target_link_libraries(tests PRIVATE $<TARGET_LINKER_FILE:${CMAKE_PROJECT_NAME}>)
+target_include_directories(tests PUBLIC ${TEST_DIR} $<TARGET_PROPERTY:pwn++,INCLUDE_DIRECTORIES>)
+target_link_libraries(tests PRIVATE $<TARGET_LINKER_FILE:pwn++>)
 
 add_custom_command(
     TARGET tests POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:${CMAKE_PROJECT_NAME}> $<TARGET_FILE_DIR:tests>
+        $<TARGET_FILE:pwn++> $<TARGET_FILE_DIR:tests>
 )
