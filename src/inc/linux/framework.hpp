@@ -25,5 +25,5 @@
 #endif // MAX_PATH
 
 #ifndef UnusedParameter
-#define UnusedParameter (void)
+#define UnusedParameter(x) (void)(x)
 #endif // UnusedParameter
