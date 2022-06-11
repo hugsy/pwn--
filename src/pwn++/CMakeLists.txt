@@ -88,7 +88,6 @@ set(
     ${COMMON_HEADER_DIR}/pwn_export.hpp
     ${COMMON_HEADER_DIR}/architecture.hpp
     ${COMMON_HEADER_DIR}/asm.hpp
-    ${COMMON_HEADER_DIR}/backdoor.hpp
     ${COMMON_HEADER_DIR}/common.hpp
     ${COMMON_HEADER_DIR}/constants.hpp
     ${COMMON_HEADER_DIR}/crypto.hpp
@@ -99,6 +98,10 @@ set(
     ${COMMON_HEADER_DIR}/utils.hpp
 )
 
+
+if(PWN_ENABLE_LUA_BACKDOOR)
+    set(COMMON_HEADER_FILES ${COMMON_HEADER_FILES} ${COMMON_HEADER_DIR}/backdoor.hpp)
+endif(PWN_ENABLE_LUA_BACKDOOR)
 
 #
 # Create the target
