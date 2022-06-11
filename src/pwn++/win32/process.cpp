@@ -22,7 +22,7 @@ using namespace pwn::log;
 
 namespace fs = std::filesystem;
 
-static const std::array<pwn::win::process::Process::Privilege, 37> PrivilegeNames = {
+static const std::array<pwn::windows::process::Process::Privilege, 37> PrivilegeNames = {
     L"SeAssignPrimaryTokenPrivilege",
     L"SeAuditPrivilege",
     L"SeBackupPrivilege",
@@ -80,7 +80,7 @@ x86_get_teb();
 #endif
 
 
-namespace pwn::win::process
+namespace pwn::windows::process
 {
 
 
@@ -195,7 +195,7 @@ Process::Process(u32 pid, bool kill_on_delete) :
 
     // Process PPID
     {
-        auto ppid = pwn::win::system::ppid(pid);
+        auto ppid = pwn::windows::system::ppid(pid);
         m_ppid    = ppid ? ppid.value() : -1;
     }
 
@@ -455,7 +455,7 @@ pid() -> u32
 auto
 ppid() -> std::optional<u32>
 {
-    return pwn::win::system::ppid(pid());
+    return pwn::windows::system::ppid(pid());
 }
 
 
@@ -1188,4 +1188,4 @@ appcontainer::AppContainer::restore_acls() -> bool
 }
 
 
-} // namespace pwn::win::process
+} // namespace pwn::windows::process

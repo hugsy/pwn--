@@ -1,12 +1,12 @@
 #pragma once
 
-#include "common.hpp"
 #include <optional>
 
+#include "common.hpp"
 
-namespace pwn::win::cpu
+
+namespace pwn::windows::cpu
 {
-	PWNAPI auto nb_cores() -> std::optional<u32>;
+PWNAPI auto
+nb_cores() -> std::optional<u32>;
 }
-
-

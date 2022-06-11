@@ -14,34 +14,37 @@ using namespace pwn::log;
 #ifndef __KERNEL_CONSTANTS__
 #define __KERNEL_CONSTANTS__
 
-#if __PWNLIB_WINDOWS_BUILD__ == 10
+// clang-format off
+// TODO: use a json file with those autogen values at compile time
+#if PWN_BUILD_FOR_WINDOWS == 10
 //
 // Offset for Win10 RS6 x64
 //
-#define CURRENT_ETHREAD 0x0188
-#define EPROCESS_OFFSET 0x00b8
-#define PROCESSID_OFFSET 0x02e8
-#define EPROCESS_FLINK_OFFSET 0x02f0
-#define TOKEN_OFFSET 0x0360
-#define SYSTEM_PID 4
+#  define CURRENT_ETHREAD       0x0188
+#  define EPROCESS_OFFSET       0x00b8
+#  define PROCESSID_OFFSET      0x02e8
+#  define EPROCESS_FLINK_OFFSET 0x02f0
+#  define TOKEN_OFFSET          0x0360
+#  define SYSTEM_PID            4
 
 
-#elif __PWNLIB_WINDOWS_BUILD__ == 81
-#define CURRENT_ETHREAD 0x0188
-#define EPROCESS_OFFSET 0x00b8
-#define PROCESSID_OFFSET 0x02e0
-#define FLINK_OFFSET 0x02e8
-#define TOKEN_OFFSET 0x0348
-#define SYSTEM_PID 0x4
+#elif PWN_BUILD_FOR_WINDOWS == 81
+#  define CURRENT_ETHREAD      0x0188
+#  define EPROCESS_OFFSET      0x00b8
+#  define PROCESSID_OFFSET     0x02e0
+#  define FLINK_OFFSET         0x02e8
+#  define TOKEN_OFFSET         0x0348
+#  define SYSTEM_PID           0x4
 
 #else
 #error "unsupported os"
 #endif
 
 #endif
+// clang-format on
 
 
-namespace pwn::win::kernel
+namespace pwn::windows::kernel
 {
 namespace shellcode
 {
@@ -51,9 +54,7 @@ namespace
 auto
 __steal_system_token_x64() -> std::vector<u8>
 {
-#ifdef PWN_NO_ASSEMBLER
-    throw std::exception("This library wasn't compiled with assembly support");
-#else
+#ifdef PWN_HAS_ASSEMBLER
     const char* sc = ""
 					"push rax ;"
 					"push rbx ;"
@@ -88,6 +89,9 @@ __steal_system_token_x64() -> std::vector<u8>
         throw std::runtime_error("failed to compile shellcode\n");
     }
     return out;
+
+#else
+    throw std::exception("This library wasn't compiled with assembly support");
 #endif
 }
 } // namespace
@@ -127,7 +131,8 @@ query_system_info(_In_ SYSTEM_INFORMATION_CLASS code, _Out_ size_t* pdwBufferLen
     do
     {
         Buffer = std::make_unique<u8[]>(BufferLength);
-        Status = ::NtQuerySystemInformation(SystemBigPoolInformation, Buffer.get(), BufferLength, &ExpectedBufferLength);
+        Status =
+            ::NtQuerySystemInformation(SystemBigPoolInformation, Buffer.get(), BufferLength, &ExpectedBufferLength);
 
         if ( !NT_SUCCESS(Status) )
         {
@@ -302,4 +307,4 @@ get_big_pool_kaddress(_In_ u32 Tag) -> std::vector<uptr>
     return res;
 }
 
-} // namespace pwn::win::kernel
+} // namespace pwn::windows::kernel

@@ -15,10 +15,10 @@
 #define CONCAT(x, y) (x##y)
 
 
-#if defined(__PWNLIB_WINDOWS_BUILD__)
+#if defined(PWN_BUILD_FOR_WINDOWS)
 #include "win32/framework.hpp"
 
-#elif defined(__PWNLIB_LINUX_BUILD__)
+#elif defined(PWN_BUILD_FOR_LINUX)
 #include "linux/framework.hpp"
 #endif
 
@@ -50,9 +50,9 @@ namespace
 {
 auto static inline LoadLibraryWrapper(wchar_t const* name)
 {
-#if defined(__PWNLIB_WINDOWS_BUILD__)
+#if defined(PWN_BUILD_FOR_WINDOWS)
     return ::LoadLibraryW(name);
-#elif defined(__PWNLIB_LINUX_BUILD__)
+#elif defined(PWN_BUILD_FOR_LINUX)
     return dlopen(name, RTLD_LAZY);
 #else
 #error "invalid os"
@@ -63,9 +63,9 @@ auto static inline LoadLibraryWrapper(wchar_t const* name)
 template<typename M>
 auto inline GetProcAddressWrapper(M hMod, std::string_view const& lpszProcName)
 {
-#if defined(__PWNLIB_WINDOWS_BUILD__)
+#if defined(PWN_BUILD_FOR_WINDOWS)
     auto address = ::GetProcAddress(hMod, lpszProcName.data());
-#elif defined(__PWNLIB_LINUX_BUILD__)
+#elif defined(PWN_BUILD_FOR_LINUX)
     auto address = dlsym(hMod, lpszProcName.data());
 #else
 #error "invalid os"
@@ -286,10 +286,15 @@ struct ErrorType
         OverflowError,
         UnderflowError,
         IllegalValue,
+        NotImplementedError,
+        PendingIoError,
+        ConnectionError,
+        TerminationError,
+        VmNotInitialized,
     };
 
-    Code m_code;
-    u32 m_errno;
+    Code code;
+    u32 number;
 };
 
 template<class T>
@@ -307,6 +312,18 @@ struct Err : ErrorType
         ErrorType(ErrCode, errno)
 #endif
     {
+    }
+
+    bool
+    operator==(const Err& rhs) const
+    {
+        return this->code == rhs.code;
+    }
+
+    bool
+    operator==(ErrorType::Code code) const
+    {
+        return this->code == code;
     }
 };
 
@@ -327,6 +344,23 @@ Success(Result<T> const& f)
         return true;
     }
     return false;
+}
+
+template<class T>
+constexpr bool
+Failed(Result<T> const& f)
+{
+    if ( Success(f) )
+    {
+        return false;
+    }
+
+    if ( const ErrorType* c = std::get_if<ErrorType>(&f); c != nullptr )
+    {
+        return true;
+    }
+
+    throw std::bad_variant_access();
 }
 
 template<class T>

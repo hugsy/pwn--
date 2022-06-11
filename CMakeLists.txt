@@ -19,12 +19,13 @@ set(CXX_STANDARD 23)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-option(DEBUG                           "Enable Debug"                                             ON)
-option(DISABLE_LOG_COLOR               "Disable ANSI color codes in log messages"                 OFF)
+option(DEBUG                           "Enable Debug"                                             OFF)
+option(PWN_LOG_USE_COLOR               "Use ANSI color codes in log messages"                     OFF)
 option(PWN_INCLUDE_ASSEMBLER           "Compile with assembler support"                           OFF)
 option(PWN_INCLUDE_DISASSEMBLER        "Compile with disassembler support"                        ON)
 option(PWN_BUILD_TOOLKIT               "Compile the executables of pwn++ toolkit"                 ON)
 option(PWN_BUILD_TESTING               "Compile the test suite"                                   ON)
+option(PWN_ENABLE_LUA_BACKDOOR         "Enable Lua scripting for backdoor"                        ON)
 
 
 set(PWNLIB_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
@@ -45,6 +46,10 @@ if(PWN_INCLUDE_DISASSEMBLER)
     add_subdirectory(${PWNLIB_ROOT_DIR}/deps/zydis)
 endif()
 
+if(PWN_ENABLE_LUA_BACKDOOR)
+    option(BUILD_SHARED_LIBS "" OFF)
+    add_subdirectory(${PWNLIB_ROOT_DIR}/deps/lua)
+endif()
 
 #
 # Build library

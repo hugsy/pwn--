@@ -1,6 +1,6 @@
 #pragma once
 
-#ifndef PWN_NO_DISASSEMBLER
+#if defined(PWN_INCLUDE_DISASSEMBLER)
 
 #include "pwn.hpp"
 

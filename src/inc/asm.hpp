@@ -4,7 +4,7 @@
 
 namespace pwn::assm
 {
-#ifndef PWN_NO_ASSEMBLER
+#if defined(PWN_INCLUDE_ASSEMBLER)
 //     _Success_(return) bool PWNAPI assemble(_In_ const char* code, _In_ const size_t code_size, _Out_ std::vector<u8>&
 //     bytes); _Success_(return) bool PWNAPI x64(_In_ const char* code, _In_ const size_t code_size, _Out_
 //     std::vector<u8>& bytes); _Success_(return) bool PWNAPI x86(_In_ const char* code, _In_ const size_t code_size,

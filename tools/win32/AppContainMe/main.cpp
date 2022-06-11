@@ -70,7 +70,7 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
             //
             // initialize the appcontainer with the given capabilities
             //
-            pwn::win::process::appcontainer::AppContainer app(containerName, processName, capabilities);
+            pwn::windows::process::appcontainer::AppContainer app(containerName, processName, capabilities);
 
             if ( argc >= 3 )
             {

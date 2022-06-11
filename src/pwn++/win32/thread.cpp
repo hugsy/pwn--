@@ -6,7 +6,7 @@
 
 _Success_(return != std::nullopt)
 auto
-pwn::win::thread::get_name(_In_ i32 dwThreadId) -> std::optional<std::wstring>
+pwn::windows::thread::get_name(_In_ i32 dwThreadId) -> std::optional<std::wstring>
 {
     HANDLE ThreadHandle = INVALID_HANDLE_VALUE;
 
@@ -68,7 +68,7 @@ pwn::win::thread::get_name(_In_ i32 dwThreadId) -> std::optional<std::wstring>
 
 _Success_(return )
 auto
-pwn::win::thread::set_name(_In_ std::wstring const& name, _In_ i32 dwThreadId) -> bool
+pwn::windows::thread::set_name(_In_ std::wstring const& name, _In_ i32 dwThreadId) -> bool
 {
     HANDLE ThreadHandle = INVALID_HANDLE_VALUE;
 

@@ -39,6 +39,9 @@ if(WIN32)
 
         PUBLIC
         $<TARGET_LINKER_FILE:${CMAKE_PROJECT_NAME}>
+
+        PRIVATE
+        Userenv
     )
 
 else()
@@ -55,6 +58,11 @@ else()
 
 endif(WIN32)
 
+
+if(PWN_ENABLE_LUA_BACKDOOR)
+    target_link_libraries(${PROJECT_NAME} PRIVATE lua::lib)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/lua/include)
+endif()
 
 
 #

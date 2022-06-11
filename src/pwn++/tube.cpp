@@ -161,7 +161,7 @@ Tube::peek() -> size_t
 static bool __bReplLoop = false;
 
 
-#ifdef __PWNLIB_WINDOWS_BUILD__
+#ifdef PWN_BUILD_FOR_WINDOWS
 _Success_(return )
 static BOOL WINAPI
 __pwn_interactive_repl_sighandler(_In_ DWORD signum)
@@ -188,7 +188,7 @@ Tube::interactive()
 {
     __bReplLoop = true;
 
-#ifdef __PWNLIB_WINDOWS_BUILD__
+#ifdef PWN_BUILD_FOR_WINDOWS
     ::SetConsoleCtrlHandler(__pwn_interactive_repl_sighandler, 1);
 #endif
 
@@ -250,7 +250,7 @@ Tube::interactive()
 
     remote.join();
 
-#ifdef __PWNLIB_WINDOWS_BUILD__
+#ifdef PWN_BUILD_FOR_WINDOWS
     ::SetConsoleCtrlHandler(nullptr, 1);
 #endif
 

@@ -1,14 +1,14 @@
 #pragma once
 
-#include "common.hpp"
-#include "tube.hpp"
-#include "handle.hpp"
-#include "utils.hpp"
-
 #include <winsock2.h>
 
+#include "common.hpp"
+#include "handle.hpp"
+#include "tube.hpp"
+#include "utils.hpp"
 
-namespace pwn::win::ctf
+
+namespace pwn::windows::ctf
 {
 
 
@@ -18,7 +18,8 @@ namespace pwn::win::ctf
 class Remote : public Tube
 {
 public:
-    PWNAPI Remote(_In_ std::wstring const& host, _In_ u16 port);
+    PWNAPI
+    Remote(_In_ std::wstring const& host, _In_ u16 port);
     PWNAPI ~Remote();
 
 protected:
@@ -93,4 +94,4 @@ private:
     HANDLE m_ParentStdout    = ::GetStdHandle(STD_OUTPUT_HANDLE);
 };
 
-}
+} // namespace pwn::windows::ctf
