@@ -118,7 +118,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${COMMON_HEADER_DIR})
 
 message(STATUS "DEBUG:                                 ${DEBUG}")
 
-message(STATUS "PWN_DISABLE_LOG_COLOR                  ${PWN_DISABLE_LOG_COLOR}")
+message(STATUS "PWN_LOG_USE_COLOR                      ${PWN_LOG_USE_COLOR}")
 message(STATUS "PWN_INCLUDE_ASSEMBLER                  ${PWN_INCLUDE_ASSEMBLER}")
 message(STATUS "PWN_INCLUDE_DISASSEMBLER               ${PWN_INCLUDE_DISASSEMBLER}")
 message(STATUS "PWN_BUILD_TOOLKIT                      ${PWN_BUILD_TOOLKIT}")
