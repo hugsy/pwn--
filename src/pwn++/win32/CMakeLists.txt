@@ -36,13 +36,16 @@ set(
     ${SOURCE_DIR}/cpu.cpp
     ${SOURCE_DIR}/kernel.cpp
     ${SOURCE_DIR}/job.cpp
-    ${SOURCE_DIR}/backdoor.cpp
     ${SOURCE_DIR}/service.cpp
     ${SOURCE_DIR}/fs.cpp
     ${SOURCE_DIR}/alpc.cpp
     ${SOURCE_DIR}/rpc.cpp
     ${SOURCE_DIR}/ctf/remote.cpp
 )
+
+if(PWN_ENABLE_LUA_BACKDOOR)
+    set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_DIR}/backdoor.cpp)
+endif(PWN_ENABLE_LUA_BACKDOOR)
 
 target_sources(
     ${PROJECT_NAME}
