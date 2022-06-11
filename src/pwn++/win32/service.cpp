@@ -1,5 +1,6 @@
 #include "service.hpp"
 
+#include <chrono>
 #include <stdexcept>
 
 #include "log.hpp"
@@ -124,7 +125,7 @@ stop(std::string_view const& ServiceName, const DWORD Timeout) -> Result<DWORD>
             break;
         }
 
-        const u64 StartTime = ::GetTickCount64();
+        const auto start = std::chrono::system_clock::now();
 
 
         //
@@ -149,7 +150,9 @@ stop(std::string_view const& ServiceName, const DWORD Timeout) -> Result<DWORD>
                 break;
             }
 
-            if ( (::GetTickCount64() - StartTime) > Timeout )
+            const auto end                           = std::chrono::system_clock::now();
+            const std::chrono::duration<double> diff = end - start;
+            if ( diff.count() > Timeout )
             {
                 perror(L"StopService()");
                 dwResult = ERROR_TIMEOUT;
