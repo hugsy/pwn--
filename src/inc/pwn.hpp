@@ -72,20 +72,18 @@ namespace win = windows;
 /// namespace pwn::windows::job
 #include "win32/job.hpp"
 
-/*
-/// namespace pwn::service
+/// namespace pwn::windows::service
 #include "service.hpp"
 
-/// namespace pwn::rpc
+/// namespace pwn::windows::filesystem
 #include "fs.hpp"
 
 /// namespace pwn::windowsdows::alpc
 #include "alpc.hpp"
 
-/// namespace pwn::windowsdows::rpc
+/// namespace pwn::windows::rpc
 #include "rpc.hpp"
 
-*/
 
 // namespace pwn::backdoor
 #ifdef PWN_USE_BACKDOOR
@@ -145,8 +143,10 @@ namespace pwn
 {
 struct globals_t
 {
+#ifdef PWN_USE_BACKDOOR
     std::jthread m_backdoor_thread;
     std::vector<std::shared_ptr<pwn::backdoor::ThreadConfig>> m_backdoor_clients;
+#endif
     u64 m_seed;
     std::mutex m_console_mutex;
     std::mutex m_config_mutex;

@@ -27,11 +27,20 @@ _Note_: the original `PwnLib` was written around Windows 7 for feature testing. 
 
   - None (AFAIK)
 
+_Note_ Support of C++20/23 on Linux compilers (both [GCC](https://gcc.gnu.org/projects/cxx-status.html) and [clang](https://clang.llvm.org/cxx_status.html)) is way incomplete so chances are it won't compile at all until the features I'm using are fully supported. Both compilers mark C++20 support as experimental.
+
+
 
 ## Get started
 
 ### Quick Start
 
+#### Using Github
+
+Simply use the repo [template-pwn](https://github.com/hugsy/template-pwn).
+
+
+#### Using the pre-builds
 To start using `pwn++` lib, simply download the latest successful build from [CI builds](https://github.com/hugsy/pwn--/actions/workflows/msvc-build.yml?query=is%3Asuccess), download and extract the zip file.
 In your C++ file, just include `pwn.h` and link with `pwn++.dll`.
 
@@ -46,16 +55,6 @@ Then compile your binary linked with the lib (make sure you're at least C++17 co
 C:\> cl.exe whatever.cc /std:c++20
 C:\> clang.exe whatever.cc -std=c++20
 ```
-
-### Better start
-
-Or better, use Visual Studio and add it via the GUI (this approach has the huge advantage that you can rely on IntelliSense for auto-completion). In Visual Studio,
-right click on your project in the `Solution Explorer` -> `Properties`, then:
- - add `pwn++` location to `C/C++`->`General`->`Additional Include Directories`
- - add `pwn++` library location to `Linker`->`General`->`Additional Libraries Directories`
- - add `pwn++.lib` to `Linker`->`Input`->`Additional Dependencies`
-
-To compile, just build your project/solution.
 
 
 ## Examples
@@ -767,11 +766,45 @@ void wmain()
 ```
 
 
+### Lua VM backdoor
+
+Namespace: `pwn::backdoor`
+
+The lib embeds a Lua VM (if compiled with the flag `PWN_ENABLE_LUA_BACKDOOR`) which allows to script your way into a remote process where the pwn++.dll is injected. On Windows it will use a Named Pipe (see tools/win32/Backdoor for a standalone example)
+
+```powershell
+> .\Backdoor.exe
+[DEBUG] {c:\temp\backdoor.cpp:645:wmain()} Starting as PID=15004
+[...]
+[DEBUG] {Z:\pwn++\src\pwn++\win32\backdoor.cpp:548:start()} Listening for connection on '\\.\pipe\WindowsBackupService_202004L_1932'
+[DEBUG] {Z:\pwn++\src\pwn++\win32\backdoor.cpp:253:WaitNextConnectionAsync()} Waiting for connection
+```
+
+Now you can use any client to connect and interact with the Named Pipe
+
+```lua
+> .\NamedPipe.exe '\\.\pipe\WindowsBackupService_202004L_1932'
+>>> return pwn.version()
+>> Sent 20 bytes
+<< Received 6 bytes
+---
+0.1.3
+---
+>>> return pwn.process.pid()
+>> Sent 24 bytes
+<< Received 6 bytes
+---
+15004
+---
+>>>
+```
+
+
 ### CTF stuff
 
 Namespace: `pwn::ctf`
 
-Description: Some pwntools goodies (WIP)
+Description: Some pwntools goodies
 
 ```cpp
 #include <pwn++\pwn.h>
@@ -785,7 +818,7 @@ void wmain()
 {
     ctx::set_log_level(log_level_t::LOG_DEBUG);
     {
-        auto io = ctf::Remote(L"target", 1337);
+        auto io = ctf::Remote(L"target_vm", 1337);
         io.recvuntil(">>> ");
         io.sendline("print('hi python')");
         io.recvuntil(">>> ");
@@ -798,7 +831,13 @@ void wmain()
 }
 ```
 
+Then the Linux tool `socat` can be used to bind easily a Python REPL to the TCP/1337 of `target_vm`
+
+```bash
+$ socat TCP-L:1337,fork,reuseaddr EXEC:/usr/bin/python3.8,pty,stderr
 ```
+
+```text
 [DEBUG]  log_level set to LOG_LEVEL_DEBUG (0)
 [DEBUG]  connected to 192.168.57.64:1337
 [DEBUG]  recv 46 bytes

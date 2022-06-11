@@ -88,7 +88,6 @@ set(
     ${COMMON_HEADER_DIR}/pwn_export.hpp
     ${COMMON_HEADER_DIR}/architecture.hpp
     ${COMMON_HEADER_DIR}/asm.hpp
-    ${COMMON_HEADER_DIR}/backdoor.hpp
     ${COMMON_HEADER_DIR}/common.hpp
     ${COMMON_HEADER_DIR}/constants.hpp
     ${COMMON_HEADER_DIR}/crypto.hpp
@@ -99,6 +98,10 @@ set(
     ${COMMON_HEADER_DIR}/utils.hpp
 )
 
+
+if(PWN_ENABLE_LUA_BACKDOOR)
+    set(COMMON_HEADER_FILES ${COMMON_HEADER_FILES} ${COMMON_HEADER_DIR}/backdoor.hpp)
+endif(PWN_ENABLE_LUA_BACKDOOR)
 
 #
 # Create the target
@@ -115,7 +118,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${COMMON_HEADER_DIR})
 
 message(STATUS "DEBUG:                                 ${DEBUG}")
 
-message(STATUS "PWN_DISABLE_LOG_COLOR                  ${PWN_DISABLE_LOG_COLOR}")
+message(STATUS "PWN_LOG_USE_COLOR                      ${PWN_LOG_USE_COLOR}")
 message(STATUS "PWN_INCLUDE_ASSEMBLER                  ${PWN_INCLUDE_ASSEMBLER}")
 message(STATUS "PWN_INCLUDE_DISASSEMBLER               ${PWN_INCLUDE_DISASSEMBLER}")
 message(STATUS "PWN_BUILD_TOOLKIT                      ${PWN_BUILD_TOOLKIT}")

@@ -1,295 +1,247 @@
 #include "fs.hpp"
-#include "nt.hpp"
-#include "utils.hpp"
-#include "log.hpp"
-#include "handle.hpp"
 
 #include <sstream>
 
+#include "handle.hpp"
+#include "log.hpp"
+#include "nt.hpp"
+#include "utils.hpp"
 
-/*++
-*
-* Resources:
-* https://github.com/googleprojectzero/symboliclink-testing-tools/
-*
---*/
 
-extern "C"
+#ifndef SYMBOLIC_LINK_ALL_ACCESS
+#define SYMBOLIC_LINK_ALL_ACCESS (STANDARD_RIGHTS_REQUIRED | 0x1)
+#endif
+
+IMPORT_EXTERNAL_FUNCTION(
+    L"ntdll.dll",
+    NtCreateSymbolicLinkObject,
+    NTSTATUS,
+    PHANDLE LinkHandle,
+    ACCESS_MASK DesiredAccess,
+    POBJECT_ATTRIBUTES ObjectAttributes,
+    PUNICODE_STRING TargetName);
+
+IMPORT_EXTERNAL_FUNCTION(
+    L"ntdll.dll",
+    NtOpenSymbolicLinkObject,
+    NTSTATUS,
+    PHANDLE LinkHandle,
+    ACCESS_MASK DesiredAccess,
+    POBJECT_ATTRIBUTES ObjectAttributes);
+
+
+auto
+pwn::windows::filesystem::open(std::wstring_view const& path, std::wstring_view const& perm) -> Result<HANDLE>
 {
-	NTSTATUS NTAPI NtCreateSymbolicLinkObject(
-		PHANDLE LinkHandle,
-		ACCESS_MASK DesiredAccess,
-		POBJECT_ATTRIBUTES ObjectAttributes,
-		PUNICODE_STRING TargetName
-	);
+    DWORD dwPerm = 0;
+    if ( perm.find(L"r") != std::wstring::npos )
+    {
+        dwPerm |= GENERIC_READ;
+    }
+    if ( perm.find(L"w") != std::wstring::npos )
+    {
+        dwPerm |= GENERIC_WRITE;
+    }
 
-	NTSTATUS NTAPI NtOpenSymbolicLinkObject(
-		_Out_ PHANDLE            LinkHandle,
-		_In_  ACCESS_MASK        DesiredAccess,
-		_In_  POBJECT_ATTRIBUTES ObjectAttributes
-	);
+    HANDLE hFile = ::CreateFile(path.data(), dwPerm, 0x00000000, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if ( hFile == INVALID_HANDLE_VALUE && ::GetLastError() == ERROR_FILE_EXISTS )
+    {
+        hFile = ::CreateFile(
+            path.data(),
+            dwPerm,
+            0x00000000,
+            nullptr,
+            (perm.find(L"-") != std::wstring::npos) ? OPEN_EXISTING | TRUNCATE_EXISTING : OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            nullptr);
+    }
+
+    return Ok(hFile);
 }
 
 
-_Success_(return != nullptr)
-auto pwn::fs::open(_In_ std::wstring const& path, _In_ std::wstring const& perm) -> HANDLE
+auto
+pwn::windows::filesystem::touch(const std::wstring_view& path) -> bool
 {
-	DWORD dwPerm = 0;
-	if (perm.find(L"r") != std::wstring::npos) { dwPerm |= GENERIC_READ;
-}
-	if (perm.find(L"w") != std::wstring::npos) { dwPerm |= GENERIC_WRITE;
-}
-
-	HANDLE hFile = ::CreateFile(
-		path.c_str(),
-		dwPerm,
-		0x00000000,
-		nullptr,
-		CREATE_NEW,
-		FILE_ATTRIBUTE_NORMAL,
-		nullptr
-	);
-	if (hFile == INVALID_HANDLE_VALUE && ::GetLastError() == ERROR_FILE_EXISTS)
-	{
-		hFile = ::CreateFile(
-			path.c_str(),
-			dwPerm,
-			0x00000000,
-			nullptr,
-			(perm.find(L"-") != std::wstring::npos) ? OPEN_EXISTING | TRUNCATE_EXISTING : OPEN_EXISTING,
-			FILE_ATTRIBUTE_NORMAL,
-			nullptr
-		);
-	}
-
-	return hFile;
+    return ::CloseHandle(::CreateFile(
+        path.data(),
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ,
+        nullptr,
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        nullptr));
 }
 
 
-_Success_(return != nullptr)
-auto pwn::fs::touch(_In_ const std::wstring & path) -> HANDLE
+auto
+pwn::windows::filesystem::create_symlink(const std::wstring_view& link, const std::wstring_view& target)
+    -> Result<HANDLE>
 {
-	return ::CreateFile(
-		path.c_str(),
-		GENERIC_READ | GENERIC_WRITE,
-		FILE_SHARE_READ,
-		nullptr,
-		CREATE_ALWAYS,
-		FILE_ATTRIBUTE_NORMAL,
-		nullptr
-	);
+    OBJECT_ATTRIBUTES oa = {0};
+    HANDLE hLink         = nullptr;
+
+    UNICODE_STRING link_name;
+    UNICODE_STRING target_name;
+
+    ::RtlInitUnicodeString(&link_name, link.data());
+    ::RtlInitUnicodeString(&target_name, target.data());
+
+    InitializeObjectAttributes(&oa, &link_name, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
+
+    if ( !NT_SUCCESS(NtCreateSymbolicLinkObject(&hLink, SYMBOLIC_LINK_ALL_ACCESS, &oa, &target_name)) )
+    {
+        return Err(ErrorType::Code::FilesystemError);
+    }
+
+    dbg(L"created link '{}' to '{}' (h={})", link, target, hLink);
+    return Ok(hLink);
 }
 
 
-_Success_(return != nullptr)
-auto pwn::fs::tmpfile(_In_ const std::wstring & prefix, _Out_ std::wstring& path) -> HANDLE
+auto
+pwn::windows::filesystem::open_symlink(const std::wstring_view& link) -> Result<HANDLE>
 {
-	HANDLE h = INVALID_HANDLE_VALUE;
+    HANDLE hLink         = INVALID_HANDLE_VALUE;
+    OBJECT_ATTRIBUTES oa = {0};
+    UNICODE_STRING link_name;
+    ::RtlInitUnicodeString(&link_name, link.data());
 
-	do
-	{
-		path = prefix + L"-" + pwn::utils::random::string(10);
-		h = ::CreateFile(
-			path.c_str(),
-			GENERIC_READ | GENERIC_WRITE,
-			0,
-			nullptr,
-			CREATE_ALWAYS,
-			FILE_ATTRIBUTE_NORMAL | FILE_FLAG_DELETE_ON_CLOSE,
-			nullptr
-		);
-	}
-	while (h == INVALID_HANDLE_VALUE);
+    InitializeObjectAttributes(&oa, &link_name, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
 
+    if ( !NT_SUCCESS(NtOpenSymbolicLinkObject(&hLink, SYMBOLIC_LINK_ALL_ACCESS, &oa)) )
+    {
+        return Err(ErrorType::Code::FilesystemError);
+    }
 
-
-	return h;
+    dbg(L"opened link '{}' with handle={})\n", link, hLink);
+    return Ok(hLink);
 }
 
 
-
-/*++
-
-Create a symlink in the object manager. The link doesn't need to be deleted, as the ObjMan will
-do it when the refcount of handles on the object reaches 0.
-
---*/
-_Success_ (return != nullptr)
-auto pwn::fs::create_symlink(
-	_In_ const std::wstring& link,
-	_In_ const std::wstring& target
-) -> HANDLE
+auto
+pwn::windows::filesystem::mkdir(const std::wstring_view& name) -> Result<bool>
 {
-	OBJECT_ATTRIBUTES oa = { 0 };
-	HANDLE hLink = nullptr;
+    std::wstring root = L"";
 
-	UNICODE_STRING link_name;
-	UNICODE_STRING target_name;
+    for ( auto subdir : pwn::utils::split(std::wstring(name), L'\\') )
+    {
+        if ( (::CreateDirectoryW((root + subdir).c_str(), nullptr) != 0) || ::GetLastError() == ERROR_ALREADY_EXISTS )
+        {
+            root += L"\\" + subdir;
+            continue;
+        }
 
-	::RtlInitUnicodeString(&link_name, link.c_str());
-	::RtlInitUnicodeString(&target_name, target.c_str());
+        return Err(ErrorType::Code::FilesystemError);
+    }
 
-	InitializeObjectAttributes(
-		&oa,
-		&link_name,
-		OBJ_CASE_INSENSITIVE,
-		nullptr,
-		nullptr
-	);
-
-	if (NT_SUCCESS(NtCreateSymbolicLinkObject(&hLink, SYMBOLIC_LINK_ALL_ACCESS, &oa, &target_name)))
-	{
-		dbg(L"created link '%s' to '%s' (h=%p)\n", link.c_str(), target.c_str(), hLink);
-		return hLink;
-	}
-
-	return nullptr;
+    return Ok(true);
 }
 
 
-/*++
-*
-* wrapper for NtOpenSymbolicLinkObject
-* https://docs.microsoft.com/en-us/windows/win32/devnotes/ntopensymboliclinkobject
-*
---*/
-_Success_(return != nullptr)
-auto pwn::fs::open_symlink(
-	_In_ const std::wstring &link
-) -> HANDLE
+auto
+pwn::windows::filesystem::rmdir(const std::wstring_view& name) -> Result<bool>
 {
-	HANDLE hLink = INVALID_HANDLE_VALUE;
-	OBJECT_ATTRIBUTES oa = { 0 };
-	UNICODE_STRING link_name;
-	::RtlInitUnicodeString(&link_name, link.c_str());
-
-	InitializeObjectAttributes(
-		&oa,
-		&link_name,
-		OBJ_CASE_INSENSITIVE,
-		nullptr,
-		nullptr
-	);
-
-	if (NT_SUCCESS(NtOpenSymbolicLinkObject(&hLink, SYMBOLIC_LINK_ALL_ACCESS, &oa)))
-	{
-		dbg(L"opened link '%s' with handle=%p)\n", link.c_str(), hLink);
-		return hLink;
-	}
-
-	return nullptr;
+    return Ok(::RemoveDirectoryW(name.data()) != 0);
 }
 
-_Success_(return != nullptr)
-auto pwn::fs::create_junction(
-	_In_ const std::wstring& link,
-	_In_ const std::wstring& target
-) -> HANDLE
+
+auto
+pwn::windows::filesystem::make_tmpdir(int level) -> Result<std::wstring>
 {
-	return INVALID_HANDLE_VALUE;
+    std::wstring name;
+    auto attempts = 5;
+
+    do
+    {
+        attempts--;
+        if ( attempts == 0 )
+        {
+            return Err(ErrorType::Code::FilesystemError);
+        }
+
+        name = pwn::utils::random::string(level);
+        name.erase(62);
+
+    } while ( Failed(mkdir(name)) );
+
+    dbg(L"Created new temporary directory '{}'", name);
+    return Ok(name);
 }
 
 
-/*++
-
-Create directories recursively.
-
---*/
-_Success_(return)
-auto pwn::fs::mkdir(_In_ const std::wstring& name) -> bool
+auto
+pwn::windows::filesystem::tmpfile(const std::wstring_view& prefix) -> Result<std::tuple<std::wstring, HANDLE>>
 {
-	bool bRes = true;
-	std::wstring root;
+    std::wstring path = std::wstring(prefix);
+    HANDLE hFile      = INVALID_HANDLE_VALUE;
 
-	for (auto subdir : pwn::utils::split(name, L'\\'))
-	{
-		if ((::CreateDirectory((root + subdir).c_str(), nullptr) != 0)
-			|| ::GetLastError() == ERROR_ALREADY_EXISTS)
-		{
-			root = root + L"\\" + subdir;
-			continue;
-		}
+    u32 max_attempt = 5;
 
-		bRes = false;
-		break;
-	}
+    do
+    {
+        path += L"-" + pwn::utils::random::string(10);
+        hFile = ::CreateFile(
+            path.c_str(),
+            GENERIC_READ | GENERIC_WRITE,
+            0,
+            nullptr,
+            CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_DELETE_ON_CLOSE,
+            nullptr);
 
-	return bRes;
+        if ( hFile != INVALID_HANDLE_VALUE )
+        {
+            return Ok(std::make_tuple(path, hFile));
+        }
+
+    } while ( max_attempt-- );
+
+    return Err(ErrorType::Code::FilesystemError);
 }
 
 
-_Success_(return)
-auto pwn::fs::rmdir(_In_ const std::wstring& name) -> bool
+auto
+pwn::windows::filesystem::watch_directory(
+    const std::wstring_view& name,
+    std::function<bool(PFILE_NOTIFY_INFORMATION)> cbFunctor,
+    const bool watch_subtree) -> Result<bool>
 {
-	return ::RemoveDirectoryW(name.c_str()) != 0;
-}
+    auto h = pwn::utils::GenericHandle(::CreateFileW(
+        name.data(),
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        nullptr,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        nullptr));
 
+    if ( !h )
+    {
+        pwn::log::perror(L"CreateFileW()");
+        return Err(ErrorType::Code::FilesystemError);
+    }
 
-auto pwn::fs::make_tmpdir(_In_ int level) -> std::wstring
-{
-	std::wstring name;
-	auto max_attempts = 10;
-	auto attempts = 0;
+    auto sz     = (DWORD)sizeof(FILE_NOTIFY_INFORMATION);
+    auto buffer = std::make_unique<std::byte[]>(sz);
+    DWORD bytes_written;
 
-	do
-	{
-		if (attempts == max_attempts) {
-			throw std::exception("failed to create directory");
-}
+    dbg(L"Start watching '{}'", name.data());
 
-		name = pwn::utils::random::string(level);
-		name.erase(62);
-		attempts++;
-	}
-	while (!mkdir(name));
+    if ( ::ReadDirectoryChangesW(
+             h.get(),
+             buffer.get(),
+             sz,
+             static_cast<BOOL>(watch_subtree),
+             FILE_NOTIFY_CHANGE_FILE_NAME,
+             &bytes_written,
+             nullptr,
+             nullptr) == 0 )
+    {
+        pwn::log::perror(L"ReadDirectoryChangesW()");
+        return Err(ErrorType::Code::FilesystemError);
+    }
 
-	dbg(L"created tmp dir '%s'\n", name.c_str());
-
-	return name;
-}
-
-
-_Success_(return)
-auto pwn::fs::watch_dir(_In_ const std::wstring& name, _In_ std::function<bool(PFILE_NOTIFY_INFORMATION)> cbFunctor, _In_ bool watch_subtree) -> bool
-{
-	auto h = pwn::utils::GenericHandle(
-		::CreateFileW(
-			name.c_str(),
-			GENERIC_READ,
-			FILE_SHARE_READ,
-			nullptr,
-			OPEN_EXISTING,
-			FILE_FLAG_BACKUP_SEMANTICS,
-			nullptr
-		)
-	);
-
-	if (!h) {
-		return false;
-}
-
-	auto sz = (DWORD)sizeof(FILE_NOTIFY_INFORMATION);
-	auto buffer = std::make_unique<std::byte[]>(sz);
-	DWORD bytes_written;
-
-	dbg(L"watching %s\n", name.c_str());
-
-	// https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-readdirectorychangesw
-
-	if (::ReadDirectoryChangesW(
-		h.get(),
-		buffer.get(),
-		sz,
-		static_cast<BOOL>(watch_subtree),
-		FILE_NOTIFY_CHANGE_FILE_NAME,
-		&bytes_written,
-		nullptr,
-		nullptr
-		) == 0)
-	{
-		return false;
-	}
-
-	auto info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(buffer.get());
-	return cbFunctor(info);
+    auto info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(buffer.get());
+    return Ok(cbFunctor(info));
 }

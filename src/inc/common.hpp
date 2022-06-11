@@ -291,6 +291,9 @@ struct ErrorType
         ConnectionError,
         TerminationError,
         VmNotInitialized,
+        ServiceError,
+        FilesystemError,
+        AlpcError,
     };
 
     Code code;

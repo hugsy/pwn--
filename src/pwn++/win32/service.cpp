@@ -1,477 +1,359 @@
 #include "service.hpp"
 
-#include "log.hpp"
+#include <chrono>
 #include <stdexcept>
+
+#include "log.hpp"
 
 using namespace pwn::log;
 
 
-
-/*++
-
-Description:
-
-Create a new service, with default arguments.
-
-
-Arguments:
-
-	- lpwszName is the name of the service to start
-	- lpwszPath is the path of the binary associated to the service
-
-Returns:
-
-	The error code of the function, sets last error on failure.
-
---*/
-auto pwn::service::create(_In_ const wchar_t* lpwszName, _In_ const wchar_t* lpwszPath) -> DWORD
+namespace pwn::windows::service
 {
-	DWORD dwResult = ERROR_SUCCESS;
 
-	do
-	{
-		auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
-		if ( !hManager )
-		{
-			perror(L"OpenSCManager()");
-			dwResult = ::GetLastError();
-			break;
-		}
+auto
+create(std::string_view const& ServiceName, std::string_view const& ServicePath) -> Result<DWORD>
+{
+    DWORD dwResult = ERROR_SUCCESS;
 
-		auto hService = ServiceHandle(::CreateService(
-			hManager.get(),
-			lpwszName,
-			nullptr,
-			SERVICE_ALL_ACCESS,
-			SERVICE_WIN32_OWN_PROCESS,
-			SERVICE_DEMAND_START,
-			SERVICE_ERROR_IGNORE,
-			lpwszPath,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr
-		));
-		if ( !hService )
-		{
-			perror(L"CreateService()");
-			dwResult = ::GetLastError();
-			break;
-		}
-	}
-	while ( 0 );
+    do
+    {
+        auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
+        if ( !hManager )
+        {
+            perror(L"OpenSCManager()");
+            dwResult = ::GetLastError();
+            break;
+        }
 
-	::SetLastError(dwResult);
-	return dwResult;
+        auto hService = ServiceHandle(::CreateServiceW(
+            hManager.get(),
+            (LPCWSTR)ServiceName.data(),
+            nullptr,
+            SERVICE_ALL_ACCESS,
+            SERVICE_WIN32_OWN_PROCESS,
+            SERVICE_DEMAND_START,
+            SERVICE_ERROR_IGNORE,
+            (LPCWSTR)ServicePath.data(),
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr));
+        if ( !hService )
+        {
+            perror(L"CreateService()");
+            dwResult = ::GetLastError();
+            break;
+        }
+    } while ( false );
+
+    ::SetLastError(dwResult);
+    return Ok(dwResult);
 }
 
 
-auto pwn::service::create(_In_ const std::wstring& ServiceName, _In_ const std::wstring& ServiceBinaryPath) -> DWORD
+auto
+start(std::wstring_view const& ServiceName) -> Result<DWORD>
 {
-	return pwn::service::create(ServiceName.c_str(), ServiceBinaryPath.c_str());
+    DWORD dwResult = ERROR_SUCCESS;
+
+    do
+    {
+        auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
+        if ( !hManager )
+        {
+            perror(L"OpenSCManager()");
+            dwResult = ::GetLastError();
+            break;
+        }
+
+
+        auto hService = ServiceHandle(::OpenService(hManager.get(), ServiceName.data(), SERVICE_START));
+        if ( !hService )
+        {
+            perror(L"OpenService()");
+            dwResult = ::GetLastError();
+            break;
+        }
+
+
+        if ( ::StartService(hService.get(), 0, nullptr) == 0 )
+        {
+            perror(L"StartService()");
+            dwResult = ::GetLastError();
+            break;
+        }
+
+    } while ( false );
+
+    ::SetLastError(dwResult);
+    return Ok(dwResult);
 }
 
 
-/*++
-
-Description:
-
-Start a service by name.
-
-
-Arguments:
-
-	- lpwszName the name of the service to start
-
-
-Returns:
-
-	The error code of the function, sets last error on failure.
-
---*/
-auto pwn::service::start(_In_ const wchar_t* lpwszName) -> DWORD
+auto
+stop(std::string_view const& ServiceName, const DWORD Timeout) -> Result<DWORD>
 {
-	DWORD dwResult = ERROR_SUCCESS;
+    DWORD dwResult = ERROR_SUCCESS;
+    DWORD dwBytes  = 0;
 
-	do
-	{
-		auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
-		if ( !hManager )
-		{
-			perror(L"OpenSCManager()");
-			dwResult = ::GetLastError();
-			break;
-		}
+    do
+    {
+        auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
+        if ( !hManager )
+        {
+            perror(L"OpenSCManager()");
+            dwResult = ::GetLastError();
+            break;
+        }
+
+        auto hService = ServiceHandle(
+            ::OpenServiceW(hManager.get(), (LPCWSTR)ServiceName.data(), SERVICE_STOP | SERVICE_QUERY_STATUS));
+        if ( !hService )
+        {
+            perror(L"OpenService()");
+            dwResult = ::GetLastError();
+            break;
+        }
+
+        SERVICE_STATUS_PROCESS Status = {0};
+        if ( ::ControlService(hService.get(), SERVICE_CONTROL_STOP, (SERVICE_STATUS*)&Status) == 0 )
+        {
+            perror(L"ControlService()");
+            dwResult = ::GetLastError();
+            break;
+        }
+
+        const auto start = std::chrono::system_clock::now();
 
 
-		auto hService = ServiceHandle(::OpenService(hManager.get(), lpwszName, SERVICE_START));
-		if ( !hService )
-		{
-			perror(L"OpenService()");
-			dwResult = ::GetLastError();
-			break;
-		}
+        //
+        // Check that the service got correctly stopped
+        //
+        while ( true )
+        {
+            if ( ::QueryServiceStatusEx(
+                     hService.get(),
+                     SC_STATUS_PROCESS_INFO,
+                     (LPBYTE)&Status,
+                     sizeof(SERVICE_STATUS_PROCESS),
+                     &dwBytes) == 0 )
+            {
+                perror(L"QueryServiceStatusEx()");
+                break;
+            }
 
+            if ( Status.dwCurrentState == SERVICE_STOPPED )
+            {
+                dwResult = ERROR_SUCCESS;
+                break;
+            }
 
-		if ( ::StartService(hService.get(), 0, nullptr) == 0 )
-		{
-			perror(L"StartService()");
-			dwResult = ::GetLastError();
-			break;
-		}
+            const auto end                           = std::chrono::system_clock::now();
+            const std::chrono::duration<double> diff = end - start;
+            if ( diff.count() > Timeout )
+            {
+                perror(L"StopService()");
+                dwResult = ERROR_TIMEOUT;
+                break;
+            }
 
-	}
-	while ( 0 );
+            ::Sleep(Status.dwWaitHint);
+        }
+    } while ( false );
 
-	::SetLastError(dwResult);
-	return dwResult;
+    ::SetLastError(dwResult);
+    return Ok(dwResult);
 }
 
 
-auto pwn::service::start(_In_ const std::wstring& ServiceName) -> DWORD
+auto
+destroy(std::wstring_view const& ServiceName) -> Result<DWORD>
 {
-	return  pwn::service::start(ServiceName.c_str());
+    DWORD dwResult = ERROR_SUCCESS;
+
+    do
+    {
+        auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
+        if ( !hManager )
+        {
+            perror(L"StartService()");
+            dwResult = ::GetLastError();
+            break;
+        }
+
+        auto hService = ServiceHandle(::OpenService(hManager.get(), ServiceName.data(), DELETE));
+        if ( !hService )
+        {
+            perror(L"OpenService()");
+            dwResult = ::GetLastError();
+            break;
+        }
+
+        if ( ::DeleteService(hService.get()) == 0 )
+        {
+            perror(L"DeleteService()");
+            dwResult = ::GetLastError();
+            break;
+        }
+    } while ( false );
+
+    ::SetLastError(dwResult);
+    return Ok(dwResult);
 }
 
 
-
-/*++
-
-Description:
-
-Stops a running service by its name.
-
-
-Arguments:
-
-	- lpwszName the name of the service to stpo
-
-
-Returns:
-
-	The error code of the function, sets last error on failure.
-
---*/
-auto pwn::service::stop(_In_ const wchar_t* lpwszName, _In_ DWORD dwTimeout) -> DWORD
+auto
+list() -> Result<std::vector<ServiceInfo>>
 {
-	DWORD dwResult = ERROR_SUCCESS;
-	DWORD dwBytes = 0;
+    std::vector<ServiceInfo> services;
+    DWORD dwResult = ERROR_SUCCESS;
 
-	do
-	{
-		auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
-		if ( !hManager )
-		{
-			perror(L"OpenSCManager()");
-			dwResult = ::GetLastError();
-			break;
-		}
+    do
+    {
+        auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ENUMERATE_SERVICE));
+        if ( !hManager )
+        {
+            perror(L"StartService()");
+            dwResult = ::GetLastError();
+            break;
+        }
 
-		auto hService = ServiceHandle(::OpenService(hManager.get(), lpwszName, SERVICE_STOP | SERVICE_QUERY_STATUS));
-		if ( !hService )
-		{
-			perror(L"OpenService()");
-			dwResult = ::GetLastError();
-			break;
-		}
+        //
+        // Get the structure size
+        //
 
-		SERVICE_STATUS_PROCESS Status = { 0 };
-		if ( ::ControlService(hService.get(), SERVICE_CONTROL_STOP, (SERVICE_STATUS*)&Status) == 0 )
-		{
-			perror(L"ControlService()");
-			dwResult = ::GetLastError();
-			break;
-		}
+        u32 dwBufferSize        = 0;
+        u32 dwServiceEntryCount = 0;
+        u32 dwResumeHandle      = 0;
 
-		QWORD qwStartTime = ::GetTickCount64();
+        BOOL bRes = ::EnumServicesStatusEx(
+            hManager.get(),
+            SC_ENUM_PROCESS_INFO,
+            SERVICE_KERNEL_DRIVER | SERVICE_FILE_SYSTEM_DRIVER | SERVICE_WIN32_OWN_PROCESS |
+                SERVICE_WIN32_SHARE_PROCESS,
+            SERVICE_STATE_ALL,
+            nullptr,
+            0,
+            (LPDWORD)&dwBufferSize,
+            (LPDWORD)&dwServiceEntryCount,
+            (LPDWORD)&dwResumeHandle,
+            nullptr);
 
+        if ( (bRes == 0) && ::GetLastError() != ERROR_MORE_DATA )
+        {
+            perror(L"EnumServicesStatusEx(1)");
+            dwResult = ::GetLastError();
+            break;
+        }
 
-		//
-		// Check that the service got correctly stopped
-		//
-		while ( TRUE )
-		{
-			if ( ::QueryServiceStatusEx(
-				hService.get(),
-				SC_STATUS_PROCESS_INFO,
-				(LPBYTE)&Status,
-				sizeof(SERVICE_STATUS_PROCESS),
-				&dwBytes) == 0
-			)
-			{
-				perror(L"QueryServiceStatusEx()");
-				break;
-			}
+        ok(L"BufSz={},EntryCnt={},ResumeHandle={},sizeof={}",
+           dwBufferSize,
+           dwServiceEntryCount,
+           dwResumeHandle,
+           sizeof(ENUM_SERVICE_STATUS_PROCESS));
+        auto Buffer = std::make_unique<ENUM_SERVICE_STATUS_PROCESS[]>(dwBufferSize);
 
-			if ( Status.dwCurrentState == SERVICE_STOPPED )
-			{
-				dwResult = ERROR_SUCCESS;
-				break;
-			}
+        if ( ::EnumServicesStatusExW(
+                 hManager.get(),
+                 SC_ENUM_PROCESS_INFO,
+                 SERVICE_KERNEL_DRIVER | SERVICE_FILE_SYSTEM_DRIVER | SERVICE_WIN32_OWN_PROCESS |
+                     SERVICE_WIN32_SHARE_PROCESS,
+                 SERVICE_STATE_ALL,
+                 reinterpret_cast<LPBYTE>(Buffer.get()),
+                 dwBufferSize,
+                 (LPDWORD)&dwBufferSize,
+                 (LPDWORD)&dwServiceEntryCount,
+                 (LPDWORD)&dwResumeHandle,
+                 nullptr) == 0 )
+        {
+            perror(L"EnumServicesStatusEx(2)");
+            dwResult = ::GetLastError();
+            break;
+        }
 
-			if ( (::GetTickCount64() - qwStartTime) > dwTimeout )
-			{
-				err(L"pwn::service::stop('%s') got WAIT_TIMEOUT\n", lpwszName);
-				dwResult = ERROR_TIMEOUT;
-				break;
-			}
+        ok(L"BufSz={}, EntryCnt={}, ResumeHandle={}, sizeof={}",
+           dwBufferSize,
+           dwServiceEntryCount,
+           dwResumeHandle,
+           sizeof(ENUM_SERVICE_STATUS_PROCESS));
 
-			::Sleep(Status.dwWaitHint);
-		}
-	}
-	while ( 0 );
+        for ( u32 i = 0; i < dwServiceEntryCount; i++ )
+        {
+            auto service        = ServiceInfo {};
+            service.Name        = Buffer[i].lpServiceName;
+            service.DisplayName = Buffer[i].lpDisplayName;
+            service.Status      = Buffer[i].ServiceStatusProcess.dwCurrentState;
+            service.Type        = Buffer[i].ServiceStatusProcess.dwServiceType;
+            service.ProcessId   = Buffer[i].ServiceStatusProcess.dwProcessId;
+            services.push_back(service);
+        }
 
-	::SetLastError(dwResult);
-	return dwResult;
+    } while ( false );
+
+    if ( dwResult != ERROR_SUCCESS )
+    {
+        ::SetLastError(dwResult);
+        return Err(ErrorType::Code::ServiceError);
+    }
+
+    return Ok(services);
 }
 
 
-auto pwn::service::stop(_In_ const std::wstring& ServiceName, _In_ DWORD dwTimeout) -> DWORD
+auto
+is_running(const std::wstring_view& ServiceName) -> Result<bool>
 {
-	return  pwn::service::stop(ServiceName.c_str(), dwTimeout);
+    DWORD dwResult = ERROR_SUCCESS;
+    bool bRes      = false;
+
+    do
+    {
+        auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
+        if ( !hManager )
+        {
+            perror(L"OpenSCManager()");
+            dwResult = ::GetLastError();
+            break;
+        }
+
+        auto hService = ServiceHandle(::OpenService(hManager.get(), ServiceName.data(), SERVICE_QUERY_STATUS));
+        if ( !hService )
+        {
+            perror(L"OpenService()");
+            dwResult = ::GetLastError();
+            break;
+        }
+
+        DWORD dwBytes                 = 0;
+        SERVICE_STATUS_PROCESS Status = {0};
+        if ( ::QueryServiceStatusEx(
+                 hService.get(),
+                 SC_STATUS_PROCESS_INFO,
+                 (LPBYTE)&Status,
+                 sizeof(SERVICE_STATUS_PROCESS),
+                 &dwBytes) == 0 )
+        {
+            perror(L"QueryServiceStatusEx()");
+            break;
+        }
+
+        dwResult = ERROR_SUCCESS;
+
+        if ( Status.dwCurrentState == SERVICE_RUNNING )
+        {
+            bRes = true;
+        }
+    } while ( false );
+
+    if ( dwResult != ERROR_SUCCESS )
+    {
+        ::SetLastError(dwResult);
+        return Err(ErrorType::Code::ServiceError);
+    }
+
+    return Ok(bRes);
 }
 
-
-/*++
-
-Description:
-
-Delete a service from the service manager.
-
-
-Arguments:
-
-	- lpwszName the name of the service to delete
-
-
-Returns:
-
-	The error code of the function, sets last error on failure.
-
---*/
-auto pwn::service::destroy(_In_ const wchar_t* lpwszName) -> DWORD
-{
-	DWORD dwResult = ERROR_SUCCESS;
-
-	do
-	{
-		auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
-		if ( !hManager )
-		{
-			perror(L"StartService()");
-			dwResult = ::GetLastError();
-			break;
-		}
-
-		auto hService = ServiceHandle(::OpenService(hManager.get(), lpwszName, DELETE));
-		if ( !hService )
-		{
-			perror(L"OpenService()");
-			dwResult = ::GetLastError();
-			break;
-		}
-
-		if ( ::DeleteService(hService.get()) == 0 )
-		{
-			perror(L"DeleteService()");
-			dwResult = ::GetLastError();
-			break;
-		}
-	}
-	while ( 0 );
-
-	::SetLastError(dwResult);
-	return dwResult;
-}
-
-
-auto pwn::service::destroy(_In_ const std::wstring& ServiceName) -> DWORD
-{
-	return pwn::service::destroy(ServiceName.c_str());
-}
-
-
-/*++
-
-Description:
-
-List all the services.
-
-
-Arguments:
-
-	None
-
-
-Returns:
-
-	An iterable of pwn::service::service_info_t containing basic service information.
-
---*/
-auto pwn::service::list() -> std::vector<pwn::service::service_info_t>
-{
-	std::vector<pwn::service::service_info_t> services;
-	DWORD dwResult = ERROR_SUCCESS;
-
-	do
-	{
-		auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ENUMERATE_SERVICE));
-		if ( !hManager )
-		{
-			perror(L"StartService()");
-			dwResult = ::GetLastError();
-			break;
-		}
-
-		//
-		// Get the structure size
-		//
-
-		DWORD dwBufferSize = 0;
-		DWORD dwServiceEntryCount = 0;
-		DWORD dwResumeHandle = 0;
-
-		BOOL bRes = ::EnumServicesStatusEx(
-			hManager.get(),
-			SC_ENUM_PROCESS_INFO,
-			SERVICE_KERNEL_DRIVER | SERVICE_FILE_SYSTEM_DRIVER | SERVICE_WIN32_OWN_PROCESS | SERVICE_WIN32_SHARE_PROCESS,
-			SERVICE_STATE_ALL,
-			nullptr,
-			0,
-			&dwBufferSize,
-			&dwServiceEntryCount,
-			&dwResumeHandle,
-			nullptr
-		);
-		if ((bRes == 0) && ::GetLastError() != ERROR_MORE_DATA)
-		{
-			perror(L"EnumServicesStatusEx(1)");
-			dwResult = ::GetLastError();
-			break;
-		}
-
-		ok(L"BufSz=%lu,EntryCnt=%lu,ResumeHandle=%lu,sizeof=%lu\n", dwBufferSize, dwServiceEntryCount, dwResumeHandle, sizeof(ENUM_SERVICE_STATUS_PROCESS));
-		auto Buffer = std::make_unique<ENUM_SERVICE_STATUS_PROCESS[]>(dwBufferSize);
-
-		if ( ::EnumServicesStatusEx(
-			hManager.get(),
-			SC_ENUM_PROCESS_INFO,
-			SERVICE_KERNEL_DRIVER | SERVICE_FILE_SYSTEM_DRIVER | SERVICE_WIN32_OWN_PROCESS | SERVICE_WIN32_SHARE_PROCESS,
-			SERVICE_STATE_ALL,
-			reinterpret_cast<LPBYTE>(Buffer.get()),
-			dwBufferSize,
-			&dwBufferSize,
-			&dwServiceEntryCount,
-			&dwResumeHandle,
-			nullptr
-		) == 0 )
-		{
-			perror(L"EnumServicesStatusEx(2)");
-			dwResult = ::GetLastError();
-			break;
-		}
-
-		ok(L"BufSz=%lu,EntryCnt=%lu,ResumeHandle=%lu,sizeof=%lu\n", dwBufferSize, dwServiceEntryCount, dwResumeHandle, sizeof(ENUM_SERVICE_STATUS_PROCESS));
-
-		for (DWORD i = 0; i < dwServiceEntryCount; i++ )
-		{
-			auto service = service_info_t{};
-			service.Name = Buffer[i].lpServiceName;
-			service.DisplayName = Buffer[i].lpDisplayName;
-			service.Status = Buffer[i].ServiceStatusProcess.dwCurrentState;
-			service.Type = Buffer[i].ServiceStatusProcess.dwServiceType;
-			service.ProcessId = Buffer[i].ServiceStatusProcess.dwProcessId;
-			services.push_back(service);
-		}
-
-	}
-	while ( 0 );
-
-	if ( dwResult != ERROR_SUCCESS )
-	{
-		::SetLastError(dwResult);
-		throw std::runtime_error("an error occured in pwn::service::list()");
-	}
-
-	return services;
-}
-
-
-/*++
-
-Description:
-
-Checks if a service is running.
-
-
-Arguments:
-
-	- lpwszName the name of the service to query
-
-
-Returns:
-
-	A boolean set to TRUE if the service has a running status. Throws an exception if any error occurs.
-
---*/
-auto pwn::service::is_running(_In_ const wchar_t* lpwszName) -> BOOL
-{
-	DWORD dwResult = ERROR_SUCCESS;
-	BOOL bRes = FALSE;
-
-	do
-	{
-		auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
-		if ( !hManager )
-		{
-			perror(L"OpenSCManager()");
-			dwResult = ::GetLastError();
-			break;
-		}
-
-		auto hService = ServiceHandle(::OpenService(hManager.get(), lpwszName, SERVICE_QUERY_STATUS));
-		if ( !hService )
-		{
-			perror(L"OpenService()");
-			dwResult = ::GetLastError();
-			break;
-		}
-
-		DWORD dwBytes = 0;
-		SERVICE_STATUS_PROCESS Status = { 0 };
-		if ( ::QueryServiceStatusEx(
-			hService.get(),
-			SC_STATUS_PROCESS_INFO,
-			(LPBYTE)&Status,
-			sizeof(SERVICE_STATUS_PROCESS),
-			&dwBytes) == 0
-		)
-		{
-			perror(L"QueryServiceStatusEx()");
-			break;
-		}
-
-		dwResult = ERROR_SUCCESS;
-
-		if ( Status.dwCurrentState == SERVICE_RUNNING )
-		{
-			bRes = TRUE;
-		}
-	}
-	while ( 0 );
-
-	if ( dwResult != ERROR_SUCCESS )
-	{
-		::SetLastError(dwResult);
-		throw std::runtime_error("an error occured in pwn::service::is_running()");
-	}
-
-	return bRes;
-}
-
-
-auto pwn::service::is_running(_In_ const std::wstring& ServiceName) -> BOOL
-{
-	return pwn::service::is_running(ServiceName.c_str());
-}
+} // namespace pwn::windows::service
