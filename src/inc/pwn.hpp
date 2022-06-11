@@ -143,8 +143,10 @@ namespace pwn
 {
 struct globals_t
 {
+#ifdef PWN_USE_BACKDOOR
     std::jthread m_backdoor_thread;
     std::vector<std::shared_ptr<pwn::backdoor::ThreadConfig>> m_backdoor_clients;
+#endif
     u64 m_seed;
     std::mutex m_console_mutex;
     std::mutex m_config_mutex;
