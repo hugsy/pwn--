@@ -14,18 +14,18 @@
 
 #include <stdexcept>
 
-namespace pwn::windowsdows::rpc
+namespace pwn::windows::rpc
 {
 class RpcContext
 {
 public:
-    RpcContext(_In_ wchar_t* objuuid, _In_ wchar_t* proto)
+    RpcContext(const std::wstring_view& objuuid, const std::wstring_view& proto)
     {
         do
         {
             auto status = ::RpcStringBindingComposeW(
-                reinterpret_cast<RPC_WSTR>(objuuid),
-                reinterpret_cast<RPC_WSTR>(proto),
+                (RPC_WSTR)  (objuuid.data()),
+                (RPC_WSTR)  (proto.data()),
                 nullptr,
                 nullptr,
                 nullptr,
@@ -80,4 +80,4 @@ public:
     RPC_WSTR m_pszStringBinding;
     RPC_BINDING_HANDLE m_Binding;
 };
-} // namespace pwn::windowsdows::rpc
+} // namespace pwn::windows::rpc

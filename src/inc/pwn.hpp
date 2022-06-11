@@ -81,10 +81,9 @@ namespace win = windows;
 /// namespace pwn::windowsdows::alpc
 #include "alpc.hpp"
 
-/*
-/// namespace pwn::windowsdows::rpc
+/// namespace pwn::windows::rpc
 #include "rpc.hpp"
-*/
+
 
 // namespace pwn::backdoor
 #ifdef PWN_USE_BACKDOOR

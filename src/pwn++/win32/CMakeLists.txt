@@ -23,6 +23,7 @@ set(
     ${HEADER_DIR}/service.hpp
     ${HEADER_DIR}/fs.hpp
     ${HEADER_DIR}/alpc.hpp
+    ${HEADER_DIR}/rpc.hpp
     ${HEADER_DIR}/ctf/remote.hpp
 )
 
@@ -39,6 +40,7 @@ set(
     ${SOURCE_DIR}/service.cpp
     ${SOURCE_DIR}/fs.cpp
     ${SOURCE_DIR}/alpc.cpp
+    ${SOURCE_DIR}/rpc.cpp
     ${SOURCE_DIR}/ctf/remote.cpp
 )
 
