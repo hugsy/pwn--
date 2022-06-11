@@ -293,6 +293,7 @@ struct ErrorType
         VmNotInitialized,
         ServiceError,
         FilesystemError,
+        AlpcError,
     };
 
     Code code;

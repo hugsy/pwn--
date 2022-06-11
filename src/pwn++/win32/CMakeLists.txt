@@ -22,6 +22,7 @@ set(
     ${HEADER_DIR}/job.hpp
     ${HEADER_DIR}/service.hpp
     ${HEADER_DIR}/fs.hpp
+    ${HEADER_DIR}/alpc.hpp
     ${HEADER_DIR}/ctf/remote.hpp
 )
 
@@ -37,6 +38,7 @@ set(
     ${SOURCE_DIR}/backdoor.cpp
     ${SOURCE_DIR}/service.cpp
     ${SOURCE_DIR}/fs.cpp
+    ${SOURCE_DIR}/alpc.cpp
     ${SOURCE_DIR}/ctf/remote.cpp
 )
 

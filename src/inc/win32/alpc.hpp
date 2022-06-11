@@ -168,15 +168,15 @@ NtAlpcAcceptConnectPort(
 #endif
 
 
-namespace pwn::windowsdows::alpc
+namespace pwn::windows::alpc
 {
 class Message
 {
 public:
     PWNAPI
-    Message(_In_ const std::vector<BYTE>& data = {});
+    Message(const std::vector<BYTE>& data = {});
     PWNAPI
-    Message(_In_ const PBYTE lpRawData, _In_ DWORD dwRawDataLength);
+    Message(const PBYTE lpRawData, const DWORD dwRawDataLength);
     PWNAPI ~Message();
 
     PWNAPI PPORT_MESSAGE
@@ -204,13 +204,23 @@ public:
     PWNAPI std::wstring
     PortName();
 
-    PWNAPI Message
-    send_and_receive(_In_ HANDLE hSocket, _In_ const std::vector<BYTE>& messageData = {});
-    PWNAPI Message
-    send_and_receive(_In_ HANDLE hSocket, _In_ Message& message);
+    ///
+    /// @brief
+    ///
+    ///
+    PWNAPI auto
+    send_and_receive(const HANDLE hSocket, const std::vector<BYTE>& messageData = {}) -> Message;
+
+
+    ///
+    /// @brief
+    ///
+    ///
+    PWNAPI auto
+    send_and_receive(const HANDLE hSocket, Message& message) -> Message;
 
 protected:
-    Base(_In_ const std::wstring& PortName);
+    Base(const std::wstring& PortName);
     ~Base();
 
     HANDLE m_AlpcSocketHandle;
@@ -227,12 +237,16 @@ class Server : public Base
 {
 public:
     PWNAPI
-    Server(_In_ const std::wstring& PortName);
+    Server(const std::wstring& PortName);
     PWNAPI ~Server();
 
-    PWNAPI _Success_(return )
-    BOOL
-    accept(_Out_ PHANDLE hAlpcNewClientSocket);
+    ///
+    /// @brief Wait an accept a new ALPC connection.
+    ///
+    /// @return A client socket handle
+    ///
+    PWNAPI auto
+    accept() -> Result<PHANDLE>;
 };
 
 
@@ -240,15 +254,37 @@ class Client : public Base
 {
 public:
     PWNAPI
-    Client(_In_ const std::wstring& PortName);
+    Client(const std::wstring& PortName);
     PWNAPI ~Client();
 
-    PWNAPI _Success_(return )
-    BOOL
-    reconnect();
-    PWNAPI Message
-    sr(_In_ const std::vector<BYTE>& messageData = {});
-    PWNAPI Message
-    sr(_In_ Message& messageData);
+    ///
+    /// @brief
+    ///
+    /// @return true
+    /// @return false
+    ///
+    PWNAPI
+    auto
+    reconnect() -> bool;
+
+
+    ///
+    /// @brief Send and receive
+    ///
+    /// @param messageData
+    /// @return Message
+    ///
+    PWNAPI auto
+    sr(const std::vector<BYTE>& messageData = {}) -> Message;
+
+
+    ///
+    /// @brief
+    ///
+    /// @param messageData
+    /// @return Message
+    ///
+    PWNAPI auto
+    sr(Message& messageData) -> Message;
 };
-} // namespace pwn::windowsdows::alpc
+} // namespace pwn::windows::alpc
