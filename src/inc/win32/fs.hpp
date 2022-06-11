@@ -1,7 +1,10 @@
 #pragma once
 
-#include "common.hpp"
 #include <functional>
+#include <string_view>
+#include <tuple>
+
+#include "common.hpp"
 
 /*
 
@@ -14,79 +17,125 @@ interesting locations from link target
 */
 
 
-
-#ifndef SYMBOLIC_LINK_ALL_ACCESS
-#define SYMBOLIC_LINK_ALL_ACCESS (STANDARD_RIGHTS_REQUIRED | 0x1)
-#endif
-
-
-namespace pwn::fs
+namespace pwn::windows::filesystem
 {
-	_Success_(return != nullptr)
-	PWNAPI auto open(
-		_In_ std::wstring const& path,
-		_In_ std::wstring const& perm = L"rw"
-	) -> HANDLE;
 
-	_Success_(return != nullptr)
-	PWNAPI auto touch(
-		_In_ const std::wstring& path
-	) -> HANDLE;
+///
+/// @brief Open a file from the filesystem
+///
+/// @param path
+/// @param perm
+/// @return HANDLE
+///
+PWNAPI auto
+open(std::wstring_view const& path, std::wstring_view const& perm = L"rw") -> Result<HANDLE>;
 
-	_Success_(return != nullptr)
-	PWNAPI auto create_hardlink(
-			_In_ const std::wstring & link,
-			_In_ const std::wstring & target
-	) -> HANDLE;
+///
+/// @brief Same as touch() on Linux
+///
+/// @param path
+/// @return Result<HANDLE>
+///
+PWNAPI auto
+touch(const std::wstring_view& path) -> bool;
 
-	_Success_(return != nullptr)
-	PWNAPI auto create_symlink(
-		_In_ const std::wstring& link,
-		_In_ const std::wstring& target
-	) -> HANDLE;
+///
+/// @brief Create a hardlink object
+///
+/// @param link
+/// @param target
+/// @return Result<HANDLE>
+///
+// PWNAPI auto
+// create_hardlink(const std::wstring_view& link, const std::wstring_view& target) -> Result<HANDLE>;
 
-	_Success_(return != nullptr)
-	PWNAPI auto open_symlink(
-		_In_ const std::wstring & link
-	) -> HANDLE;
+///
+/// @brief Create a symlink in the object manager. The link doesn't need to be deleted, as the
+/// Object Manager will do it when the refcount of handles on the object reaches 0.
+///
+/// @param link
+/// @param target
+/// @return Result<HANDLE>
+///
+PWNAPI auto
+create_symlink(const std::wstring_view& link, const std::wstring_view& target) -> Result<HANDLE>;
 
-	_Success_(return != nullptr)
-		PWNAPI auto create_junction(
-		_In_ const std::wstring& link,
-		_In_ const std::wstring& target
-	) -> HANDLE;
+///
+/// @brief Wrapper for NtOpenSymbolicLinkObject
+/// See https://docs.microsoft.com/en-us/windows/win32/devnotes/ntopensymboliclinkobject
+///
+/// @param link
+/// @return Result<HANDLE>
+///
+PWNAPI auto
+open_symlink(const std::wstring_view& link) -> Result<HANDLE>;
 
-	_Success_(return)
-	PWNAPI auto mkdir(
-		_In_ const std::wstring& name
-	) -> bool;
+///
+// PWNAPI auto
+// create_junction(const std::wstring& link, const std::wstring& target) -> Result<HANDLE>;
 
-	_Success_(return)
-	PWNAPI auto rmdir(
-		_In_ const std::wstring& name
-	) -> bool;
 
-	PWNAPI auto make_tmpdir(
-		_In_ int level = 10
-	) -> std::wstring;
+///
+/// @brief Make a directory - and recursively create its parent(s)
+///
+/// @param name
+/// @return Result<bool>
+///
+PWNAPI auto
+mkdir(const std::wstring_view& name) -> Result<bool>;
 
-	_Success_(return != nullptr)
-	PWNAPI auto tmpfile(
-		_In_ const std::wstring& prefix,
-		_Out_ std::wstring& path
-	) -> HANDLE;
 
-	/*++
+///
+/// @brief Delete a directory, and its sub-directories
+///
+/// @param name
+/// @return Result<bool>
+///
+PWNAPI auto
+rmdir(const std::wstring_view& name) -> Result<bool>;
 
-	Watch directory and invoke callback when an event occured.
 
-	--*/
-	_Success_(return)
-	PWNAPI auto watch_dir(
-		_In_ const std::wstring& name,
-		_In_ std::function<bool(PFILE_NOTIFY_INFORMATION)> cbFunctor,
-		_In_ bool watch_subtree = false
-	) -> bool;
+///
+/// @brief Create a temporary directory
+///
+/// @param level
+/// @return std::wstring
+///
+PWNAPI auto
+make_tmpdir(int level = 10) -> Result<std::wstring>;
+
+///
+/// @brief Create a temporary file
+///
+/// @param prefix
+/// @return Result<std::tuple<std::wstring path, HANDLE>>
+///
+PWNAPI auto
+tmpfile(const std::wstring_view& prefix) -> Result<std::tuple<std::wstring, HANDLE>>;
+
+
+///
+/// @brief Watch directory and invoke callback when an event occured.
+///
+/// @param name
+/// @param cbFunctor
+/// @param watch_subtree
+/// @return true
+/// @return false
+///
+PWNAPI auto
+watch_directory(
+    const std::wstring_view& name,
+    std::function<bool(PFILE_NOTIFY_INFORMATION)> cbFunctor,
+    const bool watch_subtree = false) -> Result<bool>;
+
+} // namespace pwn::windows::filesystem
+
+
+//
+// Creating namespace alias
+//
+namespace pwn::windows
+{
+namespace fs = filesystem;
 }
-
-

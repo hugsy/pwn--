@@ -292,6 +292,7 @@ struct ErrorType
         TerminationError,
         VmNotInitialized,
         ServiceError,
+        FilesystemError,
     };
 
     Code code;
