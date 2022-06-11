@@ -72,9 +72,10 @@ namespace win = windows;
 /// namespace pwn::windows::job
 #include "win32/job.hpp"
 
-/*
 /// namespace pwn::service
 #include "service.hpp"
+
+/*
 
 /// namespace pwn::rpc
 #include "fs.hpp"

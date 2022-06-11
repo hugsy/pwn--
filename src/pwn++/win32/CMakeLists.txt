@@ -20,6 +20,7 @@ set(
     ${HEADER_DIR}/registry.hpp
     ${HEADER_DIR}/kernel.hpp
     ${HEADER_DIR}/job.hpp
+    ${HEADER_DIR}/service.hpp
     ${HEADER_DIR}/ctf/remote.hpp
 )
 
@@ -33,6 +34,7 @@ set(
     ${SOURCE_DIR}/kernel.cpp
     ${SOURCE_DIR}/job.cpp
     ${SOURCE_DIR}/backdoor.cpp
+    ${SOURCE_DIR}/service.cpp
     ${SOURCE_DIR}/ctf/remote.cpp
 )
 
