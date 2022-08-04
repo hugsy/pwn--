@@ -242,7 +242,7 @@ pwn::windows::alpc::Server::accept() -> Result<PHANDLE>
     if ( !NT_SUCCESS(Status) )
     {
         ntperror(L"NtAlpcSendWaitReceivePort()", Status);
-        return Err(ErrorType::Code::AlpcError);
+        return Err(ErrorCode::AlpcError);
     }
 
     pwn::utils::hexdump((PBYTE)&ConnectionRequestMsg.m_PortMessage, OriginalMsgSize);
@@ -253,7 +253,7 @@ pwn::windows::alpc::Server::accept() -> Result<PHANDLE>
     if ( ConnectionRequestMsg.m_PortMessage.MessageId != LPC_CONNECTION_REQUEST )
     {
         err(L"Unexpected message type received: {}", ConnectionRequestMsg.m_PortMessage.MessageId);
-        return Err(ErrorType::Code::AlpcError);
+        return Err(ErrorCode::AlpcError);
     }
 
     Status = ::NtAlpcAcceptConnectPort(
@@ -269,7 +269,7 @@ pwn::windows::alpc::Server::accept() -> Result<PHANDLE>
     if ( !NT_SUCCESS(Status) )
     {
         ntperror(L"NtAlpcAcceptConnectPort()", Status);
-        return Err(ErrorType::Code::AlpcError);
+        return Err(ErrorCode::AlpcError);
     }
 
     *NewClientHandle = hAlpcClientSocket;

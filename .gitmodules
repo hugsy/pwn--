@@ -4,3 +4,6 @@
 [submodule "deps/lua/src"]
 	path = deps/lua/src
 	url = https://github.com/lua/lua
+[submodule "deps/phnt"]
+	path = deps/phnt
+	url = https://github.com/processhacker/phnt

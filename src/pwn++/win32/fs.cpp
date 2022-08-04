@@ -91,7 +91,7 @@ pwn::windows::filesystem::create_symlink(const std::wstring_view& link, const st
 
     if ( !NT_SUCCESS(NtCreateSymbolicLinkObject(&hLink, SYMBOLIC_LINK_ALL_ACCESS, &oa, &target_name)) )
     {
-        return Err(ErrorType::Code::FilesystemError);
+        return Err(ErrorCode::FilesystemError);
     }
 
     dbg(L"created link '{}' to '{}' (h={})", link, target, hLink);
@@ -111,7 +111,7 @@ pwn::windows::filesystem::open_symlink(const std::wstring_view& link) -> Result<
 
     if ( !NT_SUCCESS(NtOpenSymbolicLinkObject(&hLink, SYMBOLIC_LINK_ALL_ACCESS, &oa)) )
     {
-        return Err(ErrorType::Code::FilesystemError);
+        return Err(ErrorCode::FilesystemError);
     }
 
     dbg(L"opened link '{}' with handle={})\n", link, hLink);
@@ -132,7 +132,7 @@ pwn::windows::filesystem::mkdir(const std::wstring_view& name) -> Result<bool>
             continue;
         }
 
-        return Err(ErrorType::Code::FilesystemError);
+        return Err(ErrorCode::FilesystemError);
     }
 
     return Ok(true);
@@ -157,7 +157,7 @@ pwn::windows::filesystem::make_tmpdir(int level) -> Result<std::wstring>
         attempts--;
         if ( attempts == 0 )
         {
-            return Err(ErrorType::Code::FilesystemError);
+            return Err(ErrorCode::FilesystemError);
         }
 
         name = pwn::utils::random::string(level);
@@ -197,7 +197,7 @@ pwn::windows::filesystem::tmpfile(const std::wstring_view& prefix) -> Result<std
 
     } while ( max_attempt-- );
 
-    return Err(ErrorType::Code::FilesystemError);
+    return Err(ErrorCode::FilesystemError);
 }
 
 
@@ -219,7 +219,7 @@ pwn::windows::filesystem::watch_directory(
     if ( !h )
     {
         pwn::log::perror(L"CreateFileW()");
-        return Err(ErrorType::Code::FilesystemError);
+        return Err(ErrorCode::FilesystemError);
     }
 
     auto sz     = (DWORD)sizeof(FILE_NOTIFY_INFORMATION);
@@ -239,7 +239,7 @@ pwn::windows::filesystem::watch_directory(
              nullptr) == 0 )
     {
         pwn::log::perror(L"ReadDirectoryChangesW()");
-        return Err(ErrorType::Code::FilesystemError);
+        return Err(ErrorCode::FilesystemError);
     }
 
     auto info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(buffer.get());

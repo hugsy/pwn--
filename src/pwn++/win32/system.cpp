@@ -2,6 +2,9 @@
 
 #include <tlhelp32.h>
 
+#include <algorithm>
+#include <cwctype>
+#include <iostream>
 #include <optional>
 #include <stdexcept>
 
@@ -85,7 +88,7 @@ pidof(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>
     if ( !hProcessSnap )
     {
         perror(L"CreateToolhelp32Snapshot()");
-        return Err(ErrorType::Code::RuntimeError);
+        return Err(ErrorCode::RuntimeError);
     }
 
     std::vector<u32> pids;
@@ -110,13 +113,19 @@ pidof(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>
                 continue;
             }
 
-            const std::wstring currentProcessName {pe32.szExeFile};
+            std::wstring currentProcessName {pe32.szExeFile};
+            std::transform(
+                currentProcessName.begin(),
+                currentProcessName.end(),
+                currentProcessName.begin(),
+                ::towlower);
+
             if ( targetProcessName == currentProcessName )
             {
                 pids.push_back(pe32.th32ProcessID);
             }
 
-        } while ( ::Process32Next(hProcessSnap.get(), &pe32) != 0 );
+        } while ( ::Process32NextW(hProcessSnap.get(), &pe32) != 0 );
     } while ( false );
 
     return Ok(pids);

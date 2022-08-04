@@ -309,7 +309,7 @@ base64_encode(const u8* in, const usize len) -> Result<std::string>
     };
 
     if ( in == nullptr || len == 0 )
-        return Err(ErrorType::Code::InvalidParameter);
+        return Err(ErrorCode::InvalidParameter);
 
     const usize elen   = encoded_size(len);
     auto output_buffer = std::make_unique<u8[]>(elen + 1);
@@ -367,16 +367,16 @@ base64_decode(std::string_view const& in) -> Result<std::vector<u8>>
     const usize outlen = decoded_size();
 
     if ( !len || !outlen )
-        return Err(ErrorType::Code::InvalidParameter);
+        return Err(ErrorCode::InvalidParameter);
 
     if ( len % 4 != 0 )
-        return Err(ErrorType::Code::ArithmeticError);
+        return Err(ErrorCode::ArithmeticError);
 
     for ( usize i = 0; i < len; i++ )
     {
         if ( is_valid_char(in.at(i)) == false )
         {
-            return Err(ErrorType::Code::IllegalValue);
+            return Err(ErrorCode::IllegalValue);
         }
     }
 

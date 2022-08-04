@@ -4,8 +4,8 @@
 
 #include "common.hpp"
 
-static const u64 ___magic = 0xdeadbeefdeadbeef;
-static auto ___dummy      = []() {};
+
+static auto ___dummy = []() {};
 
 #ifdef __linux__
 #define InvalidHandleValue -1
@@ -13,6 +13,11 @@ static auto ___dummy      = []() {};
 #define InvalidHandleValue INVALID_HANDLE_VALUE
 #endif
 
+//
+// TODO: replace everything with decltype() using lambda of unevaluated context when fixed in msvc
+// @ref https://andreasfertig.blog/2022/08/cpp-insights-lambdas-in-unevaluated-contexts/
+// @link bug -> https://developercommunity.visualstudio.com/t/c20-internal-compiler-error-for-lambda-in-decltype/1631476
+//
 namespace pwn::utils
 {
 template<typename T, typename D = decltype(___dummy)>
@@ -27,9 +32,6 @@ public:
     {
         close();
     }
-
-    // TODO: missing Copy Constructor
-    // TODO: missing Move Constructor
 
     operator bool() const
     {

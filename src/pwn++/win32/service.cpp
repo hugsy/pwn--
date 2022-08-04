@@ -295,7 +295,7 @@ list() -> Result<std::vector<ServiceInfo>>
     if ( dwResult != ERROR_SUCCESS )
     {
         ::SetLastError(dwResult);
-        return Err(ErrorType::Code::ServiceError);
+        return Err(ErrorCode::ServiceError);
     }
 
     return Ok(services);
@@ -350,7 +350,7 @@ is_running(const std::wstring_view& ServiceName) -> Result<bool>
     if ( dwResult != ERROR_SUCCESS )
     {
         ::SetLastError(dwResult);
-        return Err(ErrorType::Code::ServiceError);
+        return Err(ErrorCode::ServiceError);
     }
 
     return Ok(bRes);

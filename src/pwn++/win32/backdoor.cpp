@@ -160,7 +160,7 @@ execute(ThreadConfig* cfg) -> Result<std::string const>
     if ( !LuaVm )
     {
         err(L"The VM is not ready");
-        return Err(ErrorType::Code::VmNotInitialized);
+        return Err(ErrorCode::VmNotInitialized);
     }
 
     const usize initial_stack_size = lua_gettop(LuaVm);
@@ -169,7 +169,7 @@ execute(ThreadConfig* cfg) -> Result<std::string const>
 
     if ( request == "exit" )
     {
-        return Err(ErrorType::Code::TerminationError);
+        return Err(ErrorCode::TerminationError);
     }
 
     auto LuaRc = luaL_loadbuffer(LuaVm, request.c_str(), request.size(), name.c_str());
@@ -238,7 +238,7 @@ OpenPipe() -> Result<HANDLE>
     if ( INVALID_HANDLE_VALUE == hPipe )
     {
         pwn::log::perror(L"CreateNamedPipeW()");
-        return Err(ErrorType::Code::RuntimeError);
+        return Err(ErrorCode::RuntimeError);
     }
 
     return Ok(hPipe);
@@ -256,7 +256,7 @@ WaitNextConnectionAsync(const HANDLE hPipe, LPOVERLAPPED oConnect) -> Result<boo
     if ( bIsConnected )
     {
         pwn::log::perror(L"ConnectNamedPipe()");
-        return Err(ErrorType::Code::ConnectionError);
+        return Err(ErrorCode::ConnectionError);
     }
 
     switch ( ::GetLastError() )
@@ -270,7 +270,7 @@ WaitNextConnectionAsync(const HANDLE hPipe, LPOVERLAPPED oConnect) -> Result<boo
         break;
     default:
         pwn::log::perror(L"ConnectNamedPipe()");
-        return Err(ErrorType::Code::ConnectionError);
+        return Err(ErrorCode::ConnectionError);
     }
 
     return Ok(bIsPending);
@@ -394,7 +394,7 @@ HandleClientThread(const LPVOID lpThreadParams)
             auto res = lua::execute(cfg);
             if ( Failed(res) )
             {
-                if ( Error(res).code == ErrorType::Code::TerminationError )
+                if ( Error(res).code == ErrorCode::TerminationError )
                     warn(L"Termination requested by user");
                 cfg->SetState(ThreadState::Stopping);
                 continue;
@@ -446,7 +446,7 @@ StartClientSession(const HANDLE hPipe) -> Result<std::shared_ptr<ThreadConfig>>
     if ( client->hThread == INVALID_HANDLE_VALUE || (dwThreadId == 0u) )
     {
         pwn::log::perror(L"CreateThread()");
-        return Err(ErrorType::Code::RuntimeError);
+        return Err(ErrorCode::RuntimeError);
     }
 
     client->Tid = dwThreadId;
@@ -536,7 +536,7 @@ AllowNextClient() -> Result<bool>
         }
     }
 
-    return Err(ErrorType::Code::GenericError);
+    return Err(ErrorCode::GenericError);
 }
 
 

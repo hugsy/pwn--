@@ -105,7 +105,7 @@ Process::Memory::read(uptr const Address, usize Length) -> Result<std::vector<u8
              &dwNbRead) == false )
     {
         perror(L"ReadProcessMemory()");
-        return Err(ErrorType::Code::RuntimeError);
+        return Err(ErrorCode::RuntimeError);
     }
 
     return Ok(out);
@@ -131,7 +131,7 @@ Process::Memory::write(uptr const Address, std::vector<u8> data) -> Result<usize
              &dwNbWritten) != false )
     {
         perror(L"WriteProcessMemory()");
-        return Err(ErrorType::Code::RuntimeError);
+        return Err(ErrorCode::RuntimeError);
     }
 
     return Ok(dwNbWritten);
@@ -646,7 +646,7 @@ execv(const std::wstring_view& CommandLine, const u32 ParentPid) -> Result<std::
              &pi) == 0 )
     {
         perror(L"CreateProcess()");
-        return Err(ErrorType::Code::RuntimeError);
+        return Err(ErrorCode::RuntimeError);
     }
 
     if ( ParentPid )
