@@ -1,7 +1,5 @@
 #pragma once
 
-#include <ranges>
-
 #include "architecture.hpp"
 #include "common.hpp"
 
@@ -185,8 +183,10 @@ struct globals_t
         catch ( std::range_error const& e )
         {
             err(L"Invalid architecture '{}'. Value must be in:", type);
-            for ( auto const& name : std::views::keys(Architectures) )
+            for ( auto const& [name, arch] : Architectures )
+            {
                 std::wcout << L"- " << std::setw(9) << name << std::endl;
+            }
         }
     }
 
