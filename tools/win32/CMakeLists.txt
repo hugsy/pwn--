@@ -13,7 +13,6 @@ set(
     ExploitTemplate
     HexdumpFile
     ProcessReparent
-    SyscallTrace
 )
 
 foreach(TOOL_DIR ${WIN32_TOOLS})
