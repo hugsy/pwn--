@@ -488,9 +488,8 @@ list() -> std::vector<std::tuple<std::wstring, u32>>
 
     for ( int i = 0; i < count; i++ )
     {
-        u32 pid = pids[i];
-        auto hProcess =
-            std::make_unique<pwn::UniqueHandle>(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid));
+        u32 pid       = pids[i];
+        auto hProcess = pwn::UniqueHandle {::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid)};
         if ( !hProcess )
         {
             continue;
@@ -812,7 +811,7 @@ has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt_ u32 dwPid) -> boo
         dwPid = ::GetCurrentProcessId();
     }
 
-    auto hProcess = std::make_unique<pwn::UniqueHandle>(::OpenProcess(PROCESS_QUERY_INFORMATION, 0, dwPid));
+    auto hProcess = pwn::UniqueHandle {::OpenProcess(PROCESS_QUERY_INFORMATION, 0, dwPid)};
     if ( !hProcess )
     {
         perror(L"OpenProcess()");

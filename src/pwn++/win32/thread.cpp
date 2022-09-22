@@ -19,7 +19,7 @@ pwn::windows::thread::get_name(_In_ i32 dwThreadId) -> std::optional<std::wstrin
         ThreadHandle = ::OpenThread(THREAD_QUERY_LIMITED_INFORMATION, 0, dwThreadId);
     }
 
-    auto hThread = std::make_unique<pwn::UniqueHandle>(ThreadHandle);
+    auto hThread = pwn::UniqueHandle {ThreadHandle};
     if ( !hThread )
     {
         return std::nullopt;
@@ -81,7 +81,7 @@ pwn::windows::thread::set_name(_In_ std::wstring const& name, _In_ i32 dwThreadI
         ThreadHandle = ::OpenThread(THREAD_SET_LIMITED_INFORMATION, 0, dwThreadId);
     }
 
-    auto hThread = std::make_unique<pwn::UniqueHandle>(ThreadHandle);
+    auto hThread = pwn::UniqueHandle {ThreadHandle};
     if ( !hThread )
     {
         return false;
