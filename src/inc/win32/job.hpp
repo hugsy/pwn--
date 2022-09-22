@@ -16,7 +16,7 @@ class Job
 public:
     Job(_In_ LPCWSTR name = nullptr) : m_name(name)
     {
-        HANDLE hJob = ::CreateJobObject(nullptr, name);
+        HANDLE hJob = ::CreateJobObjectW(nullptr, name);
         if ( !hJob && ::GetLastError() == ERROR_ALREADY_EXISTS )
         {
             hJob = ::OpenJobObject(JOB_OBJECT_ALL_ACCESS, FALSE, name);
@@ -25,7 +25,7 @@ public:
         if ( !hJob )
             throw std::exception("cannot create job");
 
-        m_hJob.m_handle = hJob;
+        m_hJob = pwn::UniqueHandle {hJob};
     }
 
 
@@ -44,7 +44,7 @@ private:
     add_process(_In_ u32 ProcessId) -> bool;
 
     std::wstring m_name;
-    pwn::utils::GenericHandle<HANDLE> m_hJob;
-    std::vector<pwn::utils::GenericHandle<HANDLE>> m_handles;
+    pwn::UniqueHandle m_hJob;
+    std::vector<pwn::UniqueHandle> m_handles;
 };
 } // namespace pwn::windows::job

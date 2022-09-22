@@ -207,7 +207,7 @@ pwn::windows::filesystem::watch_directory(
     std::function<bool(PFILE_NOTIFY_INFORMATION)> cbFunctor,
     const bool watch_subtree) -> Result<bool>
 {
-    auto h = pwn::utils::GenericHandle(::CreateFileW(
+    auto h = std::make_unique<pwn::UniqueHandle>(::CreateFileW(
         name.data(),
         GENERIC_READ,
         FILE_SHARE_READ,

@@ -18,7 +18,7 @@ create(std::string_view const& ServiceName, std::string_view const& ServicePath)
 
     do
     {
-        auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
+        auto hManager = ServiceHandle {::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
         if ( !hManager )
         {
             perror(L"OpenSCManager()");
@@ -26,7 +26,7 @@ create(std::string_view const& ServiceName, std::string_view const& ServicePath)
             break;
         }
 
-        auto hService = ServiceHandle(::CreateServiceW(
+        auto hService = ServiceHandle {::CreateServiceW(
             hManager.get(),
             (LPCWSTR)ServiceName.data(),
             nullptr,
@@ -39,7 +39,7 @@ create(std::string_view const& ServiceName, std::string_view const& ServicePath)
             nullptr,
             nullptr,
             nullptr,
-            nullptr));
+            nullptr)};
         if ( !hService )
         {
             perror(L"CreateService()");
@@ -58,9 +58,12 @@ start(std::wstring_view const& ServiceName) -> Result<DWORD>
 {
     DWORD dwResult = ERROR_SUCCESS;
 
+    SC_HANDLE t = ::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
+    t->unused;
+
     do
     {
-        auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
+        auto hManager = ServiceHandle {::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
         if ( !hManager )
         {
             perror(L"OpenSCManager()");
@@ -69,7 +72,7 @@ start(std::wstring_view const& ServiceName) -> Result<DWORD>
         }
 
 
-        auto hService = ServiceHandle(::OpenService(hManager.get(), ServiceName.data(), SERVICE_START));
+        auto hService = ServiceHandle {::OpenServiceW(hManager.get(), ServiceName.data(), SERVICE_START)};
         if ( !hService )
         {
             perror(L"OpenService()");
@@ -78,7 +81,7 @@ start(std::wstring_view const& ServiceName) -> Result<DWORD>
         }
 
 
-        if ( ::StartService(hService.get(), 0, nullptr) == 0 )
+        if ( ::StartServiceW(hService.get(), 0, nullptr) == 0 )
         {
             perror(L"StartService()");
             dwResult = ::GetLastError();
@@ -100,7 +103,7 @@ stop(std::string_view const& ServiceName, const DWORD Timeout) -> Result<DWORD>
 
     do
     {
-        auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
+        auto hManager = ServiceHandle {::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
         if ( !hManager )
         {
             perror(L"OpenSCManager()");
@@ -108,8 +111,8 @@ stop(std::string_view const& ServiceName, const DWORD Timeout) -> Result<DWORD>
             break;
         }
 
-        auto hService = ServiceHandle(
-            ::OpenServiceW(hManager.get(), (LPCWSTR)ServiceName.data(), SERVICE_STOP | SERVICE_QUERY_STATUS));
+        auto hService = ServiceHandle {
+            ::OpenServiceW(hManager.get(), (LPCWSTR)ServiceName.data(), SERVICE_STOP | SERVICE_QUERY_STATUS)};
         if ( !hService )
         {
             perror(L"OpenService()");
@@ -175,7 +178,7 @@ destroy(std::wstring_view const& ServiceName) -> Result<DWORD>
 
     do
     {
-        auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
+        auto hManager = ServiceHandle {::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
         if ( !hManager )
         {
             perror(L"StartService()");
@@ -183,7 +186,7 @@ destroy(std::wstring_view const& ServiceName) -> Result<DWORD>
             break;
         }
 
-        auto hService = ServiceHandle(::OpenService(hManager.get(), ServiceName.data(), DELETE));
+        auto hService = ServiceHandle {::OpenService(hManager.get(), ServiceName.data(), DELETE)};
         if ( !hService )
         {
             perror(L"OpenService()");

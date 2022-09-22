@@ -40,8 +40,8 @@ wmain(const int argc, const wchar_t** argv) -> int
             return EXIT_FAILURE;
         }
 
-        auto hProcess = pwn::utils::GenericHandle(std::get<0>(Value(res)));
-        auto hThread  = pwn::utils::GenericHandle(std::get<1>(Value(res)));
+        auto hProcess = pwn::UniqueHandle(std::get<0>(Value(res)));
+        auto hThread  = pwn::UniqueHandle(std::get<1>(Value(res)));
         ::WaitForSingleObject(hProcess.get(), INFINITE);
     }
 

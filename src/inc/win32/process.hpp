@@ -13,8 +13,6 @@
 
 namespace fs = std::filesystem;
 
-using SharedHandle = std::shared_ptr<pwn::utils::GenericHandle<HANDLE>>;
-
 namespace pwn::windows::process
 {
 

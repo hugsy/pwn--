@@ -6,22 +6,7 @@
 
 namespace pwn::windows::service
 {
-class ServiceHandle : public pwn::utils::GenericHandle<SC_HANDLE>
-{
-public:
-    using GenericHandle<SC_HANDLE>::GenericHandle;
-
-    auto
-    close() -> bool override
-    {
-        if ( bool(m_handle) )
-        {
-            ::CloseServiceHandle(m_handle);
-            m_handle = nullptr;
-        }
-        return true;
-    }
-};
+using ServiceHandle = pwn::GenericHandle<SC_HANDLE__, CloseServiceHandle>;
 
 using ServiceInfo = struct
 {

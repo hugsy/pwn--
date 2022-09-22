@@ -316,7 +316,7 @@ pwn::windows::ctf::Process::spawn_process() -> bool
              reinterpret_cast<LPSTARTUPINFOW>(&si),
              reinterpret_cast<LPPROCESS_INFORMATION>(&pi)) != 0 )
     {
-        // m_hProcess = pwn::utils::GenericHandle(pi.hProcess);
+        // m_hProcess = pwn::UniqueHandle(pi.hProcess);
         ::CloseHandle(pi.hThread);
         return true;
     }

@@ -1,12 +1,12 @@
 #pragma once
 
-#include "common.hpp"
-#include "tube.hpp"
-#include "handle.hpp"
-#include "utils.hpp"
-
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+
+#include "common.hpp"
+#include "handle.hpp"
+#include "tube.hpp"
+#include "utils.hpp"
 
 
 namespace pwn::linux::ctf
@@ -19,7 +19,8 @@ namespace pwn::linux::ctf
 class Remote : public Tube
 {
 public:
-    PWNAPI Remote(_In_ std::wstring const& host, _In_ u16 port);
+    PWNAPI
+    Remote(_In_ std::wstring const& host, _In_ u16 port);
     PWNAPI ~Remote();
 
 protected:
@@ -86,7 +87,7 @@ private:
     std::wstring m_processname;
     std::wstring m_commandline;
 
-    ::pwn::utils::GenericHandle<int> m_hProcess;
+    ::pwn::UniqueHandle m_hProcess;
 
     int m_ChildPipeStdin  = -1;
     int m_ChildPipeStdout = -1;
@@ -94,4 +95,4 @@ private:
     int m_ParentStdout    = -1;
 };
 
-}
+} // namespace pwn::linux::ctf

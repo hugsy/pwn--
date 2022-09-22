@@ -86,7 +86,7 @@ private:
     std::wstring m_processname;
     std::wstring m_commandline;
 
-    ::pwn::utils::GenericHandle<HANDLE> m_hProcess;
+    pwn::UniqueHandle m_hProcess;
 
     HANDLE m_ChildPipeStdin  = INVALID_HANDLE_VALUE;
     HANDLE m_ChildPipeStdout = INVALID_HANDLE_VALUE;

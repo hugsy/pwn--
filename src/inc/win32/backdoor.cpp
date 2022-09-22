@@ -293,7 +293,7 @@ HandleClientThread(const LPVOID lpThreadParams)
     }
 
     const auto cfg   = reinterpret_cast<pwn::backdoor::ThreadConfig*>(lpThreadParams);
-    const auto hPipe = pwn::UniqueHandle {cfg->hPipe};
+    const auto hPipe = pwn::UniqueHandle(cfg->hPipe);
     cfg->pLuaVm      = lua::init();
     cfg->SetState(ThreadState::ReadyToRead);
 

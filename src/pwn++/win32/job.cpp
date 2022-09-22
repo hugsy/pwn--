@@ -3,8 +3,7 @@
 auto
 pwn::windows::job::Job::add_process(_In_ u32 ProcessId) -> bool
 {
-    auto hProcess = pwn::utils::GenericHandle(::OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, false, ProcessId));
-
+    auto hProcess = pwn::UniqueHandle {::OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, false, ProcessId)};
     if ( !hProcess )
     {
         perror("OpenProcess()");
@@ -13,7 +12,7 @@ pwn::windows::job::Job::add_process(_In_ u32 ProcessId) -> bool
 
     if ( ::AssignProcessToJobObject(m_hJob.get(), hProcess.get()) )
     {
-        m_handles.push_back(pwn::utils::GenericHandle(hProcess.get()));
+        m_handles.push_back(std::move(hProcess));
         return true;
     }
 

@@ -201,9 +201,8 @@ Process::Process(u32 pid, bool kill_on_delete) :
 
     // Full path
     {
-        m_process_handle =
-            std::make_shared<pwn::utils::GenericHandle<HANDLE>>(::OpenProcess(MAXIMUM_ALLOWED, false, pid));
-        m_memory = Memory(m_process_handle);
+        m_process_handle = std::make_shared<pwn::UniqueHandle>(::OpenProcess(MAXIMUM_ALLOWED, false, pid));
+        m_memory         = Memory(m_process_handle);
 
         wchar_t exeName[MAX_PATH] = {0};
         DWORD size                = __countof(exeName);
@@ -309,7 +308,7 @@ Process::teb()
 
             {
                 DWORD ExitCode = 0;
-                auto hProcess {pwn::utils::GenericHandle(::CreateRemoteThreadEx(
+                auto hProcess  = std::make_unique<pwn::UniqueHandle>(::CreateRemoteThreadEx(
                     m_process_handle->get(),
                     nullptr,
                     0,
@@ -317,7 +316,8 @@ Process::teb()
                     nullptr,
                     0,
                     nullptr,
-                    nullptr))};
+                    nullptr));
+
                 ::WaitForSingleObject(hProcess.get(), INFINITE);
                 if ( ::GetExitCodeThread(hProcess.get(), &ExitCode) && ExitCode == 1 )
                 {
@@ -343,7 +343,7 @@ Process::teb()
 auto
 Process::enumerate_privileges() -> bool
 {
-    auto hToken = pwn::utils::GenericHandle(
+    auto hToken = std::make_unique<pwn::UniqueHandle>(
         [&]() -> HANDLE
         {
             HANDLE hProcessToken = nullptr;
@@ -389,7 +389,7 @@ Process::enumerate_privileges() -> bool
 auto
 Process::is_elevated() -> bool
 {
-    auto hToken = pwn::utils::GenericHandle(
+    auto hToken = std::make_unique<pwn::UniqueHandle>(
         [&]() -> HANDLE
         {
             HANDLE hProcessToken = nullptr;
@@ -489,7 +489,8 @@ list() -> std::vector<std::tuple<std::wstring, u32>>
     for ( int i = 0; i < count; i++ )
     {
         u32 pid = pids[i];
-        pwn::utils::GenericHandle hProcess(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid));
+        auto hProcess =
+            std::make_unique<pwn::UniqueHandle>(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid));
         if ( !hProcess )
         {
             continue;
@@ -516,21 +517,29 @@ get_integrity_level(const u32 pid) -> Process::Integrity
 
     do
     {
-        auto hProcessHandle = pwn::utils::GenericHandle(::OpenProcess(PROCESS_QUERY_INFORMATION, false, dwProcessId));
-        if ( !hProcessHandle )
+        pwn::UniqueHandle hProcessToken;
+        pwn::UniqueHandle hProcessHandle;
+
         {
-            dwRes = ::GetLastError();
-            break;
+            hProcessHandle = pwn::UniqueHandle {::OpenProcess(PROCESS_QUERY_INFORMATION, false, dwProcessId)};
+            if ( !hProcessHandle )
+            {
+                dwRes = ::GetLastError();
+                break;
+            }
         }
 
-        HANDLE hToken;
-        if ( ::OpenProcessToken(hProcessHandle.get(), TOKEN_QUERY, &hToken) == 0 )
         {
-            dwRes = ::GetLastError();
-            break;
+            HANDLE hToken;
+            if ( ::OpenProcessToken(hProcessHandle.get(), TOKEN_QUERY, &hToken) == 0 )
+            {
+                dwRes = ::GetLastError();
+                break;
+            }
+
+            hProcessToken = pwn::UniqueHandle {hToken};
         }
 
-        auto hProcessToken = pwn::utils::GenericHandle(hToken);
 
         DWORD dwLengthNeeded = 0;
 
@@ -579,7 +588,6 @@ get_integrity_level(const u32 pid) -> Process::Integrity
         {
             IntegrityLevel = Process::Integrity::System;
         }
-
     } while ( 0 );
 
     return IntegrityLevel;
@@ -590,7 +598,7 @@ auto
 execv(const std::wstring_view& CommandLine, const u32 ParentPid) -> Result<std::tuple<HANDLE, HANDLE>>
 {
     std::unique_ptr<u8[]> AttributeList;
-    pwn::utils::GenericHandle<HANDLE> hParentProcess;
+    pwn::UniqueHandle hParentProcess;
     STARTUPINFOEX si = {
         {0},
     };
@@ -602,8 +610,8 @@ execv(const std::wstring_view& CommandLine, const u32 ParentPid) -> Result<std::
 
     if ( ParentPid )
     {
-        hParentProcess = pwn::utils::GenericHandle<HANDLE>(::OpenProcess(PROCESS_CREATE_PROCESS, false, ParentPid));
-        if ( hParentProcess )
+        HANDLE hProcess = ::OpenProcess(PROCESS_CREATE_PROCESS, false, ParentPid);
+        if ( hProcess )
         {
             size_t AttrListSize = 0;
             ::InitializeProcThreadAttributeList(nullptr, 1, 0, &AttrListSize);
@@ -616,12 +624,14 @@ execv(const std::wstring_view& CommandLine, const u32 ParentPid) -> Result<std::
                     si.lpAttributeList,
                     0,
                     PROC_THREAD_ATTRIBUTE_PARENT_PROCESS,
-                    &hParentProcess.m_handle,
+                    &hProcess,
                     sizeof(HANDLE),
                     nullptr,
                     nullptr);
                 dbg(L"Spawning '{}' with PPID={}...", CommandLine, ParentPid);
             }
+
+            hParentProcess = pwn::UniqueHandle {hProcess};
         }
         else
         {
@@ -802,8 +812,7 @@ has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt_ u32 dwPid) -> boo
         dwPid = ::GetCurrentProcessId();
     }
 
-    auto hProcess = pwn::utils::GenericHandle(::OpenProcess(PROCESS_QUERY_INFORMATION, 0, dwPid));
-
+    auto hProcess = std::make_unique<pwn::UniqueHandle>(::OpenProcess(PROCESS_QUERY_INFORMATION, 0, dwPid));
     if ( !hProcess )
     {
         perror(L"OpenProcess()");

@@ -260,7 +260,7 @@ int wmain()
     auto hProcess = pwn::process::execv(L"cmd.exe", ppid);
     if(hProcess)
     {
-        auto h = pwn::utils::GenericHandle(hProcess.value());
+        auto h = pwn::UniqueHandle(hProcess.value());
         ::WaitForSingleObject(h.get(), INFINITE);
     }
     return 0;
@@ -292,7 +292,7 @@ int wmain()
     auto hProcess = pwn::process::execv(L"notepad.exe hello.txt");
     if ( hProcess )
     {
-        auto h = pwn::utils::GenericHandle(hProcess.value());
+        auto h = pwn::UniqueHandle(hProcess.value());
         ::Sleep(5*1000);
         pwn::process::kill(h.get());
     }
@@ -386,9 +386,9 @@ void wmain()
     auto ppid = pwn::process::ppid();
     if( pwn::process::execv(L"notepad.exe", ppid, &hProcess) )
     {
-        auto hp = pwn::utils::GenericHandle(hProcess);
+        auto hp = pwn::UniqueHandle(hProcess);
 
-        auto hJob = pwn::utils::GenericHandle( pwn::job::create() );
+        auto hJob = pwn::UniqueHandle( pwn::job::create() );
         if( hJob )
         {
             auto pid = pwn::system::pid(hp.Get());
@@ -532,7 +532,7 @@ Namespace: `pwn::windowsdows::alpc`
 
 void wmain()
 {
-    auto server = pwn::utils::GenericHandle(
+    auto server = pwn::UniqueHandle(
         pwn::windowsdows::alpc::server::listen(L"\\RPC Control\\lotzofun")
     );
 
@@ -553,7 +553,7 @@ void wmain()
 
 void wmain()
 {
-    auto client = pwn::utils::GenericHandle(
+    auto client = pwn::UniqueHandle(
         pwn::windowsdows::alpc::client::connect(L"\\RPC Control\\lotzofun")
     );
 
@@ -658,11 +658,11 @@ auto wmain() -> int
 auto wmain() -> int
 {
     {
-        if(!pwn::utils::GenericHandle( pwn::fs::touch(L"myfile.txt") ))
+        if(!pwn::UniqueHandle( pwn::fs::touch(L"myfile.txt") ))
             return -1;
     }
 
-    auto l = pwn::utils::GenericHandle( pwn::fs::create_symlink(L"mylink.txt", L"myfile.txt") );
+    auto l = pwn::UniqueHandle( pwn::fs::create_symlink(L"mylink.txt", L"myfile.txt") );
     if(!l)
         return -2;
 

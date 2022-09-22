@@ -51,7 +51,7 @@ pid(_In_ HANDLE hProcess) -> u32
 auto
 ppid(_In_ u32 dwProcessId) -> std::optional<u32>
 {
-    auto hProcessSnap = pwn::utils::GenericHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+    auto hProcessSnap = pwn::UniqueHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
     if ( !hProcessSnap )
     {
         perror(L"CreateToolhelp32Snapshot()");
@@ -84,7 +84,7 @@ ppid(_In_ u32 dwProcessId) -> std::optional<u32>
 auto
 pidof(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>
 {
-    auto hProcessSnap = pwn::utils::GenericHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+    auto hProcessSnap = pwn::UniqueHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
     if ( !hProcessSnap )
     {
         perror(L"CreateToolhelp32Snapshot()");
@@ -107,7 +107,7 @@ pidof(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>
         do
         {
             auto hProcess =
-                pwn::utils::GenericHandle(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pe32.th32ProcessID));
+                pwn::UniqueHandle(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pe32.th32ProcessID));
             if ( !hProcess )
             {
                 continue;
