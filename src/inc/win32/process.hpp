@@ -22,7 +22,7 @@ class Process
     {
     public:
         Memory();
-        Memory(SharedHandle h);
+        Memory(SharedHandle& h);
 
         auto
         Read(uptr const Address, usize Length) -> Result<std::vector<u8>>;

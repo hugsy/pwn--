@@ -2,6 +2,8 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <errno.h>
 #endif // _WIN32
 
 
