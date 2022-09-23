@@ -516,12 +516,12 @@ Process::IntegrityLevel()
         return Err(ErrorCode::InvalidProcess);
     }
 
-    pwn::UniqueHandle hProcessToken;
-    {
-        HANDLE h;
-        hProcessToken = pwn::UniqueHandle {
-            (::OpenProcessToken(hProcessHandle.get(), TOKEN_ADJUST_PRIVILEGES, &h) == TRUE) ? h : nullptr};
-    }
+    auto hProcessToken = pwn::UniqueHandle(
+        [&]() -> HANDLE
+        {
+            HANDLE h;
+            return (::OpenProcessToken(hProcessHandle.get(), TOKEN_ADJUST_PRIVILEGES, &h) == TRUE) ? h : nullptr;
+        }());
     if ( !hProcessToken )
     {
         return Err(ErrorCode::PermissionDenied);
@@ -579,11 +579,15 @@ Process::AddPrivilege(std::wstring const& PrivilegeName)
         return Err(ErrorCode::GenericError);
     }
 
-    pwn::UniqueHandle hToken;
+    auto hToken = pwn::UniqueHandle(
+        [&]() -> HANDLE
+        {
+            HANDLE h;
+            return (::OpenProcessToken(hProcess.get(), TOKEN_ADJUST_PRIVILEGES, &h) == TRUE) ? h : nullptr;
+        }());
+    if ( !hToken )
     {
-        HANDLE h;
-        hToken =
-            pwn::UniqueHandle {(::OpenProcessToken(hProcess.get(), TOKEN_ADJUST_PRIVILEGES, &h) == TRUE) ? h : nullptr};
+        return Err(ErrorCode::PermissionDenied);
     }
 
     LUID Luid = {0};
@@ -643,12 +647,12 @@ Process::HasPrivilege(std::wstring const& PrivilegeName)
     PrivSet.PrivilegeCount = 1;
     PrivSet.Privilege[0]   = PrivAttr;
 
-    pwn::UniqueHandle hToken;
-    {
-        HANDLE h;
-        hToken =
-            pwn::UniqueHandle {(::OpenProcessToken(hProcess.get(), TOKEN_ADJUST_PRIVILEGES, &h) == TRUE) ? h : nullptr};
-    }
+    auto hToken = pwn::UniqueHandle(
+        [&]() -> HANDLE
+        {
+            HANDLE h;
+            return (::OpenProcessToken(hProcess.get(), TOKEN_ADJUST_PRIVILEGES, &h) == TRUE) ? h : nullptr;
+        }());
     if ( !hToken )
     {
         return Err(ErrorCode::GenericError);

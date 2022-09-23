@@ -134,6 +134,9 @@ public:
     Result<bool>
     HasPrivilege(std::wstring const& PrivilegeName);
 
+    // TODO:
+    // - modules
+
     Memory Memory;
 
 private:
