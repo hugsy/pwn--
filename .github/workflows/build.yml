@@ -102,7 +102,7 @@ jobs:
     - name: Publish artifact
       uses: actions/upload-artifact@v2
       with:
-        name: ${{ env.PROJECT_NAME }}_${{ matrix.platform }}_${{ env.GITHUB_REF_SLUG }}__${{ matrix.os }}__${{ env.GITHUB_SHA_SHORT }}
+        name: ${{ env.PROJECT_NAME }}_${{ matrix.platform }}_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_${{ matrix.configuration }}_${{ env.GITHUB_SHA_SHORT }}
         path: artifact/
 
     - name: Notify on success
