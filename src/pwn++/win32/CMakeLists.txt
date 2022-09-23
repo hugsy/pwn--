@@ -2,6 +2,8 @@
 # Windows specific definitions
 #
 
+enable_language(C ASM_MASM)
+
 set(HEADER_DIR ${PWNLIB_SRC_HDR_DIR}/win32)
 set(SOURCE_DIR ${PWNLIB_SRC_LIB_DIR}/win32)
 
@@ -41,6 +43,8 @@ set(
     ${SOURCE_DIR}/alpc.cpp
     ${SOURCE_DIR}/rpc.cpp
     ${SOURCE_DIR}/ctf/remote.cpp
+
+    ${SOURCE_DIR}/get_teb64.asm
 )
 
 if(PWN_ENABLE_LUA_BACKDOOR)

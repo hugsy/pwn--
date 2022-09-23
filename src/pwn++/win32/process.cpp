@@ -5,7 +5,6 @@
 
 using namespace pwn::log;
 
-
 #include <accctrl.h>
 #include <aclapi.h>
 #include <psapi.h>
@@ -65,30 +64,25 @@ static const std::array<pwn::windows::process::Process::Privilege, 37> Privilege
 ///
 /// Note: this is just a fake excuse to use assembly in VS, for real world use `NtCurrentTeb()`
 ///
+EXTERN_C uptr GetTeb();
+EXTERN_C usize GetTebLength();
+
 #ifdef _WIN64
 #define TEB_OFFSET 0x30
 #define PEB_OFFSET 0x60
-extern "C" auto
-x64_get_teb() -> uptr;
-#define get_teb x64_get_teb
 #else
 #define TEB_OFFSET 0x18
 #define PEB_OFFSET 0x30
-extern "C" uptr
-x86_get_teb();
-#define get_teb x86_get_teb
 #endif
-
 
 namespace pwn::windows::process
 {
-
 
 Process::Memory::Memory() : Memory(nullptr)
 {
 }
 
-Process::Memory::Memory(SharedHandle h) : m_process_handle(h)
+Process::Memory::Memory(SharedHandle& h) : m_process_handle(h)
 {
 }
 
@@ -224,8 +218,7 @@ Process::~Process()
 {
     if ( m_KillOnClose && !m_IsSelf )
     {
-        ::TerminateProcess(m_ProcessHandle->get(), EXIT_FAILURE);
-        ::WaitForSingleObject(m_ProcessHandle->get(), INFINITE);
+        Kill();
     }
 }
 
@@ -276,15 +269,28 @@ Process::peb()
 PTEB
 Process::teb()
 {
-    if ( !m_Teb )
+    if(m_Teb)
     {
-        if ( m_IsSelf )
-        {
-            m_Teb = NtCurrentTeb();
-        }
-        else
-        {
+        return m_Teb;
+    }
 
+    if ( m_IsSelf )
+    {
+        //m_Teb = NtCurrentTeb();
+        m_Teb = (uptr)GetTeb();
+    }
+    else
+    {
+        //
+        // Copy the function from the local process to the remote
+        //
+        const uptr pfnGetTeb = &GetTeb;
+        const usize GetTebFunctionLength = GetTebLength();
+        const std::unique_ptr<u8> sc;
+        sc.resize(GetTebFunctionLength);
+        RtlCopyMemory(sc.get(), pfnGetTeb, GetTebFunctionLength);
+
+        /*
             const std::vector<u8> sc = {
                 // clang-format off
                 0x48, 0x8d, 0x0d, 0x80, 0x00, 0x00, 0x00, // lea rcx, [rip+0x80]
@@ -294,39 +300,39 @@ Process::teb()
                 0xc3 // ret
                 // clang-format on
             };
-            auto const ptr = Value(Memory.allocate(0x1000, L"rwx"));
-            Memory.Write(ptr, sc);
+        */
+        auto const ptr = Value(Memory.allocate(0x1000, L"rx"));
+        Memory.Write(ptr, sc);
 
-            {
+        //
+        // Execute the remote thread
+        //
+        {
                 DWORD ExitCode = 0;
                 auto hProcess  = pwn::UniqueHandle {::CreateRemoteThreadEx(
                     m_ProcessHandle->get(),
                     nullptr,
                     0,
                     reinterpret_cast<LPTHREAD_START_ROUTINE>(ptr),
-                    nullptr,
+                    (ptr + 0x100),
                     0,
                     nullptr,
                     nullptr)};
 
                 ::WaitForSingleObject(hProcess.get(), INFINITE);
-                if ( ::GetExitCodeThread(hProcess.get(), &ExitCode) && ExitCode == 1 )
+                if ( ::GetExitCodeThread(hProcess.get(), &ExitCode) && ExitCode == 0 )
                 {
-                    auto res = Memory.Read(ptr + 0x80, sizeof(uptr));
+                    auto res = Memory.Read(ptr + 0x100, sizeof(uptr));
                     if ( Success(res) )
                     {
                         m_Teb = ((PTEB)Value(res).data());
                     }
                 }
-            }
-            Memory.free(ptr);
         }
 
-        if ( !m_Teb )
-        {
-            throw std::runtime_error("TEB could not be set");
-        }
+        Memory.free(ptr);
     }
+
     return m_Teb;
 }
 
@@ -381,15 +387,13 @@ Process::is_elevated() -> bool
     auto hToken = pwn::UniqueHandle(
         [&]() -> HANDLE
         {
-            HANDLE hProcessToken = nullptr;
-            if ( ::OpenProcessToken(m_ProcessHandle->get(), TOKEN_QUERY, &hProcessToken) )
-                return hProcessToken;
-            return nullptr;
+            HANDLE h = nullptr;
+            return ( ::OpenProcessToken(m_ProcessHandle->get(), TOKEN_QUERY, &h) ) ? h : nullptr;
         }());
 
     if ( !hToken )
     {
-        perror(L"OpenProcessToken()");
+        log::perror(L"OpenProcessToken()");
         return false;
     }
 
@@ -401,7 +405,7 @@ Process::is_elevated() -> bool
         return TokenInfo.TokenIsElevated;
     }
 
-    perror(L"GetTokenInformation()");
+    log::perror(L"GetTokenInformation()");
     return false;
 }
 
@@ -677,9 +681,7 @@ execv(const std::wstring_view& CommandLine, const u32 ParentPid) -> Result<std::
     STARTUPINFOEX si = {
         {0},
     };
-    PROCESS_INFORMATION pi = {
-        nullptr,
-    };
+    PROCESS_INFORMATION pi = {0};
     const u32 dwFlags = EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE;
     si.StartupInfo.cb = sizeof(STARTUPINFOEX);
 
@@ -749,16 +751,16 @@ execv(const std::wstring_view& CommandLine, const u32 ParentPid) -> Result<std::
 
 _Success_(return )
 auto
-system(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operation) -> bool
+system(_In_ const std::wstring& CommandLine, _In_ const std::wstring& Operation) -> bool
 {
-    auto args = pwn::utils::split(lpCommandLine, L' ');
+    auto args = pwn::utils::split(CommandLine, L' ');
     auto cmd {args[0]};
     args.erase(args.begin());
     auto params = pwn::utils::join(args);
 
     return static_cast<bool>(
         reinterpret_cast<long long>(
-            ::ShellExecuteW(nullptr, operation.c_str(), cmd.c_str(), params.c_str(), nullptr, SW_SHOW)) > 32);
+            ::ShellExecuteW(nullptr, Operation.c_str(), cmd.c_str(), params.c_str(), nullptr, SW_SHOW)) > 32);
 }
 
 
