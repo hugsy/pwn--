@@ -16,8 +16,8 @@ jobs:
       fail-fast: false
       matrix:
         os: ['windows-latest'] # 'linux-latest' removed since gcc-11 nor clang-15 supports std::format
-        platform: ['x64']
-        configuration: ['Debug']
+        platform: ['x86', 'x64']
+        configuration: ['Debug', 'RelWithDebInfo']
         include:
           - runs-on: ubuntu-latest
             c_compiler: clang-15
