@@ -10,7 +10,6 @@ set(SOURCE_DIR ${PWNLIB_SRC_LIB_DIR}/win32)
 #
 # Source files
 #
-
 set(
     HEADER_FILES
 
@@ -43,9 +42,23 @@ set(
     ${SOURCE_DIR}/alpc.cpp
     ${SOURCE_DIR}/rpc.cpp
     ${SOURCE_DIR}/ctf/remote.cpp
-
-    ${SOURCE_DIR}/get_teb64.asm
 )
+
+if(${CMAKE_SYSTEM_PROCESSOR} EQUAL "AMD64")
+    set(
+        SOURCE_FILES
+
+        ${SOURCE_FILES}
+        ${SOURCE_DIR}/get_teb64.asm
+    )
+else()
+    set(
+        SOURCE_FILES
+
+        ${SOURCE_FILES}
+        ${SOURCE_DIR}/get_teb64.asm
+    )
+endif()
 
 if(PWN_ENABLE_LUA_BACKDOOR)
     set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_DIR}/backdoor.cpp)
@@ -62,63 +75,59 @@ target_include_directories(
     PUBLIC ${HEADER_DIR}
 )
 
-
 #
 # Compiler flags
 #
-
 target_compile_definitions(${PROJECT_NAME} PRIVATE _UNICODE UNICODE)
 
 target_compile_options(
     ${PROJECT_NAME}
     PUBLIC
-        $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
+    $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
     PRIVATE
-        /diagnostics:caret /Zl /ZH:SHA_256
+    /diagnostics:caret /Zl /ZH:SHA_256
 )
 
 if(DEBUG)
     target_compile_options(
         ${PROJECT_NAME}
         PUBLIC
-            /sdl /WX /Gy /Gm- /permissive-
-        )
+        /sdl /WX /Gy /Gm- /permissive-
+    )
     target_link_options(${PROJECT_NAME}
         PUBLIC
-            /DEBUG:FULL
+        /DEBUG:FULL
         PRIVATE
-            /profile /DEBUGTYPE:cv,fixup
+        /profile /DEBUGTYPE:cv,fixup
     )
 else()
     target_compile_options(
         ${PROJECT_NAME}
         PUBLIC
-            /RELEASE /WX /Zi /Zf /Gm /Gm- /permissive-
-            /guard:cf /guard:ehcont
-        )
+        /RELEASE /WX /Zi /Zf /Gm /Gm- /permissive-
+        /guard:cf /guard:ehcont
+    )
     target_link_options(
         ${PROJECT_NAME}
         PUBLIC
     )
 endif(DEBUG)
 
-
 #
 # Linker flags
 #
-
 target_link_options(
     ${PROJECT_NAME}
     PUBLIC
-        /CETCOMPAT
+    /CETCOMPAT
     PRIVATE
-        /LARGEADDRESSAWARE /Zp8
+    /LARGEADDRESSAWARE /Zp8
 )
 
 target_link_libraries(
     ${PROJECT_NAME}
     PUBLIC
-        ws2_32.lib
-        Userenv.lib
-        Rpcrt4.lib
+    ws2_32.lib
+    Userenv.lib
+    Rpcrt4.lib
 )

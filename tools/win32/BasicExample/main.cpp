@@ -68,7 +68,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     // Get the current process
     //
-    pwn::windows::process::Process P {};
+    pwn::windows::Process P {};
     if ( Failed(P.AddPrivilege(L"SeSystemEnvironmentPrivilege")) )
     {
         err(L"failed to acquire `SeSystemEnvironmentPrivilege` ");
@@ -85,7 +85,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     std::vector<u8> value(0x20);
     ULONG ReturnLength = 0x20;
 
-    auto self = pwn::windows::process::Process();
+    auto self = pwn::windows::Process();
     // ok(L"using handle={:x}", self.handle());
     // info(
     //     L"pid={}, ppid={}, cmdline='{}' integrity={} is_elevated={}",

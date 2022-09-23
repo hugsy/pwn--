@@ -33,16 +33,15 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     // Create the new process using the parent PID
     {
-        auto res = pwn::windows::process::execv(target_process, ppid);
-        if ( !Success(res) )
+        auto res = pwn::windows::Process::New(target_process, ppid);
+        if ( Failed(res) )
         {
             err(L"failed to spawn the process");
             return EXIT_FAILURE;
         }
 
-        auto hProcess = pwn::UniqueHandle(std::get<0>(Value(res)));
-        auto hThread  = pwn::UniqueHandle(std::get<1>(Value(res)));
-        ::WaitForSingleObject(hProcess.get(), INFINITE);
+        auto hProcess = Value(res).handle();
+        ::WaitForSingleObject(hProcess, INFINITE);
     }
 
     return EXIT_SUCCESS;

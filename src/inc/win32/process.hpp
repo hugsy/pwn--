@@ -13,7 +13,7 @@
 
 namespace fs = std::filesystem;
 
-namespace pwn::windows::process
+namespace pwn::windows
 {
 
 class Process
@@ -22,7 +22,7 @@ class Process
     {
     public:
         Memory();
-        Memory(SharedHandle& h);
+        Memory(SharedHandle h);
 
         auto
         Read(uptr const Address, usize Length) -> Result<std::vector<u8>>;
@@ -66,6 +66,9 @@ public:
 
     ~Process();
 
+    bool
+    IsValid();
+
     fs::path const
     Path() const;
 
@@ -78,20 +81,22 @@ public:
     auto
     operator<=>(Process const&) const = default;
 
+    ///
+    /// @brief Calculate and store the address of the ProcessEnvironmentBlock
+    ///
+    /// @return PPEB
+    ///
     PPEB
-    peb();
-
-    PTEB
-    teb();
+    ProcessEnvironmentBlock();
 
     const HANDLE
     handle() const;
 
-    auto
-    is_elevated() -> bool;
+    Result<bool>
+    IsElevated();
 
-    auto
-    enumerate_privileges() -> bool;
+    Result<bool>
+    EnumeratePrivileges();
 
     friend std::wostream&
     operator<<(std::wostream& os, const Process& p)
@@ -135,11 +140,38 @@ public:
     HasPrivilege(std::wstring const& PrivilegeName);
 
     // TODO:
+    // - threads
     // - modules
 
     Memory Memory;
 
+
+    //
+    // Static class methods
+    //
+
+    ///
+    /// @brief Create a new process
+    ///
+    /// @param CommandLine
+    /// @param ParentPid
+    /// @return Result<Process>
+    ///
+    static Result<Process>
+    New(std::wstring_view const& CommandLine, const u32 ParentPid);
+
+    ///
+    /// @brief Invoke `ShellExecute` to create a process
+    ///
+    /// @param lpCommandLine
+    /// @param operation
+    /// @return Result<bool>
+    ///
+    static Result<bool>
+    System(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operation = L"open");
+
 private:
+    bool m_Valid;
     u32 m_Pid;
     u32 m_Ppid;
     std::wstring m_Path;
@@ -149,32 +181,19 @@ private:
     bool m_KillOnClose;
     bool m_IsSelf;
     PPEB m_Peb;
-    PTEB m_Teb;
 };
 
 
 ///
 /// @brief Returns a basic list of processes, in a vector of tuple <ProcessName, PID>
+/// TODO: switch to generator?
 ///
-/// @return std::vector<std::tuple<std::wstring, u32>>
+/// @return std::vector<Process>
 ///
-PWNAPI auto
-Processes() -> std::vector<std::tuple<std::wstring, u32>>;
-
-PWNAPI auto
-execv(const std::wstring_view& CommandLine, const u32 ParentPid = 0) -> Result<std::tuple<HANDLE, HANDLE>>;
-
-_Success_(return )
-PWNAPI auto
-system(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operation = L"open") -> bool;
-
-_Success_(return != nullptr)
-PWNAPI auto
-cmd() -> HANDLE;
+PWNAPI Result<std::vector<Process>>
+Processes();
 
 
-namespace appcontainer
-{
 class AppContainer
 {
 public:
@@ -225,35 +244,35 @@ private:
     PROCESS_INFORMATION m_ProcessInfo            = {nullptr};
     SECURITY_CAPABILITIES m_SecurityCapabilities = {nullptr};
 };
-} // namespace appcontainer
-} // namespace pwn::windows::process
+
+} // namespace pwn::windows
 
 
 std::wostream&
-operator<<(std::wostream& wos, const pwn::windows::process::Process::Integrity i);
+operator<<(std::wostream& wos, const pwn::windows::Process::Integrity i);
 
 template<>
-struct std::formatter<pwn::windows::process::Process::Integrity, wchar_t> : std::formatter<std::wstring, wchar_t>
+struct std::formatter<pwn::windows::Process::Integrity, wchar_t> : std::formatter<std::wstring, wchar_t>
 {
     auto
-    format(pwn::windows::process::Process::Integrity i, wformat_context& ctx)
+    format(pwn::windows::Process::Integrity i, wformat_context& ctx)
     {
         std::wstring wstr;
         switch ( i )
         {
-        case pwn::windows::process::Process::Integrity::Low:
+        case pwn::windows::Process::Integrity::Low:
             wstr = std::format(L"INTEGRITY_LOW");
             break;
 
-        case pwn::windows::process::Process::Integrity::Medium:
+        case pwn::windows::Process::Integrity::Medium:
             wstr = std::format(L"INTEGRITY_MEDIUM");
             break;
 
-        case pwn::windows::process::Process::Integrity::High:
+        case pwn::windows::Process::Integrity::High:
             wstr = std::format(L"INTEGRITY_HIGH");
             break;
 
-        case pwn::windows::process::Process::Integrity::System:
+        case pwn::windows::Process::Integrity::System:
             wstr = std::format(L"INTEGRITY_SYSTEM");
             break;
 

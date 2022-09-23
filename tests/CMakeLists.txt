@@ -23,6 +23,7 @@ if(MSVC)
 
         ${SOURCE_FILES}
         ${TEST_DIR}/pwn_win_system.cpp
+        ${TEST_DIR}/pwn_win_process.cpp
         ${TEST_DIR}/pwn_win_thread.cpp
     )
 
@@ -63,7 +64,11 @@ set_target_properties(
 
 target_compile_features(tests PRIVATE cxx_std_20)
 target_include_directories(tests PUBLIC ${TEST_DIR} $<TARGET_PROPERTY:pwn++,INCLUDE_DIRECTORIES>)
-target_link_libraries(tests PRIVATE $<TARGET_LINKER_FILE:pwn++>)
+target_link_libraries(tests
+    PRIVATE
+    $<TARGET_LINKER_FILE:pwn++>
+    Userenv.lib
+)
 
 add_custom_command(
     TARGET tests POST_BUILD

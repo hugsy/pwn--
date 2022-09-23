@@ -21,7 +21,7 @@ using namespace pwn::log;
 
 namespace fs = std::filesystem;
 
-static const std::array<pwn::windows::process::Process::Privilege, 37> PrivilegeNames = {
+static const std::array<pwn::windows::Process::Privilege, 37> PrivilegeNames = {
     L"SeAssignPrimaryTokenPrivilege",
     L"SeAuditPrivilege",
     L"SeBackupPrivilege",
@@ -64,8 +64,19 @@ static const std::array<pwn::windows::process::Process::Privilege, 37> Privilege
 ///
 /// Note: this is just a fake excuse to use assembly in VS, for real world use `NtCurrentTeb()`
 ///
-EXTERN_C uptr GetTeb();
-EXTERN_C usize GetTebLength();
+EXTERN_C_START
+uptr
+GetTeb();
+
+usize
+GetTebLength();
+
+uptr
+GetPeb();
+
+usize
+GetPebLength();
+EXTERN_C_END
 
 #ifdef _WIN64
 #define TEB_OFFSET 0x30
@@ -75,14 +86,14 @@ EXTERN_C usize GetTebLength();
 #define PEB_OFFSET 0x30
 #endif
 
-namespace pwn::windows::process
+namespace pwn::windows
 {
 
-Process::Memory::Memory() : Memory(nullptr)
+Process::Memory::Memory() : Process::Memory::Memory(nullptr)
 {
 }
 
-Process::Memory::Memory(SharedHandle& h) : m_process_handle(h)
+Process::Memory::Memory(SharedHandle h) : m_process_handle(h)
 {
 }
 
@@ -183,43 +194,55 @@ Process::Process() : Process(::GetCurrentProcessId(), false)
 {
 }
 
-Process::Process(u32 pid, bool kill_on_delete) : m_Pid(pid), m_Peb(nullptr), m_Teb(nullptr), m_Privileges()
+Process::Process(u32 pid, bool kill_on_delete) : m_Pid(pid), m_Peb(nullptr), m_Privileges(), m_Valid(false)
 {
-    m_IsSelf      = (m_Pid == ::GetCurrentProcessId());
-    m_KillOnClose = m_IsSelf ? false : kill_on_delete;
-
-    // Process PPID
+    //
+    // Gather a minimum set of information about the process for performance. Extra information will be
+    // lazily fetched
+    //
+    try
     {
-        auto ppid = pwn::windows::system::ppid(pid);
-        m_Ppid    = ppid ? ppid.value() : -1;
+        m_IsSelf      = (m_Pid == ::GetCurrentProcessId());
+        m_KillOnClose = m_IsSelf ? false : kill_on_delete;
+
+        // Process PPID
+        {
+            auto ppid = pwn::windows::system::ppid(pid);
+            m_Ppid    = ppid ? ppid.value() : -1;
+        }
+
+        // Full path
+        {
+            auto hProcess   = pwn::UniqueHandle {::OpenProcess(MAXIMUM_ALLOWED, false, m_Pid)};
+            m_ProcessHandle = std::make_shared<UniqueHandle>(std::move(hProcess));
+            Memory          = Memory::Memory(m_ProcessHandle);
+
+            wchar_t exeName[MAX_PATH] = {0};
+            DWORD size                = __countof(exeName);
+            DWORD count               = ::QueryFullProcessImageName(m_ProcessHandle->get(), 0, exeName, &size);
+
+            m_Path = std::wstring {exeName};
+        }
+
+        m_Valid = true;
     }
-
-    // Full path
+    catch ( ... )
     {
-        auto hProcess   = pwn::UniqueHandle {::OpenProcess(MAXIMUM_ALLOWED, false, m_Pid)};
-        m_ProcessHandle = std::make_shared<UniqueHandle>(std::move(hProcess));
-        Memory          = Memory::Memory(m_ProcessHandle);
-
-        wchar_t exeName[MAX_PATH] = {0};
-        DWORD size                = __countof(exeName);
-        DWORD count               = ::QueryFullProcessImageName(m_ProcessHandle->get(), 0, exeName, &size);
-
-        m_Path = std::wstring {exeName};
-    }
-
-    // Integrity
-    if ( Failed(IntegrityLevel()) )
-    {
-        err(L"Failed to retrieve the integrity level");
     }
 }
 
 Process::~Process()
 {
-    if ( m_KillOnClose && !m_IsSelf )
+    if ( m_Valid && m_KillOnClose && !m_IsSelf )
     {
         Kill();
     }
+}
+
+bool
+Process::IsValid()
+{
+    return m_Valid;
 }
 
 u32 const
@@ -247,60 +270,36 @@ Process::handle() const
 }
 
 PPEB
-Process::peb()
+Process::ProcessEnvironmentBlock()
 {
-    if ( !m_Peb )
+    //
+    // If already fetched, don't need to recalculate it
+    //
+    if ( m_Peb )
     {
-        auto res = Memory.Read((uptr)(teb() + FIELD_OFFSET(TEB, ProcessEnvironmentBlock)), sizeof(uptr));
-        if ( Success(res) )
-        {
-            auto val = Value(res);
-            m_Peb    = (PPEB)val.data();
-        }
-
-        if ( !m_Peb )
-        {
-            throw std::runtime_error("PEB could not be set");
-        }
-    }
-    return m_Peb;
-}
-
-PTEB
-Process::teb()
-{
-    if(m_Teb)
-    {
-        return m_Teb;
+        return m_Peb;
     }
 
+    //
+    // If local, easy
+    //
     if ( m_IsSelf )
     {
-        //m_Teb = NtCurrentTeb();
-        m_Teb = (uptr)GetTeb();
+        m_Peb = (PPEB)GetPeb();
     }
-    else
+
+    //
+    // Otherwise execute the function remotely
+    //
     {
         //
         // Copy the function from the local process to the remote
         //
-        const uptr pfnGetTeb = &GetTeb;
-        const usize GetTebFunctionLength = GetTebLength();
-        const std::unique_ptr<u8> sc;
-        sc.resize(GetTebFunctionLength);
-        RtlCopyMemory(sc.get(), pfnGetTeb, GetTebFunctionLength);
+        const uptr pfnGetPeb = (uptr)&GetPeb;
+        const usize FuncLen  = GetPebLength();
+        const std::vector<u8> sc(FuncLen);
+        RtlCopyMemory((void*)sc.data(), (void*)pfnGetPeb, FuncLen);
 
-        /*
-            const std::vector<u8> sc = {
-                // clang-format off
-                0x48, 0x8d, 0x0d, 0x80, 0x00, 0x00, 0x00, // lea rcx, [rip+0x80]
-                0x65, 0x48, 0xa1, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // mov rax, gs:0x30
-                0x48, 0x89, 0x01, // mov [rcx], rax
-                0x48, 0x31, 0xc0, 0xfe, 0xc0, // xor rax, rax; inc al
-                0xc3 // ret
-                // clang-format on
-            };
-        */
         auto const ptr = Value(Memory.allocate(0x1000, L"rx"));
         Memory.Write(ptr, sc);
 
@@ -308,49 +307,54 @@ Process::teb()
         // Execute the remote thread
         //
         {
-                DWORD ExitCode = 0;
-                auto hProcess  = pwn::UniqueHandle {::CreateRemoteThreadEx(
-                    m_ProcessHandle->get(),
-                    nullptr,
-                    0,
-                    reinterpret_cast<LPTHREAD_START_ROUTINE>(ptr),
-                    (ptr + 0x100),
-                    0,
-                    nullptr,
-                    nullptr)};
+            DWORD ExitCode = 0;
+            auto hProcess  = pwn::UniqueHandle {::CreateRemoteThreadEx(
+                m_ProcessHandle->get(),
+                nullptr,
+                0,
+                reinterpret_cast<LPTHREAD_START_ROUTINE>(ptr),
+                (LPVOID)(ptr + 0x100),
+                0,
+                nullptr,
+                nullptr)};
 
-                ::WaitForSingleObject(hProcess.get(), INFINITE);
-                if ( ::GetExitCodeThread(hProcess.get(), &ExitCode) && ExitCode == 0 )
+            ::WaitForSingleObject(hProcess.get(), INFINITE);
+            if ( ::GetExitCodeThread(hProcess.get(), &ExitCode) && ExitCode == 0 )
+            {
+                auto res = Memory.Read(ptr + 0x100, sizeof(uptr));
+                if ( Success(res) )
                 {
-                    auto res = Memory.Read(ptr + 0x100, sizeof(uptr));
-                    if ( Success(res) )
-                    {
-                        m_Teb = ((PTEB)Value(res).data());
-                    }
+                    m_Peb = ((PPEB)Value(res).data());
                 }
+            }
         }
-
         Memory.free(ptr);
     }
 
-    return m_Teb;
+    //
+    // Check for success
+    //
+    if ( !m_Peb )
+    {
+        warn(L"PEB was not found");
+    }
+
+    return m_Peb;
 }
 
-
-auto
-Process::enumerate_privileges() -> bool
+Result<bool>
+Process::EnumeratePrivileges()
 {
     auto hToken = pwn::UniqueHandle(
         [&]() -> HANDLE
         {
-            HANDLE hProcessToken = nullptr;
-            return (::OpenProcessToken(m_ProcessHandle->get(), TOKEN_QUERY, &hProcessToken)) ? hProcessToken : nullptr;
+            HANDLE h = nullptr;
+            return (::OpenProcessToken(m_ProcessHandle->get(), TOKEN_QUERY, &h)) ? h : nullptr;
         }());
-
     if ( !hToken )
     {
-        perror(L"OpenProcessToken()");
-        return false;
+        log::perror(L"OpenProcessToken()");
+        return Err(ErrorCode::PermissionDenied);
     }
 
     DWORD dwReturnLength = 0;
@@ -371,30 +375,35 @@ Process::enumerate_privileges() -> bool
             continue;
         }
 
-        perror(L"GetTokenInformation()");
-        return false;
+        log::perror(L"GetTokenInformation()");
+        return Err(ErrorCode::ExternalApiCallFailed);
 
     } while ( true );
 
-    info(L"got {} privs", TokenPrivs.get()->PrivilegeCount);
+    const usize PrivilegeCount = TokenPrivs.get()->PrivilegeCount;
+    dbg(L"Process {} has {} privileges", PrivilegeCount);
+    for ( auto i = 0; i < PrivilegeCount; i++ )
+    {
+        const auto Priv = TokenPrivs.get()->Privileges[i];
+    }
 
-    return true;
+    return Ok(PrivilegeCount > 0);
 }
 
-auto
-Process::is_elevated() -> bool
+Result<bool>
+Process::IsElevated()
 {
     auto hToken = pwn::UniqueHandle(
         [&]() -> HANDLE
         {
             HANDLE h = nullptr;
-            return ( ::OpenProcessToken(m_ProcessHandle->get(), TOKEN_QUERY, &h) ) ? h : nullptr;
+            return (::OpenProcessToken(m_ProcessHandle->get(), TOKEN_QUERY, &h)) ? h : nullptr;
         }());
 
     if ( !hToken )
     {
         log::perror(L"OpenProcessToken()");
-        return false;
+        return Err(ErrorCode::PermissionDenied);
     }
 
     TOKEN_ELEVATION TokenInfo = {0};
@@ -402,11 +411,11 @@ Process::is_elevated() -> bool
 
     if ( ::GetTokenInformation(hToken.get(), TokenElevation, &TokenInfo, sizeof(TOKEN_ELEVATION), &dwReturnLength) )
     {
-        return TokenInfo.TokenIsElevated;
+        return Ok(TokenInfo.TokenIsElevated == 1);
     }
 
     log::perror(L"GetTokenInformation()");
-    return false;
+    return Err(ErrorCode::ExternalApiCallFailed);
 }
 
 std::wostream&
@@ -453,13 +462,13 @@ Process::Kill()
 }
 
 
-auto
-Processes() -> std::vector<std::tuple<std::wstring, u32>>
+Result<std::vector<Process>>
+Processes()
 {
     u16 maxCount = 256;
     std::unique_ptr<DWORD[]> pids;
     int count = 0;
-    std::vector<std::tuple<std::wstring, u32>> processes;
+    std::vector<Process> processes;
 
     for ( ;; )
     {
@@ -482,21 +491,17 @@ Processes() -> std::vector<std::tuple<std::wstring, u32>>
 
     for ( int i = 0; i < count; i++ )
     {
-        u32 pid       = pids[i];
-        auto hProcess = pwn::UniqueHandle {::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid)};
-        if ( !hProcess )
+        const u32 pid = pids[i];
+        auto p        = Process(pid);
+        if ( !p.IsValid() )
         {
             continue;
         }
 
-        WCHAR exeName[MAX_PATH] = {0};
-        DWORD size              = __countof(exeName);
-        DWORD count             = ::QueryFullProcessImageName(hProcess.get(), 0, exeName, &size);
-
-        processes.emplace_back(exeName, pid);
+        processes.emplace_back(p);
     }
 
-    return processes;
+    return Ok(processes);
 }
 
 
@@ -672,9 +677,8 @@ Process::HasPrivilege(std::wstring const& PrivilegeName)
     return Ok(bHasPriv == TRUE);
 }
 
-
-auto
-execv(const std::wstring_view& CommandLine, const u32 ParentPid) -> Result<std::tuple<HANDLE, HANDLE>>
+Result<Process>
+Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
 {
     std::unique_ptr<u8[]> AttributeList;
     pwn::UniqueHandle hParentProcess;
@@ -682,8 +686,8 @@ execv(const std::wstring_view& CommandLine, const u32 ParentPid) -> Result<std::
         {0},
     };
     PROCESS_INFORMATION pi = {0};
-    const u32 dwFlags = EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE;
-    si.StartupInfo.cb = sizeof(STARTUPINFOEX);
+    const u32 dwFlags      = EXTENDED_STARTUPINFO_PRESENT | CREATE_NEW_CONSOLE;
+    si.StartupInfo.cb      = sizeof(STARTUPINFOEX);
 
     if ( ParentPid )
     {
@@ -745,39 +749,29 @@ execv(const std::wstring_view& CommandLine, const u32 ParentPid) -> Result<std::
     }
 
     dbg(L"'{}' spawned with PID {}", CommandLine, pi.dwProcessId);
-    return Ok(std::make_tuple(pi.hProcess, pi.hThread));
+
+    ::CloseHandle(pi.hThread);
+    ::CloseHandle(pi.hProcess);
+
+    return Ok(Process(pi.dwProcessId));
 }
 
 
-_Success_(return )
-auto
-system(_In_ const std::wstring& CommandLine, _In_ const std::wstring& Operation) -> bool
+Result<bool>
+System(_In_ const std::wstring& CommandLine, _In_ const std::wstring& Operation)
 {
     auto args = pwn::utils::split(CommandLine, L' ');
     auto cmd {args[0]};
     args.erase(args.begin());
-    auto params = pwn::utils::join(args);
-
-    return static_cast<bool>(
+    auto params  = pwn::utils::join(args);
+    bool success = static_cast<bool>(
         reinterpret_cast<long long>(
             ::ShellExecuteW(nullptr, Operation.c_str(), cmd.c_str(), params.c_str(), nullptr, SW_SHOW)) > 32);
+    return Ok(success);
 }
 
 
-_Success_(return != nullptr)
-auto
-cmd() -> HANDLE
-{
-    auto res = execv(L"cmd.exe");
-    if ( Success(res) )
-    {
-        return std::get<0>(Value(res));
-    }
-    return INVALID_HANDLE_VALUE;
-}
-
-
-appcontainer::AppContainer::AppContainer(
+AppContainer::AppContainer(
     std::wstring_view const& container_name,
     std::wstring_view const& executable_path,
     std::vector<WELL_KNOWN_SID_TYPE> const& desired_capabilities) :
@@ -904,7 +898,7 @@ appcontainer::AppContainer::AppContainer(
 }
 
 
-appcontainer::AppContainer::~AppContainer()
+AppContainer::~AppContainer()
 {
     dbg(L"freeing container '{}'\n", m_SidAsString.c_str());
 
@@ -931,7 +925,7 @@ appcontainer::AppContainer::~AppContainer()
 
 _Success_(return )
 auto
-appcontainer::AppContainer::allow_file_or_directory(_In_ const std::wstring& file_or_directory_name) -> bool
+AppContainer::allow_file_or_directory(_In_ const std::wstring& file_or_directory_name) -> bool
 {
     return set_named_object_access(file_or_directory_name, SE_FILE_OBJECT, GRANT_ACCESS, FILE_ALL_ACCESS);
 }
@@ -939,7 +933,7 @@ appcontainer::AppContainer::allow_file_or_directory(_In_ const std::wstring& fil
 
 _Success_(return )
 auto
-appcontainer::AppContainer::allow_registry_key(_In_ const std::wstring& regkey) -> bool
+AppContainer::allow_registry_key(_In_ const std::wstring& regkey) -> bool
 {
     return set_named_object_access(regkey, SE_REGISTRY_KEY, GRANT_ACCESS, FILE_ALL_ACCESS);
 }
@@ -947,7 +941,7 @@ appcontainer::AppContainer::allow_registry_key(_In_ const std::wstring& regkey) 
 
 _Success_(return )
 auto
-appcontainer::AppContainer::spawn() -> bool
+AppContainer::spawn() -> bool
 {
     auto length     = m_ExecutablePath.length();
     auto sz         = length * 2;
@@ -980,7 +974,7 @@ appcontainer::AppContainer::spawn() -> bool
 
 _Success_(return )
 auto
-appcontainer::AppContainer::set_named_object_access(
+AppContainer::set_named_object_access(
     const std::wstring& ObjectName,
     const SE_OBJECT_TYPE ObjectType,
     const ACCESS_MODE AccessMode,
@@ -1076,7 +1070,7 @@ appcontainer::AppContainer::set_named_object_access(
 
 _Success_(return )
 auto
-appcontainer::AppContainer::join(_In_ const u32 dwTimeout) -> bool
+AppContainer::join(_In_ const u32 dwTimeout) -> bool
 {
     return ::WaitForSingleObject(m_ProcessInfo.hProcess, dwTimeout) != WAIT_OBJECT_0;
 }
@@ -1084,7 +1078,7 @@ appcontainer::AppContainer::join(_In_ const u32 dwTimeout) -> bool
 
 _Success_(return )
 auto
-appcontainer::AppContainer::restore_acls() -> bool
+AppContainer::restore_acls() -> bool
 {
     bool bRes = TRUE;
 
@@ -1109,4 +1103,4 @@ appcontainer::AppContainer::restore_acls() -> bool
 }
 
 
-} // namespace pwn::windows::process
+} // namespace pwn::windows
