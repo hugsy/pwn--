@@ -25,17 +25,20 @@ class Process
         Memory(SharedHandle h);
 
         auto
-        read(uptr const Address, usize Length) -> Result<std::vector<u8>>;
+        Read(uptr const Address, usize Length) -> Result<std::vector<u8>>;
 
         auto
-        write(uptr const Address, std::vector<u8> data) -> Result<usize>;
+        Write(uptr const Address, std::vector<u8> data) -> Result<usize>;
 
         auto
-        memset(uptr const address, const size_t size, const u8 val = 0x00) -> Result<uptr>;
+        Memset(uptr const address, const size_t size, const u8 val = 0x00) -> Result<uptr>;
 
         auto
-        allocate(const size_t Size, const wchar_t Permission[3] = L"rwx", const uptr ForcedMappingAddress = 0)
-            -> Result<uptr>;
+        allocate(
+            const size_t Size,
+            const wchar_t Permission[3]     = L"rwx",
+            const uptr ForcedMappingAddress = 0,
+            bool wipe                       = true) -> Result<uptr>;
 
         auto
         free(const uptr Address) -> bool;
@@ -64,19 +67,13 @@ public:
     ~Process();
 
     fs::path const
-    path() const;
-
-    Integrity const
-    integrity() const;
+    Path() const;
 
     u32 const
-    ppid() const;
+    ParentProcessId() const;
 
     u32 const
-    pid() const;
-
-    Memory&
-    memory();
+    ProcessId() const;
 
     auto
     operator<=>(Process const&) const = default;
@@ -99,36 +96,67 @@ public:
     friend std::wostream&
     operator<<(std::wostream& os, const Process& p)
     {
-        os << L"Process(Pid=" << p.pid() << L")";
+        os << L"Process(Pid=" << p.ProcessId() << L")";
         return os;
     }
 
+    ///
+    /// @brief Kill the process
+    ///
+    /// @return Result<bool>
+    ///
+    Result<bool>
+    Kill();
+
+    ///
+    /// @brief Retrieve the process integrity level
+    ///
+    /// @return Result<Process::Integrity>
+    ///
+    Result<Process::Integrity>
+    IntegrityLevel();
+
+    ///
+    /// @brief Add a privilege to the process (if possible)
+    ///
+    /// @param PrivilegeName
+    /// @return Result<bool> true if the privilege was added (false, not added). ErrorCode otherwise
+    ///
+    Result<bool>
+    AddPrivilege(std::wstring const& PrivilegeName);
+
+    ///
+    /// @brief  a privilege to the process (if possible)
+    ///
+    /// @param PrivilegeName
+    /// @return Result<bool> true if the privilege is acquired (false if not).  ErrorCode otherwise
+    ///
+    Result<bool>
+    HasPrivilege(std::wstring const& PrivilegeName);
+
+    Memory Memory;
+
 private:
-    u32 m_pid;
-    u32 m_ppid;
-    std::wstring m_path;
-    Integrity m_integrity_level;
-    Memory m_memory;
-    SharedHandle m_process_handle;
-    Privileges m_privileges;
-    bool m_kill_on_delete;
-    bool m_is_self;
-    PPEB m_peb;
-    PTEB m_teb;
+    u32 m_Pid;
+    u32 m_Ppid;
+    std::wstring m_Path;
+    Integrity m_IntegrityLevel;
+    SharedHandle m_ProcessHandle;
+    Privileges m_Privileges;
+    bool m_KillOnClose;
+    bool m_IsSelf;
+    PPEB m_Peb;
+    PTEB m_Teb;
 };
 
 
+///
+/// @brief Returns a basic list of processes, in a vector of tuple <ProcessName, PID>
+///
+/// @return std::vector<std::tuple<std::wstring, u32>>
+///
 PWNAPI auto
-pid() -> u32;
-
-PWNAPI auto
-ppid() -> std::optional<u32>;
-
-PWNAPI auto
-list() -> std::vector<std::tuple<std::wstring, u32>>;
-
-PWNAPI auto
-get_integrity_level(const u32 pid = -1) -> Process::Integrity;
+Processes() -> std::vector<std::tuple<std::wstring, u32>>;
 
 PWNAPI auto
 execv(const std::wstring_view& CommandLine, const u32 ParentPid = 0) -> Result<std::tuple<HANDLE, HANDLE>>;
@@ -137,26 +165,9 @@ _Success_(return )
 PWNAPI auto
 system(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operation = L"open") -> bool;
 
-_Success_(return )
-PWNAPI auto
-kill(_In_ u32 dwProcessPid) -> bool;
-
-_Success_(return )
-PWNAPI auto
-kill(_In_ HANDLE hProcess) -> bool;
-
 _Success_(return != nullptr)
 PWNAPI auto
 cmd() -> HANDLE;
-
-
-_Success_(return )
-PWNAPI auto
-add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_ u32 dwPid = 0) -> bool;
-
-_Success_(return )
-PWNAPI auto
-has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt_ u32 dwPid = 0) -> bool;
 
 
 namespace appcontainer

@@ -4,98 +4,101 @@
 #include "log.hpp"
 #include "utils.hpp"
 
-_Success_(return != std::nullopt)
-auto
-pwn::windows::thread::get_name(_In_ i32 dwThreadId) -> std::optional<std::wstring>
+
+Result<std::wstring>
+pwn::windows::Thread::Name()
 {
-    HANDLE ThreadHandle = INVALID_HANDLE_VALUE;
-
-    if ( dwThreadId == -1 )
+    //
+    // Is name in cache, just return it
+    //
+    if ( m_Name.has_value() )
     {
-        ThreadHandle = ::GetCurrentThread();
-    }
-    else
-    {
-        ThreadHandle = ::OpenThread(THREAD_QUERY_LIMITED_INFORMATION, 0, dwThreadId);
+        return Ok(m_Name.value());
     }
 
-    auto hThread = pwn::UniqueHandle {ThreadHandle};
+    //
+    // Otherwise invoke NtQueryInformationThread(ThreadNameInformation)
+    //
+    auto hThread = pwn::UniqueHandle {::OpenThread(THREAD_QUERY_LIMITED_INFORMATION, 0, m_Tid)};
     if ( !hThread )
     {
-        return std::nullopt;
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    UNICODE_STRING us    = {0};
-    ULONG ReturnedLength = 0;
-    auto Status          = ::NtQueryInformationThread(
-        hThread.get(),
-        (THREADINFOCLASS)ThreadNameInformation,
-        &us,
-        sizeof(UNICODE_STRING),
-        &ReturnedLength);
+    NTSTATUS Status              = STATUS_UNSUCCESSFUL;
+    ULONG CurrentSize            = sizeof(UNICODE_STRING);
+    ULONG ReturnedSize           = 0;
+    std::unique_ptr<u8[]> Buffer = nullptr;
 
-    // empty value ?
-    if ( NT_SUCCESS(Status) )
+    do
     {
-        return std::nullopt;
-    }
+        Buffer = std::make_unique<u8[]>(CurrentSize);
+        Status =
+            ::NtQueryInformationThread(hThread.get(), ThreadNameInformation, Buffer.get(), CurrentSize, &ReturnedSize);
 
-    // buffer too small ?
-    if ( Status != STATUS_BUFFER_TOO_SMALL || ReturnedLength < sizeof(UNICODE_STRING) )
-    {
-        pwn::log::ntperror(L"NtQueryInformationThread1()", Status);
-        return std::nullopt;
-    }
+        if ( NT_SUCCESS(Status) )
+        {
+            //
+            // No name
+            //
+            if ( ReturnedSize == 0 )
+            {
+                return Ok(L"");
+            }
 
-    auto buffer = std::make_unique<u8[]>(ReturnedLength);
+            //
+            // Otherwise, a name was found
+            //
+            break;
+        }
 
-    Status = ::NtQueryInformationThread(
-        hThread.get(),
-        (THREADINFOCLASS)ThreadNameInformation,
-        buffer.get(),
-        ReturnedLength,
-        nullptr);
-    if ( !NT_SUCCESS(Status) )
-    {
-        pwn::log::ntperror(L"NtQueryInformationThread2()", Status);
-        return std::nullopt;
-    }
+        //
+        // If there's a name, expect STATUS_BUFFER_TOO_SMALL
+        //
+        if ( Status != STATUS_BUFFER_TOO_SMALL )
+        {
+            pwn::log::ntperror(L"NtQueryInformationThread(ThreadNameInformation)", Status);
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
 
-    auto u = reinterpret_cast<PUNICODE_STRING>(buffer.get());
-    return std::wstring(u->Buffer, u->Length / sizeof(wchar_t));
+        CurrentSize = ReturnedSize;
+    } while ( true );
+
+    //
+    // Create a wstring from the UNICODE_STRING pointer
+    //
+    const PUNICODE_STRING usThreadName = reinterpret_cast<PUNICODE_STRING>(Buffer.get());
+    return Ok(std::wstring(usThreadName->Buffer, usThreadName->Length / sizeof(wchar_t)));
 }
 
 
-_Success_(return )
-auto
-pwn::windows::thread::set_name(_In_ std::wstring const& name, _In_ i32 dwThreadId) -> bool
+Result<bool>
+pwn::windows::Thread::Name(std::wstring const& name)
 {
-    HANDLE ThreadHandle = INVALID_HANDLE_VALUE;
-
-    if ( dwThreadId == -1 )
-    {
-        ThreadHandle = ::GetCurrentThread();
-    }
-    else
-    {
-        ThreadHandle = ::OpenThread(THREAD_SET_LIMITED_INFORMATION, 0, dwThreadId);
-    }
-
-    auto hThread = pwn::UniqueHandle {ThreadHandle};
+    auto hThread = pwn::UniqueHandle {::OpenThread(THREAD_SET_LIMITED_INFORMATION, 0, m_Tid)};
     if ( !hThread )
     {
-        return false;
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
     if ( name.size() >= 0xffff )
     {
-        return false;
+        return Err(ErrorCode::BufferTooBig);
     }
 
-    UNICODE_STRING us = {0};
-    ::RtlInitUnicodeString(&us, (PWSTR)name.c_str());
+    // TODO: check if version >=  win10-1607
 
-    auto Status = ::NtSetInformationThread(hThread.get(), ThreadNameInformation, &us, sizeof(UNICODE_STRING));
+    //
+    // Set the thread name
+    //
+    UNICODE_STRING usThreadName = {0};
+    ::RtlInitUnicodeString(&usThreadName, (PWSTR)name.c_str());
+    auto Status = ::NtSetInformationThread(hThread.get(), ThreadNameInformation, &usThreadName, sizeof(UNICODE_STRING));
+    if ( NT_SUCCESS(Status) )
+    {
+        return Ok(true);
+    }
 
-    return !!(Status == STATUS_SUCCESS);
+    pwn::log::ntperror(L"NtSetInformationThread(ThreadNameInformation) failed", Status);
+    return Err(ErrorCode::ExternalApiCallFailed);
 }

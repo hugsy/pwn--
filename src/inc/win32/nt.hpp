@@ -35,7 +35,7 @@ https://github.com/processhacker/processhacker/blob/89fe55ce6a25f57e5a72a649c7a1
 /*++
 THREAD_INFORMATION_CLASS
 --*/
-#define ThreadNameInformation (THREADINFOCLASS)38
+#define ThreadNameInformation ((THREADINFOCLASS)38)
 /* EndOf(THREAD_INFORMATION_CLASS) */
 
 

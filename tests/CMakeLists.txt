@@ -16,7 +16,6 @@ set(
     ${COMMON_TEST_DIR}/pwn_assm_disasm.cpp
 )
 
-
 if(MSVC)
     set(TEST_DIR ${COMMON_TEST_DIR}/win32)
     set(
@@ -40,11 +39,9 @@ else()
     add_compile_definitions(_GNU_SOURCE=1)
 endif(MSVC)
 
-
 if(NOT PWN_INCLUDE_DISASSEMBLER)
     add_compile_definitions(PWN_NO_DISASSEMBLER)
 endif()
-
 
 if(NOT PWN_INCLUDE_ASSEMBLER)
     add_compile_definitions(PWN_NO_ASSEMBLER)
@@ -61,15 +58,15 @@ add_test(
 set_target_properties(
     tests
     PROPERTIES
-    CXX_STANDARD 23
+    CXX_STANDARD 20
 )
 
-target_compile_features(tests PRIVATE cxx_std_23)
+target_compile_features(tests PRIVATE cxx_std_20)
 target_include_directories(tests PUBLIC ${TEST_DIR} $<TARGET_PROPERTY:pwn++,INCLUDE_DIRECTORIES>)
 target_link_libraries(tests PRIVATE $<TARGET_LINKER_FILE:pwn++>)
 
 add_custom_command(
     TARGET tests POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:pwn++> $<TARGET_FILE_DIR:tests>
+    $<TARGET_FILE:pwn++> $<TARGET_FILE_DIR:tests>
 )

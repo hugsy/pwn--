@@ -65,7 +65,11 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     pwn::globals.set(pwn::log::log_level_t::LOG_DEBUG);
 
-    if ( false == pwn::windows::process::add_privilege(L"SeSystemEnvironmentPrivilege") )
+    //
+    // Get the current process
+    //
+    pwn::windows::process::Process P {};
+    if ( Failed(P.AddPrivilege(L"SeSystemEnvironmentPrivilege")) )
     {
         err(L"failed to acquire `SeSystemEnvironmentPrivilege` ");
         return -1;
@@ -112,13 +116,13 @@ wmain(const int argc, const wchar_t** argv) -> int
     info(L"Current UnlockId:");
     pwn::utils::hexdump(value);
 
-
+    /*
     if ( false == pwn::windows::process::add_privilege(L"SeSystemEnvironmentPrivilege") )
     {
         err(L"failed to acquire `SeSystemEnvironmentPrivilege` ");
         return -1;
     }
-
+    */
 
     u8 b[0x20];
     memset(b, 'A', __countof(b));
@@ -191,7 +195,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     // dbg(L"started self");
     // {
     //     auto p = pwn::windows::process::Process();
-    //     info(L"pid={}, ppid={}, cmdline='{}' integrity={}", p.pid(), p.ppid(), p.path().c_str(), p.integrity());
+    //     info(L"pid={}, ppid={}, cmdline='{}' integrity={}", p.pid(), p.ppid(), p.Path().c_str(), p.integrity());
 
     //     auto res = p.memory().allocate(0x1000);
     //     if ( Success(res) )
@@ -215,7 +219,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     //         if ( pids.size() > 0 )
     //         {
     //             auto p = pwn::windows::process::Process(pids.front());
-    //             info(L"pid={}, ppid={}, cmdline='{}' integrity={}", p.pid(), p.ppid(), p.path().c_str(),
+    //             info(L"pid={}, ppid={}, cmdline='{}' integrity={}", p.pid(), p.ppid(), p.Path().c_str(),
     //             p.integrity()); info(L"TEB={:#x}, PEB={:#x}", (PVOID)p.teb(), (PVOID)p.peb());
     //         }
     //     }

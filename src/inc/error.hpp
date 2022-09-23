@@ -18,12 +18,18 @@ enum class ErrorCode
 {
     GenericError,
     RuntimeError,
+    PermissionDenied,
+    InvalidProcess,
+    InvalidThread,
+    InvalidObject,
     InvalidInput,
     InvalidParameter,
     UnexpectedType,
     ArithmeticError,
     OverflowError,
     UnderflowError,
+    BufferTooBig,
+    BufferTooSmall,
     IllegalValue,
     NotImplementedError,
     PendingIoError,
@@ -33,6 +39,10 @@ enum class ErrorCode
     ServiceError,
     FilesystemError,
     AlpcError,
+    AllocationError,
+    ExternalApiCallFailed,
+    ExternalError,
+    PartialResult,
 };
 
 ///

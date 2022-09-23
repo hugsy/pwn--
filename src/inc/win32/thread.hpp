@@ -7,7 +7,6 @@
 
 extern "C"
 {
-
     NTSTATUS
     NTAPI
     NtSetInformationThread(
@@ -26,14 +25,42 @@ extern "C"
 }
 
 
-namespace pwn::windows::thread
+namespace pwn::windows
 {
-_Success_(return != std::nullopt)
-PWNAPI auto
-get_name(_In_ i32 dwThreadId = -1) -> std::optional<std::wstring>;
 
-_Success_(return )
-PWNAPI auto
-set_name(_In_ std::wstring const& name, _In_ i32 dwThreadId = -1) -> bool;
+class Thread
+{
+public:
+    Thread(u32 Tid = ::GetCurrentThreadId()) : m_Tid(Tid), m_Teb(0)
+    {
+    }
 
-} // namespace pwn::windows::thread
+    ~Thread()
+    {
+    }
+
+    ///
+    /// @brief Get the thread name
+    ///
+    /// @return std::optional<std::wstring>
+    ///
+    Result<std::wstring>
+    Name();
+
+    ///
+    /// @brief Set the thread name
+    ///
+    /// @param NewName
+    /// @return true
+    /// @return false
+    ///
+    Result<bool>
+    Name(std::wstring const& NewName);
+
+private:
+    u32 m_Tid;
+    uptr m_Teb;
+    std::optional<std::wstring> m_Name;
+};
+
+} // namespace pwn::windows

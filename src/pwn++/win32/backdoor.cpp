@@ -214,7 +214,7 @@ pwn_utils_hexdump(lua_State* l)
 int
 pwn_process_pid(lua_State* l)
 {
-    lua_pushinteger(l, pwn::windows::process::pid());
+    lua_pushinteger(l, ::GetCurrentProcessId());
     return 1;
 }
 } // namespace lua

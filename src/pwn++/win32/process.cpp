@@ -93,7 +93,7 @@ Process::Memory::Memory(SharedHandle h) : m_process_handle(h)
 }
 
 auto
-Process::Memory::read(uptr const Address, usize Length) -> Result<std::vector<u8>>
+Process::Memory::Read(uptr const Address, usize Length) -> Result<std::vector<u8>>
 {
     auto out = std::vector<u8>(Length);
     size_t dwNbRead;
@@ -104,7 +104,7 @@ Process::Memory::read(uptr const Address, usize Length) -> Result<std::vector<u8
              Length,
              &dwNbRead) == false )
     {
-        perror(L"ReadProcessMemory()");
+        log::perror(L"ReadProcessMemory()");
         return Err(ErrorCode::RuntimeError);
     }
 
@@ -112,15 +112,15 @@ Process::Memory::read(uptr const Address, usize Length) -> Result<std::vector<u8
 }
 
 auto
-Process::Memory::memset(uptr const address, const size_t size, const u8 val) -> Result<usize>
+Process::Memory::Memset(uptr const address, const size_t size, const u8 val) -> Result<usize>
 {
     auto data = std::vector<u8>(size);
     std::fill(data.begin(), data.end(), val);
-    return write(address, data);
+    return Write(address, data);
 }
 
 auto
-Process::Memory::write(uptr const Address, std::vector<u8> data) -> Result<usize>
+Process::Memory::Write(uptr const Address, std::vector<u8> data) -> Result<usize>
 {
     size_t dwNbWritten;
     if ( ::WriteProcessMemory(
@@ -130,7 +130,7 @@ Process::Memory::write(uptr const Address, std::vector<u8> data) -> Result<usize
              data.size(),
              &dwNbWritten) != false )
     {
-        perror(L"WriteProcessMemory()");
+        log::perror(L"WriteProcessMemory()");
         return Err(ErrorCode::RuntimeError);
     }
 
@@ -138,7 +138,7 @@ Process::Memory::write(uptr const Address, std::vector<u8> data) -> Result<usize
 }
 
 auto
-Process::Memory::allocate(const size_t Size, const wchar_t Permission[3], const uptr ForcedMappingAddress)
+Process::Memory::allocate(const size_t Size, const wchar_t Permission[3], const uptr ForcedMappingAddress, bool wipe)
     -> Result<uptr>
 {
     u32 flProtect = 0;
@@ -158,6 +158,7 @@ Process::Memory::allocate(const size_t Size, const wchar_t Permission[3], const 
     {
         flProtect |= PAGE_EXECUTE_READWRITE;
     }
+
     auto buffer = (uptr)::VirtualAllocEx(
         m_process_handle->get(),
         nullptr,
@@ -166,10 +167,14 @@ Process::Memory::allocate(const size_t Size, const wchar_t Permission[3], const 
         flProtect ? flProtect : PAGE_GUARD);
     if ( buffer == 0u )
     {
-        return Err();
+        return Err(ErrorCode::AllocationError);
     }
 
-    memset(buffer, Size, 0x00);
+    if ( wipe )
+    {
+        Memset(buffer, Size, 0x00);
+    }
+
     return Ok(buffer);
 }
 
@@ -184,112 +189,98 @@ Process::Process() : Process(::GetCurrentProcessId(), false)
 {
 }
 
-Process::Process(u32 pid, bool kill_on_delete) :
-    m_pid(pid),
-    m_kill_on_delete(kill_on_delete),
-    m_peb(nullptr),
-    m_teb(nullptr),
-    m_privileges()
+Process::Process(u32 pid, bool kill_on_delete) : m_Pid(pid), m_Peb(nullptr), m_Teb(nullptr), m_Privileges()
 {
-    m_is_self = (m_pid == ::GetCurrentProcessId());
+    m_IsSelf      = (m_Pid == ::GetCurrentProcessId());
+    m_KillOnClose = m_IsSelf ? false : kill_on_delete;
 
     // Process PPID
     {
         auto ppid = pwn::windows::system::ppid(pid);
-        m_ppid    = ppid ? ppid.value() : -1;
+        m_Ppid    = ppid ? ppid.value() : -1;
     }
 
     // Full path
     {
-        m_process_handle = std::make_shared<pwn::UniqueHandle>(::OpenProcess(MAXIMUM_ALLOWED, false, pid));
-        m_memory         = Memory(m_process_handle);
+        auto hProcess   = pwn::UniqueHandle {::OpenProcess(MAXIMUM_ALLOWED, false, m_Pid)};
+        m_ProcessHandle = std::make_shared<UniqueHandle>(std::move(hProcess));
+        Memory          = Memory::Memory(m_ProcessHandle);
 
         wchar_t exeName[MAX_PATH] = {0};
         DWORD size                = __countof(exeName);
-        DWORD count               = ::QueryFullProcessImageName(m_process_handle->get(), 0, exeName, &size);
+        DWORD count               = ::QueryFullProcessImageName(m_ProcessHandle->get(), 0, exeName, &size);
 
-        m_path = std::wstring {exeName};
+        m_Path = std::wstring {exeName};
     }
 
     // Integrity
+    if ( Failed(IntegrityLevel()) )
     {
-        m_integrity_level = m_is_self ? get_integrity_level() : get_integrity_level(pid);
+        err(L"Failed to retrieve the integrity level");
     }
 }
 
 Process::~Process()
 {
-    if ( m_kill_on_delete )
+    if ( m_KillOnClose && !m_IsSelf )
     {
-        ::TerminateProcess(m_process_handle->get(), EXIT_FAILURE);
-        ::WaitForSingleObject(m_process_handle->get(), INFINITE);
+        ::TerminateProcess(m_ProcessHandle->get(), EXIT_FAILURE);
+        ::WaitForSingleObject(m_ProcessHandle->get(), INFINITE);
     }
 }
 
 u32 const
-Process::ppid() const
+Process::ParentProcessId() const
 {
-    return m_ppid;
+    return m_Ppid;
 }
 
 u32 const
-Process::pid() const
+Process::ProcessId() const
 {
-    return m_pid;
+    return m_Pid;
 }
 
 fs::path const
-Process::path() const
+Process::Path() const
 {
-    return fs::path {m_path};
-}
-
-Process::Integrity const
-Process::integrity() const
-{
-    return m_integrity_level;
-}
-
-Process::Memory&
-Process::memory()
-{
-    return m_memory;
+    return fs::path {m_Path};
 }
 
 const HANDLE
 Process::handle() const
 {
-    return m_process_handle->get();
+    return m_ProcessHandle->get();
 }
 
 PPEB
 Process::peb()
 {
-    if ( !m_peb )
+    if ( !m_Peb )
     {
-        auto res = memory().read((uptr)(teb() + FIELD_OFFSET(TEB, ProcessEnvironmentBlock)), sizeof(uptr));
+        auto res = Memory.Read((uptr)(teb() + FIELD_OFFSET(TEB, ProcessEnvironmentBlock)), sizeof(uptr));
         if ( Success(res) )
         {
             auto val = Value(res);
-            m_peb    = (PPEB)val.data();
+            m_Peb    = (PPEB)val.data();
         }
 
-        if ( !m_peb )
+        if ( !m_Peb )
         {
             throw std::runtime_error("PEB could not be set");
         }
     }
-    return m_peb;
+    return m_Peb;
 }
 
 PTEB
 Process::teb()
 {
-    if ( !m_teb )
+    if ( !m_Teb )
     {
-        if ( m_is_self )
+        if ( m_IsSelf )
         {
-            m_teb = NtCurrentTeb();
+            m_Teb = NtCurrentTeb();
         }
         else
         {
@@ -303,53 +294,51 @@ Process::teb()
                 0xc3 // ret
                 // clang-format on
             };
-            auto const ptr = Value(memory().allocate(0x1000, L"rwx"));
-            memory().write(ptr, sc);
+            auto const ptr = Value(Memory.allocate(0x1000, L"rwx"));
+            Memory.Write(ptr, sc);
 
             {
                 DWORD ExitCode = 0;
-                auto hProcess  = std::make_unique<pwn::UniqueHandle>(::CreateRemoteThreadEx(
-                    m_process_handle->get(),
+                auto hProcess  = pwn::UniqueHandle {::CreateRemoteThreadEx(
+                    m_ProcessHandle->get(),
                     nullptr,
                     0,
                     reinterpret_cast<LPTHREAD_START_ROUTINE>(ptr),
                     nullptr,
                     0,
                     nullptr,
-                    nullptr));
+                    nullptr)};
 
                 ::WaitForSingleObject(hProcess.get(), INFINITE);
                 if ( ::GetExitCodeThread(hProcess.get(), &ExitCode) && ExitCode == 1 )
                 {
-                    auto res = memory().read(ptr + 0x80, sizeof(uptr));
+                    auto res = Memory.Read(ptr + 0x80, sizeof(uptr));
                     if ( Success(res) )
                     {
-                        m_teb = ((PTEB)Value(res).data());
+                        m_Teb = ((PTEB)Value(res).data());
                     }
                 }
             }
-            memory().free(ptr);
+            Memory.free(ptr);
         }
 
-        if ( !m_teb )
+        if ( !m_Teb )
         {
             throw std::runtime_error("TEB could not be set");
         }
     }
-    return m_teb;
+    return m_Teb;
 }
 
 
 auto
 Process::enumerate_privileges() -> bool
 {
-    auto hToken = std::make_unique<pwn::UniqueHandle>(
+    auto hToken = pwn::UniqueHandle(
         [&]() -> HANDLE
         {
             HANDLE hProcessToken = nullptr;
-            if ( ::OpenProcessToken(m_process_handle->get(), TOKEN_QUERY, &hProcessToken) )
-                return hProcessToken;
-            return nullptr;
+            return (::OpenProcessToken(m_ProcessHandle->get(), TOKEN_QUERY, &hProcessToken)) ? hProcessToken : nullptr;
         }());
 
     if ( !hToken )
@@ -389,11 +378,11 @@ Process::enumerate_privileges() -> bool
 auto
 Process::is_elevated() -> bool
 {
-    auto hToken = std::make_unique<pwn::UniqueHandle>(
+    auto hToken = pwn::UniqueHandle(
         [&]() -> HANDLE
         {
             HANDLE hProcessToken = nullptr;
-            if ( ::OpenProcessToken(m_process_handle->get(), TOKEN_QUERY, &hProcessToken) )
+            if ( ::OpenProcessToken(m_ProcessHandle->get(), TOKEN_QUERY, &hProcessToken) )
                 return hProcessToken;
             return nullptr;
         }());
@@ -444,23 +433,24 @@ operator<<(std::wostream& wos, const Process::Integrity i)
     return wos;
 }
 
-
-auto
-pid() -> u32
+Result<bool>
+Process::Kill()
 {
-    return ::GetCurrentProcessId();
+    auto hProcess = pwn::UniqueHandle {::OpenProcess(PROCESS_TERMINATE, false, m_Pid)};
+    if ( !hProcess )
+    {
+        pwn::log::perror(L"OpenProcess() failed");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    dbg(L"attempting to kill {} (pid={})", hProcess.get(), m_Pid);
+    bool bRes = (::TerminateProcess(hProcess.get(), EXIT_FAILURE) == TRUE);
+    return Ok(bRes);
 }
 
 
 auto
-ppid() -> std::optional<u32>
-{
-    return pwn::windows::system::ppid(pid());
-}
-
-
-auto
-list() -> std::vector<std::tuple<std::wstring, u32>>
+Processes() -> std::vector<std::tuple<std::wstring, u32>>
 {
     u16 maxCount = 256;
     std::unique_ptr<DWORD[]> pids;
@@ -506,90 +496,172 @@ list() -> std::vector<std::tuple<std::wstring, u32>>
 }
 
 
-auto
-get_integrity_level(const u32 pid) -> Process::Integrity
+Result<Process::Integrity>
+Process::IntegrityLevel()
 {
-    auto IntegrityLevel  = Process::Integrity::Unknown;
-    u32 dwRes            = ERROR_SUCCESS;
-    u32 dwIntegrityLevel = SECURITY_MANDATORY_MEDIUM_RID;
-    DWORD dwProcessId    = (pid == -1) ? ::GetCurrentProcessId() : pid;
-
-    do
+    //
+    // Check from the cache
+    //
+    if ( m_IntegrityLevel != Process::Integrity::Unknown )
     {
-        pwn::UniqueHandle hProcessToken;
-        pwn::UniqueHandle hProcessHandle;
+        return Ok(m_IntegrityLevel);
+    }
 
+    //
+    // Otherwise try to determine it
+    //
+    auto hProcessHandle = pwn::UniqueHandle {::OpenProcess(PROCESS_QUERY_INFORMATION, false, m_Pid)};
+    if ( !hProcessHandle )
+    {
+        return Err(ErrorCode::InvalidProcess);
+    }
+
+    pwn::UniqueHandle hProcessToken;
+    {
+        HANDLE h;
+        hProcessToken = pwn::UniqueHandle {
+            (::OpenProcessToken(hProcessHandle.get(), TOKEN_ADJUST_PRIVILEGES, &h) == TRUE) ? h : nullptr};
+    }
+    if ( !hProcessToken )
+    {
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    DWORD dwLengthNeeded = 0;
+    if ( (::GetTokenInformation(hProcessToken.get(), TokenIntegrityLevel, nullptr, 0, &dwLengthNeeded) == false) ||
+         (::GetLastError() != ERROR_INSUFFICIENT_BUFFER) )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    auto pTokenBuffer = std::make_unique<TOKEN_MANDATORY_LABEL[]>(dwLengthNeeded);
+    if ( ::GetTokenInformation(
+             hProcessToken.get(),
+             TokenIntegrityLevel,
+             pTokenBuffer.get(),
+             dwLengthNeeded,
+             &dwLengthNeeded) == false )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    u32 dwIntegrityLevel = *::GetSidSubAuthority(
+        pTokenBuffer.get()->Label.Sid,
+        (u32)(UCHAR)(*::GetSidSubAuthorityCount(pTokenBuffer.get()->Label.Sid) - 1));
+
+    if ( dwIntegrityLevel == SECURITY_MANDATORY_LOW_RID )
+    {
+        m_IntegrityLevel = Process::Integrity::Low;
+    }
+    else if ( SECURITY_MANDATORY_MEDIUM_RID <= dwIntegrityLevel && dwIntegrityLevel < SECURITY_MANDATORY_HIGH_RID )
+    {
+        m_IntegrityLevel = Process::Integrity::Medium;
+    }
+    else if ( dwIntegrityLevel == SECURITY_MANDATORY_HIGH_RID )
+    {
+        m_IntegrityLevel = Process::Integrity::High;
+    }
+    else if ( dwIntegrityLevel == SECURITY_MANDATORY_SYSTEM_RID )
+    {
+        m_IntegrityLevel = Process::Integrity::System;
+    }
+
+    return m_IntegrityLevel;
+}
+
+
+Result<bool>
+Process::AddPrivilege(std::wstring const& PrivilegeName)
+{
+    auto hProcess = pwn::UniqueHandle {::OpenProcess(PROCESS_QUERY_INFORMATION, 0, m_Pid)};
+    if ( !hProcess )
+    {
+        return Err(ErrorCode::GenericError);
+    }
+
+    pwn::UniqueHandle hToken;
+    {
+        HANDLE h;
+        hToken =
+            pwn::UniqueHandle {(::OpenProcessToken(hProcess.get(), TOKEN_ADJUST_PRIVILEGES, &h) == TRUE) ? h : nullptr};
+    }
+
+    LUID Luid = {0};
+
+    if ( ::LookupPrivilegeValueW(nullptr, PrivilegeName.c_str(), &Luid) == false )
+    {
+        return Err(ErrorCode::GenericError);
+    }
+
+    size_t nBufferSize                 = sizeof(TOKEN_PRIVILEGES) + 1 * sizeof(LUID_AND_ATTRIBUTES);
+    auto buffer                        = std::make_unique<u8[]>(nBufferSize);
+    auto NewState                      = (PTOKEN_PRIVILEGES)buffer.get();
+    NewState->PrivilegeCount           = 1;
+    NewState->Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+    NewState->Privileges[0].Luid       = Luid;
+
+    if ( ::AdjustTokenPrivileges(hToken.get(), FALSE, NewState, 0, (PTOKEN_PRIVILEGES) nullptr, (PDWORD) nullptr) ==
+         FALSE )
+    {
+        if ( ::GetLastError() == ERROR_NOT_ALL_ASSIGNED )
         {
-            hProcessHandle = pwn::UniqueHandle {::OpenProcess(PROCESS_QUERY_INFORMATION, false, dwProcessId)};
-            if ( !hProcessHandle )
-            {
-                dwRes = ::GetLastError();
-                break;
-            }
+            return Err(ErrorCode::PartialResult);
         }
 
-        {
-            HANDLE hToken;
-            if ( ::OpenProcessToken(hProcessHandle.get(), TOKEN_QUERY, &hToken) == 0 )
-            {
-                dwRes = ::GetLastError();
-                break;
-            }
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
 
-            hProcessToken = pwn::UniqueHandle {hToken};
-        }
+    return Ok(true);
+}
 
 
-        DWORD dwLengthNeeded = 0;
+Result<bool>
+Process::HasPrivilege(std::wstring const& PrivilegeName)
+{
+    LUID Luid = {0};
 
-        if ( ::GetTokenInformation(hProcessToken.get(), TokenIntegrityLevel, nullptr, 0, &dwLengthNeeded) == 0 )
-        {
-            dwRes = ::GetLastError();
-            if ( dwRes != ERROR_INSUFFICIENT_BUFFER )
-            {
-                dwRes = ::GetLastError();
-                break;
-            }
-        }
-
-        auto pTokenBuffer = std::make_unique<TOKEN_MANDATORY_LABEL[]>(dwLengthNeeded);
-        if ( ::GetTokenInformation(
-                 hProcessToken.get(),
-                 TokenIntegrityLevel,
-                 pTokenBuffer.get(),
-                 dwLengthNeeded,
-                 &dwLengthNeeded) == 0 )
-        {
-            if ( ::GetLastError() != ERROR_INSUFFICIENT_BUFFER )
-            {
-                break;
-            }
-        }
+    auto hProcess = pwn::UniqueHandle {::OpenProcess(PROCESS_QUERY_INFORMATION, 0, m_Pid)};
+    if ( !hProcess )
+    {
+        return Err(ErrorCode::GenericError);
+    }
 
 
-        dwIntegrityLevel = *::GetSidSubAuthority(
-            pTokenBuffer.get()->Label.Sid,
-            (u32)(UCHAR)(*::GetSidSubAuthorityCount(pTokenBuffer.get()->Label.Sid) - 1));
+    dbg(L"Checking for '{}' for PID=%d...\n", PrivilegeName.c_str(), m_Pid);
 
-        if ( dwIntegrityLevel == SECURITY_MANDATORY_LOW_RID )
-        {
-            IntegrityLevel = Process::Integrity::Low;
-        }
-        else if ( SECURITY_MANDATORY_MEDIUM_RID <= dwIntegrityLevel && dwIntegrityLevel < SECURITY_MANDATORY_HIGH_RID )
-        {
-            IntegrityLevel = Process::Integrity::Medium;
-        }
-        else if ( dwIntegrityLevel == SECURITY_MANDATORY_HIGH_RID )
-        {
-            IntegrityLevel = Process::Integrity::High;
-        }
-        else if ( dwIntegrityLevel == SECURITY_MANDATORY_SYSTEM_RID )
-        {
-            IntegrityLevel = Process::Integrity::System;
-        }
-    } while ( 0 );
+    if ( ::LookupPrivilegeValueW(nullptr, PrivilegeName.c_str(), &Luid) == false )
+    {
+        log::perror(L"LookupPrivilegeValue");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
 
-    return IntegrityLevel;
+    LUID_AND_ATTRIBUTES PrivAttr = {{0}};
+    PrivAttr.Luid                = Luid;
+    PrivAttr.Attributes          = SE_PRIVILEGE_ENABLED | SE_PRIVILEGE_ENABLED_BY_DEFAULT;
+
+    PRIVILEGE_SET PrivSet  = {0};
+    PrivSet.PrivilegeCount = 1;
+    PrivSet.Privilege[0]   = PrivAttr;
+
+    pwn::UniqueHandle hToken;
+    {
+        HANDLE h;
+        hToken =
+            pwn::UniqueHandle {(::OpenProcessToken(hProcess.get(), TOKEN_ADJUST_PRIVILEGES, &h) == TRUE) ? h : nullptr};
+    }
+    if ( !hToken )
+    {
+        return Err(ErrorCode::GenericError);
+    }
+
+    BOOL bHasPriv;
+    if ( ::PrivilegeCheck(hToken.get(), &PrivSet, &bHasPriv) == FALSE )
+    {
+        log::perror(L"LookupPrivilegeValue");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    return Ok(bHasPriv == TRUE);
 }
 
 
@@ -686,30 +758,6 @@ system(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operatio
 }
 
 
-_Success_(return )
-auto
-kill(_In_ u32 dwProcessPid) -> bool
-{
-    HANDLE hProcess = ::OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessPid);
-    if ( hProcess == nullptr )
-    {
-        return FALSE;
-    }
-    return kill(hProcess);
-}
-
-
-_Success_(return )
-auto
-kill(_In_ HANDLE hProcess) -> bool
-{
-    dbg(L"attempting to kill {} (pid={})", hProcess, ::GetProcessId(hProcess));
-    bool res = ::TerminateProcess(hProcess, EXIT_FAILURE);
-    ::CloseHandle(hProcess);
-    return res;
-}
-
-
 _Success_(return != nullptr)
 auto
 cmd() -> HANDLE
@@ -720,149 +768,6 @@ cmd() -> HANDLE
         return std::get<0>(Value(res));
     }
     return INVALID_HANDLE_VALUE;
-}
-
-
-_Success_(return )
-auto
-add_privilege(_In_ const wchar_t* lpszPrivilegeName, _In_opt_ u32 dwPid) -> bool
-{
-    HANDLE hToken = INVALID_HANDLE_VALUE;
-    bool bRes     = FALSE;
-
-    HANDLE hProcess = dwPid != 0u ? ::OpenProcess(PROCESS_QUERY_INFORMATION, 0, dwPid) : ::GetCurrentProcess();
-    if ( hProcess == nullptr )
-    {
-        perror(L"OpenProcess()");
-        return false;
-    }
-
-    bRes = ::OpenProcessToken(hProcess, TOKEN_ADJUST_PRIVILEGES, &hToken);
-    if ( bRes != 0 )
-    {
-        LUID Luid = {
-            0,
-        };
-
-        bRes = ::LookupPrivilegeValue(nullptr, lpszPrivilegeName, &Luid);
-        if ( bRes != 0 )
-        {
-            size_t nBufferSize = sizeof(TOKEN_PRIVILEGES) + 1 * sizeof(LUID_AND_ATTRIBUTES);
-            auto buffer        = std::make_unique<u8[]>(nBufferSize);
-            if ( buffer )
-            {
-                auto NewState                      = (PTOKEN_PRIVILEGES)buffer.get();
-                NewState->PrivilegeCount           = 1;
-                NewState->Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-                NewState->Privileges[0].Luid       = Luid;
-
-                bRes = static_cast<bool>(
-                    ::AdjustTokenPrivileges(
-                        hToken,
-                        FALSE,
-                        NewState,
-                        0,
-                        (PTOKEN_PRIVILEGES) nullptr,
-                        (PDWORD) nullptr) != 0);
-
-                if ( bRes != 0 )
-                {
-                    bRes = static_cast<bool>(::GetLastError() != ERROR_NOT_ALL_ASSIGNED);
-                }
-            }
-        }
-
-        CloseHandle(hToken);
-    }
-
-    if ( hProcess != nullptr )
-    {
-        ::CloseHandle(hProcess);
-    }
-
-    return bRes;
-}
-
-
-/*++
-Routine Description:
-    Simple helper function to check a privilege by name on the current process.
-
-Arguments:
-    lpszPrivilegeName - the name (as a wide string) of the privilege
-    dwPid - opt - the pid of the process to query (if not provided, use current process)
-
-Return Value:
-    Returns TRUE if the current has the privilege
---*/
-_Success_(return )
-auto
-has_privilege(_In_ const wchar_t* lpwszPrivilegeName, _In_opt_ u32 dwPid) -> bool
-{
-    LUID Luid = {
-        0,
-    };
-    BOOL bRes     = FALSE;
-    BOOL bHasPriv = FALSE;
-    HANDLE hToken = nullptr;
-
-    if ( dwPid == 0u )
-    {
-        dwPid = ::GetCurrentProcessId();
-    }
-
-    auto hProcess = pwn::UniqueHandle {::OpenProcess(PROCESS_QUERY_INFORMATION, 0, dwPid)};
-    if ( !hProcess )
-    {
-        perror(L"OpenProcess()");
-        return FALSE;
-    }
-
-    do
-    {
-        dbg(L"Checking for '{}' for PID=%d...\n", lpwszPrivilegeName, dwPid);
-
-        bRes = LookupPrivilegeValue(nullptr, lpwszPrivilegeName, &Luid);
-        if ( bRes == 0 )
-        {
-            perror(L"LookupPrivilegeValue");
-            break;
-        }
-
-        LUID_AND_ATTRIBUTES PrivAttr = {{0}};
-        PrivAttr.Luid                = Luid;
-        PrivAttr.Attributes          = SE_PRIVILEGE_ENABLED | SE_PRIVILEGE_ENABLED_BY_DEFAULT;
-
-        PRIVILEGE_SET PrivSet = {
-            0,
-        };
-        PrivSet.PrivilegeCount = 1;
-        PrivSet.Privilege[0]   = PrivAttr;
-
-        bRes = ::OpenProcessToken(hProcess.get(), TOKEN_QUERY, &hToken);
-        if ( bRes == 0 )
-        {
-            perror(L"OpenProcessToken");
-            break;
-        }
-
-        bRes = ::PrivilegeCheck(hToken, &PrivSet, &bHasPriv);
-        if ( bRes == 0 )
-        {
-            perror(L"PrivilegeCheck");
-            break;
-        }
-
-        bRes = bHasPriv;
-    } while ( 0 );
-
-
-    if ( hToken != nullptr )
-    {
-        ::CloseHandle(hToken);
-    }
-
-    return bRes == TRUE;
 }
 
 
@@ -1025,12 +930,14 @@ appcontainer::AppContainer::allow_file_or_directory(_In_ const std::wstring& fil
     return set_named_object_access(file_or_directory_name, SE_FILE_OBJECT, GRANT_ACCESS, FILE_ALL_ACCESS);
 }
 
+
 _Success_(return )
 auto
 appcontainer::AppContainer::allow_registry_key(_In_ const std::wstring& regkey) -> bool
 {
     return set_named_object_access(regkey, SE_REGISTRY_KEY, GRANT_ACCESS, FILE_ALL_ACCESS);
 }
+
 
 _Success_(return )
 auto
