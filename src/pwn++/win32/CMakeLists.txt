@@ -78,40 +78,21 @@ target_include_directories(
 #
 # Compiler flags
 #
-target_compile_definitions(${PROJECT_NAME} PRIVATE _UNICODE UNICODE)
+target_compile_definitions(
+    ${PROJECT_NAME}
+    PRIVATE
+    _UNICODE UNICODE
+)
 
 target_compile_options(
     ${PROJECT_NAME}
     PUBLIC
     $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
+
     PRIVATE
     /diagnostics:caret /Zl /ZH:SHA_256
+    $<IF:$<CONFIG:Debug>,/sdl /WX /Gy /Gm- /permissive-,/RELEASE /WX /Zi /Zf /Gm /Gm- /permissive->
 )
-
-if(DEBUG)
-    target_compile_options(
-        ${PROJECT_NAME}
-        PUBLIC
-        /sdl /WX /Gy /Gm- /permissive-
-    )
-    target_link_options(${PROJECT_NAME}
-        PUBLIC
-        /DEBUG:FULL
-        PRIVATE
-        /profile /DEBUGTYPE:cv,fixup
-    )
-else()
-    target_compile_options(
-        ${PROJECT_NAME}
-        PUBLIC
-        /RELEASE /WX /Zi /Zf /Gm /Gm- /permissive-
-        /guard:cf /guard:ehcont
-    )
-    target_link_options(
-        ${PROJECT_NAME}
-        PUBLIC
-    )
-endif(DEBUG)
 
 #
 # Linker flags

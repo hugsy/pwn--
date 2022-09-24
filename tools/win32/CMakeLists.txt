@@ -19,9 +19,7 @@ foreach(TOOL_DIR ${WIN32_TOOLS})
     add_executable(${TOOL_DIR} WIN32 ${PWNLIB_TOOLS_WIN32_DIR}/${TOOL_DIR}/main.cpp)
     add_dependencies(${TOOL_DIR} ${CMAKE_PROJECT_NAME})
 
-    if(DEBUG)
-        target_compile_definitions(${TOOL_DIR} PRIVATE _DEBUG DEBUG)
-    endif(DEBUG)
+    target_compile_definitions(${TOOL_DIR} PRIVATE $<$<CONFIG:Debug>:_DEBUG DEBUG>)
 
     target_include_directories(${TOOL_DIR} PRIVATE ${PWNLIB_ROOT_DIR}/deps/phnt)
 

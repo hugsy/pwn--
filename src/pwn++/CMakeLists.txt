@@ -110,8 +110,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${COMMON_HEADER_DIR})
 #
 # Print out cmake compile info
 #
-message(STATUS "DEBUG:                                 ${DEBUG}")
-
 message(STATUS "PWN_LOG_USE_COLOR                      ${PWN_LOG_USE_COLOR}")
 message(STATUS "PWN_INCLUDE_ASSEMBLER                  ${PWN_INCLUDE_ASSEMBLER}")
 message(STATUS "PWN_INCLUDE_DISASSEMBLER               ${PWN_INCLUDE_DISASSEMBLER}")
@@ -133,9 +131,7 @@ if(PWN_ENABLE_LUA_BACKDOOR)
     target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/lua/include)
 endif()
 
-if(DEBUG)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE _DEBUG DEBUG)
-endif()
+target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:_DEBUG DEBUG>)
 
 #
 # Generate the build export header from cmake
