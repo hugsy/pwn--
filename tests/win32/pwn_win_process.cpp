@@ -5,10 +5,11 @@
 
 TEST_CASE("Process", "[" NS "]")
 {
-    SECTION("test1")
+    SECTION("Basic tests")
     {
-        pwn::windows::Process P;
-        REQUIRE(P.IsValid());
-        // REQUIRE(Value(res).empty());
+        pwn::windows::Process Current;
+        REQUIRE(Current.IsValid());
+        REQUIRE(Current.ProcessId() == ::GetCurrentProcessId());
+        REQUIRE(Current.ProcessEnvironmentBlock() == (PPEB)::NtCurrentTeb()->ProcessEnvironmentBlock);
     }
 }

@@ -5,6 +5,21 @@
 #include "utils.hpp"
 
 
+EXTERN_C_START
+bool
+GetTeb(uptr* teb);
+
+usize
+GetTebLength();
+EXTERN_C_END
+
+#ifdef _WIN64
+#define TEB_OFFSET 0x30
+#else
+#define TEB_OFFSET 0x18
+#endif
+
+
 Result<std::wstring>
 pwn::windows::Thread::Name()
 {

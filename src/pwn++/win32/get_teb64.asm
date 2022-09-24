@@ -14,6 +14,7 @@ GetTeb PROC
 	mov rax, gs:[30h]
 	mov [rcx], rax
 	xor rax, rax
+	inc ax
 	mov rsp, rbp
 	pop rbp
 	ret
@@ -40,6 +41,7 @@ GetPeb PROC
 	mov rax, [rax + 60h]
 	mov [rcx], rax
 	xor rax, rax
+	inc ax
 	mov rsp, rbp
 	pop rbp
 	ret

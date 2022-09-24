@@ -44,7 +44,7 @@ set(
     ${SOURCE_DIR}/ctf/remote.cpp
 )
 
-if(${CMAKE_SYSTEM_PROCESSOR} EQUAL "AMD64")
+if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "AMD64")
     set(
         SOURCE_FILES
 
@@ -56,7 +56,7 @@ else()
         SOURCE_FILES
 
         ${SOURCE_FILES}
-        ${SOURCE_DIR}/get_teb64.asm
+        ${SOURCE_DIR}/get_teb32.asm
     )
 endif()
 

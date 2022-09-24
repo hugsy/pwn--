@@ -65,14 +65,8 @@ static const std::array<pwn::windows::Process::Privilege, 37> PrivilegeNames = {
 /// Note: this is just a fake excuse to use assembly in VS, for real world use `NtCurrentTeb()`
 ///
 EXTERN_C_START
-uptr
-GetTeb();
-
-usize
-GetTebLength();
-
-uptr
-GetPeb();
+bool
+GetPeb(uptr* peb);
 
 usize
 GetPebLength();
@@ -285,13 +279,18 @@ Process::ProcessEnvironmentBlock()
     //
     if ( m_IsSelf )
     {
-        m_Peb = (PPEB)GetPeb();
+        uptr peb;
+        if ( GetPeb(&peb) == true )
+        {
+            m_Peb = (PPEB)peb;
+        }
     }
-
-    //
-    // Otherwise execute the function remotely
-    //
+    else
     {
+        //
+        // Otherwise execute the function remotely
+        //
+
         //
         // Copy the function from the local process to the remote
         //
