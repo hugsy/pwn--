@@ -36,10 +36,10 @@ pwn::windows::Thread::Name()
     //
     if(! m_ThreadHandle)
     {
-        auto res = ReOpenHandleWith(TOKEN_QUERY);
+        auto res = ReOpenHandleWith(THREAD_QUERY_LIMITED_INFORMATION);
         if(Failed(res))
         {
-            return res;
+            return Err(res.code);
         }
     }
 
@@ -95,7 +95,7 @@ pwn::windows::Thread::Name(std::wstring const& name)
 {
     if(! m_ThreadHandle)
     {
-        auto res = ReOpenHandleWith(TOKEN_SET_LIMITED_INFORMATION);
+        auto res = ReOpenHandleWith(THREAD_SET_LIMITED_INFORMATION);
         if(Failed(res))
         {
             return res;

@@ -31,7 +31,7 @@ namespace pwn::windows
 class Thread
 {
 public:
-    Thread(u32 Tid = ::GetCurrentThreadId()) : m_Tid(Tid), m_Teb(0)
+    Thread(u32 Tid = ::GetCurrentThreadId()) : m_Tid(Tid), m_Teb(0), m_ThreadHandle(nullptr)
     {
         ReOpenHandleWith(TOKEN_ALL_ACCESS);
     }

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <optional>
 #include <stdexcept>
+#include <tuple>
 
 #include "handle.hpp"
 #include "log.hpp"
@@ -200,7 +201,7 @@ version() -> std::optional<std::tuple<u32, u32, u32>>
         return std::nullopt;
     }
 
-    return {VersionInformation.dwMajorVersion, VersionInformation.dwMinorVersion, VersionInformation.dwBuildNumber};
+    return std::make_tuple<u32, u32, u32>(VersionInformation.dwMajorVersion, VersionInformation.dwMinorVersion, VersionInformation.dwBuildNumber);
 }
 
 } // namespace pwn::windows::system
