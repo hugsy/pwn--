@@ -28,6 +28,14 @@ using namespace pwn::log;
 #define KERNEL_PROCESS_NAME WINDOWS_SYSTEM32_PATH L"ntoskrnl.exe"
 
 
+EXTERN_C_START
+
+
+NTSYSAPI NTSTATUS
+RtlGetVersion(POSVERSIONINFOEXW lpVersionInformation);
+
+EXTERN_C_END
+
 namespace pwn::windows::system
 {
 
@@ -184,23 +192,19 @@ filename() -> std::optional<std::wstring>
     return modulename(nullptr);
 }
 
-auto
-version() -> std::optional<std::tuple<u32, u32, u32>>
+std::tuple<u32, u32, u32>
+version()
 {
-    OSVERSIONINFOW VersionInformation;
-    VersionInformation.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+    OSVERSIONINFOEXW VersionInformation;
+    VersionInformation.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXW);
 
-    // TODO: fix
-    // if ( FALSE == GetVersionExW(&VersionInformation) )
-    // {
-    //     return std::nullopt;
-    // }
+    NTSTATUS Status = ::RtlGetVersion(&VersionInformation);
+    if ( !NT_SUCCESS(Status) )
+    {
+        throw std::runtime_error("RtlGetVersion() failed");
+    }
 
-    return std::make_tuple<u32, u32, u32>(0, 0, 0);
-    // VersionInformation.dwMajorVersion,
-    // VersionInformation.dwMinorVersion,
-    // VersionInformation.dwBuildNumber
-    // );
+    return {VersionInformation.dwMajorVersion, VersionInformation.dwMinorVersion, VersionInformation.dwBuildNumber};
 }
 
 } // namespace pwn::windows::system

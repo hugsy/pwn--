@@ -5,21 +5,20 @@
 #include "system.hpp"
 #include "utils.hpp"
 
+#define WINDOWS_VERSION_1507 10240
+#define WINDOWS_VERSION_1511 10586
 #define WINDOWS_VERSION_1607 14393
-
-
-Result<bool>
-pwn::windows::Thread::ReOpenHandleWith(DWORD DesiredAccess)
-{
-    m_ThreadHandle = pwn::UniqueHandle {::OpenThread(DesiredAccess, 0, m_Tid)};
-    if ( !m_ThreadHandle )
-    {
-        return Err(ErrorCode::PermissionDenied);
-    }
-
-    return Ok(true);
-}
-
+#define WINDOWS_VERSION_1703 15063
+#define WINDOWS_VERSION_1709 16299
+#define WINDOWS_VERSION_1803 17134
+#define WINDOWS_VERSION_1809 17763
+#define WINDOWS_VERSION_1903 18362
+#define WINDOWS_VERSION_1909 18363
+#define WINDOWS_VERSION_2004 19041
+#define WINDOWS_VERSION_20H2 19042
+#define WINDOWS_VERSION_21H1 19043
+#define WINDOWS_VERSION_21H2 19044
+#define WINDOWS_VERSION_22H2 19045
 
 EXTERN_C_START
 bool
@@ -34,6 +33,18 @@ EXTERN_C_END
 #else
 #define TEB_OFFSET 0x18
 #endif
+
+Result<bool>
+pwn::windows::Thread::ReOpenHandleWith(DWORD DesiredAccess)
+{
+    m_ThreadHandle = pwn::UniqueHandle {::OpenThread(DesiredAccess, 0, m_Tid)};
+    if ( !m_ThreadHandle )
+    {
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    return Ok(true);
+}
 
 
 Result<std::wstring>
@@ -131,16 +142,13 @@ pwn::windows::Thread::Name(std::wstring const& name)
     // Make sure we're on 1607+
     //
     auto const Version = pwn::windows::system::version();
-    if ( !Version )
-    {
-        return Err(ErrorCode::UnknownError);
-    }
 
-    // const auto BuildNumber = std::get<2>(Version.value());
-    // if ( BuildNumber < WINDOWS_VERSION_1607 )
-    // {
-    //     return Err(ErrorCode::BadVersion);
-    // }
+    const auto BuildNumber = std::get<2>(Version);
+    info(L"B = {}", BuildNumber);
+    if ( BuildNumber < WINDOWS_VERSION_1607 )
+    {
+        return Err(ErrorCode::BadVersion);
+    }
 
     //
     // Set the thread name
@@ -154,6 +162,6 @@ pwn::windows::Thread::Name(std::wstring const& name)
         return Ok(true);
     }
 
-    pwn::log::ntperror(L"NtSetInformationThread(ThreadNameInformation) failed", Status);
+    log::ntperror(L"NtSetInformationThread(ThreadNameInformation) failed", Status);
     return Err(ErrorCode::ExternalApiCallFailed);
 }

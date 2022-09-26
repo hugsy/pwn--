@@ -101,8 +101,6 @@ public:
     const HANDLE
     handle() const;
 
-    Result<bool>
-    EnumeratePrivileges();
 
     friend std::wostream&
     operator<<(std::wostream& os, const Process& p)

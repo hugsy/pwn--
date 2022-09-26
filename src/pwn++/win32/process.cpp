@@ -366,54 +366,6 @@ Process::ProcessEnvironmentBlock()
     return m_Peb;
 }
 
-Result<bool>
-Process::EnumeratePrivileges()
-{
-    auto hToken = pwn::UniqueHandle(
-        [&]() -> HANDLE
-        {
-            HANDLE h = nullptr;
-            return (::OpenProcessToken(m_ProcessHandle->get(), TOKEN_QUERY, &h)) ? h : nullptr;
-        }());
-    if ( !hToken )
-    {
-        log::perror(L"OpenProcessToken()");
-        return Err(ErrorCode::PermissionDenied);
-    }
-
-    DWORD dwReturnLength = 0;
-    std::unique_ptr<TOKEN_PRIVILEGES[]> TokenPrivs;
-
-    do
-    {
-        const DWORD cursz = dwReturnLength;
-        TokenPrivs        = std::make_unique<TOKEN_PRIVILEGES[]>(cursz);
-
-        if ( ::GetTokenInformation(hToken.get(), TokenPrivileges, TokenPrivs.get(), cursz, &dwReturnLength) )
-        {
-            break;
-        }
-
-        if ( ::GetLastError() == ERROR_INSUFFICIENT_BUFFER )
-        {
-            continue;
-        }
-
-        log::perror(L"GetTokenInformation()");
-        return Err(ErrorCode::ExternalApiCallFailed);
-
-    } while ( true );
-
-    const PTOKEN_PRIVILEGES Privs = TokenPrivs.get();
-    dbg(L"Process {} has {} privileges", Privs->PrivilegeCount);
-    for ( usize i = 0; i < Privs->PrivilegeCount; i++ )
-    {
-        const PLUID_AND_ATTRIBUTES Priv = &(TokenPrivs.get()->Privileges[i]);
-    }
-
-    return Ok(Privs->PrivilegeCount > 0);
-}
-
 
 std::wostream&
 operator<<(std::wostream& wos, const Process::Integrity i)

@@ -12,6 +12,7 @@ Token::IsValid() const
     return m_ProcessHandle != nullptr;
 }
 
+
 Result<bool>
 Token::IsElevated()
 {
@@ -46,7 +47,7 @@ Token::ReOpenTokenWithAccess(const DWORD DesiredAccess)
 }
 
 
-Result<std::unique_ptr<u8[]>>
+Result<std::shared_ptr<u8[]>>
 Token::Query(TOKEN_INFORMATION_CLASS TokenInformationClass)
 {
     DWORD ReturnLength;
@@ -63,18 +64,44 @@ Token::Query(TOKEN_INFORMATION_CLASS TokenInformationClass)
     //
     // Prepare the structure and get the information
     //
-    auto TokenInformationBuffer = std::make_unique<u8[]>(ReturnLength);
-    if ( !::GetTokenInformation(
-             m_ProcessTokenHandle.get(),
-             TokenInformationClass,
-             TokenInformationBuffer.get(),
-             ReturnLength,
-             &ReturnLength) )
+    auto TokenInformationBuffer = std::make_shared<u8[]>(ReturnLength);
+
+    auto bRes = ::GetTokenInformation(
+        m_ProcessTokenHandle.get(),
+        TokenInformationClass,
+        TokenInformationBuffer.get(),
+        ReturnLength,
+        &ReturnLength
+    );
+
+    if (bRes == FALSE )
     {
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    return std::move(TokenInformationBuffer);
+    return Ok(TokenInformationBuffer);
+}
+
+
+Result<bool>
+Token::EnumeratePrivileges()
+{
+    auto res = Query(TokenPrivileges);
+    if(Failed(res))
+    {
+        return Err(Error(res).code);
+    }
+
+    const auto TokenPrivBuffer = Value(res);
+    const PTOKEN_PRIVILEGES Privs = reinterpret_cast<PTOKEN_PRIVILEGES>(TokenPrivBuffer.get());
+    const DWORD PrivilegeCount = Privs->PrivilegeCount;
+    dbg(L"{} privileges", PrivilegeCount);
+    for ( u32 i = 0; i < PrivilegeCount; i++ )
+    {
+        const PLUID_AND_ATTRIBUTES Priv = &(Privs->Privileges[i]);
+    }
+
+    return Ok(Privs->PrivilegeCount > 0);
 }
 
 } // namespace pwn::windows

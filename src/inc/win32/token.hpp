@@ -55,9 +55,11 @@ public:
     Result<bool>
     IsElevated();
 
+    Result<bool>
+    EnumeratePrivileges();
 
 private:
-    Result<std::unique_ptr<u8[]>> Query(TOKEN_INFORMATION_CLASS);
+    Result<std::shared_ptr<u8[]>> Query(TOKEN_INFORMATION_CLASS);
 
     SharedHandle m_ProcessHandle;
     UniqueHandle m_ProcessTokenHandle;
