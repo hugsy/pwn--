@@ -19,6 +19,7 @@ TEST_CASE("Process", "[" NS "]")
         REQUIRE(Local.IsValid() == true);
         CHECK(Local.ProcessId() == ::GetCurrentProcessId());
         CHECK(Local.ProcessEnvironmentBlock() == (PPEB)::NtCurrentTeb()->ProcessEnvironmentBlock);
+        CHECK(((uptr)Local.ProcessEnvironmentBlock() & 0xfff) == 0);
     }
 
     SECTION("Remote tests")
