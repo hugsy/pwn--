@@ -7,6 +7,7 @@
 #include <iostream>
 #include <optional>
 #include <stdexcept>
+#include <tuple>
 
 #include "handle.hpp"
 #include "log.hpp"
@@ -25,6 +26,12 @@ using namespace pwn::log;
 #define CALC_PATH WINDOWS_SYSTEM32_PATH CALC_PROCESS_NAME
 #define CMD_PATH WINDOWS_SYSTEM32_PATH CMD_PROCESS_NAME
 #define KERNEL_PROCESS_NAME WINDOWS_SYSTEM32_PATH L"ntoskrnl.exe"
+
+EXTERN_C_START
+BOOL GetVersionExW(
+  LPOSVERSIONINFOW lpVersionInformation
+);
+EXTERN_C_END
 
 
 namespace pwn::windows::system
@@ -181,6 +188,20 @@ auto
 filename() -> std::optional<std::wstring>
 {
     return modulename(nullptr);
+}
+
+auto
+version() -> std::optional<std::tuple<u32, u32, u32>>
+{
+    OSVERSIONINFOW VersionInformation;
+    VersionInformation.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+
+    if( FALSE == GetVersionExW(&VersionInformation))
+    {
+        return std::nullopt;
+    }
+
+    return std::make_tuple<u32, u32, u32>(VersionInformation.dwMajorVersion, VersionInformation.dwMinorVersion, VersionInformation.dwBuildNumber);
 }
 
 } // namespace pwn::windows::system

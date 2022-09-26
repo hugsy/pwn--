@@ -4,6 +4,21 @@
 #include "log.hpp"
 #include "utils.hpp"
 
+#define WINDOWS_VERSION_1607 14393
+
+
+Result<bool>
+pwn::windows::Thread::ReOpenHandleWith(DWORD DesiredAccess)
+{
+    m_ThreadHandle = pwn::UniqueHandle {::OpenThread(DesiredAccess, 0, m_Tid)};
+    if ( !m_ThreadHandle )
+    {
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    return Ok(true);
+}
+
 
 EXTERN_C_START
 bool
@@ -34,10 +49,13 @@ pwn::windows::Thread::Name()
     //
     // Otherwise invoke NtQueryInformationThread(ThreadNameInformation)
     //
-    auto hThread = pwn::UniqueHandle {::OpenThread(THREAD_QUERY_LIMITED_INFORMATION, 0, m_Tid)};
-    if ( !hThread )
+    if(! m_ThreadHandle)
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        auto res = ReOpenHandleWith(THREAD_QUERY_LIMITED_INFORMATION);
+        if(Failed(res))
+        {
+            return Err(res.code);
+        }
     }
 
     NTSTATUS Status              = STATUS_UNSUCCESSFUL;
@@ -49,7 +67,7 @@ pwn::windows::Thread::Name()
     {
         Buffer = std::make_unique<u8[]>(CurrentSize);
         Status =
-            ::NtQueryInformationThread(hThread.get(), ThreadNameInformation, Buffer.get(), CurrentSize, &ReturnedSize);
+            ::NtQueryInformationThread(m_ThreadHandle.get(), ThreadNameInformation, Buffer.get(), CurrentSize, &ReturnedSize);
 
         if ( NT_SUCCESS(Status) )
         {
@@ -90,10 +108,13 @@ pwn::windows::Thread::Name()
 Result<bool>
 pwn::windows::Thread::Name(std::wstring const& name)
 {
-    auto hThread = pwn::UniqueHandle {::OpenThread(THREAD_SET_LIMITED_INFORMATION, 0, m_Tid)};
-    if ( !hThread )
+    if(! m_ThreadHandle)
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        auto res = ReOpenHandleWith(THREAD_SET_LIMITED_INFORMATION);
+        if(Failed(res))
+        {
+            return res;
+        }
     }
 
     if ( name.size() >= 0xffff )
@@ -101,7 +122,20 @@ pwn::windows::Thread::Name(std::wstring const& name)
         return Err(ErrorCode::BufferTooBig);
     }
 
-    // TODO: check if version >=  win10-1607
+    //
+    // Make sure we're on 1607+
+    //
+    auto const Version = pwn::windows::system::version();
+    if(!Version)
+    {
+        return Err(ErrorCode::UnknownError);
+    }
+
+    const BuildNumber = Version.get<3>();
+    if(BuildNumber < WINDOWS_VERSION_1607)
+    {
+        return Err(ErrorCode::BadVersion);
+    }
 
     //
     // Set the thread name

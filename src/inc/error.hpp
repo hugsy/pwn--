@@ -16,6 +16,7 @@
 
 enum class ErrorCode
 {
+    UnknownError,
     GenericError,
     RuntimeError,
     PermissionDenied,
@@ -43,6 +44,7 @@ enum class ErrorCode
     ExternalApiCallFailed,
     ExternalError,
     PartialResult,
+    BadVersion,
 };
 
 ///

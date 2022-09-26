@@ -40,4 +40,7 @@ modulename(_In_opt_ HMODULE hModule) -> std::optional<std::wstring>;
 
 PWNAPI auto
 filename() -> std::optional<std::wstring>;
+
+PWNAPI auto
+version() -> std::optional<std::tuple<u32, u32, u32>>;
 } // namespace pwn::windows::system
