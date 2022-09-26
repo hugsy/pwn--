@@ -84,6 +84,8 @@ target_compile_definitions(
     ${PROJECT_NAME}
     PRIVATE
     _UNICODE UNICODE
+
+    $<$<CONFIG:Debug>:_DISABLE_VECTOR_ANNOTATION _DISABLE_STRING_ANNOTATION>
 )
 
 target_compile_options(
@@ -94,6 +96,7 @@ target_compile_options(
     PRIVATE
     /diagnostics:caret /Zl /ZH:SHA_256
     $<IF:$<CONFIG:Debug>,/sdl /WX /Gy /Gm- /permissive-,/RELEASE /WX /Zi /Zf /Gm /Gm- /permissive->
+    $<$<CONFIG:Debug>:/fsanitize=address>
 )
 
 #
@@ -105,6 +108,7 @@ target_link_options(
     /CETCOMPAT
     PRIVATE
     /LARGEADDRESSAWARE /Zp8
+    $<$<CONFIG:Debug>:/InferAsanLibs>
 )
 
 target_link_libraries(
