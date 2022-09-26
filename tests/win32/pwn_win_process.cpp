@@ -5,11 +5,27 @@
 
 TEST_CASE("Process", "[" NS "]")
 {
-    SECTION("Basic tests")
+    SECTION("Local tests")
     {
-        pwn::windows::Process Current;
-        REQUIRE(Current.IsValid());
-        REQUIRE(Current.ProcessId() == ::GetCurrentProcessId());
-        REQUIRE(Current.ProcessEnvironmentBlock() == (PPEB)::NtCurrentTeb()->ProcessEnvironmentBlock);
+        pwn::windows::Process Local;
+        REQUIRE(Local.IsValid());
+        REQUIRE(Local.ProcessId() == ::GetCurrentProcessId());
+        REQUIRE(Local.ProcessEnvironmentBlock() == (PPEB)::NtCurrentTeb()->ProcessEnvironmentBlock);
+    }
+
+    SECTION("Remote tests")
+    {
+        u32 TargetPid = 0;
+        {
+            auto res = pwn::windows::system::pidof(L"explorer.exe");
+            REQUIRE(Success(res));
+            REQUIRE(Value(res).size() > 0);
+            TargetPid = Value(res).at(0);
+        }
+
+        pwn::windows::Process Remote {TargetPid};
+        REQUIRE(Remote.IsValid());
+        REQUIRE(Remote.ProcessId() == TargetPid);
+        REQUIRE(Remote.ProcessEnvironmentBlock() != nullptr);
     }
 }

@@ -17,6 +17,7 @@ set(
     ${HEADER_DIR}/system.hpp
     ${HEADER_DIR}/process.hpp
     ${HEADER_DIR}/thread.hpp
+    ${HEADER_DIR}/token.hpp
     ${HEADER_DIR}/cpu.hpp
     ${HEADER_DIR}/registry.hpp
     ${HEADER_DIR}/kernel.hpp
@@ -34,6 +35,7 @@ set(
     ${SOURCE_DIR}/system.cpp
     ${SOURCE_DIR}/process.cpp
     ${SOURCE_DIR}/thread.cpp
+    ${SOURCE_DIR}/token.cpp
     ${SOURCE_DIR}/cpu.cpp
     ${SOURCE_DIR}/kernel.cpp
     ${SOURCE_DIR}/job.cpp

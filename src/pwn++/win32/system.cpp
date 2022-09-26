@@ -128,7 +128,7 @@ pidof(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>
         } while ( ::Process32NextW(hProcessSnap.get(), &pe32) != 0 );
     } while ( false );
 
-    return Ok(pids);
+    return Ok(std::move(pids));
 }
 
 

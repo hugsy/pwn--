@@ -395,7 +395,7 @@ base64_decode(std::string_view const& in) -> Result<std::vector<u8>>
             out[j + 2] = v & 0xFF;
     }
 
-    return Ok(out);
+    return Ok(std::move(out));
 }
 
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AccCtrl.h>
+#include <securitybaseapi.h>
 
 #include <filesystem>
 #include <iostream>
@@ -9,6 +10,7 @@
 
 #include "common.hpp"
 #include "handle.hpp"
+#include "token.hpp"
 #include "win32/nt.hpp"
 
 namespace fs = std::filesystem;
@@ -21,8 +23,16 @@ class Process
     class Memory
     {
     public:
-        Memory();
-        Memory(SharedHandle h);
+        Memory() : Memory(nullptr)
+        {
+        }
+        Memory(SharedHandle ProcessHandle) : m_ProcessHandle(ProcessHandle)
+        {
+        }
+
+        ~Memory()
+        {
+        }
 
         auto
         Read(uptr const Address, usize Length) -> Result<std::vector<u8>>;
@@ -34,17 +44,17 @@ class Process
         Memset(uptr const address, const size_t size, const u8 val = 0x00) -> Result<uptr>;
 
         auto
-        allocate(
+        Allocate(
             const size_t Size,
             const wchar_t Permission[3]     = L"rwx",
             const uptr ForcedMappingAddress = 0,
             bool wipe                       = true) -> Result<uptr>;
 
         auto
-        free(const uptr Address) -> bool;
+        Free(const uptr Address) -> bool;
 
     private:
-        SharedHandle m_process_handle;
+        SharedHandle m_ProcessHandle;
     };
 
 public:
@@ -62,9 +72,16 @@ public:
 
     Process();
 
-    Process(u32, bool = false);
+    Process(u32, HANDLE = nullptr, bool = false);
+
+    Process(Process const&) = default;
+
+    Process(Process&&) = default;
 
     ~Process();
+
+    Process&
+    operator=(Process&&) = default;
 
     bool
     IsValid();
@@ -91,9 +108,6 @@ public:
 
     const HANDLE
     handle() const;
-
-    Result<bool>
-    IsElevated();
 
     Result<bool>
     EnumeratePrivileges();
@@ -139,11 +153,15 @@ public:
     Result<bool>
     HasPrivilege(std::wstring const& PrivilegeName);
 
+    //
+    // Submodules
+    //
+    Process::Memory Memory;
+    Token Token;
+
     // TODO:
     // - threads
     // - modules
-
-    Memory Memory;
 
 
     //
@@ -185,7 +203,7 @@ private:
 
 
 ///
-/// @brief Returns a basic list of processes, in a vector of tuple <ProcessName, PID>
+/// @brief Returns a basic list of processes, in a vector of tuple <Process>
 /// TODO: switch to generator?
 ///
 /// @return std::vector<Process>

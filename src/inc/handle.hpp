@@ -19,8 +19,11 @@ using GenericHandle = std::unique_ptr<
     decltype(
         [](T* h)
         {
-            Deleter(h);
-            h = nullptr;
+            if ( h )
+            {
+                Deleter(h);
+                h = nullptr;
+            }
         })>;
 
 #ifdef __linux__

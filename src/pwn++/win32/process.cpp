@@ -83,21 +83,15 @@ EXTERN_C_END
 namespace pwn::windows
 {
 
-Process::Memory::Memory() : Process::Memory::Memory(nullptr)
-{
-}
+#pragma region Process::Memory
 
-Process::Memory::Memory(SharedHandle h) : m_process_handle(h)
-{
-}
-
-auto
-Process::Memory::Read(uptr const Address, usize Length) -> Result<std::vector<u8>>
+Result<std::vector<u8>>
+Process::Memory::Read(uptr const Address, usize Length)
 {
     auto out = std::vector<u8>(Length);
     size_t dwNbRead;
     if ( ::ReadProcessMemory(
-             m_process_handle->get(),
+             m_ProcessHandle->get(),
              reinterpret_cast<LPVOID>(Address),
              out.data(),
              Length,
@@ -107,23 +101,23 @@ Process::Memory::Read(uptr const Address, usize Length) -> Result<std::vector<u8
         return Err(ErrorCode::RuntimeError);
     }
 
-    return Ok(out);
+    return Ok(std::move(out));
 }
 
-auto
-Process::Memory::Memset(uptr const address, const size_t size, const u8 val) -> Result<usize>
+Result<usize>
+Process::Memory::Memset(uptr const address, const size_t size, const u8 val)
 {
     auto data = std::vector<u8>(size);
     std::fill(data.begin(), data.end(), val);
     return Write(address, data);
 }
 
-auto
-Process::Memory::Write(uptr const Address, std::vector<u8> data) -> Result<usize>
+Result<usize>
+Process::Memory::Write(uptr const Address, std::vector<u8> data)
 {
     size_t dwNbWritten;
     if ( ::WriteProcessMemory(
-             m_process_handle->get(),
+             m_ProcessHandle->get(),
              reinterpret_cast<LPVOID>(Address),
              data.data(),
              data.size(),
@@ -136,9 +130,8 @@ Process::Memory::Write(uptr const Address, std::vector<u8> data) -> Result<usize
     return Ok(dwNbWritten);
 }
 
-auto
-Process::Memory::allocate(const size_t Size, const wchar_t Permission[3], const uptr ForcedMappingAddress, bool wipe)
-    -> Result<uptr>
+Result<uptr>
+Process::Memory::Allocate(const size_t Size, const wchar_t Permission[3], const uptr ForcedMappingAddress, bool wipe)
 {
     u32 flProtect = 0;
     if ( wcscmp(Permission, L"r") == 0 )
@@ -159,7 +152,7 @@ Process::Memory::allocate(const size_t Size, const wchar_t Permission[3], const 
     }
 
     auto buffer = (uptr)::VirtualAllocEx(
-        m_process_handle->get(),
+        m_ProcessHandle->get(),
         nullptr,
         Size,
         MEM_COMMIT | MEM_RESERVE,
@@ -178,17 +171,34 @@ Process::Memory::allocate(const size_t Size, const wchar_t Permission[3], const 
 }
 
 auto
-Process::Memory::free(const uptr Address) -> bool
+Process::Memory::Free(const uptr Address) -> bool
 {
-    return ::VirtualFreeEx(m_process_handle->get(), reinterpret_cast<LPVOID>(Address), 0, MEM_RELEASE) == 0;
+    return ::VirtualFreeEx(m_ProcessHandle->get(), reinterpret_cast<LPVOID>(Address), 0, MEM_RELEASE) == 0;
 }
 
+#pragma endregion Process::Memory
 
-Process::Process() : Process(::GetCurrentProcessId(), false)
+
+#pragma region Process::Token
+
+/*
+
+
+*/
+
+#pragma endregion Process::Token
+
+
+#pragma region Process
+Process::Process() : Process::Process(::GetCurrentProcessId(), nullptr, false)
 {
 }
 
-Process::Process(u32 pid, bool kill_on_delete) : m_Pid(pid), m_Peb(nullptr), m_Privileges(), m_Valid(false)
+Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
+    m_Pid(pid),
+    m_Peb(nullptr),
+    m_Privileges(),
+    m_Valid(false)
 {
     //
     // Gather a minimum set of information about the process for performance. Extra information will be
@@ -207,15 +217,22 @@ Process::Process(u32 pid, bool kill_on_delete) : m_Pid(pid), m_Peb(nullptr), m_P
 
         // Full path
         {
-            auto hProcess   = pwn::UniqueHandle {::OpenProcess(MAXIMUM_ALLOWED, false, m_Pid)};
-            m_ProcessHandle = std::make_shared<UniqueHandle>(std::move(hProcess));
-            Memory          = Memory::Memory(m_ProcessHandle);
+            auto ProcessHandle =
+                pwn::UniqueHandle {(hProcess) ? hProcess : ::OpenProcess(MAXIMUM_ALLOWED, false, m_Pid)};
+            m_ProcessHandle = std::make_shared<UniqueHandle>(std::move(ProcessHandle));
 
             wchar_t exeName[MAX_PATH] = {0};
             DWORD size                = __countof(exeName);
             DWORD count               = ::QueryFullProcessImageName(m_ProcessHandle->get(), 0, exeName, &size);
 
             m_Path = std::wstring {exeName};
+        }
+
+        // Prepare other subclasses
+        {
+            this->Memory = Process::Memory::Memory(m_ProcessHandle);
+
+            this->Token = pwn::windows::Token(m_ProcessHandle);
         }
 
         m_Valid = true;
@@ -299,7 +316,7 @@ Process::ProcessEnvironmentBlock()
         const std::vector<u8> sc(FuncLen);
         RtlCopyMemory((void*)sc.data(), (void*)pfnGetPeb, FuncLen);
 
-        auto const ptr = Value(Memory.allocate(0x1000, L"rx"));
+        auto const ptr = Value(Memory.Allocate(0x1000, L"rx"));
         Memory.Write(ptr, sc);
 
         //
@@ -327,7 +344,7 @@ Process::ProcessEnvironmentBlock()
                 }
             }
         }
-        Memory.free(ptr);
+        Memory.Free(ptr);
     }
 
     //
@@ -379,43 +396,138 @@ Process::EnumeratePrivileges()
 
     } while ( true );
 
-    const usize PrivilegeCount = TokenPrivs.get()->PrivilegeCount;
-    dbg(L"Process {} has {} privileges", PrivilegeCount);
-    for ( auto i = 0; i < PrivilegeCount; i++ )
+    const PTOKEN_PRIVILEGES Privs = TokenPrivs.get();
+    dbg(L"Process {} has {} privileges", Privs->PrivilegeCount);
+    for ( usize i = 0; i < Privs->PrivilegeCount; i++ )
     {
-        const auto Priv = TokenPrivs.get()->Privileges[i];
+        const PLUID_AND_ATTRIBUTES Priv = &(TokenPrivs.get()->Privileges[i]);
     }
 
-    return Ok(PrivilegeCount > 0);
+    return Ok(Privs->PrivilegeCount > 0);
 }
 
-Result<bool>
-Process::IsElevated()
+
+/*
+std::wostream&
+operator<<(std::wostream& wos, Process::Privilege const& p)
 {
-    auto hToken = pwn::UniqueHandle(
-        [&]() -> HANDLE
-        {
-            HANDLE h = nullptr;
-            return (::OpenProcessToken(m_ProcessHandle->get(), TOKEN_QUERY, &h)) ? h : nullptr;
-        }());
-
-    if ( !hToken )
+    switch ( p )
     {
-        log::perror(L"OpenProcessToken()");
-        return Err(ErrorCode::PermissionDenied);
+    case SE_CREATE_TOKEN_NAME:
+        wos << L"SeCreateTokenPrivilege";
+        break;
+    case SE_ASSIGNPRIMARYTOKEN_NAME:
+        wos << L"SeAssignPrimaryTokenPrivilege";
+        break;
+    case SE_LOCK_MEMORY_NAME:
+        wos << L"SeLockMemoryPrivilege";
+        break;
+    case SE_INCREASE_QUOTA_NAME:
+        wos << L"SeIncreaseQuotaPrivilege";
+        break;
+    case SE_UNSOLICITED_INPUT_NAME:
+        wos << L"SeUnsolicitedInputPrivilege";
+        break;
+    case SE_MACHINE_ACCOUNT_NAME:
+        wos << L"SeMachineAccountPrivilege";
+        break;
+    case SE_TCB_NAME:
+        wos << L"SeTcbPrivilege";
+        break;
+    case SE_SECURITY_NAME:
+        wos << L"SeSecurityPrivilege";
+        break;
+    case SE_TAKE_OWNERSHIP_NAME:
+        wos << L"SeTakeOwnershipPrivilege";
+        break;
+    case SE_LOAD_DRIVER_NAME:
+        wos << L"SeLoadDriverPrivilege";
+        break;
+    case SE_SYSTEM_PROFILE_NAME:
+        wos << L"SeSystemProfilePrivilege";
+        break;
+    case SE_SYSTEMTIME_NAME:
+        wos << L"SeSystemtimePrivilege";
+        break;
+    case SE_PROF_SINGLE_PROCESS_NAME:
+        wos << L"SeProfileSingleProcessPrivilege";
+        break;
+    case SE_INC_BASE_PRIORITY_NAME:
+        wos << L"SeIncreaseBasePriorityPrivilege";
+        break;
+    case SE_CREATE_PAGEFILE_NAME:
+        wos << L"SeCreatePagefilePrivilege";
+        break;
+    case SE_CREATE_PERMANENT_NAME:
+        wos << L"SeCreatePermanentPrivilege";
+        break;
+    case SE_BACKUP_NAME:
+        wos << L"SeBackupPrivilege";
+        break;
+    case SE_RESTORE_NAME:
+        wos << L"SeRestorePrivilege";
+        break;
+    case SE_SHUTDOWN_NAME:
+        wos << L"SeShutdownPrivilege";
+        break;
+    case SE_DEBUG_NAME:
+        wos << L"SeDebugPrivilege";
+        break;
+    case SE_AUDIT_NAME:
+        wos << L"SeAuditPrivilege";
+        break;
+    case SE_SYSTEM_ENVIRONMENT_NAME:
+        wos << L"SeSystemEnvironmentPrivilege";
+        break;
+    case SE_CHANGE_NOTIFY_NAME:
+        wos << L"SeChangeNotifyPrivilege";
+        break;
+    case SE_REMOTE_SHUTDOWN_NAME:
+        wos << L"SeRemoteShutdownPrivilege";
+        break;
+    case SE_UNDOCK_NAME:
+        wos << L"SeUndockPrivilege";
+        break;
+    case SE_SYNC_AGENT_NAME:
+        wos << L"SeSyncAgentPrivilege";
+        break;
+    case SE_ENABLE_DELEGATION_NAME:
+        wos << L"SeEnableDelegationPrivilege";
+        break;
+    case SE_MANAGE_VOLUME_NAME:
+        wos << L"SeManageVolumePrivilege";
+        break;
+    case SE_IMPERSONATE_NAME:
+        wos << L"SeImpersonatePrivilege";
+        break;
+    case SE_CREATE_GLOBAL_NAME:
+        wos << L"SeCreateGlobalPrivilege";
+        break;
+    case SE_TRUSTED_CREDMAN_ACCESS_NAME:
+        wos << L"SeTrustedCredManAccessPrivilege";
+        break;
+    case SE_RELABEL_NAME:
+        wos << L"SeRelabelPrivilege";
+        break;
+    case SE_INC_WORKING_SET_NAME:
+        wos << L"SeIncreaseWorkingSetPrivilege";
+        break;
+    case SE_TIME_ZONE_NAME:
+        wos << L"SeTimeZonePrivilege";
+        break;
+    case SE_CREATE_SYMBOLIC_LINK_NAME:
+        wos << L"SeCreateSymbolicLinkPrivilege";
+        break;
+    case SE_DELEGATE_SESSION_USER_IMPERSONATE_NAME:
+        wos << L"SeDelegateSessionUserImpersonatePrivilege";
+        break;
+    default:
+        wos << L"PRIVILEGE_UNKNOWN";
+        break;
     }
-
-    TOKEN_ELEVATION TokenInfo = {0};
-    DWORD dwReturnLength      = 0;
-
-    if ( ::GetTokenInformation(hToken.get(), TokenElevation, &TokenInfo, sizeof(TOKEN_ELEVATION), &dwReturnLength) )
-    {
-        return Ok(TokenInfo.TokenIsElevated == 1);
-    }
-
-    log::perror(L"GetTokenInformation()");
-    return Err(ErrorCode::ExternalApiCallFailed);
+    return wos;
 }
+*/
 
 std::wostream&
 operator<<(std::wostream& wos, const Process::Integrity i)
@@ -497,10 +609,10 @@ Processes()
             continue;
         }
 
-        processes.emplace_back(p);
+        processes.push_back(std::move(p));
     }
 
-    return Ok(processes);
+    return Ok(std::move(processes));
 }
 
 
@@ -715,7 +827,7 @@ Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
         }
         else
         {
-            perror(L"OpenProcess()");
+            log::perror(L"OpenProcess()");
         }
     }
     else
@@ -733,13 +845,13 @@ Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
              nullptr,
              nullptr,
              reinterpret_cast<LPSTARTUPINFO>(&si),
-             &pi) == 0 )
+             &pi) == FALSE )
     {
         perror(L"CreateProcess()");
         return Err(ErrorCode::RuntimeError);
     }
 
-    if ( ParentPid )
+    if ( hParentProcess )
     {
         if ( si.lpAttributeList != nullptr )
         {
@@ -750,11 +862,16 @@ Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
     dbg(L"'{}' spawned with PID {}", CommandLine, pi.dwProcessId);
 
     ::CloseHandle(pi.hThread);
-    ::CloseHandle(pi.hProcess);
 
-    return Ok(Process(pi.dwProcessId));
+    auto p = Process(pi.dwProcessId, pi.hProcess);
+    if ( !p.IsValid() )
+    {
+        return Err(ErrorCode::AllocationError);
+    }
+    return Ok(std::move(p));
 }
 
+#pragma endregion Process
 
 Result<bool>
 System(_In_ const std::wstring& CommandLine, _In_ const std::wstring& Operation)
@@ -769,7 +886,7 @@ System(_In_ const std::wstring& CommandLine, _In_ const std::wstring& Operation)
     return Ok(success);
 }
 
-
+#pragma region AppContainer
 AppContainer::AppContainer(
     std::wstring_view const& container_name,
     std::wstring_view const& executable_path,
@@ -1100,6 +1217,6 @@ AppContainer::restore_acls() -> bool
 
     return bRes;
 }
-
+#pragma endregion AppContainer
 
 } // namespace pwn::windows

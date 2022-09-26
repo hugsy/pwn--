@@ -74,7 +74,11 @@ struct Err : ErrorType
 template<class T>
 struct Ok : SuccessType<T>
 {
-    Ok(T value) : SuccessType<T>(value)
+    Ok(T&& value) : SuccessType<T>(std::move(value))
+    {
+    }
+
+    Ok(T& value) : SuccessType<T>(value)
     {
     }
 };

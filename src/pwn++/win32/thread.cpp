@@ -58,7 +58,7 @@ pwn::windows::Thread::Name()
             //
             if ( ReturnedSize == 0 )
             {
-                return Ok(L"");
+                return Ok(std::move(std::wstring{}));
             }
 
             //
