@@ -3,8 +3,6 @@
 #include "log.hpp"
 #include "win32/system.hpp"
 
-using namespace pwn::log;
-
 #include <accctrl.h>
 #include <aclapi.h>
 #include <psapi.h>
@@ -19,7 +17,6 @@ using namespace pwn::log;
 #include "handle.hpp"
 #include "utils.hpp"
 
-namespace fs = std::filesystem;
 
 static const std::array<pwn::windows::Process::Privilege, 37> PrivilegeNames = {
     L"SeAssignPrimaryTokenPrivilege",
@@ -222,7 +219,7 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
             DWORD size                = __countof(exeName);
             DWORD count               = ::QueryFullProcessImageName(m_ProcessHandle->get(), 0, exeName, &size);
 
-            m_Path = std::wstring {exeName};
+            m_Path = fs::path {exeName};
         }
 
         // Prepare other subclasses
@@ -279,10 +276,10 @@ Process::ProcessId() const
     return m_Pid;
 }
 
-fs::path const
+fs::path const&
 Process::Path() const
 {
-    return fs::path {m_Path};
+    return m_Path;
 }
 
 const HANDLE
@@ -749,7 +746,7 @@ Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
              reinterpret_cast<LPSTARTUPINFO>(&si),
              &pi) == FALSE )
     {
-        perror(L"CreateProcess()");
+        log::perror(L"CreateProcess()");
         return Err(ErrorCode::RuntimeError);
     }
 

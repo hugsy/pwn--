@@ -78,7 +78,7 @@ public:
     bool
     IsValid();
 
-    fs::path const
+    fs::path const&
     Path() const;
 
     u32 const
@@ -193,7 +193,7 @@ private:
     bool m_Valid;
     u32 m_Pid;
     u32 m_Ppid;
-    std::wstring m_Path;
+    fs::path m_Path;
     Integrity m_IntegrityLevel;
     SharedHandle m_ProcessHandle;
     Privileges m_Privileges;
