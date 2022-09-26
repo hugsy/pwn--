@@ -2,6 +2,7 @@
 
 #include "handle.hpp"
 #include "log.hpp"
+#include "system.hpp"
 #include "utils.hpp"
 
 #define WINDOWS_VERSION_1607 14393
@@ -49,12 +50,12 @@ pwn::windows::Thread::Name()
     //
     // Otherwise invoke NtQueryInformationThread(ThreadNameInformation)
     //
-    if(! m_ThreadHandle)
+    if ( !m_ThreadHandle )
     {
         auto res = ReOpenHandleWith(THREAD_QUERY_LIMITED_INFORMATION);
-        if(Failed(res))
+        if ( Failed(res) )
         {
-            return Err(res.code);
+            return Err(Error(res).code);
         }
     }
 
@@ -66,8 +67,12 @@ pwn::windows::Thread::Name()
     do
     {
         Buffer = std::make_unique<u8[]>(CurrentSize);
-        Status =
-            ::NtQueryInformationThread(m_ThreadHandle.get(), ThreadNameInformation, Buffer.get(), CurrentSize, &ReturnedSize);
+        Status = ::NtQueryInformationThread(
+            m_ThreadHandle.get(),
+            ThreadNameInformation,
+            Buffer.get(),
+            CurrentSize,
+            &ReturnedSize);
 
         if ( NT_SUCCESS(Status) )
         {
@@ -76,7 +81,7 @@ pwn::windows::Thread::Name()
             //
             if ( ReturnedSize == 0 )
             {
-                return Ok(std::move(std::wstring{}));
+                return Ok(std::move(std::wstring {}));
             }
 
             //
@@ -108,10 +113,10 @@ pwn::windows::Thread::Name()
 Result<bool>
 pwn::windows::Thread::Name(std::wstring const& name)
 {
-    if(! m_ThreadHandle)
+    if ( !m_ThreadHandle )
     {
         auto res = ReOpenHandleWith(THREAD_SET_LIMITED_INFORMATION);
-        if(Failed(res))
+        if ( Failed(res) )
         {
             return res;
         }
@@ -126,23 +131,24 @@ pwn::windows::Thread::Name(std::wstring const& name)
     // Make sure we're on 1607+
     //
     auto const Version = pwn::windows::system::version();
-    if(!Version)
+    if ( !Version )
     {
         return Err(ErrorCode::UnknownError);
     }
 
-    const BuildNumber = Version.get<3>();
-    if(BuildNumber < WINDOWS_VERSION_1607)
-    {
-        return Err(ErrorCode::BadVersion);
-    }
+    // const auto BuildNumber = std::get<2>(Version.value());
+    // if ( BuildNumber < WINDOWS_VERSION_1607 )
+    // {
+    //     return Err(ErrorCode::BadVersion);
+    // }
 
     //
     // Set the thread name
     //
     UNICODE_STRING usThreadName = {0};
     ::RtlInitUnicodeString(&usThreadName, (PWSTR)name.c_str());
-    auto Status = ::NtSetInformationThread(hThread.get(), ThreadNameInformation, &usThreadName, sizeof(UNICODE_STRING));
+    auto Status =
+        ::NtSetInformationThread(m_ThreadHandle.get(), ThreadNameInformation, &usThreadName, sizeof(UNICODE_STRING));
     if ( NT_SUCCESS(Status) )
     {
         return Ok(true);

@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "common.hpp"
+#include "handle.hpp"
 #include "nt.hpp"
 
 extern "C"
@@ -36,9 +37,11 @@ public:
         ReOpenHandleWith(TOKEN_ALL_ACCESS);
     }
 
-    ~Thread()
-    {
-    }
+    Thread(Thread const&) = default;
+
+    Thread(Thread&&) = default;
+
+    ~Thread() = default;
 
     ///
     /// @brief Get the thread name
