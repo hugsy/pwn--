@@ -29,6 +29,9 @@ public:
     Token&
     operator=(Token&&) = default;
 
+    bool
+    IsValid() const;
+
     Result<bool>
     ReOpenTokenWithAccess(const DWORD DesiredAccess);
 

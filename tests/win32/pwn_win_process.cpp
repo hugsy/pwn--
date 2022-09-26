@@ -1,7 +1,10 @@
+#include <chrono>
 #include <pwn.hpp>
 
 #include "../catch.hpp"
 #define NS "pwn::windows"
+
+using namespace std::chrono_literals;
 
 TEST_CASE("Process", "[" NS "]")
 {
@@ -9,23 +12,28 @@ TEST_CASE("Process", "[" NS "]")
     {
         pwn::windows::Process Local;
         REQUIRE(Local.IsValid());
-        REQUIRE(Local.ProcessId() == ::GetCurrentProcessId());
-        REQUIRE(Local.ProcessEnvironmentBlock() == (PPEB)::NtCurrentTeb()->ProcessEnvironmentBlock);
+        CHECK(Local.ProcessId() == ::GetCurrentProcessId());
+        CHECK(Local.ProcessEnvironmentBlock() == (PPEB)::NtCurrentTeb()->ProcessEnvironmentBlock);
     }
 
     SECTION("Remote tests")
     {
-        u32 TargetPid = 0;
+        const std::wstring TargetProcess = L"explorer.exe";
+        u32 TargetPid                    = 0;
         {
-            auto res = pwn::windows::system::pidof(L"explorer.exe");
+            auto res = pwn::windows::system::pidof(TargetProcess);
             REQUIRE(Success(res));
             REQUIRE(Value(res).size() > 0);
             TargetPid = Value(res).at(0);
+            INFO("PID Found = " << TargetPid);
+            REQUIRE(TargetPid > 0);
         }
 
         pwn::windows::Process Remote {TargetPid};
         REQUIRE(Remote.IsValid());
-        REQUIRE(Remote.ProcessId() == TargetPid);
-        REQUIRE(Remote.ProcessEnvironmentBlock() != nullptr);
+        CHECK(Remote.ProcessId() == TargetPid);
+        PPEB RemotePeb = Remote.ProcessEnvironmentBlock();
+        CHECK(RemotePeb != nullptr);
+        CHECK(((uptr)RemotePeb & 0xfff) == 0);
     }
 }

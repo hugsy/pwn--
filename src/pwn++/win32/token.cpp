@@ -6,6 +6,12 @@
 namespace pwn::windows
 {
 
+bool
+Token::IsValid() const
+{
+    return m_ProcessHandle != nullptr;
+}
+
 Result<bool>
 Token::IsElevated()
 {
@@ -31,7 +37,7 @@ Result<bool>
 Token::ReOpenTokenWithAccess(const DWORD DesiredAccess)
 {
     HANDLE h = nullptr;
-    if ( ::OpenProcessToken(m_ProcessHandle->get(), DesiredAccess, &h) )
+    if ( IsValid() && ::OpenProcessToken(m_ProcessHandle->get(), DesiredAccess, &h) )
     {
         m_ProcessTokenHandle = pwn::UniqueHandle {h};
         return Ok(true);

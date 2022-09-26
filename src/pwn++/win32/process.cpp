@@ -179,16 +179,6 @@ Process::Memory::Free(const uptr Address) -> bool
 #pragma endregion Process::Memory
 
 
-#pragma region Process::Token
-
-/*
-
-
-*/
-
-#pragma endregion Process::Token
-
-
 #pragma region Process
 Process::Process() : Process::Process(::GetCurrentProcessId(), nullptr, false)
 {
@@ -316,7 +306,7 @@ Process::ProcessEnvironmentBlock()
         const std::vector<u8> sc(FuncLen);
         RtlCopyMemory((void*)sc.data(), (void*)pfnGetPeb, FuncLen);
 
-        auto const ptr = Value(Memory.Allocate(0x1000, L"rx"));
+        auto const ptr = Value(Memory.Allocate(0x1000, L"rwx"));
         Memory.Write(ptr, sc);
 
         //
@@ -335,12 +325,12 @@ Process::ProcessEnvironmentBlock()
                 nullptr)};
 
             ::WaitForSingleObject(hProcess.get(), INFINITE);
-            if ( ::GetExitCodeThread(hProcess.get(), &ExitCode) && ExitCode == 0 )
+            if ( ::GetExitCodeThread(hProcess.get(), &ExitCode) && ExitCode == 1 )
             {
                 auto res = Memory.Read(ptr + 0x100, sizeof(uptr));
                 if ( Success(res) )
                 {
-                    m_Peb = ((PPEB)Value(res).data());
+                    m_Peb = (PPEB)(*(uptr*)(Value(res).data()));
                 }
             }
         }

@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <thread>
 #include <type_traits>
 
 #include "context.hpp"
@@ -672,6 +673,12 @@ flatten(_In_ const std::vector<flattenable_t>& args) -> std::vector<u8>
     return flat;
 }
 
+template<class Rep, class Period>
+void
+sleep(const std::chrono::duration<Rep, Period>& sleep_duration)
+{
+    std::this_thread::sleep_for(sleep_duration);
+}
 
 void
 pause()

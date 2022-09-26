@@ -346,6 +346,16 @@ hexdump(const u8* Buffer, const size_t BufferSize);
 PWNAPI void
 hexdump(const std::vector<u8>& bytes);
 
+///
+/// @brief
+///
+/// @param sleep_duration
+/// @return void<class Rep, class Period>
+///
+template<class Rep, class Period>
+void PWNAPI
+sleep(const std::chrono::duration<Rep, Period>& sleep_duration);
+
 
 ///
 /// @brief Pause the execution
@@ -357,7 +367,7 @@ pause();
 ///
 /// @brief Breakpoint the execution
 ///
-void
+void PWNAPI
 debugbreak();
 
 } // namespace pwn::utils
