@@ -23,14 +23,11 @@ class Process
     class Memory
     {
     public:
-        Memory() : Memory(nullptr)
-        {
-        }
-        Memory(SharedHandle ProcessHandle) : m_ProcessHandle(ProcessHandle)
+        Memory() : m_ProcessHandle(nullptr)
         {
         }
 
-        ~Memory()
+        Memory(SharedHandle ProcessHandle) : m_ProcessHandle(ProcessHandle)
         {
         }
 
@@ -74,14 +71,9 @@ public:
 
     Process(u32, HANDLE = nullptr, bool = false);
 
-    Process(Process const&) = default;
-
-    Process(Process&&) = default;
+    Process(Process const&);
 
     ~Process();
-
-    Process&
-    operator=(Process&&) = default;
 
     bool
     IsValid();
@@ -169,6 +161,14 @@ public:
     //
 
     ///
+    /// @brief Return a Process object of the current process
+    ///
+    /// @return Result<Process>
+    ///
+    static Result<Process>
+    Current();
+
+    ///
     /// @brief Create a new process
     ///
     /// @param CommandLine
@@ -183,6 +183,7 @@ public:
     ///
     /// @param lpCommandLine
     /// @param operation
+    ///
     /// @return Result<bool>
     ///
     static Result<bool>

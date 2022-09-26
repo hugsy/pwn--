@@ -11,7 +11,12 @@ TEST_CASE("Process", "[" NS "]")
     SECTION("Local tests")
     {
         pwn::windows::Process Local;
-        REQUIRE(Local.IsValid());
+        REQUIRE(Local.IsValid() == false);
+
+        auto res = pwn::windows::Process::Current();
+        REQUIRE(Success(res));
+        Local = Value(res);
+        REQUIRE(Local.IsValid() == true);
         CHECK(Local.ProcessId() == ::GetCurrentProcessId());
         CHECK(Local.ProcessEnvironmentBlock() == (PPEB)::NtCurrentTeb()->ProcessEnvironmentBlock);
     }

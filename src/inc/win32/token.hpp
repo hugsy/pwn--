@@ -10,7 +10,7 @@ namespace pwn::windows
 class Token
 {
 public:
-    Token() : Token(nullptr)
+    Token() : m_ProcessHandle(nullptr), m_ProcessTokenHandle(nullptr)
     {
     }
 
@@ -22,9 +22,26 @@ public:
         }
     }
 
-    Token(Token&&) = default;
+    Token&
+    operator=(Token const& OldCopy)
+    {
+        m_ProcessHandle = OldCopy.m_ProcessHandle;
 
-    ~Token() = default;
+        HANDLE hDuplicated;
+        ::DuplicateHandle(
+            m_ProcessTokenHandle.get(),
+            OldCopy.m_ProcessTokenHandle.get(),
+            m_ProcessTokenHandle.get(),
+            &hDuplicated,
+            0,
+            false,
+            DUPLICATE_SAME_ACCESS
+        );
+
+        m_ProcessTokenHandle = pwn::UniqueHandle{hDuplicated};
+
+        return *this;
+    }
 
     Token&
     operator=(Token&&) = default;

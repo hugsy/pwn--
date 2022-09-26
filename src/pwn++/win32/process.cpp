@@ -101,7 +101,7 @@ Process::Memory::Read(uptr const Address, usize Length)
         return Err(ErrorCode::RuntimeError);
     }
 
-    return Ok(std::move(out));
+    return Ok(out);
 }
 
 Result<usize>
@@ -180,9 +180,16 @@ Process::Memory::Free(const uptr Address) -> bool
 
 
 #pragma region Process
-Process::Process() : Process::Process(::GetCurrentProcessId(), nullptr, false)
-{
-}
+
+Process::Process() :
+    m_Pid(0),
+    m_IsSelf(0),
+    m_KillOnClose(false),
+    m_ProcessHandle(nullptr),
+    m_Peb(nullptr),
+    m_Privileges(),
+    m_Valid(false){}
+
 
 Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
     m_Pid(pid),
@@ -238,6 +245,20 @@ Process::~Process()
     {
         Kill();
     }
+}
+
+Process::Process(Process const& Copy)
+{
+    m_Valid          = Copy.m_Valid;
+    m_Pid            = Copy.m_Pid;
+    m_Ppid           = Copy.m_Ppid;
+    m_Path           = Copy.m_Path;
+    m_IntegrityLevel = Copy.m_IntegrityLevel;
+    m_ProcessHandle  = Copy.m_ProcessHandle;
+    m_Privileges     = Copy.m_Privileges;
+    m_KillOnClose    = Copy.m_KillOnClose;
+    m_IsSelf         = Copy.m_IsSelf;
+    m_Peb            = Copy.m_Peb;
 }
 
 bool
@@ -397,128 +418,6 @@ Process::EnumeratePrivileges()
 }
 
 
-/*
-std::wostream&
-operator<<(std::wostream& wos, Process::Privilege const& p)
-{
-    switch ( p )
-    {
-    case SE_CREATE_TOKEN_NAME:
-        wos << L"SeCreateTokenPrivilege";
-        break;
-    case SE_ASSIGNPRIMARYTOKEN_NAME:
-        wos << L"SeAssignPrimaryTokenPrivilege";
-        break;
-    case SE_LOCK_MEMORY_NAME:
-        wos << L"SeLockMemoryPrivilege";
-        break;
-    case SE_INCREASE_QUOTA_NAME:
-        wos << L"SeIncreaseQuotaPrivilege";
-        break;
-    case SE_UNSOLICITED_INPUT_NAME:
-        wos << L"SeUnsolicitedInputPrivilege";
-        break;
-    case SE_MACHINE_ACCOUNT_NAME:
-        wos << L"SeMachineAccountPrivilege";
-        break;
-    case SE_TCB_NAME:
-        wos << L"SeTcbPrivilege";
-        break;
-    case SE_SECURITY_NAME:
-        wos << L"SeSecurityPrivilege";
-        break;
-    case SE_TAKE_OWNERSHIP_NAME:
-        wos << L"SeTakeOwnershipPrivilege";
-        break;
-    case SE_LOAD_DRIVER_NAME:
-        wos << L"SeLoadDriverPrivilege";
-        break;
-    case SE_SYSTEM_PROFILE_NAME:
-        wos << L"SeSystemProfilePrivilege";
-        break;
-    case SE_SYSTEMTIME_NAME:
-        wos << L"SeSystemtimePrivilege";
-        break;
-    case SE_PROF_SINGLE_PROCESS_NAME:
-        wos << L"SeProfileSingleProcessPrivilege";
-        break;
-    case SE_INC_BASE_PRIORITY_NAME:
-        wos << L"SeIncreaseBasePriorityPrivilege";
-        break;
-    case SE_CREATE_PAGEFILE_NAME:
-        wos << L"SeCreatePagefilePrivilege";
-        break;
-    case SE_CREATE_PERMANENT_NAME:
-        wos << L"SeCreatePermanentPrivilege";
-        break;
-    case SE_BACKUP_NAME:
-        wos << L"SeBackupPrivilege";
-        break;
-    case SE_RESTORE_NAME:
-        wos << L"SeRestorePrivilege";
-        break;
-    case SE_SHUTDOWN_NAME:
-        wos << L"SeShutdownPrivilege";
-        break;
-    case SE_DEBUG_NAME:
-        wos << L"SeDebugPrivilege";
-        break;
-    case SE_AUDIT_NAME:
-        wos << L"SeAuditPrivilege";
-        break;
-    case SE_SYSTEM_ENVIRONMENT_NAME:
-        wos << L"SeSystemEnvironmentPrivilege";
-        break;
-    case SE_CHANGE_NOTIFY_NAME:
-        wos << L"SeChangeNotifyPrivilege";
-        break;
-    case SE_REMOTE_SHUTDOWN_NAME:
-        wos << L"SeRemoteShutdownPrivilege";
-        break;
-    case SE_UNDOCK_NAME:
-        wos << L"SeUndockPrivilege";
-        break;
-    case SE_SYNC_AGENT_NAME:
-        wos << L"SeSyncAgentPrivilege";
-        break;
-    case SE_ENABLE_DELEGATION_NAME:
-        wos << L"SeEnableDelegationPrivilege";
-        break;
-    case SE_MANAGE_VOLUME_NAME:
-        wos << L"SeManageVolumePrivilege";
-        break;
-    case SE_IMPERSONATE_NAME:
-        wos << L"SeImpersonatePrivilege";
-        break;
-    case SE_CREATE_GLOBAL_NAME:
-        wos << L"SeCreateGlobalPrivilege";
-        break;
-    case SE_TRUSTED_CREDMAN_ACCESS_NAME:
-        wos << L"SeTrustedCredManAccessPrivilege";
-        break;
-    case SE_RELABEL_NAME:
-        wos << L"SeRelabelPrivilege";
-        break;
-    case SE_INC_WORKING_SET_NAME:
-        wos << L"SeIncreaseWorkingSetPrivilege";
-        break;
-    case SE_TIME_ZONE_NAME:
-        wos << L"SeTimeZonePrivilege";
-        break;
-    case SE_CREATE_SYMBOLIC_LINK_NAME:
-        wos << L"SeCreateSymbolicLinkPrivilege";
-        break;
-    case SE_DELEGATE_SESSION_USER_IMPERSONATE_NAME:
-        wos << L"SeDelegateSessionUserImpersonatePrivilege";
-        break;
-    default:
-        wos << L"PRIVILEGE_UNKNOWN";
-        break;
-    }
-    return wos;
-}
-*/
-
 std::wostream&
 operator<<(std::wostream& wos, const Process::Integrity i)
 {
@@ -602,7 +501,7 @@ Processes()
         processes.push_back(std::move(p));
     }
 
-    return Ok(std::move(processes));
+    return Ok(processes);
 }
 
 
@@ -725,7 +624,7 @@ Process::AddPrivilege(std::wstring const& PrivilegeName)
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    return Ok(true);
+    return Ok<bool>(true);
 }
 
 
@@ -777,6 +676,19 @@ Process::HasPrivilege(std::wstring const& PrivilegeName)
 
     return Ok(bHasPriv == TRUE);
 }
+
+
+Result<Process>
+Process::Current()
+{
+    auto p = Process(::GetCurrentProcessId(), ::GetCurrentProcess(), false);
+    if(!p.IsValid())
+    {
+        return Err(ErrorCode::InitializationFailed);
+    }
+    return Ok(p);
+}
+
 
 Result<Process>
 Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
@@ -858,7 +770,7 @@ Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
     {
         return Err(ErrorCode::AllocationError);
     }
-    return Ok(std::move(p));
+    return Ok(p);
 }
 
 #pragma endregion Process
