@@ -161,7 +161,7 @@ Thread::Name(std::wstring const& name)
     //
     // Make sure we're on 1607+
     //
-    auto const Version     = pwn::windows::system::WindowsVersion();
+    auto const Version     = pwn::windows::System::WindowsVersion();
     const auto BuildNumber = std::get<2>(Version);
     if ( BuildNumber < WINDOWS_VERSION_1607 )
     {
@@ -245,7 +245,7 @@ ThreadGroup::List()
     }
 
     std::vector<u32> tids;
-    const u32 Pid    = pwn::windows::system::ProcessId(m_ProcessHandle->get());
+    const u32 Pid    = pwn::windows::System::ProcessId(m_ProcessHandle->get());
     THREADENTRY32 te = {0};
     te.dwSize        = sizeof(te);
     if ( ::Thread32First(h.get(), &te) )

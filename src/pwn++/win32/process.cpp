@@ -206,7 +206,7 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
 
         // Process PPID
         {
-            auto ppid = pwn::windows::system::ParentProcessId(pid);
+            auto ppid = pwn::windows::System::ParentProcessId(pid);
             m_Ppid    = ppid ? ppid.value() : -1;
         }
 

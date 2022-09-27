@@ -36,11 +36,11 @@ RtlGetVersion(POSVERSIONINFOEXW lpVersionInformation);
 
 EXTERN_C_END
 
-namespace pwn::windows::system
+namespace pwn::windows
 {
 
 auto
-PageSize() -> u32
+System::PageSize() -> u32
 {
     SYSTEM_INFO siSysInfo = {
         {0},
@@ -51,14 +51,14 @@ PageSize() -> u32
 
 
 auto
-ProcessId(_In_ HANDLE hProcess) -> u32
+System::ProcessId(_In_ HANDLE hProcess) -> u32
 {
     return (hProcess == GetCurrentProcess()) ? ::GetCurrentProcessId() : ::GetProcessId(hProcess);
 }
 
 
 auto
-ParentProcessId(_In_ u32 dwProcessId) -> std::optional<u32>
+System::ParentProcessId(_In_ u32 dwProcessId) -> std::optional<u32>
 {
     auto hProcessSnap = pwn::UniqueHandle {::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)};
     if ( !hProcessSnap )
@@ -86,7 +86,7 @@ ParentProcessId(_In_ u32 dwProcessId) -> std::optional<u32>
 
 
 auto
-PidOf(std::wstring_view const& ProcessName) -> Result<std::vector<u32>>
+System::PidOf(std::wstring_view const& ProcessName) -> Result<std::vector<u32>>
 {
     auto hProcessSnap = pwn::UniqueHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
     if ( !hProcessSnap )
@@ -132,7 +132,7 @@ PidOf(std::wstring_view const& ProcessName) -> Result<std::vector<u32>>
 
 
 auto
-ComputerName() -> const std::wstring
+System::ComputerName() -> const std::wstring
 {
     u32 dwBufLen                                 = MAX_COMPUTERNAME_LENGTH;
     wchar_t lpszBuf[MAX_COMPUTERNAME_LENGTH + 1] = {0};
@@ -147,7 +147,7 @@ ComputerName() -> const std::wstring
 
 
 auto
-username() -> const std::wstring
+System::UserName() -> const std::wstring
 {
     wchar_t lpwsBuffer[UNLEN + 1] = {0};
     u32 dwBufferSize              = UNLEN + 1;
@@ -163,7 +163,7 @@ username() -> const std::wstring
 
 
 auto
-modulename(_In_opt_ HMODULE hModule) -> std::optional<std::wstring>
+System::ModuleName(_In_opt_ HMODULE hModule) -> std::optional<std::wstring>
 {
     wchar_t lpwsBuffer[MAX_PATH] = {0};
     if ( ::GetModuleFileName(hModule, lpwsBuffer, MAX_PATH) == 0u )
@@ -177,13 +177,13 @@ modulename(_In_opt_ HMODULE hModule) -> std::optional<std::wstring>
 
 
 auto
-filename() -> std::optional<std::wstring>
+System::FileName() -> std::optional<std::wstring>
 {
-    return modulename(nullptr);
+    return ModuleName(nullptr);
 }
 
 std::tuple<u32, u32, u32>
-WindowsVersion()
+System::WindowsVersion()
 {
     OSVERSIONINFOEXW VersionInformation;
     VersionInformation.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXW);
@@ -197,4 +197,39 @@ WindowsVersion()
     return {VersionInformation.dwMajorVersion, VersionInformation.dwMinorVersion, VersionInformation.dwBuildNumber};
 }
 
-} // namespace pwn::windows::system
+Result<PVOID>
+System::QueryInternal(const SYSTEM_INFORMATION_CLASS SystemInformationClass, const usize InitialSize)
+{
+    usize Size         = InitialSize;
+    ULONG ReturnLength = 0;
+    NTSTATUS Status    = STATUS_SUCCESS;
+    auto Buffer        = ::LocalAlloc(LPTR, Size);
+    if ( !Buffer )
+    {
+        return Err(ErrorCode::AllocationError);
+    }
+
+    do
+    {
+        Status = ::NtQuerySystemInformation(SystemInformationClass, Buffer, Size, &ReturnLength);
+        if ( NT_SUCCESS(Status) )
+        {
+            break;
+        }
+
+        if ( Status == STATUS_INFO_LENGTH_MISMATCH )
+        {
+            Size   = ReturnLength;
+            Buffer = ::LocalReAlloc(Buffer, Size, LMEM_ZEROINIT);
+            continue;
+        }
+
+        log::ntperror(L"NtQueryInformationThread()", Status);
+        return Err(ErrorCode::PermissionDenied);
+
+    } while ( true );
+
+    return Ok(Buffer);
+}
+
+} // namespace pwn::windows

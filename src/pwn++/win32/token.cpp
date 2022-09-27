@@ -26,69 +26,67 @@ Token::ReOpenTokenWithAccess(const DWORD DesiredAccess)
 }
 
 
-Result<std::shared_ptr<u8[]>>
-Token::Query(TOKEN_INFORMATION_CLASS TokenInformationClass)
+Result<PVOID>
+Token::QueryInternal(const TOKEN_INFORMATION_CLASS TokenInformationClass, const usize InitialSize)
 {
-    DWORD ReturnLength;
-
-    //
-    // Get size
-    //
-    ::GetTokenInformation(m_ProcessTokenHandle.get(), TokenInformationClass, nullptr, 0, &ReturnLength);
-    if ( ::GetLastError() != ERROR_INSUFFICIENT_BUFFER )
+    usize Size         = InitialSize;
+    ULONG ReturnLength = 0;
+    NTSTATUS Status    = STATUS_SUCCESS;
+    auto Buffer        = ::LocalAlloc(LPTR, Size);
+    if ( !Buffer )
     {
+        return Err(ErrorCode::AllocationError);
+    }
+
+    do
+    {
+        Status =
+            ::NtQueryInformationToken(m_ProcessTokenHandle.get(), TokenInformationClass, Buffer, Size, &ReturnLength);
+        if ( NT_SUCCESS(Status) )
+        {
+            break;
+        }
+
+        if ( Status == STATUS_INFO_LENGTH_MISMATCH )
+        {
+            Size   = ReturnLength;
+            Buffer = ::LocalReAlloc(Buffer, Size, LMEM_ZEROINIT);
+            continue;
+        }
+
+        log::ntperror(L"NtQueryInformationToken()", Status);
         return Err(ErrorCode::PermissionDenied);
-    }
 
-    //
-    // Prepare the structure and get the information
-    //
-    auto TokenInformationBuffer = std::make_shared<u8[]>(ReturnLength);
+    } while ( true );
 
-    auto bRes = ::GetTokenInformation(
-        m_ProcessTokenHandle.get(),
-        TokenInformationClass,
-        TokenInformationBuffer.get(),
-        ReturnLength,
-        &ReturnLength);
-
-    if ( bRes == FALSE )
-    {
-        log::perror(L"GetTokenInformation()");
-        return Err(ErrorCode::ExternalApiCallFailed);
-    }
-
-    return Ok(TokenInformationBuffer);
+    return Ok(Buffer);
 }
 
 
 Result<bool>
 Token::IsElevated()
 {
-    auto res = Query(TokenElevation);
+    auto res = Query<TOKEN_ELEVATION>(TokenElevation);
     if ( Failed(res) )
     {
         return Err(Error(res).code);
     }
 
-    const auto TokenInfoBuffer       = Value(res);
-    const PTOKEN_ELEVATION TokenInfo = reinterpret_cast<PTOKEN_ELEVATION>(TokenInfoBuffer.get());
-    return Ok(TokenInfo->TokenIsElevated == 1);
+    return Ok(Value(res)->TokenIsElevated == 1);
 }
 
 
 Result<bool>
 Token::EnumeratePrivileges()
 {
-    auto res = Query(TokenPrivileges);
+    auto res = Query<TOKEN_PRIVILEGES>(TokenPrivileges);
     if ( Failed(res) )
     {
         return Err(Error(res).code);
     }
 
-    const auto TokenPrivBuffer    = Value(res);
-    const PTOKEN_PRIVILEGES Privs = reinterpret_cast<PTOKEN_PRIVILEGES>(TokenPrivBuffer.get());
-    const DWORD PrivilegeCount    = Privs->PrivilegeCount;
+    const auto Privs           = Value(res);
+    const DWORD PrivilegeCount = Privs->PrivilegeCount;
     dbg(L"{} privileges", PrivilegeCount);
     for ( u32 i = 0; i < PrivilegeCount; i++ )
     {
