@@ -6,7 +6,7 @@ env:
   REPO: hugsy/pwn--
   VERBOSE: "1"
   CMAKE_FLAGS: "-DDEBUG=OFF -DDISABLE_LOG_COLOR=OFF -DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_INCLUDE_DISASSEMBLER=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON"
-  EXTRA_DEFINITIONS: "-DNTDDI_WIN10_CO"
+  EXTRA_DEFINITIONS: ""
 on: push
 
 jobs:
@@ -80,7 +80,7 @@ jobs:
         mkdir ./build
         cd ./build
         cmake .. ${{ env.CMAKE_FLAGS }}
-        cmake --build . --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }} ${{ env.EXTRA_DEFINITIONS }}
+        cmake --build . --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }}
         cd ..
 
     - name: Run tests
