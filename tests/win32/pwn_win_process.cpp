@@ -8,7 +8,7 @@ using namespace std::chrono_literals;
 
 TEST_CASE("Process", "[" NS "]")
 {
-    SECTION("Local tests")
+    SECTION("Local process tests")
     {
         pwn::windows::Process Local;
         REQUIRE(Local.IsValid() == false);
@@ -22,12 +22,12 @@ TEST_CASE("Process", "[" NS "]")
         CHECK(((uptr)Local.ProcessEnvironmentBlock() & 0xfff) == 0);
     }
 
-    SECTION("Remote tests")
+    SECTION("Remote process tests")
     {
         const std::wstring TargetProcess = L"explorer.exe";
         u32 TargetPid                    = 0;
         {
-            auto res = pwn::windows::system::pidof(TargetProcess);
+            auto res = pwn::windows::system::PidOf(TargetProcess);
             REQUIRE(Success(res));
             REQUIRE(Value(res).size() > 0);
             TargetPid = Value(res).at(0);
@@ -41,5 +41,17 @@ TEST_CASE("Process", "[" NS "]")
         PPEB RemotePeb = Remote.ProcessEnvironmentBlock();
         CHECK(RemotePeb != nullptr);
         CHECK(((uptr)RemotePeb & 0xfff) == 0);
+    }
+
+    SECTION("Process property - threads")
+    {
+        auto CurrentProcess = Value(pwn::windows::Process::Current());
+        REQUIRE(CurrentProcess.IsValid() == true);
+
+        auto res = CurrentProcess.Threads.List();
+        REQUIRE(Success(res));
+        auto tids = Value(res);
+        REQUIRE(tids.size() > 0);
+        CHECK(CurrentProcess.Threads[tids[0]].IsValid());
     }
 }

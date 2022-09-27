@@ -4,8 +4,9 @@
 
 #include "common.hpp"
 #include "handle.hpp"
+#include "log.hpp"
 #include "nt.hpp"
-
+/*
 extern "C"
 {
     NTSTATUS
@@ -24,7 +25,7 @@ extern "C"
         IN ULONG ThreadInformationLength,
         OUT PULONG ReturnLength OPTIONAL);
 }
-
+*/
 
 namespace pwn::windows
 {
@@ -32,16 +33,94 @@ namespace pwn::windows
 class Thread
 {
 public:
-    Thread(u32 Tid = ::GetCurrentThreadId()) : m_Tid(Tid), m_Teb(0), m_ThreadHandle(nullptr)
+    Thread() :
+        m_Tid(0),
+        m_Valid(false),
+        m_ProcessHandle(nullptr),
+        m_ThreadHandle(nullptr),
+        m_ThreadHandleAccessMask(0),
+        m_Teb(0)
     {
-        ReOpenHandleWith(TOKEN_ALL_ACCESS);
     }
 
-    Thread(Thread const&) = default;
+    Thread(u32 Tid, SharedHandle ProcessHandle) :
+        m_Tid(Tid),
+        m_Valid(false),
+        m_ProcessHandle(ProcessHandle),
+        m_ThreadHandle(nullptr),
+        m_ThreadHandleAccessMask(0),
+        m_Teb(0)
+    {
+        if ( Success(ReOpenHandleWith(THREAD_QUERY_LIMITED_INFORMATION)) )
+        {
+            m_Valid = (m_ThreadHandle != nullptr);
+        }
+    }
 
-    Thread(Thread&&) = default;
+    Thread(Thread const& OldCopy) : m_ThreadHandle(nullptr), m_ThreadHandleAccessMask(0)
+    {
+        m_ProcessHandle = OldCopy.m_ProcessHandle;
+        m_Tid           = OldCopy.m_Tid;
+        m_Teb           = OldCopy.m_Teb;
+        m_Name          = OldCopy.m_Name;
 
-    ~Thread() = default;
+        const HANDLE hProcess   = m_ProcessHandle->get();
+        const HANDLE hSource    = OldCopy.m_ThreadHandle.get();
+        HANDLE hDupThreadHandle = INVALID_HANDLE_VALUE;
+        if ( ::DuplicateHandle(hProcess, hSource, hProcess, &hDupThreadHandle, 0, false, DUPLICATE_SAME_ACCESS) )
+        {
+            m_ThreadHandle           = pwn::UniqueHandle {hDupThreadHandle};
+            m_ThreadHandleAccessMask = OldCopy.m_ThreadHandleAccessMask;
+        }
+        else
+        {
+            log::perror(L"DuplicateHandle()");
+        }
+
+        m_Valid = (m_ThreadHandle != nullptr);
+    }
+
+    Thread&
+    operator=(Thread const& OldCopy)
+    {
+        m_ProcessHandle = OldCopy.m_ProcessHandle;
+        m_Tid           = OldCopy.m_Tid;
+        m_Teb           = OldCopy.m_Teb;
+        m_Name          = OldCopy.m_Name;
+
+        const HANDLE hProcess   = m_ProcessHandle->get();
+        const HANDLE hSource    = OldCopy.m_ThreadHandle.get();
+        HANDLE hDupThreadHandle = INVALID_HANDLE_VALUE;
+        if ( ::DuplicateHandle(hProcess, hSource, hProcess, &hDupThreadHandle, 0, false, DUPLICATE_SAME_ACCESS) )
+        {
+            m_ThreadHandle           = pwn::UniqueHandle {hDupThreadHandle};
+            m_ThreadHandleAccessMask = OldCopy.m_ThreadHandleAccessMask;
+        }
+        else
+        {
+            log::perror(L"DuplicateHandle()");
+        }
+
+        m_Valid = (m_ThreadHandle != nullptr);
+
+        return *this;
+    }
+
+    bool
+    IsValid() const
+    {
+        return m_Valid;
+    }
+
+
+    ///
+    /// @brief Get the thread Id
+    ///
+    /// @return u32 const
+    ///
+    u32 const
+    ThreadId() const;
+
 
     ///
     /// @brief Get the thread name
@@ -71,11 +150,53 @@ public:
     Result<bool>
     ReOpenHandleWith(DWORD DesiredAccess);
 
+    ///
+    /// @brief
+    ///
+    /// @return Result<Thread>
+    ///
+    static Result<Thread>
+    Current();
+
+    ///
+    /// @brief
+    ///
+    /// @param ProcessInformationClass
+    /// @return Result<std::shared_ptr<u8[]>>
+    ///
+    Result<std::shared_ptr<u8[]>>
+    Query(THREADINFOCLASS ThreadInformationClass);
+
 private:
     u32 m_Tid;
+    bool m_Valid;
     uptr m_Teb;
     std::optional<std::wstring> m_Name;
+    SharedHandle m_ProcessHandle;
     UniqueHandle m_ThreadHandle;
+    u32 m_ThreadHandleAccessMask;
+};
+
+
+class ThreadGroup
+{
+public:
+    ThreadGroup() : m_ProcessHandle(nullptr)
+    {
+    }
+
+    ThreadGroup(SharedHandle ProcessHandle) : m_ProcessHandle(ProcessHandle)
+    {
+    }
+
+    Result<std::vector<u32>>
+    List();
+
+    Thread
+    operator[](const u32 Tid);
+
+private:
+    SharedHandle m_ProcessHandle;
 };
 
 } // namespace pwn::windows

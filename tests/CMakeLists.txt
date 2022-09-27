@@ -27,7 +27,7 @@ if(MSVC)
         ${TEST_DIR}/pwn_win_thread.cpp
     )
 
-    add_compile_definitions(_UNICODE UNICODE)
+    add_compile_definitions(_UNICODE UNICODE CATCH_CONFIG_NO_WINDOWS_SEH)
 else()
     set(TEST_DIR ${COMMON_TEST_DIR}/linux)
     set(
@@ -68,6 +68,7 @@ target_link_libraries(tests
     PRIVATE
     $<TARGET_LINKER_FILE:pwn++>
     Userenv.lib
+    BCrypt.lib
 )
 
 add_custom_command(

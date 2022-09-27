@@ -6,5 +6,5 @@
 
 TEST_CASE("check page size", "[" NS "]")
 {
-    REQUIRE(pwn::windows::system::pagesize() == 0x1000);
+    REQUIRE(pwn::windows::system::PageSize() == 0x1000);
 }

@@ -1,5 +1,7 @@
 #include "win32/thread.hpp"
 
+#include <tlhelp32.h>
+
 #include "handle.hpp"
 #include "log.hpp"
 #include "system.hpp"
@@ -34,21 +36,44 @@ EXTERN_C_END
 #define TEB_OFFSET 0x18
 #endif
 
-Result<bool>
-pwn::windows::Thread::ReOpenHandleWith(DWORD DesiredAccess)
+namespace pwn::windows
 {
-    m_ThreadHandle = pwn::UniqueHandle {::OpenThread(DesiredAccess, 0, m_Tid)};
-    if ( !m_ThreadHandle )
+
+Result<bool>
+Thread::ReOpenHandleWith(DWORD DesiredAccess)
+{
+    //
+    // If we already have the sufficient rights, skip
+    //
+    if ( (m_ThreadHandleAccessMask & DesiredAccess) == DesiredAccess )
     {
+        return Ok(true);
+    }
+
+    //
+    // Otherwise, try to get it
+    //
+    u32 NewAccessMask = m_ThreadHandleAccessMask | DesiredAccess;
+    HANDLE hThread    = ::OpenThread(NewAccessMask, false, m_Tid);
+    if ( hThread == nullptr )
+    {
+        log::perror(L"OpenThread()");
         return Err(ErrorCode::PermissionDenied);
     }
 
+    m_ThreadHandle           = pwn::UniqueHandle {hThread};
+    m_ThreadHandleAccessMask = NewAccessMask;
     return Ok(true);
 }
 
+u32 const
+Thread::ThreadId() const
+{
+    return m_Tid;
+}
 
 Result<std::wstring>
-pwn::windows::Thread::Name()
+Thread::Name()
 {
     //
     // Is name in cache, just return it
@@ -61,14 +86,12 @@ pwn::windows::Thread::Name()
     //
     // Otherwise invoke NtQueryInformationThread(ThreadNameInformation)
     //
-    if ( !m_ThreadHandle )
+    auto res = ReOpenHandleWith(THREAD_QUERY_LIMITED_INFORMATION);
+    if ( Failed(res) )
     {
-        auto res = ReOpenHandleWith(THREAD_QUERY_LIMITED_INFORMATION);
-        if ( Failed(res) )
-        {
-            return Err(Error(res).code);
-        }
+        return Err(Error(res).code);
     }
+
 
     NTSTATUS Status              = STATUS_UNSUCCESSFUL;
     ULONG CurrentSize            = sizeof(UNICODE_STRING);
@@ -92,7 +115,7 @@ pwn::windows::Thread::Name()
             //
             if ( ReturnedSize == 0 )
             {
-                return Ok(std::move(std::wstring {}));
+                return Ok(std::wstring {});
             }
 
             //
@@ -122,15 +145,12 @@ pwn::windows::Thread::Name()
 
 
 Result<bool>
-pwn::windows::Thread::Name(std::wstring const& name)
+Thread::Name(std::wstring const& name)
 {
-    if ( !m_ThreadHandle )
+    auto res = ReOpenHandleWith(THREAD_SET_LIMITED_INFORMATION);
+    if ( Failed(res) )
     {
-        auto res = ReOpenHandleWith(THREAD_SET_LIMITED_INFORMATION);
-        if ( Failed(res) )
-        {
-            return res;
-        }
+        return res;
     }
 
     if ( name.size() >= 0xffff )
@@ -141,10 +161,8 @@ pwn::windows::Thread::Name(std::wstring const& name)
     //
     // Make sure we're on 1607+
     //
-    auto const Version = pwn::windows::system::version();
-
+    auto const Version     = pwn::windows::system::WindowsVersion();
     const auto BuildNumber = std::get<2>(Version);
-    info(L"B = {}", BuildNumber);
     if ( BuildNumber < WINDOWS_VERSION_1607 )
     {
         return Err(ErrorCode::BadVersion);
@@ -165,3 +183,95 @@ pwn::windows::Thread::Name(std::wstring const& name)
     log::ntperror(L"NtSetInformationThread(ThreadNameInformation) failed", Status);
     return Err(ErrorCode::ExternalApiCallFailed);
 }
+
+
+Result<Thread>
+Thread::Current()
+{
+    SharedHandle hProcess = std::make_shared<UniqueHandle>(UniqueHandle {::GetCurrentProcess()});
+    auto t                = Thread(::GetCurrentThreadId(), hProcess);
+    if ( !t.IsValid() )
+    {
+        return Err(ErrorCode::InitializationFailed);
+    }
+    return Ok(t);
+}
+
+
+Result<std::shared_ptr<u8[]>>
+Thread::Query(THREADINFOCLASS ThreadInformationClass)
+{
+    ULONG ReturnLength = 0;
+
+    //
+    // Request the structure size
+    //
+    NTSTATUS Status = STATUS_SUCCESS;
+    Status = ::NtQueryInformationThread(m_ThreadHandle.get(), ThreadInformationClass, nullptr, 0, &ReturnLength);
+    if ( Status != STATUS_INFO_LENGTH_MISMATCH )
+    {
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    //
+    // Prepare the structure and get the information
+    //
+    const ULONG BufferSize = ReturnLength;
+    auto Buffer            = std::make_shared<u8[]>(BufferSize);
+    Status                 = ::NtQueryInformationThread(
+        m_ThreadHandle.get(),
+        ThreadInformationClass,
+        Buffer.get(),
+        BufferSize,
+        &ReturnLength);
+    if ( !NT_SUCCESS(Status) )
+    {
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    return Ok(Buffer);
+}
+
+
+Result<std::vector<u32>>
+ThreadGroup::List()
+{
+    auto h = UniqueHandle {::CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0)};
+    if ( !h )
+    {
+        log::perror(L"CreateToolhelp32Snapshot()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    std::vector<u32> tids;
+    const u32 Pid    = pwn::windows::system::ProcessId(m_ProcessHandle->get());
+    THREADENTRY32 te = {0};
+    te.dwSize        = sizeof(te);
+    if ( ::Thread32First(h.get(), &te) )
+    {
+        do
+        {
+            if ( !(te.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) + sizeof(te.th32OwnerProcessID)) )
+                continue;
+            if ( !te.th32ThreadID )
+                continue;
+
+            if ( te.th32OwnerProcessID != Pid )
+                continue;
+
+            tids.push_back(te.th32ThreadID);
+
+            te.dwSize = sizeof(te);
+        } while ( ::Thread32Next(h.get(), &te) );
+    }
+
+    return Ok(tids);
+}
+
+Thread
+ThreadGroup::operator[](const u32 Tid)
+{
+    return Thread(Tid, m_ProcessHandle);
+}
+
+} // namespace pwn::windows

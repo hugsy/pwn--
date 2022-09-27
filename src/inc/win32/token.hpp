@@ -29,16 +29,15 @@ public:
 
         HANDLE hDuplicated;
         ::DuplicateHandle(
-            m_ProcessTokenHandle.get(),
+            m_ProcessHandle.get(),
             OldCopy.m_ProcessTokenHandle.get(),
-            m_ProcessTokenHandle.get(),
+            m_ProcessHandle.get(),
             &hDuplicated,
             0,
             false,
-            DUPLICATE_SAME_ACCESS
-        );
+            DUPLICATE_SAME_ACCESS);
 
-        m_ProcessTokenHandle = pwn::UniqueHandle{hDuplicated};
+        m_ProcessTokenHandle = pwn::UniqueHandle {hDuplicated};
 
         return *this;
     }

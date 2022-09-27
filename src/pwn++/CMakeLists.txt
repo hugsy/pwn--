@@ -117,6 +117,8 @@ message(STATUS "PWN_BUILD_TOOLKIT                      ${PWN_BUILD_TOOLKIT}")
 message(STATUS "PWN_BUILD_TESTING                      ${PWN_BUILD_TESTING}")
 message(STATUS "PWN_ENABLE_LUA_BACKDOOR                ${PWN_ENABLE_LUA_BACKDOOR}")
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:_DEBUG DEBUG>)
+
 if(PWN_INCLUDE_DISASSEMBLER)
     target_link_libraries(${PROJECT_NAME} PRIVATE Zydis)
     target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/zydis/include)
@@ -131,7 +133,8 @@ if(PWN_ENABLE_LUA_BACKDOOR)
     target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/lua/include)
 endif()
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:_DEBUG DEBUG>)
+target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/phnt)
+target_compile_definitions(${PROJECT_NAME} PRIVATE PHNT_VERSION=PHNT_THRESHOLD)
 
 #
 # Generate the build export header from cmake

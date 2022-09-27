@@ -40,7 +40,7 @@
 #define ALPC_MESSAGE_TOKEN_ATTRIBUTE 0x8000000
 #define ALPC_MESSAGE_DIRECT_ATTRIBUT 0x4000000
 #define ALPC_MESSAGE_WORK_ON_BEHALF_ATTRIBUTE 0x2000000
-
+/*
 typedef struct _QUAD
 {
     double DoNotUseThisField;
@@ -100,9 +100,11 @@ typedef struct _ALPC_PORT_ATTRIBUTES
     ULONG Reserved;
 #endif
 } ALPC_PORT_ATTRIBUTES, *PALPC_PORT_ATTRIBUTES;
+*/
+/*
+EXTERN_C_START
 
-
-extern "C" NTSYSAPI NTSTATUS NTAPI
+NTSYSAPI NTSTATUS NTAPI
 AlpcInitializeMessageAttribute(
     _In_ ULONG AttributeFlags,
     _Out_opt_ PALPC_MESSAGE_ATTRIBUTES Buffer,
@@ -110,7 +112,7 @@ AlpcInitializeMessageAttribute(
     _Out_ PULONG RequiredBufferSize);
 
 
-extern "C" NTSYSCALLAPI NTSTATUS NTAPI
+NTSYSCALLAPI NTSTATUS NTAPI
 NtAlpcConnectPort(
     __out PHANDLE PortHandle,
     __in PUNICODE_STRING PortName,
@@ -125,7 +127,7 @@ NtAlpcConnectPort(
     __in_opt PLARGE_INTEGER Timeout);
 
 
-extern "C" NTSYSCALLAPI NTSTATUS NTAPI
+NTSYSCALLAPI NTSTATUS NTAPI
 NtAlpcSendWaitReceivePort(
     __in HANDLE PortHandle,
     __in ULONG Flags,
@@ -137,18 +139,18 @@ NtAlpcSendWaitReceivePort(
     __in_opt PLARGE_INTEGER Timeout);
 
 
-extern "C" NTSYSCALLAPI NTSTATUS NTAPI
+NTSYSCALLAPI NTSTATUS NTAPI
 NtAlpcDisconnectPort(_In_ HANDLE PortHandle, _In_ ULONG Flags);
 
 
-extern "C" NTSYSCALLAPI NTSTATUS NTAPI
+NTSYSCALLAPI NTSTATUS NTAPI
 NtAlpcCreatePort(
     _Out_ PHANDLE PortHandle,
     _In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
     _In_opt_ PALPC_PORT_ATTRIBUTES PortAttributes);
 
 
-extern "C" NTSYSCALLAPI NTSTATUS NTAPI
+NTSYSCALLAPI NTSTATUS NTAPI
 NtAlpcAcceptConnectPort(
     _Out_ PHANDLE PortHandle,
     _In_ HANDLE ConnectionPortHandle,
@@ -160,7 +162,8 @@ NtAlpcAcceptConnectPort(
     _Inout_opt_ PALPC_MESSAGE_ATTRIBUTES ConnectionMessageAttributes,
     _In_ BOOLEAN AcceptConnection);
 
-
+EXTERN_C_END
+*/
 #ifdef _WIN64
 #define ALPC_PORT_MAXIMUM_MESSAGE_LENGTH 512
 #else

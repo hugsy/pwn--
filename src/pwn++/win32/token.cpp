@@ -14,27 +14,6 @@ Token::IsValid() const
 
 
 Result<bool>
-Token::IsElevated()
-{
-    TOKEN_ELEVATION TokenInfo = {0};
-    DWORD dwReturnLength      = 0;
-
-    if ( ::GetTokenInformation(
-             m_ProcessTokenHandle.get(),
-             TokenElevation,
-             &TokenInfo,
-             sizeof(TOKEN_ELEVATION),
-             &dwReturnLength) )
-    {
-        return Ok(TokenInfo.TokenIsElevated == 1);
-    }
-
-    log::perror(L"GetTokenInformation()");
-    return Err(ErrorCode::ExternalApiCallFailed);
-}
-
-
-Result<bool>
 Token::ReOpenTokenWithAccess(const DWORD DesiredAccess)
 {
     HANDLE h = nullptr;
@@ -71,11 +50,11 @@ Token::Query(TOKEN_INFORMATION_CLASS TokenInformationClass)
         TokenInformationClass,
         TokenInformationBuffer.get(),
         ReturnLength,
-        &ReturnLength
-    );
+        &ReturnLength);
 
-    if (bRes == FALSE )
+    if ( bRes == FALSE )
     {
+        log::perror(L"GetTokenInformation()");
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
@@ -84,17 +63,32 @@ Token::Query(TOKEN_INFORMATION_CLASS TokenInformationClass)
 
 
 Result<bool>
-Token::EnumeratePrivileges()
+Token::IsElevated()
 {
-    auto res = Query(TokenPrivileges);
-    if(Failed(res))
+    auto res = Query(TokenElevation);
+    if ( Failed(res) )
     {
         return Err(Error(res).code);
     }
 
-    const auto TokenPrivBuffer = Value(res);
+    const auto TokenInfoBuffer       = Value(res);
+    const PTOKEN_ELEVATION TokenInfo = reinterpret_cast<PTOKEN_ELEVATION>(TokenInfoBuffer.get());
+    return Ok(TokenInfo->TokenIsElevated == 1);
+}
+
+
+Result<bool>
+Token::EnumeratePrivileges()
+{
+    auto res = Query(TokenPrivileges);
+    if ( Failed(res) )
+    {
+        return Err(Error(res).code);
+    }
+
+    const auto TokenPrivBuffer    = Value(res);
     const PTOKEN_PRIVILEGES Privs = reinterpret_cast<PTOKEN_PRIVILEGES>(TokenPrivBuffer.get());
-    const DWORD PrivilegeCount = Privs->PrivilegeCount;
+    const DWORD PrivilegeCount    = Privs->PrivilegeCount;
     dbg(L"{} privileges", PrivilegeCount);
     for ( u32 i = 0; i < PrivilegeCount; i++ )
     {

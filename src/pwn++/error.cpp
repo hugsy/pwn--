@@ -1,10 +1,14 @@
 #include "error.hpp"
 
+// clang-format off
 #ifdef _WIN32
-#include <windows.h>
+// #include <windows.h>
+#include <phnt_windows.h>
+#include <phnt.h>
 #else
 #include <errno.h>
 #endif // _WIN32
+// clang-format on
 
 
 Err::Err(ErrorCode ErrCode) :

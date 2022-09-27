@@ -10,8 +10,10 @@
 
 #include "common.hpp"
 #include "handle.hpp"
+#include "thread.hpp"
 #include "token.hpp"
 #include "win32/nt.hpp"
+
 
 namespace fs = std::filesystem;
 
@@ -143,14 +145,23 @@ public:
     Result<bool>
     HasPrivilege(std::wstring const& PrivilegeName);
 
+    ///
+    /// @brief
+    ///
+    /// @param ProcessInformationClass
+    /// @return Result<std::shared_ptr<u8[]>>
+    ///
+    Result<std::shared_ptr<u8[]>>
+    Query(PROCESSINFOCLASS ProcessInformationClass);
+
     //
     // Submodules
     //
     Process::Memory Memory;
     Token Token;
+    ThreadGroup Threads;
 
     // TODO:
-    // - threads
     // - modules
 
 
@@ -188,8 +199,8 @@ public:
     System(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operation = L"open");
 
 private:
-    bool m_Valid;
     u32 m_Pid;
+    bool m_Valid;
     u32 m_Ppid;
     fs::path m_Path;
     Integrity m_IntegrityLevel;
@@ -203,7 +214,7 @@ private:
 
 ///
 /// @brief Returns a basic list of processes, in a vector of tuple <Process>
-/// TODO: switch to generator?
+/// TODO: switch to return Result<ProcessGroup> + allow Predicate as argument to filter out stuff
 ///
 /// @return std::vector<Process>
 ///

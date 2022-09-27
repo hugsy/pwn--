@@ -6,6 +6,10 @@
 // Windows Header Files
 #pragma warning(push)
 #pragma warning(disable : 4005) // Disable macro re-definition warnings
+// clang-format off
+#include <phnt_windows.h>
+#include <phnt.h>
+/*
 #include <windows.h>
 
 #ifndef _WINTERNL_
@@ -19,7 +23,8 @@
 #ifndef _NTSTATUS_
 #include <ntstatus.h>
 #endif // _NTSTATUS_
-
+*/
+// clang-format on
 #pragma warning(pop)
 
 

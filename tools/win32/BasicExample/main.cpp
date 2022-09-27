@@ -7,15 +7,15 @@
 
 namespace ctx = pwn::context;
 
-constexpr PROCESS_INFORMATION_CLASS ProcessDebugAuthInformation =
-    (const PROCESS_INFORMATION_CLASS)0x5A; // 90 -  exists since REDSTONE4
+// constexpr PROCESS_INFORMATION_CLASS ProcessDebugAuthInformation =
+//     (const PROCESS_INFORMATION_CLASS)0x5A; // 90 -  exists since REDSTONE4
 
 IMPORT_EXTERNAL_FUNCTION(
     L"ntdll.dll",
     NtSetInformationProcess,
     NTSTATUS,
     HANDLE ProcessHandle,
-    PROCESS_INFORMATION_CLASS ProcessInformationClass,
+    int ProcessInformationClass,
     PVOID ProcessInformation,
     ULONG ProcessInformationLength);
 
@@ -212,7 +212,7 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     // dbg(L"started notepad");
     // {
-    //     auto res = pwn::windows::system::pidof(L"Notepad.exe");
+    //     auto res = pwn::windows::system::PidOf(L"Notepad.exe");
     //     if ( Success(res) )
     //     {
     //         auto pids = Value(res);
@@ -226,7 +226,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     //     else
     //     {
     //         auto const& e = Error(res);
-    //         err(L"pidof('notepad') failed with GLE={:x}", e.number);
+    //         err(L"PidOf('notepad') failed with GLE={:x}", e.number);
     //     }
     // }
     // dbg(L"ended notepad");

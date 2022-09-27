@@ -40,7 +40,7 @@ namespace pwn::windows::system
 {
 
 auto
-pagesize() -> u32
+PageSize() -> u32
 {
     SYSTEM_INFO siSysInfo = {
         {0},
@@ -51,25 +51,24 @@ pagesize() -> u32
 
 
 auto
-pid(_In_ HANDLE hProcess) -> u32
+ProcessId(_In_ HANDLE hProcess) -> u32
 {
-    return ::GetProcessId(hProcess);
+    return (hProcess == GetCurrentProcess()) ? ::GetCurrentProcessId() : ::GetProcessId(hProcess);
 }
 
 
 auto
-ppid(_In_ u32 dwProcessId) -> std::optional<u32>
+ParentProcessId(_In_ u32 dwProcessId) -> std::optional<u32>
 {
-    auto hProcessSnap = pwn::UniqueHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+    auto hProcessSnap = pwn::UniqueHandle {::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)};
     if ( !hProcessSnap )
     {
-        perror(L"CreateToolhelp32Snapshot()");
+        log::perror(L"CreateToolhelp32Snapshot()");
         return std::nullopt;
     }
 
     PROCESSENTRY32 pe = {0};
     pe.dwSize         = sizeof(PROCESSENTRY32);
-    i32 dwPpid        = -1;
 
     if ( ::Process32First(hProcessSnap.get(), &pe) )
     {
@@ -77,72 +76,63 @@ ppid(_In_ u32 dwProcessId) -> std::optional<u32>
         {
             if ( pe.th32ProcessID == dwProcessId )
             {
-                dwPpid = pe.th32ParentProcessID;
-                break;
+                return pe.th32ParentProcessID;
             }
-        } while ( ::Process32Next(hProcessSnap.get(), &pe) );
+        } while ( ::Process32NextW(hProcessSnap.get(), &pe) );
     }
 
-    if ( dwPpid < 0 )
-        return std::nullopt;
-
-    return dwPpid;
+    return std::nullopt;
 }
 
 
 auto
-pidof(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>
+PidOf(std::wstring_view const& ProcessName) -> Result<std::vector<u32>>
 {
     auto hProcessSnap = pwn::UniqueHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
     if ( !hProcessSnap )
     {
-        perror(L"CreateToolhelp32Snapshot()");
-        return Err(ErrorCode::RuntimeError);
+        log::perror(L"CreateToolhelp32Snapshot()");
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
     std::vector<u32> pids;
 
+    PROCESSENTRY32W pe32 = {0};
+    pe32.dwSize          = sizeof(PROCESSENTRY32W);
+
+    if ( ::Process32FirstW(hProcessSnap.get(), &pe32) == 0 )
+    {
+        log::perror(L"Process32First()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    std::wstring targetProcessName = std::wstring {ProcessName};
+    std::transform(targetProcessName.begin(), targetProcessName.end(), targetProcessName.begin(), ::towlower);
+
     do
     {
-        PROCESSENTRY32W pe32 = {0};
-        pe32.dwSize          = sizeof(PROCESSENTRY32W);
-
-        if ( ::Process32FirstW(hProcessSnap.get(), &pe32) == 0 )
+        auto hProcess = pwn::UniqueHandle {::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pe32.th32ProcessID)};
+        if ( !hProcess )
         {
-            perror(L"Process32First()");
-            break;
+            continue;
         }
 
-        do
+        std::wstring currentProcessName {pe32.szExeFile};
+        std::transform(currentProcessName.begin(), currentProcessName.end(), currentProcessName.begin(), ::towlower);
+
+        if ( targetProcessName == currentProcessName )
         {
-            auto hProcess =
-                pwn::UniqueHandle(::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pe32.th32ProcessID));
-            if ( !hProcess )
-            {
-                continue;
-            }
+            pids.push_back(pe32.th32ProcessID);
+        }
 
-            std::wstring currentProcessName {pe32.szExeFile};
-            std::transform(
-                currentProcessName.begin(),
-                currentProcessName.end(),
-                currentProcessName.begin(),
-                ::towlower);
-
-            if ( targetProcessName == currentProcessName )
-            {
-                pids.push_back(pe32.th32ProcessID);
-            }
-
-        } while ( ::Process32NextW(hProcessSnap.get(), &pe32) != 0 );
-    } while ( false );
+    } while ( ::Process32NextW(hProcessSnap.get(), &pe32) != 0 );
 
     return Ok(pids);
 }
 
 
 auto
-computername() -> const std::wstring
+ComputerName() -> const std::wstring
 {
     u32 dwBufLen                                 = MAX_COMPUTERNAME_LENGTH;
     wchar_t lpszBuf[MAX_COMPUTERNAME_LENGTH + 1] = {0};
@@ -152,7 +142,7 @@ computername() -> const std::wstring
         // that case is weird enough it justifies throwing
         throw std::runtime_error("GetComputerName() failed");
     }
-    return std::wstring(lpszBuf);
+    return std::wstring {lpszBuf};
 }
 
 
@@ -193,7 +183,7 @@ filename() -> std::optional<std::wstring>
 }
 
 std::tuple<u32, u32, u32>
-version()
+WindowsVersion()
 {
     OSVERSIONINFOEXW VersionInformation;
     VersionInformation.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXW);

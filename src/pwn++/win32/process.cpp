@@ -1,8 +1,5 @@
 #include "win32/process.hpp"
 
-#include "log.hpp"
-#include "win32/system.hpp"
-
 #include <accctrl.h>
 #include <aclapi.h>
 #include <psapi.h>
@@ -15,7 +12,9 @@
 #include <utility>
 
 #include "handle.hpp"
+#include "log.hpp"
 #include "utils.hpp"
+#include "win32/system.hpp"
 
 
 static const std::array<pwn::windows::Process::Privilege, 37> PrivilegeNames = {
@@ -185,7 +184,9 @@ Process::Process() :
     m_ProcessHandle(nullptr),
     m_Peb(nullptr),
     m_Privileges(),
-    m_Valid(false){}
+    m_Valid(false)
+{
+}
 
 
 Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
@@ -205,7 +206,7 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
 
         // Process PPID
         {
-            auto ppid = pwn::windows::system::ppid(pid);
+            auto ppid = pwn::windows::system::ParentProcessId(pid);
             m_Ppid    = ppid ? ppid.value() : -1;
         }
 
@@ -224,9 +225,11 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
 
         // Prepare other subclasses
         {
-            this->Memory = Process::Memory::Memory(m_ProcessHandle);
+            this->Memory = windows::Process::Memory::Memory(m_ProcessHandle);
 
-            this->Token = pwn::windows::Token(m_ProcessHandle);
+            this->Token = windows::Token(m_ProcessHandle);
+
+            this->Threads = windows::ThreadGroup(m_ProcessHandle);
         }
 
         m_Valid = true;
@@ -256,6 +259,9 @@ Process::Process(Process const& Copy)
     m_KillOnClose    = Copy.m_KillOnClose;
     m_IsSelf         = Copy.m_IsSelf;
     m_Peb            = Copy.m_Peb;
+    Memory           = windows::Process::Memory::Memory(m_ProcessHandle);
+    Token            = windows::Token(m_ProcessHandle);
+    Threads          = windows::ThreadGroup(m_ProcessHandle);
 }
 
 bool
@@ -631,7 +637,7 @@ Result<Process>
 Process::Current()
 {
     auto p = Process(::GetCurrentProcessId(), ::GetCurrentProcess(), false);
-    if(!p.IsValid())
+    if ( !p.IsValid() )
     {
         return Err(ErrorCode::InitializationFailed);
     }
@@ -720,6 +726,40 @@ Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
         return Err(ErrorCode::AllocationError);
     }
     return Ok(p);
+}
+
+Result<std::shared_ptr<u8[]>>
+Process::Query(PROCESSINFOCLASS ProcessInformationClass)
+{
+    ULONG ReturnLength;
+
+    //
+    // Request the structure size
+    //
+    NTSTATUS Status = STATUS_SUCCESS;
+    Status = ::NtQueryInformationProcess(m_ProcessHandle->get(), ProcessInformationClass, nullptr, 0, &ReturnLength);
+    if ( Status != STATUS_INFO_LENGTH_MISMATCH )
+    {
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    //
+    // Prepare the structure and get the information
+    //
+    const ULONG BufferSize = ReturnLength;
+    auto Buffer            = std::make_shared<u8[]>(BufferSize);
+    Status                 = ::NtQueryInformationProcess(
+        m_ProcessHandle->get(),
+        ProcessInformationClass,
+        Buffer.get(),
+        BufferSize,
+        &ReturnLength);
+    if ( !NT_SUCCESS(Status) )
+    {
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    return Ok(Buffer);
 }
 
 #pragma endregion Process

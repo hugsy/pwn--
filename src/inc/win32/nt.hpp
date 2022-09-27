@@ -12,9 +12,12 @@ Sources:
  - https://www.vergiliusproject.com/
 --*/
 
-
-#include <windows.h>
-#include <winternl.h>
+// clang-format off
+#include <phnt_windows.h>
+#include <phnt.h>
+// #include <windows.h>
+// #include <winternl.h>
+// clang-format on
 
 
 #pragma comment(lib, "ntdll.lib")
@@ -38,7 +41,7 @@ THREAD_INFORMATION_CLASS
 #define ThreadNameInformation ((THREADINFOCLASS)38)
 /* EndOf(THREAD_INFORMATION_CLASS) */
 
-
+/*
 typedef struct _RTL_PROCESS_MODULES
 {
     ULONG NumberOfModules;
@@ -100,7 +103,7 @@ typedef struct __SYSTEM_HANDLE_INFORMATION
     ULONG NumberOfHandles;
     SYSTEM_HANDLE_TABLE_ENTRY_INFO Handles[ANYSIZE_ARRAY];
 } SYSTEM_HANDLE_INFORMATION, *PSYSTEM_HANDLE_INFORMATION;
-
+*/
 
 /********************************************************************************
  *
@@ -116,7 +119,7 @@ typedef struct _RTL_ACTIVATION_CONTEXT_STACK_FRAME
     ULONG Flags;
 } RTL_ACTIVATION_CONTEXT_STACK_FRAME, *PRTL_ACTIVATION_CONTEXT_STACK_FRAME;
 
-
+/*
 typedef struct _ACTIVATION_CONTEXT_STACK
 {
     PRTL_ACTIVATION_CONTEXT_STACK_FRAME ActiveFrame;
@@ -148,7 +151,7 @@ typedef struct _TEB_ACTIVE_FRAME
     struct _TEB_ACTIVE_FRAME* Previous;
     PTEB_ACTIVE_FRAME_CONTEXT Context;
 } TEB_ACTIVE_FRAME, *PTEB_ACTIVE_FRAME;
-
+*/
 
 typedef struct _BIG_POOL_INFO
 {

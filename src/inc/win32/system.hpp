@@ -18,19 +18,19 @@
 namespace pwn::windows::system
 {
 PWNAPI auto
-pagesize() -> u32;
+PageSize() -> u32;
 
 PWNAPI auto
-pid(_In_ HANDLE hProcess) -> u32;
+ProcessId(_In_ HANDLE hProcess) -> u32;
 
 PWNAPI auto
-ppid(_In_ u32 dwProcessId) -> std::optional<u32>;
+ParentProcessId(_In_ u32 dwProcessId) -> std::optional<u32>;
 
 PWNAPI auto
-pidof(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>;
+PidOf(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>;
 
 PWNAPI auto
-computername() -> const std::wstring;
+ComputerName() -> const std::wstring;
 
 PWNAPI auto
 username() -> const std::wstring;
@@ -48,5 +48,5 @@ filename() -> std::optional<std::wstring>;
 ///
 PWNAPI
 std::tuple<u32, u32, u32>
-version();
+WindowsVersion();
 } // namespace pwn::windows::system

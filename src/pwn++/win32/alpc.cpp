@@ -138,8 +138,8 @@ pwn::windows::alpc::Base::close()
 pwn::windows::alpc::Message
 pwn::windows::alpc::Base::send_and_receive(HANDLE hSocket, pwn::windows::alpc::Message& MsgIn)
 {
-    DWORD dwMsgOutLen = 2048;
-    auto lpRawMsgOut  = std::make_unique<BYTE[]>(dwMsgOutLen);
+    SIZE_T dwMsgOutLen = 2048;
+    auto lpRawMsgOut   = std::make_unique<BYTE[]>(dwMsgOutLen);
 
     NTSTATUS Status = ::NtAlpcSendWaitReceivePort(
         hSocket,
@@ -228,8 +228,8 @@ pwn::windows::alpc::Server::accept() -> Result<PHANDLE>
     //
     // Wait for initial request
     //
-    DWORD OriginalMsgSize = ConnectionRequestMsg.Size() & MAXDWORD;
-    NTSTATUS Status       = ::NtAlpcSendWaitReceivePort(
+    SIZE_T OriginalMsgSize = ConnectionRequestMsg.Size();
+    NTSTATUS Status        = ::NtAlpcSendWaitReceivePort(
         m_AlpcSocketHandle,
         0,
         nullptr,

@@ -85,7 +85,7 @@ target_compile_definitions(
     PRIVATE
     _UNICODE UNICODE
 
-    $<$<CONFIG:Debug>:_DISABLE_VECTOR_ANNOTATION _DISABLE_STRING_ANNOTATION>
+    $<$<CONFIG:Debug>:_DISABLE_VECTOR_ANNOTATION _DISABLE_STRING_ANNOTATION >
 )
 
 target_compile_options(
@@ -117,4 +117,5 @@ target_link_libraries(
     ws2_32.lib
     Userenv.lib
     Rpcrt4.lib
+    BCrypt.lib
 )

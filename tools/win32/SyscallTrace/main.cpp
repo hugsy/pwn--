@@ -98,7 +98,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     // u32 pid = -1;
     // {
-    //     auto res = pwn::windows::system::pidof(target_process);
+    //     auto res = pwn::windows::system::PidOf(target_process);
     //     if ( !Success(res) )
     //     {
     //         err(L"failed to find PID of '{}'", target_process);
