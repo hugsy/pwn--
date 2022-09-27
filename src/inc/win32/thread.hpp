@@ -32,7 +32,7 @@ public:
         m_ThreadHandleAccessMask(0),
         m_Teb(0)
     {
-        if ( Success(ReOpenHandleWith(THREAD_QUERY_LIMITED_INFORMATION)) )
+        if ( Success(ReOpenThreadWith(THREAD_QUERY_LIMITED_INFORMATION)) )
         {
             m_Valid = (m_ThreadHandle != nullptr);
         }
@@ -129,7 +129,7 @@ public:
     /// @return false
     ///
     Result<bool>
-    ReOpenHandleWith(DWORD DesiredAccess);
+    ReOpenThreadWith(DWORD DesiredAccess);
 
     ///
     /// @brief
@@ -198,6 +198,9 @@ public:
 
     Result<std::vector<u32>>
     List();
+
+    Thread
+    at(const u32 Tid);
 
     Thread
     operator[](const u32 Tid);

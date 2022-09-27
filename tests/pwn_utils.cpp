@@ -23,8 +23,8 @@ TEST_CASE("base64", "[" NS "]")
 
     SECTION("Base64 encoding test")
     {
-        auto encoded_string1 = pwn::utils::base64_encode(vec.data(), vec.size());
-        auto encoded_string2 = pwn::utils::base64_encode(vec);
+        auto encoded_string1 = pwn::utils::Base64::Encode(vec.data(), vec.size());
+        auto encoded_string2 = pwn::utils::Base64::Encode(vec);
         REQUIRE(Success(encoded_string1) == true);
         REQUIRE(Success(encoded_string2) == true);
         REQUIRE(Value(encoded_string1) == Value(encoded_string2));
@@ -34,11 +34,11 @@ TEST_CASE("base64", "[" NS "]")
 
     SECTION("Base64 dencoding test")
     {
-        auto p = pwn::utils::base64_decode(vec_enc);
+        auto p = pwn::utils::Base64::Decode(vec_enc);
         REQUIRE(Success(p));
         REQUIRE(Value(p) == vec);
 
-        auto p2 = pwn::utils::base64_decode("qweasdzxcpokpo123==");
+        auto p2 = pwn::utils::Base64::Decode("qweasdzxcpokpo123==");
         REQUIRE(Success(p2) == false);
     }
 }

@@ -215,6 +215,15 @@ public:
 
 private:
     ///
+    /// @brief
+    ///
+    /// @param DesiredAccess
+    /// @return Result<bool>
+    ///
+    Result<bool>
+    ReOpenProcessWith(const DWORD DesiredAccess);
+
+    ///
     /// @brief Should not be called directly
     ///
     /// @param ProcessInformationClass
@@ -230,6 +239,7 @@ private:
     fs::path m_Path;
     Integrity m_IntegrityLevel;
     SharedHandle m_ProcessHandle;
+    DWORD m_ProcessHandleAccessMask;
     Privileges m_Privileges;
     bool m_KillOnClose;
     bool m_IsSelf;

@@ -1,4 +1,3 @@
-#include <chrono>
 #include <pwn.hpp>
 
 #include "../catch.hpp"

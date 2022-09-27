@@ -40,7 +40,7 @@ namespace pwn::windows
 {
 
 Result<bool>
-Thread::ReOpenHandleWith(DWORD DesiredAccess)
+Thread::ReOpenThreadWith(DWORD DesiredAccess)
 {
     //
     // If we already have the sufficient rights, skip
@@ -86,7 +86,7 @@ Thread::Name()
     //
     // Otherwise invoke NtQueryInformationThread(ThreadNameInformation)
     //
-    auto res = ReOpenHandleWith(THREAD_QUERY_LIMITED_INFORMATION);
+    auto res = ReOpenThreadWith(THREAD_QUERY_LIMITED_INFORMATION);
     if ( Failed(res) )
     {
         return Err(Error(res).code);
@@ -147,7 +147,7 @@ Thread::Name()
 Result<bool>
 Thread::Name(std::wstring const& name)
 {
-    auto res = ReOpenHandleWith(THREAD_SET_LIMITED_INFORMATION);
+    auto res = ReOpenThreadWith(THREAD_SET_LIMITED_INFORMATION);
     if ( Failed(res) )
     {
         return res;
@@ -270,9 +270,27 @@ ThreadGroup::List()
 }
 
 Thread
+ThreadGroup::at(const u32 Tid)
+{
+    auto res = List();
+    if ( Failed(res) )
+    {
+        throw std::runtime_error("Thread enumeration failed");
+    }
+
+    const auto tids = Value(res);
+    if ( std::find(tids.cbegin(), tids.cend(), Tid) == std::end(tids) )
+    {
+        throw std::range_error("Invalid thread Id");
+    }
+
+    return Thread(Tid, m_ProcessHandle);
+}
+
+Thread
 ThreadGroup::operator[](const u32 Tid)
 {
-    return Thread(Tid, m_ProcessHandle);
+    return at(Tid);
 }
 
 } // namespace pwn::windows

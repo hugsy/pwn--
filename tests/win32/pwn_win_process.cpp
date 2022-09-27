@@ -1,10 +1,7 @@
-#include <chrono>
 #include <pwn.hpp>
 
 #include "../catch.hpp"
 #define NS "pwn::windows"
-
-using namespace std::chrono_literals;
 
 TEST_CASE("Process Local", "[" NS "]")
 {
@@ -52,8 +49,8 @@ TEST_CASE("Process Remote", "[" NS "]")
 {
     SECTION("Remote process tests")
     {
-        const std::wstring TargetProcess = L"explorer.exe";
-        u32 TargetPid                    = 0;
+        const std::wstring TargetProcess {L"explorer.exe"};
+        u32 TargetPid = 0;
         {
             auto res = pwn::windows::System::PidOf(TargetProcess);
             REQUIRE(Success(res));

@@ -14,25 +14,46 @@ Token::IsValid() const
 
 
 Result<bool>
-Token::ReOpenTokenWithAccess(const DWORD DesiredAccess)
+Token::ReOpenTokenWith(const DWORD DesiredAccess)
 {
-    HANDLE h = nullptr;
-    if ( IsValid() && ::OpenProcessToken(m_ProcessHandle->get(), DesiredAccess, &h) )
+    if ( IsValid() == false )
     {
-        m_ProcessTokenHandle = pwn::UniqueHandle {h};
+        return Err(ErrorCode::InvalidState);
+    }
+
+    if ( (m_ProcessTokenAccessMask & DesiredAccess) == DesiredAccess )
+    {
         return Ok(true);
     }
-    return Err(ErrorCode::PermissionDenied);
+
+    HANDLE hToken          = nullptr;
+    DWORD NewDesiredAccess = m_ProcessTokenAccessMask | DesiredAccess;
+
+    if ( ::OpenProcessToken(m_ProcessHandle->get(), NewDesiredAccess, &hToken) == FALSE || !hToken )
+    {
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    m_ProcessTokenHandle     = pwn::UniqueHandle {hToken};
+    m_ProcessTokenAccessMask = NewDesiredAccess;
+    return Ok(true);
 }
 
 
 Result<PVOID>
 Token::QueryInternal(const TOKEN_INFORMATION_CLASS TokenInformationClass, const usize InitialSize)
 {
-    usize Size         = InitialSize;
-    ULONG ReturnLength = 0;
-    NTSTATUS Status    = STATUS_SUCCESS;
-    auto Buffer        = ::LocalAlloc(LPTR, Size);
+    usize Size             = InitialSize;
+    ULONG ReturnLength     = 0;
+    NTSTATUS Status        = STATUS_SUCCESS;
+    DWORD NewDesiredAccess = (TokenInformationClass == TokenSource) ? TOKEN_QUERY_SOURCE : TOKEN_QUERY;
+
+    if ( Failed(ReOpenTokenWith(NewDesiredAccess)) )
+    {
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    auto Buffer = ::LocalAlloc(LPTR, Size);
     if ( !Buffer )
     {
         return Err(ErrorCode::AllocationError);

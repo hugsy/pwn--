@@ -3,6 +3,7 @@
 
 #include "common.hpp"
 #include "handle.hpp"
+#include "log.hpp"
 
 namespace pwn::windows
 {
@@ -10,36 +11,44 @@ namespace pwn::windows
 class Token
 {
 public:
-    Token() : m_ProcessHandle(nullptr), m_ProcessTokenHandle(nullptr)
+    Token() : m_ProcessHandle(nullptr), m_ProcessTokenHandle(nullptr), m_ProcessTokenAccessMask(0)
     {
     }
 
-    Token(SharedHandle ProcessHandle) : m_ProcessHandle(ProcessHandle), m_ProcessTokenHandle()
+    Token(SharedHandle ProcessHandle) :
+        m_ProcessHandle(ProcessHandle),
+        m_ProcessTokenHandle(),
+        m_ProcessTokenAccessMask(0)
     {
-        if ( Failed(ReOpenTokenWithAccess(TOKEN_ALL_ACCESS)) )
+        if ( Failed(ReOpenTokenWith(TOKEN_ALL_ACCESS)) )
         {
-            ReOpenTokenWithAccess(TOKEN_QUERY);
+            ReOpenTokenWith(TOKEN_QUERY);
         }
     }
 
     Token&
     operator=(Token const& OldCopy)
     {
-        m_ProcessHandle = OldCopy.m_ProcessHandle;
+        m_ProcessHandle          = OldCopy.m_ProcessHandle;
+        m_ProcessTokenAccessMask = 0;
 
         HANDLE hDuplicated;
-        if ( TRUE == ::DuplicateHandle(
-                         m_ProcessHandle->get(),
-                         OldCopy.m_ProcessTokenHandle.get(),
-                         m_ProcessHandle->get(),
-                         &hDuplicated,
-                         0,
-                         false,
-                         DUPLICATE_SAME_ACCESS) )
+        if ( FALSE == ::DuplicateHandle(
+                          m_ProcessHandle->get(),
+                          OldCopy.m_ProcessTokenHandle.get(),
+                          m_ProcessHandle->get(),
+                          &hDuplicated,
+                          0,
+                          false,
+                          DUPLICATE_SAME_ACCESS) )
         {
-            m_ProcessTokenHandle = pwn::UniqueHandle {hDuplicated};
+            log::perror(L"Token::operator=::DuplicateHandle()");
         }
-
+        else
+        {
+            m_ProcessTokenAccessMask = OldCopy.m_ProcessTokenAccessMask;
+            m_ProcessTokenHandle     = pwn::UniqueHandle {hDuplicated};
+        }
 
         return *this;
     }
@@ -49,9 +58,6 @@ public:
 
     bool
     IsValid() const;
-
-    Result<bool>
-    ReOpenTokenWithAccess(const DWORD DesiredAccess);
 
     Result<bool>
     IsElevated();
@@ -86,6 +92,15 @@ public:
 
 private:
     ///
+    /// @brief
+    ///
+    /// @param DesiredAccess
+    /// @return Result<bool>
+    ///
+    Result<bool>
+    ReOpenTokenWith(const DWORD DesiredAccess);
+
+    ///
     /// @brief Should not be called directly
     ///
     /// @param ThreadInformationClass
@@ -97,6 +112,7 @@ private:
 
     SharedHandle m_ProcessHandle;
     UniqueHandle m_ProcessTokenHandle;
+    DWORD m_ProcessTokenAccessMask;
 };
 
 } // namespace pwn::windows

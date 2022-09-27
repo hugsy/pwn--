@@ -57,8 +57,8 @@ System::ProcessId(_In_ HANDLE hProcess) -> u32
 }
 
 
-auto
-System::ParentProcessId(_In_ u32 dwProcessId) -> std::optional<u32>
+std::optional<u32>
+System::ParentProcessId(const u32 dwProcessId)
 {
     auto hProcessSnap = pwn::UniqueHandle {::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)};
     if ( !hProcessSnap )

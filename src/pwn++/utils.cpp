@@ -290,14 +290,14 @@ hexdump(const std::vector<u8>& bytes)
 
 
 auto
-base64_encode(std::vector<u8> const& bytes) -> Result<std::string>
+Base64::Encode(std::vector<u8> const& bytes) -> Result<std::string>
 {
-    return base64_encode(bytes.data(), bytes.size());
+    return Base64::Encode(bytes.data(), bytes.size());
 }
 
 
 auto
-base64_encode(const u8* in, const usize len) -> Result<std::string>
+Base64::Encode(const u8* in, const usize len) -> Result<std::string>
 {
     auto encoded_size = [](const usize inlen) -> usize
     {
@@ -334,7 +334,7 @@ base64_encode(const u8* in, const usize len) -> Result<std::string>
 
 
 auto
-base64_decode(std::string_view const& in) -> Result<std::vector<u8>>
+Base64::Decode(std::string_view const& in) -> Result<std::vector<u8>>
 {
     const std::array<i8, 80> b64_inverted_table = {
         62, -1, -1, -1, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1, -1, 0,  1,  2,  3,  4,

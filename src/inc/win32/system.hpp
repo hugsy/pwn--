@@ -23,26 +23,26 @@ public:
     static auto
     PageSize() -> u32;
 
-    static auto
-    ProcessId(_In_ HANDLE hProcess) -> u32;
+    static u32
+    ProcessId(const HANDLE hProcess);
 
-    static auto
-    ParentProcessId(_In_ u32 dwProcessId) -> std::optional<u32>;
+    static std::optional<u32>
+    ParentProcessId(const u32 dwProcessId);
 
     static auto
     PidOf(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>;
 
-    static auto
-    ComputerName() -> const std::wstring;
+    static const std::wstring
+    ComputerName();
 
-    static auto
-    UserName() -> const std::wstring;
+    static const std::wstring
+    UserName();
 
-    static auto
-    ModuleName(_In_opt_ HMODULE hModule) -> std::optional<std::wstring>;
+    static std::optional<std::wstring>
+    ModuleName(HMODULE hModule);
 
-    static auto
-    FileName() -> std::optional<std::wstring>;
+    static std::optional<std::wstring>
+    FileName();
 
     ///
     /// @brief Get the Windows version as a tuple of int, or raise an exception.

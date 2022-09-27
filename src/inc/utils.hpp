@@ -131,35 +131,39 @@ buffer(_In_ u32 length) -> std::vector<u8>;
 } // namespace random
 
 
-///
-/// @brief Encode a buffer of a given size to base64
-///
-/// @param buffer the buffer to encode
-/// @param buffer_length the buffer expected size
-/// @return Result<std::string> a b64 string on success, Err() type otherwise
-///
-PWNAPI auto
-base64_encode(const u8* buffer, const size_t buffer_length) -> Result<std::string>;
+class Base64
+{
+public:
+    ///
+    /// @brief Encode a buffer of a given size to base64
+    ///
+    /// @param buffer the buffer to encode
+    /// @param buffer_length the buffer expected size
+    /// @return Result<std::string> a b64 string on success, Err() type otherwise
+    ///
+    static auto
+    Encode(const u8* buffer, const size_t buffer_length) -> Result<std::string>;
 
 
-///
-/// @brief Encode a vector of bytes to base64
-///
-/// @param bytes the vector to encode
-/// @return Result<std::string> a b64 string on success, Err() type otherwise
-///
-PWNAPI auto
-base64_encode(std::vector<u8> const& bytes) -> Result<std::string>;
+    ///
+    /// @brief Encode a vector of bytes to base64
+    ///
+    /// @param bytes the vector to encode
+    /// @return Result<std::string> a b64 string on success, Err() type otherwise
+    ///
+    static auto
+    Encode(std::vector<u8> const& bytes) -> Result<std::string>;
 
 
-///
-/// @brief Decode a base64 string
-///
-/// @param encoded_string
-/// @return Result<std::vector<u8>> a vector of bytes on success, Err() type otherwise
-///
-PWNAPI auto
-base64_decode(std::string_view const& encoded_string) -> Result<std::vector<u8>>;
+    ///
+    /// @brief Decode a base64 string
+    ///
+    /// @param encoded_string
+    /// @return Result<std::vector<u8>> a vector of bytes on success, Err() type otherwise
+    ///
+    static auto
+    Decode(std::string_view const& encoded_string) -> Result<std::vector<u8>>;
+};
 
 
 ///

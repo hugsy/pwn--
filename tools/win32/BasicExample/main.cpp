@@ -165,7 +165,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     // dbg(L"random_buffer=");
     // pwn::utils::hexdump(random_buffer);
 
-    // auto encoded_buffer = Value(pwn::utils::base64_encode(random_buffer));
+    // auto encoded_buffer = Value(pwn::utils::Base64::Encode(random_buffer));
     // dbg(L"b64=\"{}\"", pwn::utils::to_widestring(encoded_buffer));
 
 
@@ -173,7 +173,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     if ( argc >= 2 )
     {
         std::wstring arg {argv[1]};
-        auto decoded_string = Value(pwn::utils::base64_decode(pwn::utils::to_string(arg)));
+        auto decoded_string = Value(pwn::utils::Base64::Decode(pwn::utils::to_string(arg)));
         encoded_buffer      = decoded_string;
         pwn::utils::hexdump(encoded_buffer);
     }

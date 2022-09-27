@@ -1,4 +1,4 @@
-name: "Discord Notification"
+name: "Issues/PRs Notification"
 
 on:  issues
 

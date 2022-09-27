@@ -14,9 +14,9 @@
 ///   return Ok(1)
 /// }
 
-enum class ErrorCode
+enum class ErrorCode : uint32_t
 {
-    UnknownError,
+    UnknownError = 0,
     GenericError,
     RuntimeError,
     PermissionDenied,
@@ -46,6 +46,7 @@ enum class ErrorCode
     ExternalError,
     PartialResult,
     BadVersion,
+    InvalidState,
 };
 
 ///
@@ -60,7 +61,7 @@ struct ErrorType
 template<class T>
 using SuccessType = std::optional<T>;
 
-template<class T>
+template<class T = void>
 using Result = std::variant<SuccessType<T>, ErrorType>;
 
 struct Err : ErrorType
@@ -72,6 +73,13 @@ struct Err : ErrorType
 
     bool
     operator==(ErrorCode code) const;
+
+    friend std::wostream&
+    operator<<(std::wostream& wos, Err const& e)
+    {
+        wos << L"Error(Code=" << (uint32_t)e.code << L", GLE=" << (uint32_t)e.number << ")";
+        return wos;
+    }
 };
 
 template<class T>

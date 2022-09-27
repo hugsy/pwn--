@@ -155,6 +155,7 @@ Process::Memory::Allocate(const size_t Size, const wchar_t Permission[3], const 
         flProtect ? flProtect : PAGE_GUARD);
     if ( buffer == 0u )
     {
+        log::perror(L"VirtualAllocEx()");
         return Err(ErrorCode::AllocationError);
     }
 
@@ -184,7 +185,8 @@ Process::Process() :
     m_ProcessHandle(nullptr),
     m_Peb(nullptr),
     m_Privileges(),
-    m_Valid(false)
+    m_Valid(false),
+    m_ProcessHandleAccessMask(0)
 {
 }
 
@@ -193,7 +195,8 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
     m_Pid(pid),
     m_Peb(nullptr),
     m_Privileges(),
-    m_Valid(false)
+    m_Valid(true),
+    m_ProcessHandleAccessMask(0)
 {
     //
     // Gather a minimum set of information about the process for performance. Extra information will be
@@ -204,6 +207,17 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
         m_IsSelf      = (m_Pid == ::GetCurrentProcessId());
         m_KillOnClose = m_IsSelf ? false : kill_on_delete;
 
+        // Get a handle
+        {
+            m_ProcessHandle = std::make_shared<UniqueHandle>(pwn::UniqueHandle {hProcess});
+
+            if ( Failed(ReOpenProcessWith(PROCESS_QUERY_LIMITED_INFORMATION)) )
+            {
+                m_Valid = false;
+                return;
+            }
+        }
+
         // Process PPID
         {
             auto ppid = pwn::windows::System::ParentProcessId(pid);
@@ -212,10 +226,6 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
 
         // Full path
         {
-            auto ProcessHandle =
-                pwn::UniqueHandle {(hProcess) ? hProcess : ::OpenProcess(MAXIMUM_ALLOWED, false, m_Pid)};
-            m_ProcessHandle = std::make_shared<UniqueHandle>(std::move(ProcessHandle));
-
             wchar_t exeName[MAX_PATH] = {0};
             DWORD size                = __countof(exeName);
             DWORD count               = ::QueryFullProcessImageName(m_ProcessHandle->get(), 0, exeName, &size);
@@ -225,17 +235,34 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
 
         // Prepare other subclasses
         {
-            this->Memory = windows::Process::Memory::Memory(m_ProcessHandle);
+            // Memory
+            {
+                if ( Failed(ReOpenProcessWith(PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE)) )
+                {
+                    m_Valid = false;
+                    return;
+                }
 
-            this->Token = windows::Token(m_ProcessHandle);
+                this->Memory = windows::Process::Memory::Memory(m_ProcessHandle);
+            }
 
-            this->Threads = windows::ThreadGroup(m_ProcessHandle);
+            // Token
+            {
+                this->Token = windows::Token(m_ProcessHandle);
+            }
+
+            // Threads
+            {
+                this->Threads = windows::ThreadGroup(m_ProcessHandle);
+            }
+
+
+            m_Valid = true;
         }
-
-        m_Valid = true;
     }
     catch ( ... )
     {
+        m_Valid = false;
     }
 }
 
@@ -249,19 +276,20 @@ Process::~Process()
 
 Process::Process(Process const& Copy)
 {
-    m_Valid          = Copy.m_Valid;
-    m_Pid            = Copy.m_Pid;
-    m_Ppid           = Copy.m_Ppid;
-    m_Path           = Copy.m_Path;
-    m_IntegrityLevel = Copy.m_IntegrityLevel;
-    m_ProcessHandle  = Copy.m_ProcessHandle;
-    m_Privileges     = Copy.m_Privileges;
-    m_KillOnClose    = Copy.m_KillOnClose;
-    m_IsSelf         = Copy.m_IsSelf;
-    m_Peb            = Copy.m_Peb;
-    Memory           = windows::Process::Memory::Memory(m_ProcessHandle);
-    Token            = windows::Token(m_ProcessHandle);
-    Threads          = windows::ThreadGroup(m_ProcessHandle);
+    m_Valid                   = Copy.m_Valid;
+    m_Pid                     = Copy.m_Pid;
+    m_Ppid                    = Copy.m_Ppid;
+    m_Path                    = Copy.m_Path;
+    m_IntegrityLevel          = Copy.m_IntegrityLevel;
+    m_ProcessHandle           = Copy.m_ProcessHandle;
+    m_ProcessHandleAccessMask = Copy.m_ProcessHandleAccessMask;
+    m_Privileges              = Copy.m_Privileges;
+    m_KillOnClose             = Copy.m_KillOnClose;
+    m_IsSelf                  = Copy.m_IsSelf;
+    m_Peb                     = Copy.m_Peb;
+    Memory                    = windows::Process::Memory::Memory(m_ProcessHandle);
+    Token                     = windows::Token(m_ProcessHandle);
+    Threads                   = windows::ThreadGroup(m_ProcessHandle);
 }
 
 bool
@@ -338,7 +366,7 @@ Process::ProcessEnvironmentBlock()
         //
         {
             DWORD ExitCode = 0;
-            auto hProcess  = pwn::UniqueHandle {::CreateRemoteThreadEx(
+            auto hThread   = pwn::UniqueHandle {::CreateRemoteThreadEx(
                 m_ProcessHandle->get(),
                 nullptr,
                 0,
@@ -348,8 +376,8 @@ Process::ProcessEnvironmentBlock()
                 nullptr,
                 nullptr)};
 
-            ::WaitForSingleObject(hProcess.get(), INFINITE);
-            if ( ::GetExitCodeThread(hProcess.get(), &ExitCode) && ExitCode == 1 )
+            ::WaitForSingleObject(hThread.get(), INFINITE);
+            if ( ::GetExitCodeThread(hThread.get(), &ExitCode) && ExitCode == 1 )
             {
                 auto res = Memory.Read(ptr + 0x100, sizeof(uptr));
                 if ( Success(res) )
@@ -401,18 +429,29 @@ operator<<(std::wostream& wos, const Process::Integrity i)
     return wos;
 }
 
+
 Result<bool>
 Process::Kill()
 {
-    auto hProcess = pwn::UniqueHandle {::OpenProcess(PROCESS_TERMINATE, false, m_Pid)};
-    if ( !hProcess )
+    if ( !IsValid() )
     {
-        pwn::log::perror(L"OpenProcess() failed");
+        return Err(ErrorCode::InvalidState);
+    }
+
+    if ( Failed(ReOpenProcessWith(PROCESS_TERMINATE)) )
+    {
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    dbg(L"Attempting to kill PID={})", m_Pid);
+    bool bRes = (::TerminateProcess(m_ProcessHandle->get(), EXIT_FAILURE) == TRUE);
+    if ( !bRes )
+    {
+        log::perror(L"TerminateProcess()");
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    dbg(L"attempting to kill {} (pid={})", hProcess.get(), m_Pid);
-    bool bRes = (::TerminateProcess(hProcess.get(), EXIT_FAILURE) == TRUE);
+    m_Valid = false;
     return Ok(bRes);
 }
 
@@ -728,6 +767,40 @@ Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
     return Ok(p);
 }
 
+
+Result<bool>
+Process::ReOpenProcessWith(const DWORD DesiredAccess)
+{
+    if ( !IsValid() )
+    {
+        return Err(ErrorCode::InvalidState);
+    }
+
+    //
+    // If we already have the sufficient rights, skip
+    //
+    if ( (m_ProcessHandleAccessMask & DesiredAccess) == DesiredAccess )
+    {
+        return Ok(true);
+    }
+
+    //
+    // Otherwise, try to get it
+    //
+    u32 NewAccessMask = m_ProcessHandleAccessMask | DesiredAccess;
+    HANDLE hProcess   = ::OpenProcess(NewAccessMask, false, m_Pid);
+    if ( hProcess == nullptr )
+    {
+        log::perror(L"OpenProcess()");
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    SharedHandle New = std::make_shared<UniqueHandle>(pwn::UniqueHandle {hProcess});
+    m_ProcessHandle.swap(New);
+    m_ProcessHandleAccessMask = NewAccessMask;
+    return Ok(true);
+}
+
 Result<PVOID>
 Process::QueryInternal(const PROCESSINFOCLASS ProcessInformationClass, const usize InitialSize)
 {
@@ -779,7 +852,9 @@ System(_In_ const std::wstring& CommandLine, _In_ const std::wstring& Operation)
     return Ok(success);
 }
 
+
 #pragma region AppContainer
+
 AppContainer::AppContainer(
     std::wstring_view const& container_name,
     std::wstring_view const& executable_path,
