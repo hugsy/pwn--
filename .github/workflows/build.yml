@@ -14,7 +14,7 @@ jobs:
     name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.configuration }}"
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         os: ['windows-2022'] # 'linux-latest' removed since gcc-11 nor clang-15 supports std::format
         platform: ['x86', 'x64']

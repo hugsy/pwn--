@@ -134,7 +134,7 @@ if(PWN_ENABLE_LUA_BACKDOOR)
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/phnt)
-target_compile_definitions(${PROJECT_NAME} PRIVATE PHNT_VERSION=PHNT_WIN11)
+target_compile_definitions(${PROJECT_NAME} PRIVATE PHNT_VERSION=PHNT_20H2)
 
 #
 # Generate the build export header from cmake
