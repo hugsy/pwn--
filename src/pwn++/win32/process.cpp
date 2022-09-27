@@ -728,36 +728,38 @@ Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
     return Ok(p);
 }
 
-Result<std::shared_ptr<u8[]>>
-Process::Query(PROCESSINFOCLASS ProcessInformationClass)
+Result<PVOID>
+Process::QueryInternal(const PROCESSINFOCLASS ProcessInformationClass, const usize InitialSize)
 {
-    ULONG ReturnLength;
-
-    //
-    // Request the structure size
-    //
-    NTSTATUS Status = STATUS_SUCCESS;
-    Status = ::NtQueryInformationProcess(m_ProcessHandle->get(), ProcessInformationClass, nullptr, 0, &ReturnLength);
-    if ( Status != STATUS_INFO_LENGTH_MISMATCH )
+    usize Size         = InitialSize;
+    ULONG ReturnLength = 0;
+    NTSTATUS Status    = STATUS_SUCCESS;
+    auto Buffer        = ::LocalAlloc(LPTR, Size);
+    if ( !Buffer )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(ErrorCode::AllocationError);
     }
 
-    //
-    // Prepare the structure and get the information
-    //
-    const ULONG BufferSize = ReturnLength;
-    auto Buffer            = std::make_shared<u8[]>(BufferSize);
-    Status                 = ::NtQueryInformationProcess(
-        m_ProcessHandle->get(),
-        ProcessInformationClass,
-        Buffer.get(),
-        BufferSize,
-        &ReturnLength);
-    if ( !NT_SUCCESS(Status) )
+    do
     {
+        Status =
+            ::NtQueryInformationProcess(m_ProcessHandle->get(), ProcessInformationClass, Buffer, Size, &ReturnLength);
+        if ( NT_SUCCESS(Status) )
+        {
+            break;
+        }
+
+        if ( Status == STATUS_INFO_LENGTH_MISMATCH )
+        {
+            Size   = ReturnLength;
+            Buffer = ::LocalReAlloc(Buffer, Size, LMEM_ZEROINIT);
+            continue;
+        }
+
+        log::ntperror(L"NtQueryInformationProcess()", Status);
         return Err(ErrorCode::PermissionDenied);
-    }
+
+    } while ( true );
 
     return Ok(Buffer);
 }

@@ -198,36 +198,37 @@ Thread::Current()
 }
 
 
-Result<std::shared_ptr<u8[]>>
-Thread::Query(THREADINFOCLASS ThreadInformationClass)
+Result<PVOID>
+Thread::QueryInternal(const THREADINFOCLASS ThreadInformationClass, const usize InitialSize)
 {
+    usize Size         = InitialSize;
     ULONG ReturnLength = 0;
-
-    //
-    // Request the structure size
-    //
-    NTSTATUS Status = STATUS_SUCCESS;
-    Status = ::NtQueryInformationThread(m_ThreadHandle.get(), ThreadInformationClass, nullptr, 0, &ReturnLength);
-    if ( Status != STATUS_INFO_LENGTH_MISMATCH )
+    NTSTATUS Status    = STATUS_SUCCESS;
+    auto Buffer        = ::LocalAlloc(LPTR, Size);
+    if ( !Buffer )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(ErrorCode::AllocationError);
     }
 
-    //
-    // Prepare the structure and get the information
-    //
-    const ULONG BufferSize = ReturnLength;
-    auto Buffer            = std::make_shared<u8[]>(BufferSize);
-    Status                 = ::NtQueryInformationThread(
-        m_ThreadHandle.get(),
-        ThreadInformationClass,
-        Buffer.get(),
-        BufferSize,
-        &ReturnLength);
-    if ( !NT_SUCCESS(Status) )
+    do
     {
+        Status = ::NtQueryInformationThread(m_ThreadHandle.get(), ThreadInformationClass, Buffer, Size, &ReturnLength);
+        if ( NT_SUCCESS(Status) )
+        {
+            break;
+        }
+
+        if ( Status == STATUS_INFO_LENGTH_MISMATCH )
+        {
+            Size   = ReturnLength;
+            Buffer = ::LocalReAlloc(Buffer, Size, LMEM_ZEROINIT);
+            continue;
+        }
+
+        log::ntperror(L"NtQueryInformationThread()", Status);
         return Err(ErrorCode::PermissionDenied);
-    }
+
+    } while ( true );
 
     return Ok(Buffer);
 }

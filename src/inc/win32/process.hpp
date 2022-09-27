@@ -146,13 +146,28 @@ public:
     HasPrivilege(std::wstring const& PrivilegeName);
 
     ///
-    /// @brief
+    /// @brief Query process information
     ///
     /// @param ProcessInformationClass
-    /// @return Result<std::shared_ptr<u8[]>>
+    /// @return Result<std::shared_ptr<T>>
     ///
-    Result<std::shared_ptr<u8[]>>
-    Query(PROCESSINFOCLASS ProcessInformationClass);
+    template<class T>
+    Result<std::shared_ptr<T>>
+    Query(PROCESSINFOCLASS ProcessInformationClass)
+    {
+        auto res = QueryInternal(ProcessInformationClass, sizeof(T));
+        if ( Failed(res) )
+        {
+            return Err(Error(res).code);
+        }
+
+        const auto p = reinterpret_cast<T*>(Value(res));
+        auto deleter = [](T* x)
+        {
+            ::LocalFree(x);
+        };
+        return Ok(std::shared_ptr<T>(p, deleter));
+    }
 
     //
     // Submodules
@@ -199,6 +214,16 @@ public:
     System(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operation = L"open");
 
 private:
+    ///
+    /// @brief Should not be called directly
+    ///
+    /// @param ProcessInformationClass
+    ///
+    /// @return Result<PVOID>
+    ///
+    Result<PVOID>
+    QueryInternal(const PROCESSINFOCLASS, const usize);
+
     u32 m_Pid;
     bool m_Valid;
     u32 m_Ppid;

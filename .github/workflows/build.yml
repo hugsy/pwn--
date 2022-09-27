@@ -60,6 +60,7 @@ jobs:
       uses: microsoft/setup-msbuild@v1.1
       with:
         msbuild-architecture: ${{ matrix.platform }}
+        vs-version: '[17,)'
       if: matrix.os == 'windows-latest'
 
     - name: Prepare Windows environment

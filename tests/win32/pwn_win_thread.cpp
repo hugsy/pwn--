@@ -49,10 +49,10 @@ TEST_CASE("set/get thread names", "[" NS "]")
         auto CurrentThread               = Value(pwn::windows::Thread::Current());
         REQUIRE(CurrentThread.IsValid());
 
-        auto res = CurrentThread.Query(ThreadBasicInformation);
+        auto res = CurrentThread.Query<THREAD_BASIC_INFORMATION>(ThreadBasicInformation);
         REQUIRE(Success(res));
-        const PTHREAD_BASIC_INFORMATION info = reinterpret_cast<PTHREAD_BASIC_INFORMATION>(Value(res).get());
-        CHECK(info->ClientId.UniqueProcess == (HANDLE)::GetCurrentProcessId());
-        CHECK(info->ClientId.UniqueThread == (HANDLE)::GetCurrentThreadId());
+        const auto pInfo = Value(res);
+        CHECK(pInfo->ClientId.UniqueProcess == ULongToHandle(::GetCurrentProcessId()));
+        CHECK(pInfo->ClientId.UniqueThread == ULongToHandle(::GetCurrentThreadId()));
     }
 }

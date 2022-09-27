@@ -6,26 +6,7 @@
 #include "handle.hpp"
 #include "log.hpp"
 #include "nt.hpp"
-/*
-extern "C"
-{
-    NTSTATUS
-    NTAPI
-    NtSetInformationThread(
-        _In_ HANDLE ThreadHandle,
-        _In_ THREADINFOCLASS ThreadInformationClass,
-        _In_reads_bytes_(ThreadInformationLength) PVOID ThreadInformation,
-        _In_ ULONG ThreadInformationLength);
 
-    NTSTATUS NTAPI
-    NtQueryInformationThread(
-        IN HANDLE ThreadHandle,
-        IN THREADINFOCLASS ThreadInformationClass,
-        OUT PVOID ThreadInformation,
-        IN ULONG ThreadInformationLength,
-        OUT PULONG ReturnLength OPTIONAL);
-}
-*/
 
 namespace pwn::windows
 {
@@ -159,15 +140,41 @@ public:
     Current();
 
     ///
-    /// @brief
+    /// @brief Query thread information
     ///
-    /// @param ProcessInformationClass
-    /// @return Result<std::shared_ptr<u8[]>>
+    /// @tparam T
+    /// @param ThreadInformationClass
+    /// @return Result<std::shared_ptr<T>>
     ///
-    Result<std::shared_ptr<u8[]>>
-    Query(THREADINFOCLASS ThreadInformationClass);
+    template<class T>
+    Result<std::shared_ptr<T>>
+    Query(THREADINFOCLASS ThreadInformationClass)
+    {
+        auto res = QueryInternal(ThreadInformationClass, sizeof(T));
+        if ( Failed(res) )
+        {
+            return Err(Error(res).code);
+        }
+
+        const auto p = reinterpret_cast<T*>(Value(res));
+        auto deleter = [](T* x)
+        {
+            ::LocalFree(x);
+        };
+        return Ok(std::shared_ptr<T>(p, deleter));
+    }
 
 private:
+    ///
+    /// @brief Should not be called directly
+    ///
+    /// @param ThreadInformationClass
+    ///
+    /// @return Result<PVOID>
+    ///
+    Result<PVOID>
+    QueryInternal(const THREADINFOCLASS, const usize);
+
     u32 m_Tid;
     bool m_Valid;
     uptr m_Teb;

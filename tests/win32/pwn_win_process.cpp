@@ -54,4 +54,17 @@ TEST_CASE("Process", "[" NS "]")
         REQUIRE(tids.size() > 0);
         CHECK(CurrentProcess.Threads[tids[0]].IsValid());
     }
+
+    SECTION("Process queries")
+    {
+        auto CurrentProcess = Value(pwn::windows::Process::Current());
+        REQUIRE(CurrentProcess.IsValid() == true);
+
+        auto res = CurrentProcess.Query<PROCESS_BASIC_INFORMATION>(ProcessBasicInformation);
+        REQUIRE(Success(res));
+        auto const pInfo = Value(res);
+        CHECK(pInfo->PebBaseAddress == CurrentProcess.ProcessEnvironmentBlock());
+        CHECK(pInfo->UniqueProcessId == UlongToHandle(CurrentProcess.ProcessId()));
+        CHECK(pInfo->InheritedFromUniqueProcessId == UlongToHandle(CurrentProcess.ParentProcessId()));
+    }
 }
