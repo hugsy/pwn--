@@ -5,7 +5,7 @@ env:
   PROJECT_NAME: "pwn++"
   REPO: hugsy/pwn--
   VERBOSE: "1"
-  CMAKE_FLAGS: "-DDEBUG=OFF -DDISABLE_LOG_COLOR=OFF -DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_INCLUDE_DISASSEMBLER=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON"
+  CMAKE_FLAGS: "-DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_INCLUDE_DISASSEMBLER=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON"
 
 on: push
 
@@ -60,7 +60,7 @@ jobs:
       uses: microsoft/setup-msbuild@v1.1
       with:
         msbuild-architecture: ${{ matrix.platform }}
-        vs-version: '[17,)'
+        vs-prerelease: true
       if: matrix.os == 'windows-latest'
 
     - name: Prepare Windows environment
