@@ -206,6 +206,7 @@ System::QueryInternal(const SYSTEM_INFORMATION_CLASS SystemInformationClass, con
     auto Buffer        = ::LocalAlloc(LPTR, Size);
     if ( !Buffer )
     {
+        log::perror(L"LocalAlloc()");
         return Err(ErrorCode::AllocationError);
     }
 
@@ -219,8 +220,15 @@ System::QueryInternal(const SYSTEM_INFORMATION_CLASS SystemInformationClass, con
 
         if ( Status == STATUS_INFO_LENGTH_MISMATCH )
         {
-            Size   = ReturnLength;
-            Buffer = ::LocalReAlloc(Buffer, Size, LMEM_ZEROINIT);
+            Size             = ReturnLength;
+            HLOCAL NewBuffer = ::LocalReAlloc(Buffer, Size, LMEM_MOVEABLE | LMEM_ZEROINIT);
+            if ( !NewBuffer )
+            {
+                log::perror(L"LocalReAlloc()");
+                return Err(ErrorCode::AllocationError);
+            }
+
+            Buffer = NewBuffer;
             continue;
         }
 

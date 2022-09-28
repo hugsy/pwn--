@@ -13,9 +13,22 @@ TEST_CASE("Test basic function", "[" NS "]")
 
 TEST_CASE("System queries", "[" NS "]")
 {
-    auto res = pwn::windows::System::Query<SYSTEM_BASIC_INFORMATION>(SystemBasicInformation);
-    REQUIRE(Success(res));
-    const auto pInfo = Value(res);
-    CHECK(pInfo->NumberOfProcessors > 0);
-    CHECK(pInfo->PageSize == pwn::windows::System::PageSize());
+    SECTION("SystemBasicInformation")
+    {
+        auto res = pwn::windows::System::Query<SYSTEM_BASIC_INFORMATION>(SystemBasicInformation);
+        REQUIRE(Success(res));
+        const auto pInfo = Value(res);
+        CHECK(pInfo->NumberOfProcessors > 0);
+        CHECK(pInfo->PageSize == pwn::windows::System::PageSize());
+    }
+
+    SECTION("SystemProcessInformation")
+    {
+        auto res = pwn::windows::System::Query<SYSTEM_PROCESS_INFORMATION>(SystemProcessInformation);
+        REQUIRE(Success(res));
+
+        const auto pInfo = Value(res);
+        REQUIRE(pInfo->NumberOfThreads > 0);
+        CHECK((((uptr)pInfo->Threads[0].StartAddress) & (1ull << 48)) != 0);
+    }
 }
