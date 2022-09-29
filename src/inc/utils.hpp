@@ -6,7 +6,6 @@
 #include <variant>
 
 #include "common.hpp"
-#include "context.hpp"
 
 
 using flattenable_t = std::variant<std::string, std::wstring, std::vector<u8>>;

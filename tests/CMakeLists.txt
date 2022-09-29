@@ -26,6 +26,7 @@ if(MSVC)
         ${TEST_DIR}/pwn_win_process.cpp
         ${TEST_DIR}/pwn_win_thread.cpp
         ${TEST_DIR}/pwn_win_token.cpp
+        ${TEST_DIR}/pwn_win_object.cpp
     )
 
     add_compile_definitions(_UNICODE UNICODE CATCH_CONFIG_NO_WINDOWS_SEH)

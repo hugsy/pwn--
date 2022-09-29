@@ -7,7 +7,8 @@ TEST_CASE("Test basic function", "[" NS "]")
 {
     SECTION("check page size")
     {
-        REQUIRE(pwn::windows::System::PageSize() == 0x1000);
+        CHECK(pwn::windows::System::PageSize() == 0x1000);
+        CHECK(Success(pwn::windows::System::ProcessorCount()));
     }
 }
 
@@ -20,6 +21,11 @@ TEST_CASE("System queries", "[" NS "]")
         const auto pInfo = Value(res);
         CHECK(pInfo->NumberOfProcessors > 0);
         CHECK(pInfo->PageSize == pwn::windows::System::PageSize());
+        {
+            auto res = pwn::windows::System::ProcessorCount();
+            REQUIRE(Success(res));
+            CHECK(pInfo->NumberOfProcessors == std::get<2>(Value(res)));
+        }
     }
 
     SECTION("SystemProcessInformation")

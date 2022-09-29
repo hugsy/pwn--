@@ -47,6 +47,7 @@ enum class ErrorCode : uint32_t
     PartialResult,
     BadVersion,
     InvalidState,
+    InsufficientPrivilegeError,
 };
 
 ///

@@ -57,9 +57,6 @@ class Process
     };
 
 public:
-    using Privilege  = std::wstring;
-    using Privileges = std::vector<Privilege>;
-
     enum class Integrity : int
     {
         Unknown,
@@ -69,7 +66,7 @@ public:
         System
     };
 
-    Process();
+    Process() = default;
 
     Process(u32, HANDLE = nullptr, bool = false);
 
@@ -128,24 +125,6 @@ public:
     IntegrityLevel();
 
     ///
-    /// @brief Add a privilege to the process (if possible)
-    ///
-    /// @param PrivilegeName
-    /// @return Result<bool> true if the privilege was added (false, not added). ErrorCode otherwise
-    ///
-    Result<bool>
-    AddPrivilege(std::wstring const& PrivilegeName);
-
-    ///
-    /// @brief  a privilege to the process (if possible)
-    ///
-    /// @param PrivilegeName
-    /// @return Result<bool> true if the privilege is acquired (false if not).  ErrorCode otherwise
-    ///
-    Result<bool>
-    HasPrivilege(std::wstring const& PrivilegeName);
-
-    ///
     /// @brief Query process information
     ///
     /// @param ProcessInformationClass
@@ -173,11 +152,13 @@ public:
     // Submodules
     //
     Process::Memory Memory;
-    Token Token;
+    ProcessToken Token;
     ThreadGroup Threads;
 
     // TODO:
     // - modules
+    // - inject
+    // - hook
 
 
     //
@@ -233,17 +214,16 @@ private:
     Result<PVOID>
     QueryInternal(const PROCESSINFOCLASS, const usize);
 
-    u32 m_Pid;
-    bool m_Valid;
-    u32 m_Ppid;
+    u32 m_Pid    = 0;
+    u32 m_Ppid   = 0;
+    bool m_Valid = false;
     fs::path m_Path;
-    Integrity m_IntegrityLevel;
-    SharedHandle m_ProcessHandle;
-    DWORD m_ProcessHandleAccessMask;
-    Privileges m_Privileges;
-    bool m_KillOnClose;
-    bool m_IsSelf;
-    PPEB m_Peb;
+    Integrity m_IntegrityLevel      = Integrity::Unknown;
+    SharedHandle m_ProcessHandle    = nullptr;
+    DWORD m_ProcessHandleAccessMask = 0;
+    bool m_KillOnClose              = false;
+    bool m_IsSelf                   = false;
+    PPEB m_Peb                      = nullptr;
 };
 
 

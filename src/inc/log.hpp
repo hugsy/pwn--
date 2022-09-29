@@ -116,10 +116,10 @@ xlog(
 ///
 /// @brief Basic equivalent of Linux Glibc's `perror`
 ///
-/// @param [inout] prefix
+/// @param [in] prefix
 ///
 void PWNAPI
-perror(_In_ const std::wstring_view& prefix);
+perror(const std::wstring_view& prefix);
 
 
 ///

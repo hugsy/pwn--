@@ -9,11 +9,10 @@
 #include <thread>
 #include <type_traits>
 
-#include "context.hpp"
 #include "log.hpp"
 #include "pwn.hpp"
 
-extern struct pwn::globals_t pwn::globals;
+extern struct pwn::GlobalContext pwn::Context;
 
 
 #define PWN_UTILS_LOWER_CHARSET "abcdefghijklmnopqrstuvwxyz"
@@ -114,11 +113,11 @@ constexpr std::string_view b64_charset =
 auto
 xorshift64() -> u64
 {
-    auto seed = pwn::globals.m_seed;
+    auto seed = pwn::Context.m_seed;
     seed ^= seed << 13;
     seed ^= seed >> 17;
     seed ^= seed << 43;
-    pwn::globals.m_seed = seed;
+    pwn::Context.m_seed = seed;
     return seed;
 }
 
@@ -181,11 +180,11 @@ random::seed(std::optional<u64> seed)
 
     if ( seed )
     {
-        pwn::globals.m_seed = seed.value();
+        pwn::Context.m_seed = seed.value();
     }
     else
     {
-        pwn::globals.m_seed = time(nullptr);
+        pwn::Context.m_seed = time(nullptr);
     }
 }
 
@@ -276,7 +275,7 @@ hexdump(const u8* Buffer, const usize BufferSize)
     auto hexstr = __hexdump(Buffer, BufferSize);
 
     {
-        std::lock_guard<std::mutex> guard(pwn::globals.m_console_mutex);
+        std::lock_guard<std::mutex> guard(pwn::Context.m_console_mutex);
         std::wcout << hexstr.str() << std::endl;
     }
 }
@@ -562,7 +561,7 @@ cyclic(_In_ u32 dwSize, _In_ u32 dwPeriod) -> std::vector<u8>
 auto
 cyclic(_In_ u32 dwSize, _Out_ std::vector<u8>& buffer) -> bool
 {
-    return cyclic(dwSize, pwn::globals.ptrsize, buffer);
+    return cyclic(dwSize, pwn::Context.ptrsize, buffer);
 }
 
 
@@ -570,7 +569,7 @@ auto
 cyclic(_In_ u32 dwSize) -> std::vector<u8>
 {
     std::vector<u8> buffer;
-    if ( cyclic(dwSize, pwn::globals.ptrsize, buffer) != 0 )
+    if ( cyclic(dwSize, pwn::Context.ptrsize, buffer) != 0 )
     {
         return buffer;
     }
@@ -590,7 +589,7 @@ auto
 __pack(_In_ T v) -> std::vector<u8>
 {
     std::vector<u8> out;
-    if ( pwn::globals.endianess == Endianess::little )
+    if ( pwn::Context.endianess == Endianess::little )
     {
         for ( auto i = sizeof(T) - 1; i >= 0; i-- )
         {

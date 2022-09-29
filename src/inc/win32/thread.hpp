@@ -6,6 +6,7 @@
 #include "handle.hpp"
 #include "log.hpp"
 #include "nt.hpp"
+#include "token.hpp"
 
 
 namespace pwn::windows
@@ -14,23 +15,16 @@ namespace pwn::windows
 class Thread
 {
 public:
-    Thread() :
-        m_Tid(0),
-        m_Valid(false),
-        m_ProcessHandle(nullptr),
-        m_ThreadHandle(nullptr),
-        m_ThreadHandleAccessMask(0),
-        m_Teb(0)
-    {
-    }
+    Thread() = default;
 
     Thread(u32 Tid, SharedHandle ProcessHandle) :
-        m_Tid(Tid),
-        m_Valid(false),
-        m_ProcessHandle(ProcessHandle),
-        m_ThreadHandle(nullptr),
-        m_ThreadHandleAccessMask(0),
-        m_Teb(0)
+        m_Tid {Tid},
+        m_Valid {false},
+        m_ProcessHandle {ProcessHandle},
+        m_ThreadHandle {nullptr},
+        m_ThreadHandleAccessMask {0},
+        m_Teb {0},
+        Token {}
     {
         if ( Success(ReOpenThreadWith(THREAD_QUERY_LIMITED_INFORMATION)) )
         {
@@ -38,52 +32,27 @@ public:
         }
     }
 
-    Thread(Thread const& OldCopy) : m_ThreadHandle(nullptr), m_ThreadHandleAccessMask(0)
+    Thread(Thread const& OldCopy)
     {
-        m_ProcessHandle = OldCopy.m_ProcessHandle;
-        m_Tid           = OldCopy.m_Tid;
-        m_Teb           = OldCopy.m_Teb;
-        m_Name          = OldCopy.m_Name;
-
-        const HANDLE hProcess   = m_ProcessHandle->get();
-        const HANDLE hSource    = OldCopy.m_ThreadHandle.get();
-        HANDLE hDupThreadHandle = INVALID_HANDLE_VALUE;
-        if ( ::DuplicateHandle(hProcess, hSource, hProcess, &hDupThreadHandle, 0, false, DUPLICATE_SAME_ACCESS) )
-        {
-            m_ThreadHandle           = pwn::UniqueHandle {hDupThreadHandle};
-            m_ThreadHandleAccessMask = OldCopy.m_ThreadHandleAccessMask;
-        }
-        else
-        {
-            log::perror(L"DuplicateHandle()");
-        }
-
-        m_Valid = (m_ThreadHandle != nullptr);
+        m_ProcessHandle          = OldCopy.m_ProcessHandle;
+        m_ThreadHandle           = OldCopy.m_ThreadHandle;
+        m_Tid                    = OldCopy.m_Tid;
+        m_Teb                    = OldCopy.m_Teb;
+        m_Name                   = OldCopy.m_Name;
+        m_ThreadHandleAccessMask = OldCopy.m_ThreadHandleAccessMask;
+        m_Valid                  = (m_ThreadHandle != nullptr);
     }
 
     Thread&
     operator=(Thread const& OldCopy)
     {
-        m_ProcessHandle = OldCopy.m_ProcessHandle;
-        m_Tid           = OldCopy.m_Tid;
-        m_Teb           = OldCopy.m_Teb;
-        m_Name          = OldCopy.m_Name;
-
-        const HANDLE hProcess   = m_ProcessHandle->get();
-        const HANDLE hSource    = OldCopy.m_ThreadHandle.get();
-        HANDLE hDupThreadHandle = INVALID_HANDLE_VALUE;
-        if ( ::DuplicateHandle(hProcess, hSource, hProcess, &hDupThreadHandle, 0, false, DUPLICATE_SAME_ACCESS) )
-        {
-            m_ThreadHandle           = pwn::UniqueHandle {hDupThreadHandle};
-            m_ThreadHandleAccessMask = OldCopy.m_ThreadHandleAccessMask;
-        }
-        else
-        {
-            log::perror(L"DuplicateHandle()");
-        }
-
-        m_Valid = (m_ThreadHandle != nullptr);
-
+        m_ProcessHandle          = OldCopy.m_ProcessHandle;
+        m_ThreadHandle           = OldCopy.m_ThreadHandle;
+        m_Tid                    = OldCopy.m_Tid;
+        m_Teb                    = OldCopy.m_Teb;
+        m_Name                   = OldCopy.m_Name;
+        m_ThreadHandleAccessMask = OldCopy.m_ThreadHandleAccessMask;
+        m_Valid                  = (m_ThreadHandle != nullptr);
         return *this;
     }
 
@@ -164,6 +133,8 @@ public:
         return Ok(std::shared_ptr<T>(p, deleter));
     }
 
+    ThreadToken Token;
+
 private:
     ///
     /// @brief Should not be called directly
@@ -175,13 +146,13 @@ private:
     Result<PVOID>
     QueryInternal(const THREADINFOCLASS, const usize);
 
-    u32 m_Tid;
-    bool m_Valid;
-    uptr m_Teb;
-    std::optional<std::wstring> m_Name;
-    SharedHandle m_ProcessHandle;
-    UniqueHandle m_ThreadHandle;
-    u32 m_ThreadHandleAccessMask;
+    u32 m_Tid                          = 0;
+    bool m_Valid                       = false;
+    uptr m_Teb                         = 0;
+    std::optional<std::wstring> m_Name = std::nullopt;
+    SharedHandle m_ProcessHandle       = nullptr;
+    SharedHandle m_ThreadHandle        = nullptr;
+    u32 m_ThreadHandleAccessMask       = 0;
 };
 
 

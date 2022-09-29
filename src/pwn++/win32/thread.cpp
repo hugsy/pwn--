@@ -61,7 +61,8 @@ Thread::ReOpenThreadWith(DWORD DesiredAccess)
         return Err(ErrorCode::PermissionDenied);
     }
 
-    m_ThreadHandle           = pwn::UniqueHandle {hThread};
+    SharedHandle New = std::make_shared<UniqueHandle>(pwn::UniqueHandle {hThread});
+    m_ThreadHandle.swap(New);
     m_ThreadHandleAccessMask = NewAccessMask;
     return Ok(true);
 }
@@ -89,9 +90,8 @@ Thread::Name()
     auto res = ReOpenThreadWith(THREAD_QUERY_LIMITED_INFORMATION);
     if ( Failed(res) )
     {
-        return Err(Error(res).code);
+        return Err(ErrorCode::PermissionDenied);
     }
-
 
     NTSTATUS Status              = STATUS_UNSUCCESSFUL;
     ULONG CurrentSize            = sizeof(UNICODE_STRING);
@@ -102,7 +102,7 @@ Thread::Name()
     {
         Buffer = std::make_unique<u8[]>(CurrentSize);
         Status = ::NtQueryInformationThread(
-            m_ThreadHandle.get(),
+            m_ThreadHandle->get(),
             ThreadNameInformation,
             Buffer.get(),
             CurrentSize,
@@ -174,7 +174,7 @@ Thread::Name(std::wstring const& name)
     UNICODE_STRING usThreadName = {0};
     ::RtlInitUnicodeString(&usThreadName, (PWSTR)name.c_str());
     auto Status =
-        ::NtSetInformationThread(m_ThreadHandle.get(), ThreadNameInformation, &usThreadName, sizeof(UNICODE_STRING));
+        ::NtSetInformationThread(m_ThreadHandle->get(), ThreadNameInformation, &usThreadName, sizeof(UNICODE_STRING));
     if ( NT_SUCCESS(Status) )
     {
         return Ok(true);
@@ -189,7 +189,7 @@ Result<Thread>
 Thread::Current()
 {
     SharedHandle hProcess = std::make_shared<UniqueHandle>(UniqueHandle {::GetCurrentProcess()});
-    auto t                = Thread(::GetCurrentThreadId(), hProcess);
+    auto t                = Thread {::GetCurrentThreadId(), hProcess};
     if ( !t.IsValid() )
     {
         return Err(ErrorCode::InitializationFailed);
@@ -212,7 +212,7 @@ Thread::QueryInternal(const THREADINFOCLASS ThreadInformationClass, const usize 
 
     do
     {
-        Status = ::NtQueryInformationThread(m_ThreadHandle.get(), ThreadInformationClass, Buffer, Size, &ReturnLength);
+        Status = ::NtQueryInformationThread(m_ThreadHandle->get(), ThreadInformationClass, Buffer, Size, &ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
             break;

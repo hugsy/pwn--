@@ -53,7 +53,6 @@ set(
 
     ${COMMON_SOURCE_DIR}/asm.cpp
     ${COMMON_SOURCE_DIR}/architecture.cpp
-    ${COMMON_SOURCE_DIR}/context.cpp
     ${COMMON_SOURCE_DIR}/crypto.cpp
     ${COMMON_SOURCE_DIR}/error.cpp
     ${COMMON_SOURCE_DIR}/disasm.cpp
@@ -132,9 +131,6 @@ if(PWN_ENABLE_LUA_BACKDOOR)
     target_link_libraries(${PROJECT_NAME} PRIVATE lua::lib)
     target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/lua/include)
 endif()
-
-target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/phnt)
-target_compile_definitions(${PROJECT_NAME} PRIVATE PHNT_VERSION=PHNT_20H2)
 
 #
 # Generate the build export header from cmake

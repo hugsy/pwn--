@@ -11,8 +11,8 @@
 auto
 wmain(const int argc, const wchar_t** argv) -> int
 {
-    pwn::globals.set("x64");
-    pwn::globals.log_level = pwn::log::log_level_t::LOG_DEBUG;
+    pwn::Context.set("x64");
+    pwn::Context.log_level = pwn::log::log_level_t::LOG_DEBUG;
 
     const auto target_process = (argc >= 2) ? std::wstring(argv[1]) : std::wstring(L"powershell.exe");
     const auto parent_process = (argc >= 3) ? std::wstring(argv[2]) : std::wstring(L"winlogon.exe");

@@ -1,11 +1,12 @@
 ///
 /// @file system.hpp
 /// @author hugsy (hugsy@blah.cat)
-/// @brief Header `for pwn::windowsdows::system`
-/// This namespace holds functions for global system manipulation. For process specific stuff, see the
-/// `pwn::windowsdows::process` namespace.
+/// @brief Header for `pwn::windows::System` class
+/// This namespace holds functions for global system manipulation. For process specific stuff,
+/// use the `pwn::windows::Process` class.
 ///
-
+/// @copyright This file is part of the `pwn++` project and subject to the same license
+///
 
 #pragma once
 
@@ -76,6 +77,16 @@ public:
         };
         return Ok(std::shared_ptr<T>(p, deleter));
     }
+
+    ///
+    /// @brief Retrieves the system number of processors and their cache
+    ///
+    /// @return If successful, the tuple returns a tuple of (in that order):
+    /// processor count, logical processor count, number of L1 caches, number
+    /// of L2 caches and number of L3 caches
+    ///
+    static Result<std::tuple<u8, u8, u8, u8, u8>>
+    ProcessorCount();
 
 private:
     ///

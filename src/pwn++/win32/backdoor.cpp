@@ -196,7 +196,7 @@ execute(ThreadConfig* cfg) -> Result<std::string const>
 int
 pwn_version(lua_State* l)
 {
-    std::string version = pwn::utils::to_string(pwn::version());
+    std::string version = pwn::utils::to_string(pwn::Version);
     lua_pushstring(l, version.c_str());
     return 1;
 }
@@ -521,8 +521,8 @@ AllowNextClient() -> Result<bool>
                     // Insert the client configuration in the global context
                     //
                     {
-                        std::lock_guard<std::mutex> lock(pwn::globals.m_config_mutex);
-                        globals.m_backdoor_clients.push_back(client);
+                        std::lock_guard<std::mutex> lock(pwn::Context.m_config_mutex);
+                        Context.m_backdoor_clients.push_back(client);
                     }
 
                     return Ok(true);
@@ -547,7 +547,7 @@ start() -> Result<bool>
 {
     dbg(L"Listening for connection on '{}'", PWN_BACKDOOR_PIPENAME);
 
-    globals.m_backdoor_thread = std::jthread::jthread(
+    Context.m_backdoor_thread = std::jthread::jthread(
         []
         {
             while ( true )
@@ -564,10 +564,10 @@ auto
 stop() -> Result<bool>
 {
     std::vector<HANDLE> handles;
-    std::lock_guard<std::mutex> lock(pwn::globals.m_config_mutex);
-    const usize sz = globals.m_backdoor_clients.size();
+    std::lock_guard<std::mutex> lock(pwn::Context.m_config_mutex);
+    const usize sz = Context.m_backdoor_clients.size();
 
-    for ( auto const& client : globals.m_backdoor_clients )
+    for ( auto const& client : Context.m_backdoor_clients )
     {
         dbg(L"Stopping client {}", client->Tid);
         client->SetState(ThreadState::Stopped);

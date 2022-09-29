@@ -8,8 +8,6 @@
 #include <string_view>
 #include <vector>
 
-#include "context.hpp"
-
 namespace pwn::log
 {
 
@@ -17,15 +15,14 @@ namespace pwn::log
 ///
 /// @brief perror() style of function for Windows
 ///
-/// @param [inout] prefix
+/// @param [in] prefix
 ///
 void PWNAPI
-perror(_In_ const std::wstring_view& prefix)
+perror(const std::wstring_view& prefix)
 {
     const u32 sysMsgSz = 1024;
     auto sysMsg        = std::wstring();
     sysMsg.reserve(sysMsgSz);
-    // auto sysMsg   = std::vector<wchar_t>(1024);
     const auto eNum = ::GetLastError();
 
     ::FormatMessageW(

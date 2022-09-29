@@ -10,7 +10,7 @@
 #include "utils.hpp"
 using namespace std::literals::chrono_literals;
 
-extern struct pwn::globals_t pwn::globals;
+extern struct pwn::GlobalContext pwn::Context;
 
 
 auto
@@ -208,7 +208,7 @@ Tube::interactive()
                         auto input     = std::string(raw_input.begin(), raw_input.end());
 
                         {
-                            std::lock_guard<std::mutex> guard(pwn::globals.m_console_mutex);
+                            std::lock_guard<std::mutex> guard(pwn::Context.m_console_mutex);
                             std::wcout << pwn::utils::to_widestring(input);
                             std::wcout.flush();
                         }
@@ -232,7 +232,7 @@ Tube::interactive()
     while ( __bReplLoop )
     {
         {
-            std::lock_guard<std::mutex> guard(pwn::globals.m_console_mutex);
+            std::lock_guard<std::mutex> guard(pwn::Context.m_console_mutex);
             std::wcout << PWN_INTERACTIVE_PROMPT;
             std::wcout.flush();
         }

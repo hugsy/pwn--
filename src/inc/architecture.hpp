@@ -60,7 +60,7 @@ static constexpr std::array<std::pair<std::wstring_view, Architecture>, 2> Archi
 }};
 
 
-Architecture static inline lookup_architecture(const std::wstring_view sv)
+Architecture static inline lookup_architecture(std::wstring_view const& sv)
 {
     static constexpr auto map = CMap<std::wstring_view, Architecture, Architectures.size()> {{Architectures}};
     return map.at(sv);

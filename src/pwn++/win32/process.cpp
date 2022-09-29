@@ -17,46 +17,6 @@
 #include "win32/system.hpp"
 
 
-static const std::array<pwn::windows::Process::Privilege, 37> PrivilegeNames = {
-    L"SeAssignPrimaryTokenPrivilege",
-    L"SeAuditPrivilege",
-    L"SeBackupPrivilege",
-    L"SeChangeNotifyPrivilege",
-    L"SeCreateGlobalPrivilege",
-    L"SeCreatePagefilePrivilege",
-    L"SeCreatePermanentPrivilege",
-    L"SeCreateSymbolicLinkPrivilege",
-    L"SeCreateTokenPrivilege",
-    L"SeDebugPrivilege",
-    L"SeDelegateSessionUserImpersonatePrivilege",
-    L"SeEnableDelegationPrivilege",
-    L"SeImpersonatePrivilege",
-    L"SeIncreaseBasePriorityPrivilege",
-    L"SeIncreaseQuotaPrivilege",
-    L"SeIncreaseWorkingSetPrivilege",
-    L"SeLoadDriverPrivilege",
-    L"SeLockMemoryPrivilege",
-    L"SeMachineAccountPrivilege",
-    L"SeManageVolumePrivilege",
-    L"SeProfileSingleProcessPrivilege",
-    L"SeRelabelPrivilege",
-    L"SeRemoteShutdownPrivilege",
-    L"SeRestorePrivilege",
-    L"SeSecurityPrivilege",
-    L"SeShutdownPrivilege",
-    L"SeSyncAgentPrivilege",
-    L"SeSystemEnvironmentPrivilege",
-    L"SeSystemProfilePrivilege",
-    L"SeSystemtimePrivilege",
-    L"SeTakeOwnershipPrivilege",
-    L"SeTcbPrivilege",
-    L"SeTimeZonePrivilege",
-    L"SeTrustedCredManAccessPrivilege",
-    L"SeUndockPrivilege",
-    L"SeUnsolicitedInputPrivilege",
-};
-
-
 ///
 /// Note: this is just a fake excuse to use assembly in VS, for real world use `NtCurrentTeb()`
 ///
@@ -178,25 +138,25 @@ Process::Memory::Free(const uptr Address) -> bool
 
 #pragma region Process
 
+/*
 Process::Process() :
-    m_Pid(0),
-    m_IsSelf(0),
-    m_KillOnClose(false),
-    m_ProcessHandle(nullptr),
-    m_Peb(nullptr),
-    m_Privileges(),
-    m_Valid(false),
-    m_ProcessHandleAccessMask(0)
+    m_Pid {0},
+    m_IsSelf {0},
+    m_KillOnClose {false},
+    m_ProcessHandle {nullptr},
+    m_Peb {nullptr},
+    m_Valid {false},
+    m_ProcessHandleAccessMask {0},
+    Token {},
 {
 }
-
+*/
 
 Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
-    m_Pid(pid),
-    m_Peb(nullptr),
-    m_Privileges(),
-    m_Valid(true),
-    m_ProcessHandleAccessMask(0)
+    m_Pid {pid},
+    m_Peb {nullptr},
+    m_Valid {true},
+    m_ProcessHandleAccessMask {0}
 {
     //
     // Gather a minimum set of information about the process for performance. Extra information will be
@@ -248,7 +208,7 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
 
             // Token
             {
-                this->Token = windows::Token(m_ProcessHandle);
+                this->Token = windows::ProcessToken(m_ProcessHandle);
             }
 
             // Threads
@@ -283,12 +243,11 @@ Process::Process(Process const& Copy)
     m_IntegrityLevel          = Copy.m_IntegrityLevel;
     m_ProcessHandle           = Copy.m_ProcessHandle;
     m_ProcessHandleAccessMask = Copy.m_ProcessHandleAccessMask;
-    m_Privileges              = Copy.m_Privileges;
     m_KillOnClose             = Copy.m_KillOnClose;
     m_IsSelf                  = Copy.m_IsSelf;
     m_Peb                     = Copy.m_Peb;
     Memory                    = windows::Process::Memory::Memory(m_ProcessHandle);
-    Token                     = windows::Token(m_ProcessHandle);
+    Token                     = windows::ProcessToken(m_ProcessHandle);
     Threads                   = windows::ThreadGroup(m_ProcessHandle);
 }
 
@@ -570,105 +529,6 @@ Process::IntegrityLevel()
     }
 
     return m_IntegrityLevel;
-}
-
-
-Result<bool>
-Process::AddPrivilege(std::wstring const& PrivilegeName)
-{
-    auto hProcess = pwn::UniqueHandle {::OpenProcess(PROCESS_QUERY_INFORMATION, 0, m_Pid)};
-    if ( !hProcess )
-    {
-        return Err(ErrorCode::GenericError);
-    }
-
-    auto hToken = pwn::UniqueHandle(
-        [&]() -> HANDLE
-        {
-            HANDLE h;
-            return (::OpenProcessToken(hProcess.get(), TOKEN_ADJUST_PRIVILEGES, &h) == TRUE) ? h : nullptr;
-        }());
-    if ( !hToken )
-    {
-        return Err(ErrorCode::PermissionDenied);
-    }
-
-    LUID Luid = {0};
-
-    if ( ::LookupPrivilegeValueW(nullptr, PrivilegeName.c_str(), &Luid) == false )
-    {
-        return Err(ErrorCode::GenericError);
-    }
-
-    size_t nBufferSize                 = sizeof(TOKEN_PRIVILEGES) + 1 * sizeof(LUID_AND_ATTRIBUTES);
-    auto buffer                        = std::make_unique<u8[]>(nBufferSize);
-    auto NewState                      = (PTOKEN_PRIVILEGES)buffer.get();
-    NewState->PrivilegeCount           = 1;
-    NewState->Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-    NewState->Privileges[0].Luid       = Luid;
-
-    if ( ::AdjustTokenPrivileges(hToken.get(), FALSE, NewState, 0, (PTOKEN_PRIVILEGES) nullptr, (PDWORD) nullptr) ==
-         FALSE )
-    {
-        if ( ::GetLastError() == ERROR_NOT_ALL_ASSIGNED )
-        {
-            return Err(ErrorCode::PartialResult);
-        }
-
-        return Err(ErrorCode::ExternalApiCallFailed);
-    }
-
-    return Ok<bool>(true);
-}
-
-
-Result<bool>
-Process::HasPrivilege(std::wstring const& PrivilegeName)
-{
-    LUID Luid = {0};
-
-    auto hProcess = pwn::UniqueHandle {::OpenProcess(PROCESS_QUERY_INFORMATION, 0, m_Pid)};
-    if ( !hProcess )
-    {
-        return Err(ErrorCode::GenericError);
-    }
-
-
-    dbg(L"Checking for '{}' for PID=%d...\n", PrivilegeName.c_str(), m_Pid);
-
-    if ( ::LookupPrivilegeValueW(nullptr, PrivilegeName.c_str(), &Luid) == false )
-    {
-        log::perror(L"LookupPrivilegeValue");
-        return Err(ErrorCode::ExternalApiCallFailed);
-    }
-
-    LUID_AND_ATTRIBUTES PrivAttr = {{0}};
-    PrivAttr.Luid                = Luid;
-    PrivAttr.Attributes          = SE_PRIVILEGE_ENABLED | SE_PRIVILEGE_ENABLED_BY_DEFAULT;
-
-    PRIVILEGE_SET PrivSet  = {0};
-    PrivSet.PrivilegeCount = 1;
-    PrivSet.Privilege[0]   = PrivAttr;
-
-    auto hToken = pwn::UniqueHandle(
-        [&]() -> HANDLE
-        {
-            HANDLE h;
-            return (::OpenProcessToken(hProcess.get(), TOKEN_ADJUST_PRIVILEGES, &h) == TRUE) ? h : nullptr;
-        }());
-    if ( !hToken )
-    {
-        return Err(ErrorCode::GenericError);
-    }
-
-    BOOL bHasPriv;
-    if ( ::PrivilegeCheck(hToken.get(), &PrivSet, &bHasPriv) == FALSE )
-    {
-        log::perror(L"LookupPrivilegeValue");
-        return Err(ErrorCode::ExternalApiCallFailed);
-    }
-
-    return Ok(bHasPriv == TRUE);
 }
 
 

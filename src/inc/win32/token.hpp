@@ -11,14 +11,13 @@ namespace pwn::windows
 class Token
 {
 public:
-    Token() : m_ProcessHandle(nullptr), m_ProcessTokenHandle(nullptr), m_ProcessTokenAccessMask(0)
-    {
-    }
+    Token() = default;
 
-    Token(SharedHandle ProcessHandle) :
-        m_ProcessHandle(ProcessHandle),
-        m_ProcessTokenHandle(),
-        m_ProcessTokenAccessMask(0)
+    Token(SharedHandle ProcessOrThread, bool IsProcess) :
+        m_ProcessOrThreadHandle {ProcessHandle},
+        m_TokenHandle {nullptr},
+        m_TokenAccessMask {0},
+        m_IsProcess {IsProcess}
     {
         if ( Failed(ReOpenTokenWith(TOKEN_ALL_ACCESS)) )
         {
@@ -29,14 +28,14 @@ public:
     Token&
     operator=(Token const& OldCopy)
     {
-        m_ProcessHandle          = OldCopy.m_ProcessHandle;
-        m_ProcessTokenAccessMask = 0;
+        m_ProcessOrThreadHandle = OldCopy.m_ProcessOrThreadHandle;
+        m_TokenAccessMask       = 0;
 
         HANDLE hDuplicated;
         if ( FALSE == ::DuplicateHandle(
-                          m_ProcessHandle->get(),
-                          OldCopy.m_ProcessTokenHandle.get(),
-                          m_ProcessHandle->get(),
+                          m_ProcessOrThreadHandle->get(),
+                          OldCopy.m_TokenHandle.get(),
+                          m_ProcessOrThreadHandle->get(),
                           &hDuplicated,
                           0,
                           false,
@@ -46,8 +45,8 @@ public:
         }
         else
         {
-            m_ProcessTokenAccessMask = OldCopy.m_ProcessTokenAccessMask;
-            m_ProcessTokenHandle     = pwn::UniqueHandle {hDuplicated};
+            m_TokenAccessMask = OldCopy.m_TokenAccessMask;
+            m_TokenHandle     = pwn::UniqueHandle {hDuplicated};
         }
 
         return *this;
@@ -62,8 +61,31 @@ public:
     Result<bool>
     IsElevated();
 
+    ///
+    /// @brief Enumerate the token privileges
+    ///
+    /// @return Result<bool>
+    ///
     Result<bool>
     EnumeratePrivileges();
+
+    ///
+    /// @brief Add a privilege to the process (if possible)
+    ///
+    /// @param PrivilegeName
+    /// @return Result<bool> true if the privilege was added (false, not added). ErrorCode otherwise
+    ///
+    Result<bool>
+    AddPrivilege(std::wstring_view const& PrivilegeName);
+
+    ///
+    /// @brief  a privilege to the process (if possible)
+    ///
+    /// @param PrivilegeName
+    /// @return Result<bool> true if the privilege is acquired (false if not).  ErrorCode otherwise
+    ///
+    Result<bool>
+    HasPrivilege(std::wstring_view const& PrivilegeName);
 
     ///
     /// @brief Query token information
@@ -90,7 +112,7 @@ public:
         return Ok(std::shared_ptr<T>(p, deleter));
     }
 
-private:
+protected:
     ///
     /// @brief
     ///
@@ -110,9 +132,43 @@ private:
     Result<PVOID>
     QueryInternal(const TOKEN_INFORMATION_CLASS, const usize);
 
-    SharedHandle m_ProcessHandle;
-    UniqueHandle m_ProcessTokenHandle;
-    DWORD m_ProcessTokenAccessMask;
+    SharedHandle m_ProcessOrThreadHandle = nullptr;
+    UniqueHandle m_TokenHandle           = nullptr;
+    DWORD m_TokenAccessMask              = 0;
+    bool m_IsProcess                     = false;
 };
+
+
+class ProcessToken : public Token
+{
+public:
+    ProcessToken() : Token()
+    {
+    }
+
+
+    ProcessToken(SharedHandle ProcessHandle) : Token(ProcessHandle, true)
+    {
+    }
+
+private:
+};
+
+
+class ThreadToken : public Token
+{
+public:
+    ThreadToken() : Token()
+    {
+    }
+
+
+    ThreadToken(SharedHandle ProcessHandle) : Token(ProcessHandle, true)
+    {
+    }
+
+private:
+};
+
 
 } // namespace pwn::windows

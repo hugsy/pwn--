@@ -13,9 +13,6 @@
 /// namespace pwn::log
 #include "log.hpp"
 
-/// namespace pwn::context
-#include "context.hpp"
-
 /// namespace pwn::utils
 #include "utils.hpp"
 
@@ -33,33 +30,36 @@
 #endif // PWN_HAS_DISASSEMBLER
 
 
+#pragma region pwn::windows
 #ifdef PWN_BUILD_FOR_WINDOWS
-/**
- *
- * Windows namespace definition
- */
 namespace pwn
 {
+
+///
+/// @brief pwn::windows namespace declaration
+///
+///
 namespace windows
 {
 
 }
 
+///
+/// @brief aliasing pwn::win to pwn::windows
+///
+///
 namespace win = windows;
 
 } // namespace pwn
 
-/// namespace pwn::windows::system
+/// namespace pwn::windows::System
 #include "win32/system.hpp"
 
-/// namespace pwn::windows::process
+/// namespace pwn::windows::Process
 #include "win32/process.hpp"
 
-/// namespace pwn::windows::thread
+/// namespace pwn::windows::Thread
 #include "win32/thread.hpp"
-
-/// namespace pwn::windows::cpu
-#include "win32/cpu.hpp"
 
 /// namespace pwn::windows::registry
 #include "win32/registry.hpp"
@@ -71,24 +71,24 @@ namespace win = windows;
 #include "win32/job.hpp"
 
 /// namespace pwn::windows::service
-#include "service.hpp"
+#include "win32/service.hpp"
 
 /// namespace pwn::windows::filesystem
-#include "fs.hpp"
+#include "win32/fs.hpp"
 
 /// namespace pwn::windowsdows::alpc
-#include "alpc.hpp"
+#include "win32/alpc.hpp"
 
 /// namespace pwn::windows::rpc
-#include "rpc.hpp"
+#include "win32/rpc.hpp"
 
+/// namespace pwn::windows::ObjectManager
+#include "win32/object.hpp"
 
 // namespace pwn::backdoor
 #ifdef PWN_USE_BACKDOOR
 #include "backdoor.hpp"
 #endif
-
-#include "thread.hpp"
 
 
 ///
@@ -107,14 +107,32 @@ namespace ctf = win::ctf;
 #include "win32/ctf/remote.hpp"
 
 #endif
+#pragma endregion
 
 
+#pragma region pwn::linux
 #ifdef PWN_BUILD_FOR_LINUX
-/**
- *
- * Linux namespace definition
- *
- */
+
+namespace pwn
+{
+
+///
+/// @brief pwn::linux namespace declaration
+///
+///
+namespace linux
+{
+
+}
+
+///
+/// @brief aliasing pwn::lin to pwn::linux
+///
+///
+namespace lin = linux;
+
+} // namespace pwn
+
 // namespace pwn::linux::system
 #include "linux/system.hpp"
 
@@ -130,6 +148,7 @@ namespace ctf = linux::ctf;
 
 #include "linux/ctf/remote.hpp"
 #endif
+#pragma endregion
 
 
 /**
@@ -139,7 +158,7 @@ namespace ctf = linux::ctf;
  */
 namespace pwn
 {
-struct globals_t
+struct GlobalContext
 {
 #ifdef PWN_USE_BACKDOOR
     std::jthread m_backdoor_thread;
@@ -155,70 +174,31 @@ struct globals_t
     usize ptrsize;
     usize instruction_size;
 
-    globals_t()
-    {
-        m_seed = std::chrono::system_clock::now().time_since_epoch().count();
-        std::srand(m_seed);
-        set("x64");
-    };
+    GlobalContext();
 
     void
-    set(std::string_view const& type)
-    {
-        const std::string _t {type};
-        set(pwn::utils::to_widestring(_t));
-    }
+    set(std::string_view const& type);
 
     void
-    set(std::wstring_view const& type)
-    {
-        try
-        {
-            architecture = lookup_architecture(type);
-            endianess    = architecture.endian;
-            ptrsize      = architecture.ptrsize;
-
-            dbg(L"Selecting {}", architecture);
-        }
-        catch ( std::range_error const& e )
-        {
-            err(L"Invalid architecture '{}'. Value must be in:", type);
-            for ( auto const& [name, arch] : Architectures )
-            {
-                std::wcout << L"- " << std::setw(9) << name << std::endl;
-            }
-        }
-    }
+    set(std::wstring_view const& type);
 
     void
-    set(Endianess end)
-    {
-        endianess = end;
-    }
+    set(Endianess end);
 
     void
-    set(log::log_level_t new_log_level)
-    {
-        log_level = new_log_level;
-        if ( log_level == log::log_level_t::LOG_DEBUG )
-        {
-            dbg(L"Setting DEBUG log level");
-        }
-    }
+    set(log::log_level_t new_log_level);
 };
 
 ///
 /// @brief The global context information are stored in this global variable
 ///
-extern PWNAPI struct globals_t globals;
+extern PWNAPI struct GlobalContext Context;
 
-PWNAPI auto
-version() -> const wchar_t*;
+constexpr std::wstring_view Banner = PWN_LIBRARY_NAME L" v" PWN_LIBRARY_VERSION L" - " PWN_LIBRARY_VERSION_RELEASE;
 
-PWNAPI auto
-version_info() -> const std::tuple<u16, u16>;
+constexpr std::wstring_view Version = PWN_LIBRARY_VERSION;
 
-PWNAPI auto
-banner() -> const wchar_t*;
+constexpr std::tuple<u16, u16> VersionInfo {PWN_LIBRARY_VERSION_MAJOR, PWN_LIBRARY_VERSION_MINOR};
+
 
 } // namespace pwn

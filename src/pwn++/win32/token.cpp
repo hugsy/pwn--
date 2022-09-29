@@ -9,7 +9,7 @@ namespace pwn::windows
 bool
 Token::IsValid() const
 {
-    return m_ProcessHandle != nullptr;
+    return m_ProcessOrThreadHandle != nullptr;
 }
 
 
@@ -21,21 +21,23 @@ Token::ReOpenTokenWith(const DWORD DesiredAccess)
         return Err(ErrorCode::InvalidState);
     }
 
-    if ( (m_ProcessTokenAccessMask & DesiredAccess) == DesiredAccess )
+    if ( (m_TokenAccessMask & DesiredAccess) == DesiredAccess )
     {
         return Ok(true);
     }
 
     HANDLE hToken          = nullptr;
-    DWORD NewDesiredAccess = m_ProcessTokenAccessMask | DesiredAccess;
+    DWORD NewDesiredAccess = m_TokenAccessMask | DesiredAccess;
 
-    if ( ::OpenProcessToken(m_ProcessHandle->get(), NewDesiredAccess, &hToken) == FALSE || !hToken )
+    auto bRes = m_IsProcess ? ::OpenProcessToken(m_ProcessOrThreadHandle->get(), NewDesiredAccess, &hToken) :
+                              ::OpenThreadToken(m_ProcessOrThreadHandle->get(), NewDesiredAccess, true, &hToken);
+    if ( bRes == FALSE || !hToken )
     {
         return Err(ErrorCode::PermissionDenied);
     }
 
-    m_ProcessTokenHandle     = pwn::UniqueHandle {hToken};
-    m_ProcessTokenAccessMask = NewDesiredAccess;
+    m_TokenHandle     = pwn::UniqueHandle {hToken};
+    m_TokenAccessMask = NewDesiredAccess;
     return Ok(true);
 }
 
@@ -61,8 +63,7 @@ Token::QueryInternal(const TOKEN_INFORMATION_CLASS TokenInformationClass, const 
 
     do
     {
-        Status =
-            ::NtQueryInformationToken(m_ProcessTokenHandle.get(), TokenInformationClass, Buffer, Size, &ReturnLength);
+        Status = ::NtQueryInformationToken(m_TokenHandle.get(), TokenInformationClass, Buffer, Size, &ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
             break;
@@ -97,6 +98,8 @@ Token::IsElevated()
 }
 
 
+#pragma region Token::Privilege
+
 Result<bool>
 Token::EnumeratePrivileges()
 {
@@ -116,5 +119,81 @@ Token::EnumeratePrivileges()
 
     return Ok(Privs->PrivilegeCount > 0);
 }
+
+
+Result<bool>
+Token::AddPrivilege(std::wstring_view const& PrivilegeName)
+{
+    if ( Failed(ReOpenTokenWith(TOKEN_ADJUST_PRIVILEGES)) )
+    {
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    LUID Luid = {0};
+
+    if ( ::LookupPrivilegeValueW(nullptr, PrivilegeName.data(), &Luid) == false )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    size_t nBufferSize                 = sizeof(TOKEN_PRIVILEGES) + 1 * sizeof(LUID_AND_ATTRIBUTES);
+    auto Buffer                        = std::make_unique<u8[]>(nBufferSize);
+    auto NewState                      = reinterpret_cast<PTOKEN_PRIVILEGES>(Buffer.get());
+    NewState->PrivilegeCount           = 1;
+    NewState->Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+    NewState->Privileges[0].Luid       = Luid;
+
+    if ( ::AdjustTokenPrivileges(
+             m_TokenHandle.get(),
+             FALSE,
+             NewState,
+             0,
+             (PTOKEN_PRIVILEGES) nullptr,
+             (PDWORD) nullptr) == FALSE )
+    {
+        if ( ::GetLastError() == ERROR_NOT_ALL_ASSIGNED )
+        {
+            return Err(ErrorCode::PartialResult);
+        }
+
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    return Ok(true);
+}
+
+
+Result<bool>
+Token::HasPrivilege(std::wstring_view const& PrivilegeName)
+{
+    if ( Failed(ReOpenTokenWith(TOKEN_ADJUST_PRIVILEGES)) )
+    {
+        return Err(ErrorCode::PermissionDenied);
+    }
+
+    LUID_AND_ATTRIBUTES PrivAttr = {{0}};
+    PrivAttr.Attributes          = SE_PRIVILEGE_ENABLED | SE_PRIVILEGE_ENABLED_BY_DEFAULT;
+
+    if ( ::LookupPrivilegeValueW(nullptr, PrivilegeName.data(), &PrivAttr.Luid) == false )
+    {
+        log::perror(L"LookupPrivilegeValue()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    PRIVILEGE_SET PrivSet  = {0};
+    PrivSet.PrivilegeCount = 1;
+    PrivSet.Privilege[0]   = PrivAttr;
+    BOOL bHasPriv          = FALSE;
+
+    if ( ::PrivilegeCheck(m_TokenHandle.get(), &PrivSet, &bHasPriv) == FALSE )
+    {
+        log::perror(L"PrivilegeCheck()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    return Ok(bHasPriv == TRUE);
+}
+
+#pragma endregion Token::Privilege
 
 } // namespace pwn::windows

@@ -15,8 +15,8 @@
 
 TEST_CASE("check version", "[" NS "]")
 {
-    REQUIRE(pwn::version() != L"");
-    auto info = pwn::version_info();
+    REQUIRE(pwn::Version != L"");
+    auto info = pwn::VersionInfo;
     REQUIRE(std::get<0>(info) >= 0);
     REQUIRE(std::get<1>(info) >= 0);
 }

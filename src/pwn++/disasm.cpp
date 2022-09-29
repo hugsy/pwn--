@@ -8,7 +8,7 @@
 
 using namespace pwn::log;
 
-extern struct pwn::globals_t pwn::globals;
+extern struct pwn::GlobalContext pwn::Context;
 
 
 namespace pwn::disasm
@@ -110,7 +110,7 @@ x64(_In_ const u8* code, _In_ const size_t code_size)
 void
 disassemble(_In_ const u8* code, _In_ const size_t code_size)
 {
-    switch ( pwn::globals.architecture.id )
+    switch ( pwn::Context.architecture.id )
     {
     case ArchitectureType::x86:
         return x86(code, code_size);

@@ -3,6 +3,7 @@
 #include <tlhelp32.h>
 
 #include <algorithm>
+#include <bitset>
 #include <cwctype>
 #include <iostream>
 #include <optional>
@@ -239,5 +240,54 @@ System::QueryInternal(const SYSTEM_INFORMATION_CLASS SystemInformationClass, con
 
     return Ok(Buffer);
 }
+
+Result<std::tuple<u8, u8, u8, u8, u8>>
+System::ProcessorCount()
+{
+    DWORD size                = 0;
+    u8 ProcessorCount         = 0;
+    u8 LogicalProcessorCount  = 0;
+    u8 ProcessorCacheCount[3] = {0};
+
+    ::GetLogicalProcessorInformation(nullptr, &size);
+    if ( ::GetLastError() != ERROR_INSUFFICIENT_BUFFER )
+    {
+        log::perror(L"GetLogicalProcessorInformation()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    const usize NbEntries = size / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+    auto ProcessorInfo    = std::make_unique<SYSTEM_LOGICAL_PROCESSOR_INFORMATION[]>(NbEntries);
+    if ( ::GetLogicalProcessorInformation(ProcessorInfo.get(), &size) == FALSE )
+    {
+        log::perror(L"GetLogicalProcessorInformation()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    std::for_each(
+        std::next(ProcessorInfo.get(), 0),
+        std::next(ProcessorInfo.get(), NbEntries),
+        [&LogicalProcessorCount, &ProcessorCount, &ProcessorCacheCount](SYSTEM_LOGICAL_PROCESSOR_INFORMATION const& p)
+        {
+            if ( p.Relationship == RelationProcessorCore )
+            {
+                ProcessorCount++;
+                LogicalProcessorCount += std::bitset<32>(p.ProcessorMask).count();
+            }
+
+            if ( p.Relationship == RelationCache )
+            {
+                ProcessorCacheCount[(p.Cache.Level - 1)]++;
+            }
+        });
+
+    return std::make_tuple(
+        ProcessorCount,
+        LogicalProcessorCount,
+        ProcessorCacheCount[0],
+        ProcessorCacheCount[1],
+        ProcessorCacheCount[2]);
+}
+
 
 } // namespace pwn::windows
