@@ -29,8 +29,20 @@ Token::ReOpenTokenWith(const DWORD DesiredAccess)
     HANDLE hToken          = nullptr;
     DWORD NewDesiredAccess = m_TokenAccessMask | DesiredAccess;
 
-    auto bRes = m_IsProcess ? ::OpenProcessToken(m_ProcessOrThreadHandle->get(), NewDesiredAccess, &hToken) :
-                              ::OpenThreadToken(m_ProcessOrThreadHandle->get(), NewDesiredAccess, true, &hToken);
+    BOOL bRes = FALSE;
+    switch ( m_Type )
+    {
+    case TokenType::Process:
+        bRes = ::OpenProcessToken(m_ProcessOrThreadHandle->get(), NewDesiredAccess, &hToken);
+        break;
+    case TokenType::Thread:
+        bRes = ::OpenThreadToken(m_ProcessOrThreadHandle->get(), NewDesiredAccess, true, &hToken);
+        break;
+    default:
+        throw std::range_error("Invalid token type");
+        break;
+    }
+
     if ( bRes == FALSE || !hToken )
     {
         return Err(ErrorCode::PermissionDenied);

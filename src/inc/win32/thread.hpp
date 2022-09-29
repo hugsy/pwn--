@@ -29,8 +29,10 @@ public:
         if ( Success(ReOpenThreadWith(THREAD_QUERY_LIMITED_INFORMATION)) )
         {
             m_Valid = (m_ThreadHandle != nullptr);
+            Token   = windows::Token(m_ThreadHandle, Token::TokenType::Thread);
         }
     }
+
 
     Thread(Thread const& OldCopy)
     {
@@ -40,8 +42,10 @@ public:
         m_Teb                    = OldCopy.m_Teb;
         m_Name                   = OldCopy.m_Name;
         m_ThreadHandleAccessMask = OldCopy.m_ThreadHandleAccessMask;
+        Token                    = windows::Token(m_ThreadHandle, Token::TokenType::Thread);
         m_Valid                  = (m_ThreadHandle != nullptr);
     }
+
 
     Thread&
     operator=(Thread const& OldCopy)
@@ -52,9 +56,11 @@ public:
         m_Teb                    = OldCopy.m_Teb;
         m_Name                   = OldCopy.m_Name;
         m_ThreadHandleAccessMask = OldCopy.m_ThreadHandleAccessMask;
+        Token                    = windows::Token(m_ThreadHandle, Token::TokenType::Thread);
         m_Valid                  = (m_ThreadHandle != nullptr);
         return *this;
     }
+
 
     bool
     IsValid() const
@@ -133,7 +139,7 @@ public:
         return Ok(std::shared_ptr<T>(p, deleter));
     }
 
-    ThreadToken Token;
+    Token Token;
 
 private:
     ///

@@ -152,7 +152,7 @@ public:
     // Submodules
     //
     Process::Memory Memory;
-    ProcessToken Token;
+    Token Token;
     ThreadGroup Threads;
 
     // TODO:

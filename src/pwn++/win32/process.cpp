@@ -138,19 +138,6 @@ Process::Memory::Free(const uptr Address) -> bool
 
 #pragma region Process
 
-/*
-Process::Process() :
-    m_Pid {0},
-    m_IsSelf {0},
-    m_KillOnClose {false},
-    m_ProcessHandle {nullptr},
-    m_Peb {nullptr},
-    m_Valid {false},
-    m_ProcessHandleAccessMask {0},
-    Token {},
-{
-}
-*/
 
 Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
     m_Pid {pid},
@@ -208,7 +195,7 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
 
             // Token
             {
-                this->Token = windows::ProcessToken(m_ProcessHandle);
+                this->Token = windows::Token(m_ProcessHandle, Token::TokenType::Process);
             }
 
             // Threads
@@ -246,8 +233,8 @@ Process::Process(Process const& Copy)
     m_KillOnClose             = Copy.m_KillOnClose;
     m_IsSelf                  = Copy.m_IsSelf;
     m_Peb                     = Copy.m_Peb;
+    Token                     = windows::Token(m_ProcessHandle, windows::Token::TokenType::Process);
     Memory                    = windows::Process::Memory::Memory(m_ProcessHandle);
-    Token                     = windows::ProcessToken(m_ProcessHandle);
     Threads                   = windows::ThreadGroup(m_ProcessHandle);
 }
 

@@ -11,13 +11,21 @@ namespace pwn::windows
 class Token
 {
 public:
+    enum class TokenType : u8
+    {
+        Unknown,
+        Process,
+        Thread,
+    };
+
+
     Token() = default;
 
-    Token(SharedHandle ProcessOrThread, bool IsProcess) :
-        m_ProcessOrThreadHandle {ProcessHandle},
+    Token(SharedHandle ProcessOrThreadHandle, TokenType Type) :
+        m_ProcessOrThreadHandle {ProcessOrThreadHandle},
         m_TokenHandle {nullptr},
         m_TokenAccessMask {0},
-        m_IsProcess {IsProcess}
+        m_Type {Type}
     {
         if ( Failed(ReOpenTokenWith(TOKEN_ALL_ACCESS)) )
         {
@@ -135,39 +143,7 @@ protected:
     SharedHandle m_ProcessOrThreadHandle = nullptr;
     UniqueHandle m_TokenHandle           = nullptr;
     DWORD m_TokenAccessMask              = 0;
-    bool m_IsProcess                     = false;
-};
-
-
-class ProcessToken : public Token
-{
-public:
-    ProcessToken() : Token()
-    {
-    }
-
-
-    ProcessToken(SharedHandle ProcessHandle) : Token(ProcessHandle, true)
-    {
-    }
-
-private:
-};
-
-
-class ThreadToken : public Token
-{
-public:
-    ThreadToken() : Token()
-    {
-    }
-
-
-    ThreadToken(SharedHandle ProcessHandle) : Token(ProcessHandle, true)
-    {
-    }
-
-private:
+    TokenType m_Type                     = TokenType::Unknown;
 };
 
 
