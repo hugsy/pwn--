@@ -30,6 +30,7 @@ if(MSVC)
     )
 
     add_compile_definitions(_UNICODE UNICODE CATCH_CONFIG_NO_WINDOWS_SEH)
+    add_compile_definitions(PHNT_VERSION=PHNT_20H2 NTDDI_WIN10_CO=0x0A00000B NTDDI_VERSION=NTDDI_WIN10_CO)
 else()
     set(TEST_DIR ${COMMON_TEST_DIR}/linux)
     set(
