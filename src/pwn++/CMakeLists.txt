@@ -147,16 +147,16 @@ generate_export_header(
     DEPRECATED_MACRO_NAME PWN_DEPRECATED
 )
 
-target_sources(
-    ${PROJECT_NAME}
-    PUBLIC ${COMMON_HEADER_FILES}
-    PRIVATE ${COMMON_SOURCE_FILES}
-)
+# target_sources(
+# ${PROJECT_NAME}
+# PUBLIC ${COMMON_HEADER_FILES}
+# PRIVATE ${COMMON_SOURCE_FILES}
+# )
 
-target_include_directories(
-    ${PROJECT_NAME}
-    PUBLIC ${COMMON_HEADER_DIR}
-)
+# target_include_directories(
+# ${PROJECT_NAME}
+# PUBLIC ${COMMON_HEADER_DIR}
+# )
 
 #
 # Defines the OS-specific sources & compiler flags
