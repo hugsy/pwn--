@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: ['windows-2022'] # 'linux-latest' removed since gcc-11 nor clang-15 supports std::format
+        os: ['windows-2019'] # 'linux-latest' removed since gcc-11 nor clang-15 supports std::format
         platform: ['x64'] # 'x86', 
         configuration: ['Debug'] # , 'RelWithDebInfo'
         include:
