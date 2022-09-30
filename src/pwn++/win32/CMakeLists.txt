@@ -66,7 +66,7 @@ if(PWN_ENABLE_LUA_BACKDOOR)
     set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_DIR}/backdoor.cpp)
 endif(PWN_ENABLE_LUA_BACKDOOR)
 
-target_sources(${PROJECT_NAME} ${SOURCE_DIR}/test.cpp)
+target_sources(${PROJECT_NAME} PUBLIC ${SOURCE_DIR}/test.cpp)
 
 # target_sources(${PROJECT_NAME} PUBLIC ${HEADER_FILES} PRIVATE ${SOURCE_FILES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${HEADER_DIR})
