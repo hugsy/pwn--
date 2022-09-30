@@ -5,7 +5,6 @@
 
 #include <pwn.hpp>
 
-namespace ctx = pwn::context;
 
 // constexpr PROCESS_INFORMATION_CLASS ProcessDebugAuthInformation =
 //     (const PROCESS_INFORMATION_CLASS)0x5A; // 90 -  exists since REDSTONE4
@@ -69,7 +68,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     // Get the current process
     //
     pwn::windows::Process P {};
-    if ( Failed(P.AddPrivilege(L"SeSystemEnvironmentPrivilege")) )
+    if ( Failed(P.Token.AddPrivilege(L"SeSystemEnvironmentPrivilege")) )
     {
         err(L"failed to acquire `SeSystemEnvironmentPrivilege` ");
         return -1;

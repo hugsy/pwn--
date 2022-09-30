@@ -1,7 +1,6 @@
 #include <pwn.hpp>
 
 using namespace pwn::log;
-namespace ctx = pwn::context;
 
 #include <vector>
 

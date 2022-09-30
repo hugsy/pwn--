@@ -9,8 +9,6 @@ Example file to create a simple AppContainer for containing any PE binary.
 #include <iostream>
 #include <pwn.hpp>
 
-namespace ctx = pwn::context;
-
 
 auto
 wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
