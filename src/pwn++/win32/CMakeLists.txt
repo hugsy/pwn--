@@ -73,7 +73,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${HEADER_DIR})
 # Use ProcessHacker phnt headers
 #
 target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/phnt)
-target_compile_definitions(${PROJECT_NAME} PRIVATE PHNT_VERSION=PHNT_20H2 NTDDI_WIN10_CO=0x0A00000B NTDDI_VERSION=NTDDI_WIN10_CO)
+target_compile_definitions(${PROJECT_NAME} PRIVATE PHNT_VERSION=PHNT_20H2) #NTDDI_WIN10_CO=0x0A00000B NTDDI_VERSION=NTDDI_WIN10_CO)
 
 #
 # Compiler flags
