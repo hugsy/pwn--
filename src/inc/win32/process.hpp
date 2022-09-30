@@ -52,6 +52,9 @@ class Process
         auto
         Free(const uptr Address) -> bool;
 
+        // TODO:
+        // - memory information (vads, perms)
+
     private:
         SharedHandle m_ProcessHandle;
     };
