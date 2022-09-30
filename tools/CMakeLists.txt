@@ -17,7 +17,7 @@ target_compile_definitions(
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE win32/dllmain.cpp)
 
-    target_compile_definitions(${PROJECT_NAME} PRIVATE _UNICODE UNICODE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _UNICODE UNICODE PHNT_VERSION=PHNT_20H2 NTDDI_WIN10_CO=0x0A00000B NTDDI_VERSION=NTDDI_WIN10_CO)
 
     target_include_directories(
         ${PROJECT_NAME}
