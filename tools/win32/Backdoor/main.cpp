@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 auto
 wmain(const int argc, const wchar_t** argv) -> int
 {
-    pwn::Context.set(pwn::log::log_level_t::LOG_DEBUG);
+    pwn::Context.set(pwn::log::LogLevel::Debug);
 
     pwn::utils::random::seed();
 

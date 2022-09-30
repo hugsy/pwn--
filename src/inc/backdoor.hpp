@@ -71,10 +71,10 @@ public:
         return ::SetEvent(this->hStateChangeEvent);
     }
 
-    friend std::wostream&
-    operator<<(std::wostream& os, const _ThreadConfig& obj)
+    friend std::ostream&
+    operator<<(std::ostream& os, const _ThreadConfig& obj)
     {
-        os << L"Client(Tid=" << obj.Tid << L")";
+        os << "Client(Tid=" << obj.Tid << ")";
         return os;
     }
 

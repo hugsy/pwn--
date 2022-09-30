@@ -62,7 +62,7 @@ wmain(const int argc, const wchar_t** argv) -> int
 {
     NTSTATUS Status;
 
-    pwn::Context.set(pwn::log::log_level_t::LOG_DEBUG);
+    pwn::Context.set(pwn::log::LogLevel::Debug);
 
     //
     // Get the current process

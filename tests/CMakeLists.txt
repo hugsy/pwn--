@@ -28,9 +28,6 @@ if(MSVC)
         ${TEST_DIR}/pwn_win_token.cpp
         ${TEST_DIR}/pwn_win_object.cpp
     )
-
-    add_compile_definitions(_UNICODE UNICODE CATCH_CONFIG_NO_WINDOWS_SEH)
-    add_compile_definitions(PHNT_VERSION=PHNT_20H2 NTDDI_WIN10_CO=0x0A00000B NTDDI_VERSION=NTDDI_WIN10_CO)
 else()
     set(TEST_DIR ${COMMON_TEST_DIR}/linux)
     set(
@@ -39,39 +36,28 @@ else()
         ${SOURCE_FILES}
         ${TEST_DIR}/pwn_linux_system.cpp
     )
-
-    add_compile_definitions(_GNU_SOURCE=1)
 endif(MSVC)
-
-if(NOT PWN_INCLUDE_DISASSEMBLER)
-    add_compile_definitions(PWN_NO_DISASSEMBLER)
-endif()
-
-if(NOT PWN_INCLUDE_ASSEMBLER)
-    add_compile_definitions(PWN_NO_ASSEMBLER)
-endif()
 
 add_executable(tests ${SOURCE_FILES})
 add_dependencies(tests pwn++)
 
+set_target_properties(tests PROPERTIES CXX_STANDARD 20)
+target_compile_features(tests PUBLIC cxx_std_20)
+
+target_compile_options(tests PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_OPTIONS>)
+target_compile_definitions(tests PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_DEFINITIONS>)
+target_include_directories(tests PUBLIC ${TEST_DIR} $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INCLUDE_DIRECTORIES>)
+target_link_libraries(tests PUBLIC $<TARGET_LINKER_FILE:${CMAKE_PROJECT_NAME}> $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_LINK_LIBRARIES>)
+
+if(MSVC)
+    target_compile_definitions(tests PRIVATE CATCH_CONFIG_NO_WINDOWS_SEH)
+else()
+    target_compile_definitions(tests PRIVATE _GNU_SOURCE=1)
+endif(MSVC)
+
 add_test(
     NAME tests
     COMMAND $<TARGET_FILE:tests>
-)
-
-set_target_properties(
-    tests
-    PROPERTIES
-    CXX_STANDARD 20
-)
-
-target_compile_features(tests PRIVATE cxx_std_20)
-target_include_directories(tests PUBLIC ${TEST_DIR} $<TARGET_PROPERTY:pwn++,INCLUDE_DIRECTORIES>)
-target_link_libraries(tests
-    PRIVATE
-    $<TARGET_LINKER_FILE:pwn++>
-    Userenv.lib
-    BCrypt.lib
 )
 
 add_custom_command(

@@ -44,7 +44,7 @@ enum class ArchitectureType : uint8_t
 ///
 struct Architecture
 {
-    std::wstring_view name;
+    std::string_view name;
     ArchitectureType id;
     std::size_t ptrsize;
     Endianess endian;
@@ -54,15 +54,15 @@ struct Architecture
 };
 
 
-static constexpr std::array<std::pair<std::wstring_view, Architecture>, 2> Architectures {{
-    {L"x64", {L"x64", ArchitectureType::x64, 8, Endianess::little}},
-    {L"x86", {L"x86", ArchitectureType::x86, 4, Endianess::little}},
+static constexpr std::array<std::pair<std::string_view, Architecture>, 2> Architectures {{
+    {"x64", {"x64", ArchitectureType::x64, 8, Endianess::little}},
+    {"x86", {"x86", ArchitectureType::x86, 4, Endianess::little}},
 }};
 
 
-Architecture static inline lookup_architecture(std::wstring_view const& sv)
+Architecture static inline lookup_architecture(std::string_view const& sv)
 {
-    static constexpr auto map = CMap<std::wstring_view, Architecture, Architectures.size()> {{Architectures}};
+    static constexpr auto map = CMap<std::string_view, Architecture, Architectures.size()> {{Architectures}};
     return map.at(sv);
 }
 
@@ -73,33 +73,47 @@ Architecture static inline lookup_architecture(std::wstring_view const& sv)
 
 
 // for Architecture
+std::ostream&
+operator<<(std::ostream& os, Architecture const& a);
+
 std::wostream&
 operator<<(std::wostream& wos, Architecture const& a);
 
-template<>
-struct std::formatter<Architecture, wchar_t> : std::formatter<std::wstring, wchar_t>
-{
-    auto
-    format(Architecture a, wformat_context& ctx)
-    {
-        std::wstring arch {a.name};
-        std::transform(arch.begin(), arch.end(), arch.begin(), std::towupper);
-        return std::formatter<wstring, wchar_t>::format(std::format(L"{}_{}_ENDIAN", arch, a.endian), ctx);
-    }
-};
-
 
 // for Endianness
+std::ostream&
+operator<<(std::ostream& os, Endianess e);
+
 std::wostream&
 operator<<(std::wostream& wos, Endianess e);
 
+
 template<>
-struct std::formatter<Endianess, wchar_t> : std::formatter<std::wstring, wchar_t>
+struct std::formatter<Architecture, char> : std::formatter<std::string, char>
 {
     auto
-    format(Endianess a, wformat_context& ctx)
+    format(Architecture a, format_context& ctx)
     {
-        const wchar_t* e = (a == Endianess::little) ? L"LITTLE" : (a == Endianess::big) ? L"BIG" : L"UNKNOWN";
-        return formatter<wstring, wchar_t>::format(std::format(L"{}", e), ctx);
+        auto arch_name = std::string(a.name);
+        std::transform(
+            arch_name.begin(),
+            arch_name.end(),
+            arch_name.begin(),
+            [](unsigned char c)
+            {
+                return std::toupper(c);
+            });
+        return std::formatter<string, char>::format(std::format("{}_{}_ENDIAN", arch_name, a.endian), ctx);
+    }
+};
+
+template<>
+struct std::formatter<Endianess, char> : std::formatter<std::string, char>
+{
+    auto
+    format(Endianess a, format_context& ctx)
+    {
+        const char* e = (a == Endianess::little) ? "LITTLE" : (a == Endianess::big) ? "BIG" : "UNKNOWN";
+        return formatter<string, char>::format(std::format("{}", e), ctx);
     }
 };

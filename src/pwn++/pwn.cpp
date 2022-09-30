@@ -14,28 +14,20 @@ pwn::GlobalContext::GlobalContext()
 void
 pwn::GlobalContext::set(std::string_view const& type)
 {
-    const std::string _t {type};
-    set(pwn::utils::to_widestring(_t));
-}
-
-
-void
-pwn::GlobalContext::set(std::wstring_view const& type)
-{
     try
     {
         architecture = lookup_architecture(type);
         endianess    = architecture.endian;
         ptrsize      = architecture.ptrsize;
 
-        dbg(L"Selecting {}", architecture);
+        dbg("Selecting {}", architecture);
     }
     catch ( std::range_error const& e )
     {
-        err(L"Invalid architecture '{}'. Value must be in:", type);
+        err("Invalid architecture '{}'. Value must be in:", type);
         for ( auto const& [name, arch] : Architectures )
         {
-            std::wcout << L"- " << std::setw(9) << name << std::endl;
+            err("- {}", arch);
         }
     }
 }
@@ -48,11 +40,11 @@ pwn::GlobalContext::set(Endianess end)
 }
 
 void
-pwn::GlobalContext::set(log::log_level_t new_log_level)
+pwn::GlobalContext::set(log::LogLevel new_log_level)
 {
     log_level = new_log_level;
-    if ( log_level == log::log_level_t::LOG_DEBUG )
+    if ( log_level == log::LogLevel::Debug )
     {
-        dbg(L"Setting DEBUG log level");
+        dbg("Setting DEBUG log level");
     }
 }

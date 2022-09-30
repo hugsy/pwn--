@@ -75,7 +75,7 @@ auto wmain() -> int
     ctx::set_arch(pwn::context::arch_t::x64);
 
     dbg(L"The default log_level is INFO, this message will never appear!\n");
-    ctx::set_log_level(pwn::log::log_level_t::LOG_DEBUG);
+    ctx::set_log_level(pwn::log::LogLevel::Debug);
     dbg(L"Now it will!\n");
 
     ok(L"Everything is awesome!\n");
@@ -816,7 +816,7 @@ namespace utils = pwn::utils;
 
 void wmain()
 {
-    ctx::set_log_level(log_level_t::LOG_DEBUG);
+    ctx::set_log_level(LogLevel::Debug);
     {
         auto io = ctf::Remote(L"target_vm", 1337);
         io.recvuntil(">>> ");

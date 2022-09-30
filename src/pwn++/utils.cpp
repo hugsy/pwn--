@@ -14,13 +14,14 @@
 
 extern struct pwn::GlobalContext pwn::Context;
 
-
-#define PWN_UTILS_LOWER_CHARSET "abcdefghijklmnopqrstuvwxyz"
-#define PWN_UTILS_UPPER_CHARSET "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-#define PWN_UTILS_DIGITS_CHARSET "0123456789"
-#define PWN_UTILS_UPPER_LOWER_CHARSET PWN_UTILS_LOWER_CHARSET PWN_UTILS_UPPER_CHARSET
-#define PWN_UTILS_ALNUM_CHARSET PWN_UTILS_UPPER_LOWER_CHARSET PWN_UTILS_DIGITS_CHARSET
-#define PWN_UTILS_PRINTABLE_CHARSET PWN_UTILS_ALNUM_CHARSET "!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ "
+// clang-format off
+#define PWN_UTILS_LOWER_CHARSET           "abcdefghijklmnopqrstuvwxyz"
+#define PWN_UTILS_UPPER_CHARSET           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+#define PWN_UTILS_DIGITS_CHARSET          "0123456789"
+#define PWN_UTILS_UPPER_LOWER_CHARSET     PWN_UTILS_LOWER_CHARSET PWN_UTILS_UPPER_CHARSET
+#define PWN_UTILS_ALNUM_CHARSET           PWN_UTILS_UPPER_LOWER_CHARSET PWN_UTILS_DIGITS_CHARSET
+#define PWN_UTILS_PRINTABLE_CHARSET       PWN_UTILS_ALNUM_CHARSET "!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ "
+// clang-format on
 
 
 template<std::integral... Args>
@@ -682,7 +683,7 @@ sleep(const std::chrono::duration<Rep, Period>& sleep_duration)
 void
 pause()
 {
-    dbg(L"Pausing, press enter to resume...");
+    dbg("Pausing, press enter to resume...");
     std::cin.get();
 }
 
@@ -690,7 +691,7 @@ pause()
 void
 debugbreak()
 {
-    dbg(L"Breakpointing...");
+    dbg("Breakpointing...");
     DebugBreak();
 }
 

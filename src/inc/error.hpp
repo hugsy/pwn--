@@ -78,8 +78,15 @@ struct Err : ErrorType
     friend std::wostream&
     operator<<(std::wostream& wos, Err const& e)
     {
-        wos << L"Error(Code=" << (uint32_t)e.code << L", GLE=" << (uint32_t)e.number << ")";
+        wos << L"Error(Code=" << (uint32_t)e.code << L", GLE=" << (uint32_t)e.number << L")";
         return wos;
+    }
+
+    friend std::ostream&
+    operator<<(std::ostream& os, Err const& e)
+    {
+        os << "Error(Code=" << (uint32_t)e.code << ", GLE=" << (uint32_t)e.number << ")";
+        return os;
     }
 };
 
@@ -143,11 +150,11 @@ Error(Result<T> const& f)
 
 
 template<>
-struct std::formatter<ErrorType, wchar_t> : std::formatter<std::wstring, wchar_t>
+struct std::formatter<ErrorType, char> : std::formatter<std::string, char>
 {
     auto
-    format(ErrorType const a, wformat_context& ctx)
+    format(ErrorType const a, format_context& ctx)
     {
-        return formatter<wstring, wchar_t>::format(std::format(L"ERROR_{}", a), ctx);
+        return formatter<string, char>::format(std::format("ERROR_{}", a), ctx);
     }
 };

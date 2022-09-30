@@ -18,21 +18,14 @@ set(
 foreach(TOOL_DIR ${WIN32_TOOLS})
     add_executable(${TOOL_DIR} WIN32 ${PWNLIB_TOOLS_WIN32_DIR}/${TOOL_DIR}/main.cpp)
     add_dependencies(${TOOL_DIR} ${CMAKE_PROJECT_NAME})
-
-    target_compile_definitions(${TOOL_DIR} PRIVATE $<$<CONFIG:Debug>:_DEBUG DEBUG>)
-
-    target_include_directories(${TOOL_DIR} PRIVATE ${PWNLIB_ROOT_DIR}/deps/phnt)
+    target_compile_features(${TOOL_DIR} PUBLIC cxx_std_20)
+    set_target_properties(${TOOL_DIR} PROPERTIES CXX_STANDARD 20)
 
     target_compile_options(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_OPTIONS>)
-    target_compile_definitions(${TOOL_DIR} PRIVATE _UNICODE UNICODE PHNT_VERSION=PHNT_20H2 NTDDI_WIN10_CO=0x0A00000B NTDDI_VERSION=NTDDI_WIN10_CO)
-    target_include_directories(${TOOL_DIR} PRIVATE ${CMAKE_PROJECT_NAME})
-    target_link_options(${TOOL_DIR} PRIVATE /SUBSYSTEM:Console /LARGEADDRESSAWARE)
-    target_link_libraries(${TOOL_DIR} PRIVATE ${CMAKE_PROJECT_NAME})
-
-    if(PWN_ENABLE_LUA_BACKDOOR)
-        target_link_libraries(${TOOL_DIR} PRIVATE lua::lib)
-        target_include_directories(${TOOL_DIR} PRIVATE ${PWNLIB_ROOT_DIR}/deps/lua/include)
-    endif()
+    target_compile_definitions(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_DEFINITIONS>)
+    target_include_directories(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
+    target_link_libraries(${TOOL_DIR} PRIVATE ${CMAKE_PROJECT_NAME} $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_LINK_LIBRARIES>)
+    target_link_options(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_LINK_OPTIONS> /SUBSYSTEM:Console)
 
     install(TARGETS ${TOOL_DIR} DESTINATION tools)
 endforeach()

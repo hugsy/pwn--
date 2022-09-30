@@ -58,7 +58,7 @@ pwn::windows::ctf::Remote::__send_internal(_In_ std::vector<u8> const& out) -> s
     }
 
     dbg(L"sent %d bytes\n", out.size());
-    if ( pwn::Context.log_level == pwn::log::log_level_t::LOG_DEBUG )
+    if ( pwn::Context.log_level == pwn::log::LogLevel::Debug )
     {
         pwn::utils::hexdump(out);
     }
@@ -87,7 +87,7 @@ pwn::windows::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFA
         if ( cache_data.size() >= size )
         {
             dbg(L"recv2 %d bytes\n", cache_data.size());
-            if ( pwn::Context.log_level == pwn::log::log_level_t::LOG_DEBUG )
+            if ( pwn::Context.log_level == pwn::log::LogLevel::Debug )
             {
                 pwn::utils::hexdump(cache_data);
             }
@@ -115,7 +115,7 @@ pwn::windows::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFA
         {
             network_data.resize(sz);
             dbg(L"recv %d bytes\n", sz);
-            if ( pwn::Context.log_level == pwn::log::log_level_t::LOG_DEBUG )
+            if ( pwn::Context.log_level == pwn::log::LogLevel::Debug )
             {
                 pwn::utils::hexdump(&network_data[0], sz);
             }

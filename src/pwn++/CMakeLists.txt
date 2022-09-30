@@ -116,11 +116,11 @@ message(STATUS "PWN_BUILD_TOOLKIT                      ${PWN_BUILD_TOOLKIT}")
 message(STATUS "PWN_BUILD_TESTING                      ${PWN_BUILD_TESTING}")
 message(STATUS "PWN_ENABLE_LUA_BACKDOOR                ${PWN_ENABLE_LUA_BACKDOOR}")
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:_DEBUG DEBUG>)
+target_compile_definitions(${PROJECT_NAME} PUBLIC $<$<CONFIG:Debug>:_DEBUG DEBUG>)
 
 if(PWN_INCLUDE_DISASSEMBLER)
-    target_link_libraries(${PROJECT_NAME} PRIVATE Zydis)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/zydis/include)
+    target_link_libraries(${PROJECT_NAME} PUBLIC Zydis)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/zydis/include)
 endif()
 
 if(PWN_INCLUDE_ASSEMBLER)
@@ -128,8 +128,8 @@ if(PWN_INCLUDE_ASSEMBLER)
 endif()
 
 if(PWN_ENABLE_LUA_BACKDOOR)
-    target_link_libraries(${PROJECT_NAME} PRIVATE lua::lib)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/lua/include)
+    target_link_libraries(${PROJECT_NAME} PUBLIC lua::lib)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/lua/include)
 endif()
 
 #

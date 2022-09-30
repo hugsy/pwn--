@@ -72,29 +72,30 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${HEADER_DIR})
 #
 # Use ProcessHacker phnt headers
 #
-target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/phnt)
-target_compile_definitions(${PROJECT_NAME} PRIVATE PHNT_VERSION=PHNT_20H2) #NTDDI_WIN10_CO=0x0A00000B NTDDI_VERSION=NTDDI_WIN10_CO)
+target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/phnt)
+target_compile_definitions(${PROJECT_NAME} PUBLIC PHNT_VERSION=PHNT_20H2) # NTDDI_WIN10_CO=0x0A00000B NTDDI_VERSION=NTDDI_WIN10_CO)
 
 #
 # Compiler flags
 #
 target_compile_definitions(
     ${PROJECT_NAME}
-    PRIVATE
+    PUBLIC
     _UNICODE UNICODE
-
     $<$<CONFIG:Debug>:_DISABLE_VECTOR_ANNOTATION _DISABLE_STRING_ANNOTATION >
+
+    PRIVATE
 )
 
 target_compile_options(
     ${PROJECT_NAME}
     PUBLIC
     $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
+    $<$<CONFIG:Debug>:/fsanitize=address>
 
     PRIVATE
     /diagnostics:caret /Zl /ZH:SHA_256
-    $<IF:$<CONFIG:Debug>,/sdl /WX /Gy /Gm- /permissive-,/RELEASE /WX /Zi /Zf /Gm /Gm- /permissive->
-    $<$<CONFIG:Debug>:/fsanitize=address>
+    $<IF:$<CONFIG:Debug>,/sdl /WX /Gy /Gm- /permissive-,/WX /Zi /Zf /Gm /Gm- /permissive- >
 )
 
 #
@@ -104,9 +105,10 @@ target_link_options(
     ${PROJECT_NAME}
     PUBLIC
     /CETCOMPAT
-    PRIVATE
-    /LARGEADDRESSAWARE /Zp8
+    /LARGEADDRESSAWARE
     $<$<CONFIG:Debug>:/InferAsanLibs>
+
+    PRIVATE
 )
 
 target_link_libraries(

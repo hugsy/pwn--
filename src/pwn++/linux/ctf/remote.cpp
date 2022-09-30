@@ -53,7 +53,7 @@ pwn::linux::ctf::Remote::__send_internal(_In_ std::vector<u8> const& out) -> siz
     }
 
     dbg(L"sent %d bytes\n", out.size());
-    if ( std::get<0>(pwn::context::get_log_level()) == pwn::log::log_level_t::LOG_DEBUG )
+    if ( std::get<0>(pwn::context::get_log_level()) == pwn::log::LogLevel::Debug )
     {
         pwn::utils::hexdump(out);
     }
@@ -67,7 +67,7 @@ pwn::linux::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAUL
 {
     std::vector<u8> cache_data;
     size_t idx    = 0;
-    bool is_debug = (std::get<0>(pwn::context::get_log_level()) == pwn::log::log_level_t::LOG_DEBUG);
+    bool is_debug = (std::get<0>(pwn::context::get_log_level()) == pwn::log::LogLevel::Debug);
 
     size = MIN(size, PWN_TUBE_PIPE_DEFAULT_SIZE);
 

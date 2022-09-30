@@ -8,40 +8,24 @@ set(PWNLIB_TOOLS_DIR ${PWNLIB_ROOT_DIR}/tools CACHE INTERNAL "PWNLIB_TOOLS_DIR")
 add_library(${PROJECT_NAME} SHARED)
 add_dependencies(${PROJECT_NAME} ${CMAKE_PROJECT_NAME})
 
-target_compile_definitions(
-    ${PROJECT_NAME}
-    PRIVATE
-    $<$<CONFIG:Debug>:_DEBUG DEBUG>
-)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20)
+
+target_compile_options(${PROJECT_NAME} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_OPTIONS>)
+target_compile_definitions(${PROJECT_NAME} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_DEFINITIONS>)
+target_include_directories(${PROJECT_NAME} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_PROJECT_NAME} $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_LINK_LIBRARIES>)
 
 if(WIN32)
     target_sources(${PROJECT_NAME} PRIVATE win32/dllmain.cpp)
-
-    target_compile_definitions(${PROJECT_NAME} PRIVATE _UNICODE UNICODE PHNT_VERSION=PHNT_20H2 NTDDI_WIN10_CO=0x0A00000B NTDDI_VERSION=NTDDI_WIN10_CO)
-
-    target_include_directories(
-        ${PROJECT_NAME}
-
-        PUBLIC
-        $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INCLUDE_DIRECTORIES>
-    )
 
     target_link_options(
         ${PROJECT_NAME}
 
         PRIVATE
+        $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_LINK_OPTIONS>
         /DEBUG:FULL /WX /RELEASE /SUBSYSTEM:Console /MANIFEST:NO /DLL
         /profile /guard:cf /DEBUGTYPE:cv,fixup /LARGEADDRESSAWARE
-    )
-
-    target_link_libraries(
-        ${PROJECT_NAME}
-
-        PUBLIC
-        $<TARGET_LINKER_FILE:${CMAKE_PROJECT_NAME}>
-
-        PRIVATE
-        Userenv
     )
 
 else()
@@ -56,11 +40,6 @@ else()
         dl
     )
 endif(WIN32)
-
-if(PWN_ENABLE_LUA_BACKDOOR)
-    target_link_libraries(${PROJECT_NAME} PRIVATE lua::lib)
-    target_include_directories(${PROJECT_NAME} PRIVATE ${PWNLIB_ROOT_DIR}/deps/lua/include)
-endif()
 
 #
 # Installation directives

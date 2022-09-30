@@ -167,7 +167,7 @@ struct GlobalContext
     u64 m_seed;
     std::mutex m_console_mutex;
     std::mutex m_config_mutex;
-    log::log_level_t log_level = log::log_level_t::LOG_INFO;
+    log::LogLevel log_level = log::LogLevel::Info;
 
     Architecture architecture;
     Endianess endianess;
@@ -186,7 +186,7 @@ struct GlobalContext
     set(Endianess end);
 
     void
-    set(log::log_level_t new_log_level);
+    set(log::LogLevel new_log_level);
 };
 
 ///

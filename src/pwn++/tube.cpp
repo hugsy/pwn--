@@ -169,7 +169,7 @@ __pwn_interactive_repl_sighandler(_In_ DWORD signum)
     switch ( signum )
     {
     case CTRL_C_EVENT:
-        dbg(L"Stopping interactive mode...\n");
+        dbg("Stopping interactive mode...\n");
         __bReplLoop = false;
         ::ExitProcess(0);
         break;
@@ -209,8 +209,7 @@ Tube::interactive()
 
                         {
                             std::lock_guard<std::mutex> guard(pwn::Context.m_console_mutex);
-                            std::wcout << pwn::utils::to_widestring(input);
-                            std::wcout.flush();
+                            std::cout << input << std::flush;
                         }
 
                         if ( raw_input.size() < PWN_TUBE_PIPE_DEFAULT_SIZE )
@@ -222,7 +221,7 @@ Tube::interactive()
                     }
                     catch ( std::exception const& e )
                     {
-                        err(L"Unexpected exception caught, reason: {}\n", pwn::utils::to_widestring(e.what()));
+                        err("Unexpected exception caught, reason: {}\n", e.what());
                         break;
                     }
                 }
@@ -254,5 +253,5 @@ Tube::interactive()
     ::SetConsoleCtrlHandler(nullptr, 1);
 #endif
 
-    ok(L"Leaving interactive mode...\n");
+    ok("Leaving interactive mode...\n");
 }
