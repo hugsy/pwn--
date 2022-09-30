@@ -16,11 +16,6 @@ Token::IsValid() const
 Result<bool>
 Token::ReOpenTokenWith(const DWORD DesiredAccess)
 {
-    if ( IsValid() == false )
-    {
-        return Err(ErrorCode::InvalidState);
-    }
-
     if ( (m_TokenAccessMask & DesiredAccess) == DesiredAccess )
     {
         return Ok(true);
@@ -35,9 +30,11 @@ Token::ReOpenTokenWith(const DWORD DesiredAccess)
     case TokenType::Process:
         bRes = ::OpenProcessToken(m_ProcessOrThreadHandle->get(), NewDesiredAccess, &hToken);
         break;
+
     case TokenType::Thread:
-        bRes = ::OpenThreadToken(m_ProcessOrThreadHandle->get(), NewDesiredAccess, true, &hToken);
+        bRes = ::OpenThreadToken(m_ProcessOrThreadHandle->get(), NewDesiredAccess, false, &hToken);
         break;
+
     default:
         throw std::range_error("Invalid token type");
         break;
@@ -45,6 +42,7 @@ Token::ReOpenTokenWith(const DWORD DesiredAccess)
 
     if ( bRes == FALSE || !hToken )
     {
+        log::perror(L"OpenToken()");
         return Err(ErrorCode::PermissionDenied);
     }
 

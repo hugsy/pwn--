@@ -26,7 +26,7 @@ public:
         m_Teb {0},
         Token {}
     {
-        if ( Success(ReOpenThreadWith(THREAD_QUERY_LIMITED_INFORMATION)) )
+        if ( Success(ReOpenThreadWith(THREAD_QUERY_INFORMATION)) )
         {
             m_Valid = (m_ThreadHandle != nullptr);
             Token   = windows::Token(m_ThreadHandle, Token::TokenType::Thread);

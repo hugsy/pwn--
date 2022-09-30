@@ -27,10 +27,7 @@ public:
         m_TokenAccessMask {0},
         m_Type {Type}
     {
-        if ( Failed(ReOpenTokenWith(TOKEN_ALL_ACCESS)) )
-        {
-            ReOpenTokenWith(TOKEN_QUERY);
-        }
+        ReOpenTokenWith(TOKEN_READ | TOKEN_QUERY_SOURCE | TOKEN_DUPLICATE);
     }
 
     Token&
