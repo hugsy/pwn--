@@ -44,23 +44,12 @@ set(
     ${SOURCE_DIR}/rpc.cpp
     ${SOURCE_DIR}/object.cpp
     ${SOURCE_DIR}/ctf/remote.cpp
+
+    $<$<STREQUAL:$<LOWER_CASE:${CMAKE_GENERATOR_PLATFORM}>,"x64">:${SOURCE_DIR}/asm/get_teb.asm>
+    $<$<STREQUAL:$<LOWER_CASE:${CMAKE_GENERATOR_PLATFORM}>,"x64">:${SOURCE_DIR}/asm/copy_system_token.asm>
+
+    $<$<STREQUAL:$<LOWER_CASE:${CMAKE_GENERATOR_PLATFORM}>,"win32">:${SOURCE_DIR}/asm/get_teb.asm>
 )
-
-if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "AMD64")
-    set(
-        SOURCE_FILES
-
-        ${SOURCE_FILES}
-        ${SOURCE_DIR}/get_teb64.asm
-    )
-else()
-    set(
-        SOURCE_FILES
-
-        ${SOURCE_FILES}
-        ${SOURCE_DIR}/get_teb32.asm
-    )
-endif()
 
 if(PWN_ENABLE_LUA_BACKDOOR)
     set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_DIR}/backdoor.cpp)
@@ -114,6 +103,7 @@ target_link_options(
 target_link_libraries(
     ${PROJECT_NAME}
     PUBLIC
+    ntdll.lib
     ws2_32.lib
     Userenv.lib
     Rpcrt4.lib

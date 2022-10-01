@@ -141,7 +141,7 @@ public:
     /// @return Result<std::string> a b64 string on success, Err() type otherwise
     ///
     static auto
-    Encode(const u8* buffer, const size_t buffer_length) -> Result<std::string>;
+    Encode(const u8* buffer, const usize buffer_length) -> Result<std::string>;
 
 
     ///

@@ -39,8 +39,15 @@ using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
 
+#if defined(PWN_BUILD_FOR_WINDOWS)
+using uptr  = ULONG_PTR;
+using usize = SIZE_T;
+
+#elif defined(PWN_BUILD_FOR_LINUX)
 using uptr  = uintptr_t;
 using usize = size_t;
+
+#endif
 
 using i8  = int8_t;
 using i16 = int16_t;

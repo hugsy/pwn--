@@ -18,6 +18,7 @@ GetTeb PROC
 	pop ebp
 	ret
 GetTeb ENDP
+GetTeb_end::
 
 PUBLIC GetTebLength
 GetTebLength PROC
@@ -36,7 +37,7 @@ GetPeb PROC
 	mov ebp, esp
 	sub esp, 4 * (4 + 2)
     mov eax, fs:[18h]
-	mov rax, [rax + 30h]
+	mov eax, [eax + 30h]
 	mov [ecx], eax
 	xor eax, eax
 	mov esp, ebp
@@ -47,9 +48,9 @@ GetPeb_end::
 
 PUBLIC GetPebLength
 GetPebLength PROC
-  mov rax, OFFSET GetPeb_end
-  mov rcx, OFFSET GetPeb
-  sub rax, rcx
+  mov eax, OFFSET GetPeb_end
+  mov ecx, OFFSET GetPeb
+  sub eax, ecx
   ret
 GetPebLength ENDP
 _TEXT    ENDS

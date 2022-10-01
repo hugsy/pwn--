@@ -45,7 +45,7 @@ Result<std::vector<u8>>
 Process::Memory::Read(uptr const Address, usize Length)
 {
     auto out = std::vector<u8>(Length);
-    size_t dwNbRead;
+    usize dwNbRead;
     if ( ::ReadProcessMemory(
              m_ProcessHandle->get(),
              reinterpret_cast<LPVOID>(Address),
@@ -71,7 +71,7 @@ Process::Memory::Memset(uptr const address, const size_t size, const u8 val)
 Result<usize>
 Process::Memory::Write(uptr const Address, std::vector<u8> data)
 {
-    size_t dwNbWritten;
+    usize dwNbWritten;
     if ( ::WriteProcessMemory(
              m_ProcessHandle->get(),
              reinterpret_cast<LPVOID>(Address),
@@ -548,7 +548,7 @@ Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
         HANDLE hProcess = ::OpenProcess(PROCESS_CREATE_PROCESS, false, ParentPid);
         if ( hProcess )
         {
-            size_t AttrListSize = 0;
+            usize AttrListSize = 0;
             ::InitializeProcThreadAttributeList(nullptr, 1, 0, &AttrListSize);
             AttributeList = std::make_unique<u8[]>(AttrListSize);
             if ( AttributeList )
@@ -800,7 +800,7 @@ AppContainer::AppContainer(
     //
     // build the startup info
     //
-    size_t size = 0;
+    usize size = 0;
     ::InitializeProcThreadAttributeList(nullptr, 1, 0, &size);
     if ( size == 0u )
     {

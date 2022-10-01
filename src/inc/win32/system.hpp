@@ -78,6 +78,7 @@ public:
         return Ok(std::shared_ptr<T>(p, deleter));
     }
 
+
     ///
     /// @brief Retrieves the system number of processors and their cache
     ///
@@ -87,6 +88,24 @@ public:
     ///
     static Result<std::tuple<u8, u8, u8, u8, u8>>
     ProcessorCount();
+
+
+    ///
+    /// @brief Get the kernel modules
+    ///
+    /// @return Result<std::vector<RTL_PROCESS_MODULE_INFORMATION>>
+    ///
+    static Result<std::vector<RTL_PROCESS_MODULE_INFORMATION>>
+    Modules();
+
+
+    ///
+    /// @brief Enumerate all the system handles
+    ///
+    /// @return Result<std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO>>
+    ///
+    static Result<std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO>>
+    Handles();
 
 private:
     ///
