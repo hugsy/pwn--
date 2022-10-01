@@ -66,16 +66,14 @@ if(PWN_ENABLE_LUA_BACKDOOR)
     set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_DIR}/backdoor.cpp)
 endif(PWN_ENABLE_LUA_BACKDOOR)
 
-target_sources(${PROJECT_NAME} PUBLIC ${SOURCE_DIR}/test.cpp)
-
-# target_sources(${PROJECT_NAME} PUBLIC ${HEADER_FILES} PRIVATE ${SOURCE_FILES})
+target_sources(${PROJECT_NAME} PUBLIC ${HEADER_FILES} PRIVATE ${SOURCE_FILES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${HEADER_DIR})
 
 #
 # Use ProcessHacker phnt headers
 #
 target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/phnt)
-target_compile_definitions(${PROJECT_NAME} PUBLIC PHNT_VERSION=PHNT_20H2) # NTDDI_WIN10_CO=0x0A00000B NTDDI_VERSION=NTDDI_WIN10_CO)
+target_compile_definitions(${PROJECT_NAME} PUBLIC PHNT_VERSION=PHNT_20H2)
 
 #
 # Compiler flags

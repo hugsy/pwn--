@@ -6,4 +6,4 @@
 	url = https://github.com/lua/lua
 [submodule "deps/phnt"]
 	path = deps/phnt
-	url = https://github.com/processhacker/phnt
+	url = https://github.com/hugsy/phnt
