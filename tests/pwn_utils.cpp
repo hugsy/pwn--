@@ -11,7 +11,7 @@ TEST_CASE("hexdump", "[" NS "]")
 {
     std::vector<u8> const vec {0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41};
     pwn::utils::hexdump(vec);
-    pwn::utils::hexdump(reinterpret_cast<const u8*>("BBCCDDEE"), 8);
+    pwn::utils::hexdump(&vec[0], ((usize)vec.size()));
 }
 
 

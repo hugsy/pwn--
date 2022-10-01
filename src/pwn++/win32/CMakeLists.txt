@@ -7,6 +7,9 @@ enable_language(C ASM_MASM)
 set(HEADER_DIR ${PWNLIB_SRC_HDR_DIR}/win32)
 set(SOURCE_DIR ${PWNLIB_SRC_LIB_DIR}/win32)
 
+set(ASM_X86_DIR ${SOURCE_DIR}/asm/x86)
+set(ASM_X64_DIR ${SOURCE_DIR}/asm/x64)
+
 #
 # Source files
 #
@@ -45,10 +48,10 @@ set(
     ${SOURCE_DIR}/object.cpp
     ${SOURCE_DIR}/ctf/remote.cpp
 
-    $<$<STREQUAL:$<LOWER_CASE:${CMAKE_GENERATOR_PLATFORM}>,"x64">:${SOURCE_DIR}/asm/get_teb.asm>
-    $<$<STREQUAL:$<LOWER_CASE:${CMAKE_GENERATOR_PLATFORM}>,"x64">:${SOURCE_DIR}/asm/copy_system_token.asm>
-
-    $<$<STREQUAL:$<LOWER_CASE:${CMAKE_GENERATOR_PLATFORM}>,"win32">:${SOURCE_DIR}/asm/get_teb.asm>
+    $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${ASM_X64_DIR}/get_teb.asm>
+    $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${ASM_X64_DIR}/copy_system_token.asm>
+    $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${ASM_X86_DIR}/get_teb.asm>
+    $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${ASM_X86_DIR}/copy_system_token.asm>
 )
 
 if(PWN_ENABLE_LUA_BACKDOOR)

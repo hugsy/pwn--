@@ -340,14 +340,14 @@ cyclic(_In_ u32 dwSize) -> std::vector<u8>;
 /// @param BufferSize
 ///
 PWNAPI void
-hexdump(const u8* Buffer, const size_t BufferSize);
+hexdump(const u8* Buffer, const usize BufferSize);
 
 
 ///
 /// @brief
 ///
 PWNAPI void
-hexdump(const std::vector<u8>& bytes);
+hexdump(std::vector<u8> const& bytes);
 
 ///
 /// @brief
@@ -356,8 +356,11 @@ hexdump(const std::vector<u8>& bytes);
 /// @return void<class Rep, class Period>
 ///
 template<class Rep, class Period>
-void PWNAPI
-sleep(const std::chrono::duration<Rep, Period>& sleep_duration);
+void
+sleep(const std::chrono::duration<Rep, Period>& sleep_duration)
+{
+    std::this_thread::sleep_for(sleep_duration);
+}
 
 
 ///

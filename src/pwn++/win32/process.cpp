@@ -20,13 +20,13 @@
 ///
 /// Note: this is just a fake excuse to use assembly in VS, for real world use `NtCurrentTeb()`
 ///
-EXTERN_C_START
+EXTERN_C
 bool
 GetPeb(uptr* peb);
 
+EXTERN_C
 usize
 GetPebLength();
-EXTERN_C_END
 
 #ifdef _WIN64
 #define TEB_OFFSET 0x30

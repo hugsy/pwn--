@@ -53,5 +53,7 @@ GetPebLength PROC
   sub eax, ecx
   ret
 GetPebLength ENDP
+
+
 _TEXT    ENDS
 END

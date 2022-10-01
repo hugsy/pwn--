@@ -110,14 +110,14 @@ pwn::windows::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFA
     }
     else
     {
-        size_t sz = cache_data.size() + res;
+        usize sz = cache_data.size() + res;
         if ( sz )
         {
             network_data.resize(sz);
             dbg(L"recv %d bytes\n", sz);
             if ( pwn::Context.log_level == pwn::log::LogLevel::Debug )
             {
-                pwn::utils::hexdump(&network_data[0], sz);
+                pwn::utils::hexdump(network_data);
             }
         }
     }
