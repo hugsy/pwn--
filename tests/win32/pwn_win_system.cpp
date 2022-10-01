@@ -24,7 +24,7 @@ TEST_CASE("System queries", "[" NS "]")
         {
             auto res = pwn::windows::System::ProcessorCount();
             REQUIRE(Success(res));
-            CHECK(pInfo->NumberOfProcessors == std::get<2>(Value(res)));
+            CHECK(pInfo->NumberOfProcessors == std::get<1>(Value(res)));
         }
     }
 
