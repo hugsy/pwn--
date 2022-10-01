@@ -14,11 +14,11 @@ jobs:
     name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.configuration }}"
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: ['windows-2022'] # 'linux-latest' removed since gcc-11 nor clang-15 supports std::format
-        platform: ['x64'] #, 'x86',]
-        configuration: ['Debug' , 'RelWithDebInfo']
+        platform: ['x64', 'x86',]
+        configuration: ['Debug', 'RelWithDebInfo']
         include:
           - runs-on: ubuntu-latest
             c_compiler: clang-16
