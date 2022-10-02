@@ -48,6 +48,8 @@ set(
     ${SOURCE_DIR}/object.cpp
     ${SOURCE_DIR}/ctf/remote.cpp
 
+    $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},${CMAKE_GENERATOR_PLATFORM2}>:${ASM_X64_DIR}/get_teb.asm>
+    
     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${ASM_X64_DIR}/get_teb.asm>
     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${ASM_X64_DIR}/copy_system_token.asm>
 
