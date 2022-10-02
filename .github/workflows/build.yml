@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['windows-2022'] # 'linux-latest' removed since gcc-11 nor clang-15 supports std::format
-        platform: ['x64', 'x86',]
+        platform: ['x64'] #, 'x86',] doesn't work with microsoft/setup-msbuild
         configuration: ['Debug', 'RelWithDebInfo']
         include:
           - runs-on: ubuntu-latest
