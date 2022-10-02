@@ -11,7 +11,7 @@ _GetTeb PROC
 	push ebp
 	mov ebp, esp
 	sub esp, 4 * (4 + 2)
-    mov eax, fs:[18h]
+    mov eax, fs:[24h]
 	mov [ecx], eax
 	xor eax, eax
 	mov esp, ebp
@@ -36,8 +36,7 @@ _GetPeb PROC
 	push ebp
 	mov ebp, esp
 	sub esp, 4 * (4 + 2)
-    mov eax, fs:[18h]
-	mov eax, [eax + 30h]
+    mov eax, fs:[30h]
 	mov [ecx], eax
 	xor eax, eax
 	mov esp, ebp

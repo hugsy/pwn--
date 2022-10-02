@@ -28,6 +28,7 @@ TEST_CASE("System queries", "[" NS "]")
         }
     }
 
+#ifdef _WIN64
     SECTION("SystemProcessInformation")
     {
         auto res = pwn::windows::System::Query<SYSTEM_PROCESS_INFORMATION>(SystemProcessInformation);
@@ -37,4 +38,5 @@ TEST_CASE("System queries", "[" NS "]")
         REQUIRE(pInfo->NumberOfThreads > 0);
         CHECK((((uptr)pInfo->Threads[0].StartAddress) & (1ull << 48)) != 0);
     }
+#endif
 }

@@ -16,25 +16,37 @@
 #include "utils.hpp"
 #include "win32/system.hpp"
 
+IMPORT_EXTERNAL_FUNCTION(L"ntdll.dll", NtWow64ReadVirtualMemory64, NTSTATUS, HANDLE, PVOID64, PVOID, ULONG64, PULONG64);
 
-///
-/// Note: this is just a fake excuse to use assembly in VS, for real world use `NtCurrentTeb()`
-///
-EXTERN_C
+IMPORT_EXTERNAL_FUNCTION(
+    L"ntdll.dll",
+    NtWow64WriteVirtualMemory64,
+    NTSTATUS,
+    HANDLE,
+    PVOID64,
+    PVOID,
+    ULONG64,
+    PULONG64);
+
+IMPORT_EXTERNAL_FUNCTION(
+    L"ntdll.dll",
+    NtWow64QueryInformationProcess64,
+    NTSTATUS,
+    HANDLE,
+    PROCESSINFOCLASS,
+    PVOID,
+    ULONG,
+    PULONG);
+
+
+EXTERN_C_START
 bool
 GetPeb(uptr* peb);
 
-EXTERN_C
 usize
 GetPebLength();
+EXTERN_C_END
 
-#ifdef _WIN64
-#define TEB_OFFSET 0x30
-#define PEB_OFFSET 0x60
-#else
-#define TEB_OFFSET 0x18
-#define PEB_OFFSET 0x30
-#endif
 
 namespace pwn::windows
 {
@@ -165,6 +177,18 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
             }
         }
 
+        // WOW64
+        {
+            BOOL bIsWow = FALSE;
+            if ( FALSE == ::IsWow64Process(m_ProcessHandle->get(), &bIsWow) )
+            {
+                m_Valid = false;
+                return;
+            }
+
+            m_IsWow64 = (bIsWow == TRUE);
+        }
+
         // Process PPID
         {
             auto ppid = pwn::windows::System::ParentProcessId(pid);
@@ -284,7 +308,7 @@ Process::ProcessEnvironmentBlock()
     //
     if ( m_IsSelf )
     {
-        uptr peb;
+        uptr peb = 0;
         if ( GetPeb(&peb) == true )
         {
             m_Peb = (PPEB)peb;
@@ -663,7 +687,14 @@ Process::QueryInternal(const PROCESSINFOCLASS ProcessInformationClass, const usi
     do
     {
         Status =
-            ::NtQueryInformationProcess(m_ProcessHandle->get(), ProcessInformationClass, Buffer, Size, &ReturnLength);
+            m_IsWow64 ?
+                NtWow64QueryInformationProcess64(
+                    m_ProcessHandle->get(),
+                    ProcessInformationClass,
+                    Buffer,
+                    Size,
+                    &ReturnLength) :
+                NtQueryInformationProcess(m_ProcessHandle->get(), ProcessInformationClass, Buffer, Size, &ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
             break;
