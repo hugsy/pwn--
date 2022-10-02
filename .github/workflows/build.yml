@@ -51,17 +51,16 @@ jobs:
       uses: rlespinasse/github-slug-action@v3.x
 
     - name: Initialize CodeQL
+      if: matrix.os == 'ubuntu-latest'
       uses: github/codeql-action/init@v1
       with:
         languages: cpp
-      if: matrix.os == 'ubuntu-latest'
 
     - name: Add msbuild to PATH
+      if: matrix.os == 'windows-latest'
       uses: microsoft/setup-msbuild@v1.1
       with:
         msbuild-architecture: ${{ matrix.platform }}
-        vs-prerelease: true
-      if: matrix.os == 'windows-latest'
 
     - name: Prepare Windows environment
       if: matrix.os == 'windows-latest'
