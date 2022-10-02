@@ -241,32 +241,6 @@ strip(_In_ std::wstring const& args) -> std::wstring;
 PWNAPI auto
 strip(_In_ std::string const& args) -> std::string;
 
-
-///
-/// @brief
-///
-PWNAPI auto
-startswith(_In_ const std::string& str, _In_ const std::string& pattern) -> bool;
-
-///
-/// @brief
-///
-PWNAPI auto
-startswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern) -> bool;
-
-///
-/// @brief
-///
-PWNAPI auto
-endswith(_In_ const std::string& str, _In_ const std::string& pattern) -> bool;
-
-///
-/// @brief
-///
-PWNAPI auto
-endswith(_In_ const std::wstring& str, _In_ const std::wstring& pattern) -> bool;
-
-
 ///
 /// @brief
 ///
