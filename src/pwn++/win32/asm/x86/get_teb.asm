@@ -6,8 +6,8 @@ _TEXT    SEGMENT
 ;;;
 ;;; Get the TEB (32b version)
 ;;;
-PUBLIC GetTeb
-GetTeb PROC
+PUBLIC _GetTeb
+_GetTeb PROC
 	push ebp
 	mov ebp, esp
 	sub esp, 4 * (4 + 2)
@@ -17,22 +17,22 @@ GetTeb PROC
 	mov esp, ebp
 	pop ebp
 	ret
-GetTeb ENDP
-GetTeb_end::
+_GetTeb ENDP
+_GetTeb_end::
 
-PUBLIC GetTebLength
-GetTebLength PROC
-  mov eax, OFFSET GetTeb_end
-  mov ecx, OFFSET GetTeb
+PUBLIC _GetTebLength
+_GetTebLength PROC
+  mov eax, OFFSET _GetTeb_end
+  mov ecx, OFFSET _GetTeb
   sub eax, ecx
   ret
-GetTebLength ENDP
+_GetTebLength ENDP
 
 ;;;
 ;;; Get the PEB (32b version)
 ;;;
-PUBLIC GetPeb
-GetPeb PROC
+PUBLIC _GetPeb
+_GetPeb PROC
 	push ebp
 	mov ebp, esp
 	sub esp, 4 * (4 + 2)
@@ -43,16 +43,16 @@ GetPeb PROC
 	mov esp, ebp
 	pop ebp
 	ret
-GetPeb ENDP
-GetPeb_end::
+_GetPeb ENDP
+_GetPeb_end::
 
-PUBLIC GetPebLength
-GetPebLength PROC
-  mov eax, OFFSET GetPeb_end
-  mov ecx, OFFSET GetPeb
+PUBLIC _GetPebLength
+_GetPebLength PROC
+  mov eax, OFFSET _GetPeb_end
+  mov ecx, OFFSET _GetPeb
   sub eax, ecx
   ret
-GetPebLength ENDP
+_GetPebLength ENDP
 
 
 _TEXT    ENDS

@@ -50,6 +50,7 @@ set(
 
     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${ASM_X64_DIR}/get_teb.asm>
     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${ASM_X64_DIR}/copy_system_token.asm>
+
     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${ASM_X86_DIR}/get_teb.asm>
     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${ASM_X86_DIR}/copy_system_token.asm>
 )
@@ -96,9 +97,9 @@ target_compile_options(
 target_link_options(
     ${PROJECT_NAME}
     PUBLIC
-    /CETCOMPAT
-    /LARGEADDRESSAWARE
     $<$<CONFIG:Debug>:/InferAsanLibs>
+
+    $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:/SAFESEH:NO>
 
     PRIVATE
 )
