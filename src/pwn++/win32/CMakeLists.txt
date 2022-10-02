@@ -57,8 +57,6 @@ set(
     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${ASM_X86_DIR}/copy_system_token.asm>
 )
 
-message(STATUS "F0000 - ${CMAKE_GENERATOR_PLATFORM}")
-
 if(PWN_ENABLE_LUA_BACKDOOR)
     set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_DIR}/backdoor.cpp)
 endif(PWN_ENABLE_LUA_BACKDOOR)

@@ -58,9 +58,12 @@ jobs:
 
     - name: Add msbuild to PATH
       if: matrix.os == 'windows-latest'
-      uses: microsoft/setup-msbuild@v1.1
-      with:
-        msbuild-architecture: ${{ matrix.platform }}
+      # uses: microsoft/setup-msbuild@v1.1
+      # with:
+      #   msbuild-architecture: ${{ matrix.platform }}
+      run: |
+        Import-Module .\.github\Invoke-VisualStudio.ps1
+        Invoke-VisualStudio2022${{ env.ARCH }}
 
     - name: Prepare Windows environment
       if: matrix.os == 'windows-latest'
@@ -78,7 +81,7 @@ jobs:
       run: |
         mkdir ./build
         cd ./build
-        cmake .. ${{ env.CMAKE_FLAGS }}
+        cmake .. -A ${{ matrix.platform }} ${{ env.CMAKE_FLAGS }}
         cmake --build . --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }}
         cd ..
 
