@@ -97,7 +97,9 @@ jobs:
     - name: Run tests
       continue-on-error: true
       run: |
+        cd build
         ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ matrix.configuration }} -T test
+        cd ..
 
     - name: Perform CodeQL Analysis
       if: matrix.os == 'ubuntu-latest'
@@ -121,14 +123,13 @@ jobs:
       uses: sarisia/actions-status-discord@v1
       with:
         nodetail: true
-        title: SUCCESS building `${{ env.REPO }}` for `${{ matrix.os }}-${{ matrix.platform }}`/${{ matrix.configuration }}
+        title: ✅ SUCCESS building `${{ env.REPO }}` for `${{ matrix.os }}-${{ matrix.platform }}`/${{ matrix.configuration }}
         description: |
-          [Job #${{ github.run_number }}] The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ env.GITHUB_ACTOR }} on ${{ env.GITHUB_REPOSITORY }} succeeded:
-          ● Commit ${{ env.COMMIT_URL }}
-          ● Branch `${{ env.GITHUB_REF_SLUG }}`
-          ● Platform ${{ matrix.os }}-${{ matrix.platform }}
-          ● Configuration ${{ matrix.configuration }}
-          ● Run details: ${{ env.RUN_URL }}
+          [Job #${{ github.run_number }}](${{ env.RUN_URL }}) The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }} succeeded:
+          ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
+          ● Branch [`${{ env.GITHUB_REF_SLUG }}`](https://github.com/hugsy/pwn--/tree/${{ env.GITHUB_REF_SLUG }})
+          ● Compiled as `${{ matrix.configuration }}` for `{{ matrix.os }}-${{ matrix.platform }}`
+          ● Details: ${{ env.RUN_URL }}
         color: 0x00ff00
         username: ${{ github.actor }} via GithubBot
         avatar_url: ${{ github.actor.avatar_url }}
@@ -141,14 +142,13 @@ jobs:
       uses: sarisia/actions-status-discord@v1
       with:
         nodetail: true
-        title: FAILED building `${{ env.REPO }}` for `${{ matrix.os }}-${{ matrix.platform }}`/${{ matrix.configuration }}
+        title: ❌ FAILED building `${{ env.REPO }}` for `${{ matrix.os }}-${{ matrix.platform }}`/${{ matrix.configuration }}
         description: |
-          [Job #${{ github.run_number }}] The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ env.GITHUB_ACTOR }} on ${{ env.GITHUB_REPOSITORY }} failed:
-          ● Commit ${{ env.COMMIT_URL }}
-          ● Branch `${{ env.GITHUB_REF_SLUG }}`
-          ● Platform  ${{ matrix.os }}-${{ matrix.platform }}
-          ● Configuration ${{ matrix.configuration }}
-          ● Run details: ${{ env.RUN_URL }}
+          [Job #${{ github.run_number }}](${{ env.RUN_URL }}) The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }} failed:
+          ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
+          ● Branch [`${{ env.GITHUB_REF_SLUG }}`](https://github.com/hugsy/pwn--/tree/${{ env.GITHUB_REF_SLUG }})
+          ● Compiled as `${{ matrix.configuration }}` for `${{ matrix.os }}-${{ matrix.platform }}`
+          ● Details: ${{ env.RUN_URL }}
         color: 0xff0000
         username: ${{ github.actor }} via GithubBot
         avatar_url: ${{ github.actor.avatar_url }}
