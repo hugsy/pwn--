@@ -63,6 +63,11 @@ jobs:
         Import-Module .\.github\Invoke-VisualStudio.ps1
         Invoke-VisualStudio2022${{ matrix.platform }}
 
+    - name: Prepare common environment
+      run: |
+        mkdir build
+        mkdir artifact
+
     - name: Prepare Windows environment
       if: matrix.os == 'windows-latest'
       shell: pwsh
@@ -78,26 +83,21 @@ jobs:
     - name: Initialize cmake (win32)
       if: matrix.os == 'windows-latest' && matrix.platform == 'x86'
       run: |
-        cmake . -A win32 ${{ env.CMAKE_FLAGS }}
+        cmake -S . -B ./build -A win32 ${{ env.CMAKE_FLAGS }}
 
     - name: Initialize cmake (generic)
       if: matrix.os != 'windows-latest' || matrix.platform != 'x86'
       run: |
-        cmake . -A ${{ matrix.platform }} ${{ env.CMAKE_FLAGS }}
+        cmake -S . -B ./build -A ${{ matrix.platform }} ${{ env.CMAKE_FLAGS }}
 
     - name: Build pwn++ library
       run: |
-        mkdir ./build
-        cd build
-        cmake --build . --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }}
-        cd ..
+        cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }}
 
     - name: Run tests
       continue-on-error: true
       run: |
-        cd build/tests
-        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ matrix.configuration }}
-        cd ../..
+        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ matrix.configuration }} -T test
 
     - name: Perform CodeQL Analysis
       if: matrix.os == 'ubuntu-latest'
@@ -105,10 +105,7 @@ jobs:
 
     - name: Prepare artifact
       run: |
-        mkdir artifact
-        cd build
-        cmake --install . --config ${{ matrix.configuration }} --prefix ../artifact --verbose
-        cd ..
+        cmake --install ./build --config ${{ matrix.configuration }} --prefix ./artifact --verbose
 
     - name: Publish artifact
       uses: actions/upload-artifact@v2
