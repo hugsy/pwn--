@@ -31,9 +31,8 @@ using namespace pwn::log;
 
 EXTERN_C_START
 
-
-NTSYSAPI NTSTATUS
-RtlGetVersion(POSVERSIONINFOEXW lpVersionInformation);
+// NTSYSAPI NTSTATUS
+// RtlGetVersion(POSVERSIONINFOEXW lpVersionInformation);
 
 EXTERN_C_END
 
@@ -289,5 +288,52 @@ System::ProcessorCount()
         ProcessorCacheCount[2]);
 }
 
+
+Result<std::vector<RTL_PROCESS_MODULE_INFORMATION>>
+System::Modules()
+{
+    auto res = Query<RTL_PROCESS_MODULES>(SystemModuleInformation);
+    if ( Failed(res) )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    std::vector<RTL_PROCESS_MODULE_INFORMATION> Mods;
+    auto ModInfo = Value(res);
+
+    std::for_each(
+        std::next(ModInfo->Modules, 0),
+        std::next(ModInfo->Modules, ModInfo->NumberOfModules),
+        [&Mods](auto const& M)
+        {
+            Mods.push_back(M);
+        });
+
+    return Mods;
+}
+
+
+Result<std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO>>
+System::Handles()
+{
+    auto res = Query<SYSTEM_HANDLE_INFORMATION>(SystemHandleInformation);
+    if ( Failed(res) )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO> SystemHandles;
+    auto HandleInfo = Value(res);
+
+    std::for_each(
+        std::next(HandleInfo->Handles, 0),
+        std::next(HandleInfo->Handles, HandleInfo->NumberOfHandles),
+        [&SystemHandles](auto const& H)
+        {
+            SystemHandles.push_back(H);
+        });
+
+    return SystemHandles;
+}
 
 } // namespace pwn::windows

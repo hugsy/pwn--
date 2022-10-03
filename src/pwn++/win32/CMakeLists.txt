@@ -7,6 +7,9 @@ enable_language(C ASM_MASM)
 set(HEADER_DIR ${PWNLIB_SRC_HDR_DIR}/win32)
 set(SOURCE_DIR ${PWNLIB_SRC_LIB_DIR}/win32)
 
+set(ASM_X86_DIR ${SOURCE_DIR}/asm/x86)
+set(ASM_X64_DIR ${SOURCE_DIR}/asm/x64)
+
 #
 # Source files
 #
@@ -44,38 +47,28 @@ set(
     ${SOURCE_DIR}/rpc.cpp
     ${SOURCE_DIR}/object.cpp
     ${SOURCE_DIR}/ctf/remote.cpp
+
+    $<$<BOOL:0>:${CMAKE_GENERATOR_PLATFORM}>
+
+    $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${ASM_X64_DIR}/get_teb.asm>
+    $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${ASM_X64_DIR}/copy_system_token.asm>
+
+    $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${ASM_X86_DIR}/get_teb.asm>
+    $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${ASM_X86_DIR}/copy_system_token.asm>
 )
-
-if("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "AMD64")
-    set(
-        SOURCE_FILES
-
-        ${SOURCE_FILES}
-        ${SOURCE_DIR}/get_teb64.asm
-    )
-else()
-    set(
-        SOURCE_FILES
-
-        ${SOURCE_FILES}
-        ${SOURCE_DIR}/get_teb32.asm
-    )
-endif()
 
 if(PWN_ENABLE_LUA_BACKDOOR)
     set(SOURCE_FILES ${SOURCE_FILES} ${SOURCE_DIR}/backdoor.cpp)
 endif(PWN_ENABLE_LUA_BACKDOOR)
 
-target_sources(${PROJECT_NAME} ${SOURCE_DIR}/test.cpp)
-
-# target_sources(${PROJECT_NAME} PUBLIC ${HEADER_FILES} PRIVATE ${SOURCE_FILES})
+target_sources(${PROJECT_NAME} PUBLIC ${HEADER_FILES} PRIVATE ${SOURCE_FILES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${HEADER_DIR})
 
 #
 # Use ProcessHacker phnt headers
 #
 target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/phnt)
-target_compile_definitions(${PROJECT_NAME} PUBLIC PHNT_VERSION=PHNT_20H2) # NTDDI_WIN10_CO=0x0A00000B NTDDI_VERSION=NTDDI_WIN10_CO)
+target_compile_definitions(${PROJECT_NAME} PUBLIC PHNT_VERSION=PHNT_20H2)
 
 #
 # Compiler flags
@@ -106,9 +99,9 @@ target_compile_options(
 target_link_options(
     ${PROJECT_NAME}
     PUBLIC
-    /CETCOMPAT
-    /LARGEADDRESSAWARE
     $<$<CONFIG:Debug>:/InferAsanLibs>
+
+    $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:/SAFESEH:NO>
 
     PRIVATE
 )
@@ -116,6 +109,7 @@ target_link_options(
 target_link_libraries(
     ${PROJECT_NAME}
     PUBLIC
+    ntdll.lib
     ws2_32.lib
     Userenv.lib
     Rpcrt4.lib

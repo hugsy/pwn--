@@ -24,30 +24,6 @@ extern struct pwn::GlobalContext pwn::Context;
 // clang-format on
 
 
-template<std::integral... Args>
-bool
-all(Args... args)
-{
-    return (... && args);
-}
-
-
-template<std::integral... Args>
-bool
-any(Args... args)
-{
-    return (... || args);
-}
-
-
-template<std::integral... Args>
-bool
-none(Args... args)
-{
-    return not(... || args);
-}
-
-
 namespace pwn::utils
 {
 
@@ -285,7 +261,7 @@ hexdump(const u8* Buffer, const usize BufferSize)
 void
 hexdump(const std::vector<u8>& bytes)
 {
-    hexdump((const u8*)bytes.data(), bytes.size());
+    hexdump((const u8*)bytes.data(), (usize)bytes.size());
 }
 
 
@@ -673,12 +649,6 @@ flatten(_In_ const std::vector<flattenable_t>& args) -> std::vector<u8>
     return flat;
 }
 
-template<class Rep, class Period>
-void
-sleep(const std::chrono::duration<Rep, Period>& sleep_duration)
-{
-    std::this_thread::sleep_for(sleep_duration);
-}
 
 void
 pause()

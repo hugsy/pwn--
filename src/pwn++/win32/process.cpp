@@ -16,10 +16,29 @@
 #include "utils.hpp"
 #include "win32/system.hpp"
 
+IMPORT_EXTERNAL_FUNCTION(L"ntdll.dll", NtWow64ReadVirtualMemory64, NTSTATUS, HANDLE, PVOID64, PVOID, ULONG64, PULONG64);
 
-///
-/// Note: this is just a fake excuse to use assembly in VS, for real world use `NtCurrentTeb()`
-///
+IMPORT_EXTERNAL_FUNCTION(
+    L"ntdll.dll",
+    NtWow64WriteVirtualMemory64,
+    NTSTATUS,
+    HANDLE,
+    PVOID64,
+    PVOID,
+    ULONG64,
+    PULONG64);
+
+IMPORT_EXTERNAL_FUNCTION(
+    L"ntdll.dll",
+    NtWow64QueryInformationProcess64,
+    NTSTATUS,
+    HANDLE,
+    PROCESSINFOCLASS,
+    PVOID,
+    ULONG,
+    PULONG);
+
+
 EXTERN_C_START
 bool
 GetPeb(uptr* peb);
@@ -28,13 +47,6 @@ usize
 GetPebLength();
 EXTERN_C_END
 
-#ifdef _WIN64
-#define TEB_OFFSET 0x30
-#define PEB_OFFSET 0x60
-#else
-#define TEB_OFFSET 0x18
-#define PEB_OFFSET 0x30
-#endif
 
 namespace pwn::windows
 {
@@ -45,7 +57,7 @@ Result<std::vector<u8>>
 Process::Memory::Read(uptr const Address, usize Length)
 {
     auto out = std::vector<u8>(Length);
-    size_t dwNbRead;
+    usize dwNbRead;
     if ( ::ReadProcessMemory(
              m_ProcessHandle->get(),
              reinterpret_cast<LPVOID>(Address),
@@ -71,7 +83,7 @@ Process::Memory::Memset(uptr const address, const size_t size, const u8 val)
 Result<usize>
 Process::Memory::Write(uptr const Address, std::vector<u8> data)
 {
-    size_t dwNbWritten;
+    usize dwNbWritten;
     if ( ::WriteProcessMemory(
              m_ProcessHandle->get(),
              reinterpret_cast<LPVOID>(Address),
@@ -163,6 +175,18 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
                 m_Valid = false;
                 return;
             }
+        }
+
+        // WOW64
+        {
+            BOOL bIsWow = FALSE;
+            if ( FALSE == ::IsWow64Process(m_ProcessHandle->get(), &bIsWow) )
+            {
+                m_Valid = false;
+                return;
+            }
+
+            m_IsWow64 = (bIsWow == TRUE);
         }
 
         // Process PPID
@@ -284,7 +308,7 @@ Process::ProcessEnvironmentBlock()
     //
     if ( m_IsSelf )
     {
-        uptr peb;
+        uptr peb = 0;
         if ( GetPeb(&peb) == true )
         {
             m_Peb = (PPEB)peb;
@@ -548,7 +572,7 @@ Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
         HANDLE hProcess = ::OpenProcess(PROCESS_CREATE_PROCESS, false, ParentPid);
         if ( hProcess )
         {
-            size_t AttrListSize = 0;
+            usize AttrListSize = 0;
             ::InitializeProcThreadAttributeList(nullptr, 1, 0, &AttrListSize);
             AttributeList = std::make_unique<u8[]>(AttrListSize);
             if ( AttributeList )
@@ -663,7 +687,14 @@ Process::QueryInternal(const PROCESSINFOCLASS ProcessInformationClass, const usi
     do
     {
         Status =
-            ::NtQueryInformationProcess(m_ProcessHandle->get(), ProcessInformationClass, Buffer, Size, &ReturnLength);
+            m_IsWow64 ?
+                NtWow64QueryInformationProcess64(
+                    m_ProcessHandle->get(),
+                    ProcessInformationClass,
+                    Buffer,
+                    Size,
+                    &ReturnLength) :
+                NtQueryInformationProcess(m_ProcessHandle->get(), ProcessInformationClass, Buffer, Size, &ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
             break;
@@ -800,7 +831,7 @@ AppContainer::AppContainer(
     //
     // build the startup info
     //
-    size_t size = 0;
+    usize size = 0;
     ::InitializeProcThreadAttributeList(nullptr, 1, 0, &size);
     if ( size == 0u )
     {

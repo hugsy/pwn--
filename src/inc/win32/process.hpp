@@ -226,6 +226,7 @@ private:
     DWORD m_ProcessHandleAccessMask = 0;
     bool m_KillOnClose              = false;
     bool m_IsSelf                   = false;
+    bool m_IsWow64                  = false;
     PPEB m_Peb                      = nullptr;
 };
 

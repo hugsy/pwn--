@@ -3,23 +3,31 @@
 #include "common.hpp"
 
 
-namespace pwn::windows::kernel
+namespace pwn::windows
 {
-namespace shellcode
+class Kernel
 {
-PWNAPI auto
-steal_system_token() -> std::vector<u8>;
-PWNAPI auto
-debug_break() -> std::vector<u8>;
-} // namespace shellcode
+    class Shellcode
+    {
+    public:
+        static std::vector<u8>
+        StealSystemToken();
 
-PWNAPI auto
-modules() -> std::vector<std::tuple<std::wstring, uptr> >;
-PWNAPI auto
-get_module_base_address(_In_ const std::wstring& ModuleName) -> uptr;
-PWNAPI auto
-get_handle_kernel_address(_In_ HANDLE hTarget, _In_ u32 dwPid) -> uptr;
-PWNAPI auto
-get_big_pool_kaddress(_In_ u32 Tag) -> std::vector<uptr>;
+        static std::vector<u8>
+        DebugBreak();
 
-} // namespace pwn::windows::kernel
+    private:
+    };
+
+
+    ///
+    /// @brief Get a vector of big pool chunks with the specified Tag
+    ///
+    /// @param Tag DWORD of the big pool tag to search for. If 0, all big pool chunks are returned.
+    /// @return Result<std::vector<uptr>> A vector with the big pool kernel address with the specified tag
+    ///
+    Result<std::vector<uptr>>
+    FindBigPoolAddressesFromTag(const u32 Tag);
+};
+
+} // namespace pwn::windows

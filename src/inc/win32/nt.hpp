@@ -20,7 +20,7 @@ Sources:
 // clang-format on
 
 
-#pragma comment(lib, "ntdll.lib")
+// #pragma comment(lib, "ntdll.lib")
 
 
 /*++
@@ -28,17 +28,17 @@ SYSTEM_INFORMATION_CLASS
 https://www.geoffchappell.com/studies/windows/km/ntoskrnl/api/ex/sysinfo/class.htm
 https://github.com/processhacker/processhacker/blob/89fe55ce6a25f57e5a72a649c7a17d75b8d60e4c/phnt/include/ntexapi.h#L1250
 --*/
-#define SystemModuleInformation (SYSTEM_INFORMATION_CLASS)11
-#define SystemHandleInformation (SYSTEM_INFORMATION_CLASS)16
-#define SystemExtendedHandleInformation (SYSTEM_INFORMATION_CLASS)64
-#define SystemBigPoolInformation (SYSTEM_INFORMATION_CLASS)66
+// #define SystemModuleInformation (SYSTEM_INFORMATION_CLASS)11
+// #define SystemHandleInformation (SYSTEM_INFORMATION_CLASS)16
+// #define SystemExtendedHandleInformation (SYSTEM_INFORMATION_CLASS)64
+// #define SystemBigPoolInformation (SYSTEM_INFORMATION_CLASS)66
 /* EndOf(SYSTEM_INFORMATION_CLASS) */
 
 
 /*++
 THREAD_INFORMATION_CLASS
 --*/
-#define ThreadNameInformation ((THREADINFOCLASS)38)
+// #define ThreadNameInformation ((THREADINFOCLASS)38)
 /* EndOf(THREAD_INFORMATION_CLASS) */
 
 /*
@@ -112,12 +112,12 @@ typedef struct __SYSTEM_HANDLE_INFORMATION
  ********************************************************************************/
 
 
-typedef struct _RTL_ACTIVATION_CONTEXT_STACK_FRAME
-{
-    struct _RTL_ACTIVATION_CONTEXT_STACK_FRAME* Previous;
-    _ACTIVATION_CONTEXT* ActivationContext;
-    ULONG Flags;
-} RTL_ACTIVATION_CONTEXT_STACK_FRAME, *PRTL_ACTIVATION_CONTEXT_STACK_FRAME;
+// typedef struct _RTL_ACTIVATION_CONTEXT_STACK_FRAME
+// {
+//     struct _RTL_ACTIVATION_CONTEXT_STACK_FRAME* Previous;
+//     _ACTIVATION_CONTEXT* ActivationContext;
+//     ULONG Flags;
+// } RTL_ACTIVATION_CONTEXT_STACK_FRAME, *PRTL_ACTIVATION_CONTEXT_STACK_FRAME;
 
 /*
 typedef struct _ACTIVATION_CONTEXT_STACK
@@ -153,13 +153,13 @@ typedef struct _TEB_ACTIVE_FRAME
 } TEB_ACTIVE_FRAME, *PTEB_ACTIVE_FRAME;
 */
 
-typedef struct _BIG_POOL_INFO
-{
-    ULONG_PTR Address;
-    ULONG_PTR PoolSize;
-    DWORD PoolTag;
-    char Padding[4];
-} BIG_POOL_INFO, *PBIG_POOL_INFO;
+// typedef struct _BIG_POOL_INFO
+// {
+//     ULONG_PTR Address;
+//     ULONG_PTR PoolSize;
+//     DWORD PoolTag;
+//     char Padding[4];
+// } BIG_POOL_INFO, *PBIG_POOL_INFO;
 
 
 #ifndef UNLEN

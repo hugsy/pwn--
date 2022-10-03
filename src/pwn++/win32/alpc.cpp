@@ -109,8 +109,10 @@ pwn::windows::alpc::Base::Base(const std::wstring& PortName) :
     m_PortName(PortName),
     m_AlpcSocketHandle(INVALID_HANDLE_VALUE)
 {
-    if ( !pwn::utils::startswith(PortName, L"\\") )
+    if ( PortName.starts_with(L"\\") == false )
+    {
         throw std::exception("invalid port name");
+    }
 }
 
 
@@ -119,7 +121,9 @@ pwn::windows::alpc::Base::~Base()
     if ( m_AlpcSocketHandle != INVALID_HANDLE_VALUE )
     {
         if ( !close() )
+        {
             err(L"an error occured while closing the handle\n");
+        }
     }
 }
 

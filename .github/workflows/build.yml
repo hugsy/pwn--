@@ -14,11 +14,11 @@ jobs:
     name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.configuration }}"
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        os: ['windows-2022'] # 'linux-latest' removed since gcc-11 nor clang-15 supports std::format
-        platform: ['x64', 'x86',]
-        configuration: ['Debug' , 'RelWithDebInfo']
+        os: ['windows-latest'] # 'linux-latest' removed since gcc-11 nor clang-15 supports std::format
+        platform: ['x64', 'x86']
+        configuration: ['Debug', 'RelWithDebInfo']
         include:
           - runs-on: ubuntu-latest
             c_compiler: clang-16
@@ -31,10 +31,10 @@ jobs:
         submodules: true
 
     - name: Sets Windows specific environment variables
+      if: matrix.os == 'windows-latest'
       shell: powershell
       run: |
         echo "NB_CPU=$env:NUMBER_OF_PROCESSORS" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      if: matrix.os == 'windows-latest'
 
     - name: Sets Linux specific environment variables
       if: matrix.os == 'ubuntu-latest'
@@ -51,17 +51,22 @@ jobs:
       uses: rlespinasse/github-slug-action@v3.x
 
     - name: Initialize CodeQL
+      if: matrix.os == 'ubuntu-latest'
       uses: github/codeql-action/init@v1
       with:
         languages: cpp
-      if: matrix.os == 'ubuntu-latest'
 
     - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.1
-      with:
-        msbuild-architecture: ${{ matrix.platform }}
-        vs-prerelease: true
       if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        Import-Module .\.github\Invoke-VisualStudio.ps1
+        Invoke-VisualStudio2022${{ matrix.platform }}
+
+    - name: Prepare common environment
+      run: |
+        mkdir build
+        mkdir artifact
 
     - name: Prepare Windows environment
       if: matrix.os == 'windows-latest'
@@ -75,19 +80,26 @@ jobs:
       run: |
         ln -s ../pwn++ ../pwn--
 
+    - name: Initialize cmake (win32)
+      if: matrix.os == 'windows-latest' && matrix.platform == 'x86'
+      run: |
+        cmake -S . -B ./build -A win32 ${{ env.CMAKE_FLAGS }}
+
+    - name: Initialize cmake (generic)
+      if: matrix.os != 'windows-latest' || matrix.platform != 'x86'
+      run: |
+        cmake -S . -B ./build -A ${{ matrix.platform }} ${{ env.CMAKE_FLAGS }}
+
     - name: Build pwn++ library
       run: |
-        mkdir ./build
-        cd ./build
-        cmake .. ${{ env.CMAKE_FLAGS }}
-        cmake --build . --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }}
-        cd ..
+        cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }}
 
     - name: Run tests
+      continue-on-error: true
       run: |
-        cd build/tests
-        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ matrix.configuration }}
-        cd ../..
+        cd build
+        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ matrix.configuration }} -T test
+        cd ..
 
     - name: Perform CodeQL Analysis
       if: matrix.os == 'ubuntu-latest'
@@ -95,10 +107,7 @@ jobs:
 
     - name: Prepare artifact
       run: |
-        mkdir artifact
-        cd build
-        cmake --install . --config ${{ matrix.configuration }} --prefix ../artifact --verbose
-        cd ..
+        cmake --install ./build --config ${{ matrix.configuration }} --prefix ./artifact --verbose
 
     - name: Publish artifact
       uses: actions/upload-artifact@v2
@@ -111,17 +120,17 @@ jobs:
       env:
         COMMIT_URL: "https://github.com/${{ env.REPO }}/commit/${{ env.GITHUB_SHA_SHORT }}"
         RUN_URL: "https://github.com/${{ env.REPO }}/actions/runs/${{ github.run_id }}"
-      uses: sarisia/actions-status-discord@v1
+        BRANCH_URL: "https://github.com/${{ env.REPO }}/tree/${{ env.GITHUB_REF_SLUG }}"
+      uses: sarisia/actions-status-discord@v1.10.0
       with:
         nodetail: true
-        title: SUCCESS building `${{ env.REPO }}` for `${{ matrix.os }}-${{ matrix.platform }}`/${{ matrix.configuration }}
+        title: ✅ Commit Build `${{ env.GITHUB_SHA_SHORT }}` for `${{ env.REPO }}` succeeded
         description: |
-          [Job #${{ github.run_number }}] The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ env.GITHUB_ACTOR }} on ${{ env.GITHUB_REPOSITORY }} succeeded:
-          ● Commit ${{ env.COMMIT_URL }}
-          ● Branch `${{ env.GITHUB_REF_SLUG }}`
-          ● Platform ${{ matrix.os }}-${{ matrix.platform }}
-          ● Configuration ${{ matrix.configuration }}
-          ● Run details: ${{ env.RUN_URL }}
+          [Job #${{ github.run_number }}](${{ env.RUN_URL }}) The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }} succeeded:
+          ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
+          ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
+          ● Compiled as **`${{ matrix.configuration }}`** for `${{ matrix.os }}-${{ matrix.platform }}`
+          ● Details: [Link](${{ env.RUN_URL }})
         color: 0x00ff00
         username: ${{ github.actor }} via GithubBot
         avatar_url: ${{ github.actor.avatar_url }}
@@ -131,17 +140,17 @@ jobs:
       env:
         COMMIT_URL: "https://github.com/${{ env.REPO }}/commit/${{ env.GITHUB_SHA_SHORT }}"
         RUN_URL: "https://github.com/${{ env.REPO }}/actions/runs/${{ github.run_id }}"
-      uses: sarisia/actions-status-discord@v1
+        BRANCH_URL: "https://github.com/${{ env.REPO }}/tree/${{ env.GITHUB_REF_SLUG }}"
+      uses: sarisia/actions-status-discord@v1.10.0
       with:
         nodetail: true
-        title: FAILED building `${{ env.REPO }}` for `${{ matrix.os }}-${{ matrix.platform }}`/${{ matrix.configuration }}
+        title: ❌ Commit Build `${{ env.GITHUB_SHA_SHORT }}` for `${{ env.REPO }}` failed
         description: |
-          [Job #${{ github.run_number }}] The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ env.GITHUB_ACTOR }} on ${{ env.GITHUB_REPOSITORY }} failed:
-          ● Commit ${{ env.COMMIT_URL }}
-          ● Branch `${{ env.GITHUB_REF_SLUG }}`
-          ● Platform  ${{ matrix.os }}-${{ matrix.platform }}
-          ● Configuration ${{ matrix.configuration }}
-          ● Run details: ${{ env.RUN_URL }}
+          [Job #${{ github.run_number }}](${{ env.RUN_URL }}) The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }} failed:
+          ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
+          ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
+          ● Compiled as **`${{ matrix.configuration }}`** for `${{ matrix.os }}-${{ matrix.platform }}`
+          ● Details: [Link](${{ env.RUN_URL }})
         color: 0xff0000
         username: ${{ github.actor }} via GithubBot
         avatar_url: ${{ github.actor.avatar_url }}
