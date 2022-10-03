@@ -28,13 +28,10 @@ using namespace pwn::log;
 #define CMD_PATH WINDOWS_SYSTEM32_PATH CMD_PROCESS_NAME
 #define KERNEL_PROCESS_NAME WINDOWS_SYSTEM32_PATH L"ntoskrnl.exe"
 
+#ifndef UNLEN
+#define UNLEN 256
+#endif // !UNLEN
 
-EXTERN_C_START
-
-// NTSYSAPI NTSTATUS
-// RtlGetVersion(POSVERSIONINFOEXW lpVersionInformation);
-
-EXTERN_C_END
 
 namespace pwn::windows
 {
@@ -146,15 +143,15 @@ System::ComputerName() -> const std::wstring
 }
 
 
-auto
-System::UserName() -> const std::wstring
+Result<std::wstring>
+System::UserName()
 {
     wchar_t lpwsBuffer[UNLEN + 1] = {0};
     u32 dwBufferSize              = UNLEN + 1;
     if ( ::GetUserName((TCHAR*)lpwsBuffer, (LPDWORD)&dwBufferSize) == 0 )
     {
-        // that case is weird enough it justifies throwing
-        throw std::runtime_error("GetUserName() failed");
+        log::perror(L"GetUserName()");
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
     static auto username = std::wstring {lpwsBuffer};
@@ -162,22 +159,23 @@ System::UserName() -> const std::wstring
 }
 
 
-auto
-System::ModuleName(_In_opt_ HMODULE hModule) -> std::optional<std::wstring>
+Result<std::wstring>
+System::ModuleName(HMODULE hModule)
 {
     wchar_t lpwsBuffer[MAX_PATH] = {0};
     if ( ::GetModuleFileName(hModule, lpwsBuffer, MAX_PATH) == 0u )
     {
-        perror("GetModuleFileName()");
-        return std::nullopt;
+        log::perror(L"GetModuleFileName()");
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
+
     static auto module_filename = std::wstring {lpwsBuffer};
     return module_filename;
 }
 
 
-auto
-System::FileName() -> std::optional<std::wstring>
+Result<std::wstring>
+System::FileName()
 {
     return ModuleName(nullptr);
 }

@@ -36,13 +36,13 @@ public:
     static const std::wstring
     ComputerName();
 
-    static const std::wstring
+    static Result<std::wstring>
     UserName();
 
-    static std::optional<std::wstring>
+    static Result<std::wstring>
     ModuleName(HMODULE hModule);
 
-    static std::optional<std::wstring>
+    static Result<std::wstring>
     FileName();
 
     ///
