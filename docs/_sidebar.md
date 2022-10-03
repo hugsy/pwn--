@@ -1,22 +1,26 @@
 - [pwn++](/)
 
 - Getting started
-    - [Pre-requisites](/setup.md)
-        - [Windows](/setup.md#Linux)
-        - [Linux](/setup.md#Linux)
-    - [Build](/build.md)
-        - [From Github template](/build.md#template)
-        - [Using pre-builds](/build.md#prebuilds)
-        - [As an executable](/build.md#executable)
-        - [As a shared library](/build.md#shared-lib)
-        - [Use the backdoor](/build.md#backdoor)
-    - [Examples](/examples.md)
-        - [`hexdump`](/examples.md)
-        - [`crypto`](/examples.md)
-        - [`fs`](/examples.md)
-        - [`ctf`](/examples.md)
+
+    - [Windows](/setup.md#Linux)
+    - [Linux](/setup.md#Linux)
+
+- Build
+
+    - [From Github template](/build.md#template)
+    - [Using pre-builds](/build.md#prebuilds)
+    - [As an executable](/build.md#executable)
+    - [As a shared library](/build.md#shared-lib)
+    - [Use the backdoor](/build.md#backdoor)
+
+- Examples
+
+    - [`hexdump`](/examples.md)
+    - [`crypto`](/examples.md)
+    - [`fs`](/examples.md)
+    - [`ctf`](/examples.md)
 
 - API
-    - [Namespaces]()
-    - [Classes]()
-    - [Functions]()
+    - [Namespaces](#)
+    - [Classes](#)
+    - [Functions](#)
