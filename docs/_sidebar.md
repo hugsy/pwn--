@@ -1,26 +1,28 @@
 - [pwn++](/)
 
-- Getting started
+- [Getting started](setup.md)
 
-    - [Windows](/setup.md#Linux)
-    - [Linux](/setup.md#Linux)
-
-- Build
-
-    - [From Github template](/build.md#template)
-    - [Using pre-builds](/build.md#prebuilds)
-    - [As an executable](/build.md#executable)
-    - [As a shared library](/build.md#shared-lib)
-    - [Use the backdoor](/build.md#backdoor)
+- [Build](build.md)
 
 - Examples
 
-    - [`hexdump`](/examples.md)
-    - [`crypto`](/examples.md)
-    - [`fs`](/examples.md)
-    - [`ctf`](/examples.md)
+    - [`ALPC`](alpc.md)
+    - [`Assembly`](assembly.md)
+    - [`Context`](context.md)
+    - [`Crypto`](crypto.md)
+    - [`CTF`](ctf.md)
+    - [`Errors`](errors.md)
+    - [`File System`](fs.md)
+    - [`Jobs`](jobs.md)
+    - [`Kernel`](kernel.md)
+    - [`Process`](process.md)
+    - [`Registry`](registry.md)
+    - [`Service`](service.md)
+    - [`System`](system.md)
+    - [`Utils`](utils.md)
 
 - API
+
     - [Namespaces](#)
     - [Classes](#)
     - [Functions](#)
