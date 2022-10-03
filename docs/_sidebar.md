@@ -6,20 +6,20 @@
 
 - Examples
 
-    - [`ALPC`](alpc.md)
-    - [`Assembly`](assembly.md)
-    - [`Context`](context.md)
-    - [`Crypto`](crypto.md)
-    - [`CTF`](ctf.md)
-    - [`Errors`](errors.md)
-    - [`File System`](fs.md)
-    - [`Jobs`](jobs.md)
-    - [`Kernel`](kernel.md)
-    - [`Process`](process.md)
-    - [`Registry`](registry.md)
-    - [`Service`](service.md)
-    - [`System`](system.md)
-    - [`Utils`](utils.md)
+    - [`ALPC`](examples/alpc.md)
+    - [`Assembly`](examples/assembly.md)
+    - [`Context`](examples/context.md)
+    - [`Crypto`](examples/crypto.md)
+    - [`CTF`](examples/ctf.md)
+    - [`Errors`](examples/errors.md)
+    - [`File System`](examples/fs.md)
+    - [`Jobs`](examples/jobs.md)
+    - [`Kernel`](examples/kernel.md)
+    - [`Process`](examples/process.md)
+    - [`Registry`](examples/registry.md)
+    - [`Service`](examples/service.md)
+    - [`System`](examples/system.md)
+    - [`Utils`](examples/utils.md)
 
 - API
 
