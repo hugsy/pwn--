@@ -151,13 +151,16 @@ namespace ctf = linux::ctf;
 #pragma endregion
 
 
-/**
- *
- * Globals
- *
- */
+///
+/// @brief pwn namespace declaration
+///
 namespace pwn
 {
+
+///
+/// @brief Global context definition
+///
+///
 struct GlobalContext
 {
 #ifdef PWN_USE_BACKDOOR

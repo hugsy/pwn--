@@ -1,34 +1,50 @@
-## Context & logging
+> Namespace `pwn`
+
 
 ```cpp
 #include <pwn++\pwn.h>
-namespace ctx = pwn::context;
+
+using namespace pwn;
+
 auto wmain() -> int
 {
-    auto const [major, minor] = pwn::version_info();
-    ok(L"running pwn++ v{:d}.{:02d}", major,minor);
+    auto const [major, minor] = pwn::VersionInfo;
+    ok(L"Running pwn++ v{:d}.{:02d}", major, minor);
 
-    ctx::set_arch("x64");
+    Context.set("x64");
+    dbg(L"The default log_level is INFO, this message will not show!");
 
-    dbg(L"The default log_level is INFO, this message will never appear!\n");
-    ctx::set_log_level(pwn::log::LogLevel::Debug);
-    dbg(L"Now it will!\n");
+    Context.set_log_level(log::LogLevel::Debug);
+    dbg(L"Now it will!");
 
-    ok(L"Everything is awesome!\n");
-    warn(L"Alright, stop! Collaborate and listen...\n");
-    err(L"Can't touch this!\n");
+    try
+    {
+        Context.set("whatever_arch_that_dont_exist");
+    }
+    catch(...)
+    {
+        err(L"Wattya doin' there?");
+    }
+
+    info(L"Using arch {}", Context.architecture);
+
+    ok(L"Everything is awesome!");
+    warn(L"Alright, stop! Collaborate and listen...");
+    err(L"Can't touch this!");
     return 0;
 }
 ```
 
-Outputs
+Will output:
 
 ```
 PS C:\Users\User> .\test.exe
-[+]  running pwn++ v0.01
+[+]  Running pwn++ v0.13
 [DEBUG]  log_level set to 0
 [DEBUG]  Now it will!
+[-] Wattya doin' there?
+[+] Using arch Architecture(x64, ptrsize=8, endian=LITTLE)
 [+] Everything is awesome!
 [!] Alright, stop! Collaborate and listen...
 [-] Can't touch this!
-`
+```

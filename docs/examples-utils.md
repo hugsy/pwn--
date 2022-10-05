@@ -83,7 +83,7 @@ int wmain()
 }
 ```
 
-## Simple API import
+### Simple API import
 
 using `IMPORT_EXTERNAL_FUNCTION` macro, then copy/paste the definition (from MSDN, ReactOS, Pinvoke, NirSoft, etc.)
 
@@ -126,7 +126,7 @@ void wmain()
 ```
 
 
-## Lua VM backdoor
+### Lua VM backdoor
 
 Namespace: `pwn::backdoor`
 

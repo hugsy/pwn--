@@ -18,17 +18,17 @@
 
 // clang-format off
 #ifdef PWN_LOG_USE_COLOR
-#define PWN_COLOR_RESET               "\033[0m"
-#define PWN_COLOR_BOLD                "\033[1m"
-#define PWN_COLOR_UNDERLINE           "\033[4m"
-#define PWN_COLOR_FG_BLACK            "\033[30m"
-#define PWN_COLOR_FG_RED              "\033[31m"
-#define PWN_COLOR_FG_GREEN            "\033[32m"
-#define PWN_COLOR_FG_YELLOW           "\033[33m"
-#define PWN_COLOR_FG_BLUE             "\033[34m"
-#define PWN_COLOR_FG_MAGENTA          "\033[35m"
-#define PWN_COLOR_FG_CYAN             "\033[36m"
-#define PWN_COLOR_FG_WHITE            "\033[37m"
+#define PWN_COLOR_RESET               "\033[0m "
+#define PWN_COLOR_BOLD                "\033[1m "
+#define PWN_COLOR_UNDERLINE           "\033[4m "
+#define PWN_COLOR_FG_BLACK            "\033[30m "
+#define PWN_COLOR_FG_RED              "\033[31m "
+#define PWN_COLOR_FG_GREEN            "\033[32m "
+#define PWN_COLOR_FG_YELLOW           "\033[33m "
+#define PWN_COLOR_FG_BLUE             "\033[34m "
+#define PWN_COLOR_FG_MAGENTA          "\033[35m "
+#define PWN_COLOR_FG_CYAN             "\033[36m "
+#define PWN_COLOR_FG_WHITE            "\033[37m "
 #else
 #define PWN_COLOR_RESET                 ""
 #define PWN_COLOR_BOLD                  ""
@@ -42,9 +42,7 @@
 #define PWN_COLOR_FG_CYAN               ""
 #define PWN_COLOR_FG_WHITE              ""
 #endif
-// clang-format on
 
-// clang-format off
 #define PWN_LOG_STRINGS_DEBUG           "[DEBUG    ] "
 #define PWN_LOG_STRINGS_INFO            "[INFO     ] "
 #define PWN_LOG_STRINGS_SUCCESS         "[SUCCESS  ] "
@@ -121,7 +119,6 @@ template<typename... Args>
 void
 Log(const LogLevel level, std::source_location const& location, std::wstring_view const& fmt, Args&&... args)
 {
-
     std::wostringstream msg;
     msg << std::vformat(fmt, std::make_wformat_args(args...)) << std::endl;
     Log(level, location, msg);
@@ -131,11 +128,17 @@ Log(const LogLevel level, std::source_location const& location, std::wstring_vie
 ///
 /// @brief Basic equivalent of Linux Glibc's `perror`
 ///
-/// @param [in] prefix
+/// @param [in] prefix a wide string view
 ///
 void PWNAPI
 perror(const std::wstring_view& prefix);
 
+
+///
+/// @brief Basic equivalent of Linux Glibc's `perror`
+///
+/// @param [in] prefix a string view
+///
 void PWNAPI
 perror(const std::string_view& prefix);
 
@@ -143,14 +146,21 @@ perror(const std::string_view& prefix);
 ///
 /// @brief `perror` but for NTSTATUS.
 ///
-/// @param [inout] prefix
-/// @param [inout] Status
+/// @param [inout] prefix a wide string view
+/// @param [inout] Status the NT status to parse
 ///
 void PWNAPI
-ntperror(_In_ const std::wstring_view& prefix, _In_ NTSTATUS Status);
+ntperror(const std::wstring_view& prefix, NTSTATUS Status);
 
+
+///
+/// @brief `perror` but for NTSTATUS.
+///
+/// @param [inout] prefix a string view
+/// @param [inout] Status the NT status to parse
+///
 void PWNAPI
-ntperror(_In_ const std::string_view& prefix, _In_ NTSTATUS Status);
+ntperror(const std::string_view& prefix, NTSTATUS Status);
 #endif
 
 } // namespace pwn::log

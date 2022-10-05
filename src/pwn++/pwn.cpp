@@ -16,7 +16,7 @@ pwn::GlobalContext::set(std::string_view const& type)
 {
     try
     {
-        architecture = lookup_architecture(type);
+        architecture = Architecture::Find(type);
         endianess    = architecture.endian;
         ptrsize      = architecture.ptrsize;
 

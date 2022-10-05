@@ -27,7 +27,7 @@ using GenericHandle = std::unique_ptr<
         })>;
 
 #ifdef __linux__
-using UniqueHandle = GenericHandle<int, close>;
+using UniqueHandle = GenericHandle<FILE, ::fclose>;
 #else
 using UniqueHandle = GenericHandle<void, ::CloseHandle>;
 #endif // __linux__

@@ -46,13 +46,21 @@ struct Architecture
 {
     std::string_view name;
     ArchitectureType id;
-    std::size_t ptrsize;
+    usize ptrsize;
     Endianess endian;
 
     auto
     operator<=>(Architecture const& other) const = default;
-};
 
+    friend std::ostream&
+    operator<<(std::ostream& os, Architecture const& a);
+
+    friend std::wostream&
+    operator<<(std::wostream& wos, Architecture const& a);
+
+    static Architecture
+    Find(std::string_view const& sv);
+};
 
 static constexpr std::array<std::pair<std::string_view, Architecture>, 2> Architectures {{
     {"x64", {"x64", ArchitectureType::x64, 8, Endianess::little}},
@@ -60,27 +68,13 @@ static constexpr std::array<std::pair<std::string_view, Architecture>, 2> Archit
 }};
 
 
-Architecture static inline lookup_architecture(std::string_view const& sv)
-{
-    static constexpr auto map = CMap<std::string_view, Architecture, Architectures.size()> {{Architectures}};
-    return map.at(sv);
-}
-
-
 ///
 /// toString()-like traits
 ///
 
 
-// for Architecture
-std::ostream&
-operator<<(std::ostream& os, Architecture const& a);
-
-std::wostream&
-operator<<(std::wostream& wos, Architecture const& a);
-
-
 // for Endianness
+
 std::ostream&
 operator<<(std::ostream& os, Endianess e);
 
