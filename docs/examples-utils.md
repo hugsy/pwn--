@@ -1,4 +1,4 @@
-## Utils
+> Namespace `pwn::utils`
 
 ### pwntools cyclic()-like
 

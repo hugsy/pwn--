@@ -6,12 +6,12 @@
 #include <pwn++\pwn.h>
 int wmain()
 {
-    info(L"computer_name=%s\n", pwn::system::name().c_str());
-    info(L"pagesize=0x%x\n", pwn::system::pagesize());
-    info(L"pid=%d\n", pwn::process::pid());
-    info(L"ppid=%d\n", pwn::process::ppid());
-    info(L"pidof('explorer.exe')=%d\n", pwn::system::pidof(std::wstring(L"explorer.exe"));
-    info(L"nb_cores=%ld\n", pwn::cpu::nb_cores());
+    info(L"Computer name = {}", pwn::windows::System.ComputerName().c_str());
+    info(L"Page size = {:x}", pwn::windows::System.PageSize());
+    info(L"PID = {}", pwn::windows::System.ProcessId(::GetCurrentProcess()));
+    info(L"PPID = {}", pwn::windows::System.ParentProcessId(::GetCurrentProcessId()));
+    info(L"pidof('explorer.exe') = {}", pwn::windows::System.PidOf(L"explorer.exe")[0]);
+    info(L"ProcessorCount = {}", pwn::windows::System.ProcessorCount());
     return 0;
 }
 ```
