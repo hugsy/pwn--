@@ -22,15 +22,23 @@ namespace pwn::windows
 
 class Process
 {
+public:
     class Memory
     {
     public:
-        Memory() : m_ProcessHandle(nullptr)
+        Memory() : m_Process(nullptr), m_ProcessHandle(nullptr)
         {
         }
 
-        Memory(SharedHandle ProcessHandle) : m_ProcessHandle(ProcessHandle)
+        Memory(Process* Process)
         {
+            if ( !Process )
+            {
+                throw std::runtime_error("Cannot create Memory of null process");
+            }
+
+            m_Process       = Process;
+            m_ProcessHandle = Process->Handle();
         }
 
         auto
@@ -52,14 +60,67 @@ class Process
         auto
         Free(const uptr Address) -> bool;
 
-        // TODO:
-        // - memory information (vads, perms)
+
+        ///
+        ///@brief Query the process virtual memory
+        ///
+        ///@tparam T
+        ///@param MemoryInformationClass
+        ///@return Result<std::shared_ptr<T>>
+        ///
+        template<class T>
+        Result<std::shared_ptr<T>>
+        Query(const MEMORY_INFORMATION_CLASS MemoryInformationClass, const uptr BaseAddress = nullptr)
+        {
+            auto res = QueryInternal(MemoryInformationClass, BaseAddress, sizeof(T));
+            if ( Failed(res) )
+            {
+                return Err(Error(res).code);
+            }
+
+            const auto p = reinterpret_cast<T*>(Value(res));
+            auto deleter = [](T* x)
+            {
+                ::LocalFree(x);
+            };
+            return Ok(std::shared_ptr<T>(p, deleter));
+        }
+
+        ///
+        ///@brief
+        ///
+        ///@return Result < std::vector < MEMORY_BASIC_INFORMATION>>
+        ///
+        Result<std::vector<std::shared_ptr<MEMORY_BASIC_INFORMATION>>>
+        Regions();
+
+
+        ///
+        ///@brief Search a pattern in memory
+        ///
+        ///@param Pattern the pattern to look for
+        ///@return Result<std::vector<uptr>>
+        ///
+        Result<std::vector<uptr>>
+        Search(std::vector<u8> const& Pattern);
+
 
     private:
+        ///
+        /// @brief Should not be called directly
+        ///
+        /// @param ProcessInformationClass
+        ///
+        /// @return Result<PVOID>
+        ///
+        Result<PVOID>
+        QueryInternal(const MEMORY_INFORMATION_CLASS, const uptr BaseAddress, const usize);
+
         SharedHandle m_ProcessHandle;
+
+        Process* m_Process;
     };
 
-public:
     enum class Integrity : int
     {
         Unknown,
@@ -100,14 +161,16 @@ public:
     PPEB
     ProcessEnvironmentBlock();
 
-    const HANDLE
-    handle() const;
-
+    SharedHandle const&
+    Handle() const
+    {
+        return m_ProcessHandle;
+    }
 
     friend std::wostream&
     operator<<(std::wostream& os, const Process& p)
     {
-        os << L"Process(Pid=" << p.ProcessId() << L")";
+        os << L"Process(Pid=" << p.ProcessId() << L", Path='" << p.Path() << L"')";
         return os;
     }
 

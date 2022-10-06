@@ -40,8 +40,8 @@ wmain(const int argc, const wchar_t** argv) -> int
             return EXIT_FAILURE;
         }
 
-        auto hProcess = Value(res).handle();
-        ::WaitForSingleObject(hProcess, INFINITE);
+        auto Process = Value(res);
+        ::WaitForSingleObject(Process.Handle()->get(), INFINITE);
     }
 
     return EXIT_SUCCESS;

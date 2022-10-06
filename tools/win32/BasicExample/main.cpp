@@ -181,7 +181,7 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     info(L"sending syscall...");
     Status = NtSetInformationProcess(
-        self.handle(),
+        self.Handle()->get(),
         ProcessDebugAuthInformation,
         encoded_buffer.data(),
         encoded_buffer.size());
