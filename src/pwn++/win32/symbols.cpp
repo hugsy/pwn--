@@ -2,6 +2,9 @@
 
 #include "log.hpp"
 
+// TODO: make it dynamic?
+#pragma comment(lib, "Dbghelp.lib")
+
 static HANDLE __hProcess = nullptr;
 
 namespace pwn::windows

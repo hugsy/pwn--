@@ -19,35 +19,57 @@ enum class ErrorCode : uint32_t
     UnknownError = 0,
     GenericError,
     RuntimeError,
-    PermissionDenied,
+
     InvalidProcess,
     InvalidThread,
     InvalidObject,
     InvalidInput,
     InvalidParameter,
+    InvalidState,
+
+    PermissionDenied,
+    InsufficientPrivilegeError,
+
     UnexpectedType,
     ArithmeticError,
     OverflowError,
     UnderflowError,
-    BufferTooBig,
-    BufferTooSmall,
     IllegalValue,
     NotImplementedError,
     PendingIoError,
     ConnectionError,
     TerminationError,
-    VmNotInitialized,
+
+    AllocationError,
+    BufferTooBig,
+    BufferTooSmall,
+
+    ///
+    ///@brief Indicates the object initialization has not been completed properly
+    ///
+    NotInitialized,
     ServiceError,
     FilesystemError,
     AlpcError,
-    AllocationError,
     ExternalApiCallFailed,
+
+    ///
+    ///@brief Object initialization (typically constructor) has failed
+    ///
     InitializationFailed,
+
+    ///
+    ///@brief Typically used for external API call failures
+    ///
     ExternalError,
+
+    ///
+    ///@brief Indicates that the operation succeeded, but no more data is available.
+    ///
+    NoMoreData,
+
     PartialResult,
     BadVersion,
-    InvalidState,
-    InsufficientPrivilegeError,
 };
 
 ///
@@ -69,7 +91,9 @@ struct Err : ErrorType
 {
     Err(ErrorCode ErrCode = ErrorCode::GenericError);
 
-    Err(Err const& e) : Err(e.code){}
+    Err(Err const& e) : Err(e.code)
+    {
+    }
 
     bool
     operator==(const Err& rhs) const;

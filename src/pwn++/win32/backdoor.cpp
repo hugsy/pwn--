@@ -160,7 +160,7 @@ execute(ThreadConfig* cfg) -> Result<std::string const>
     if ( !LuaVm )
     {
         err(L"The VM is not ready");
-        return Err(ErrorCode::VmNotInitialized);
+        return Err(ErrorCode::NotInitialized);
     }
 
     const usize initial_stack_size = lua_gettop(LuaVm);
