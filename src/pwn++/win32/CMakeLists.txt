@@ -29,6 +29,7 @@ set(
     ${HEADER_DIR}/alpc.hpp
     ${HEADER_DIR}/rpc.hpp
     ${HEADER_DIR}/object.hpp
+    ${HEADER_DIR}/symbols.hpp
     ${HEADER_DIR}/ctf/remote.hpp
 )
 
@@ -46,6 +47,7 @@ set(
     ${SOURCE_DIR}/alpc.cpp
     ${SOURCE_DIR}/rpc.cpp
     ${SOURCE_DIR}/object.cpp
+    ${SOURCE_DIR}/symbols.cpp
     ${SOURCE_DIR}/ctf/remote.cpp
 
     $<$<BOOL:0>:${CMAKE_GENERATOR_PLATFORM}>
