@@ -100,6 +100,13 @@ auto inline GetProcAddressWrapper(M hMod, std::string_view const& lpszProcName)
     }
 
 
+#ifndef UnreferencedParameter
+#define UnreferencedParameter(x)                                                                                       \
+    {                                                                                                                  \
+        (void)(x);                                                                                                     \
+    }
+#endif // UnreferencedParameter
+
 ///
 /// @brief A constexpr map
 /// @link https://xuhuisun.com/post/c++-weekly-2-constexpr-map/

@@ -69,6 +69,8 @@ struct Err : ErrorType
 {
     Err(ErrorCode ErrCode = ErrorCode::GenericError);
 
+    Err(Err const& e) : Err(e.code){}
+
     bool
     operator==(const Err& rhs) const;
 

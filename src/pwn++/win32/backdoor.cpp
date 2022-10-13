@@ -318,7 +318,7 @@ HandleClientThread(const LPVOID lpThreadParams)
         {
             dbg(L"Termination event received");
             ::FlushFileBuffers(hPipe.get());
-            // todo: also wait for last io
+            // TODO: also wait for last io
             cfg->SetState(ThreadState::Stopped);
             continue;
         }
@@ -574,9 +574,7 @@ stop() -> Result<bool>
         handles.push_back(client->hThread);
     }
 
-    ::WaitForMultipleObjects(sz, handles.data(), true, INFINITE);
-
-    return Ok(true);
+    return Ok(::WaitForMultipleObjects(sz, handles.data(), true, INFINITE) == WAIT_OBJECT_0);
 }
 
 } // namespace pwn::backdoor

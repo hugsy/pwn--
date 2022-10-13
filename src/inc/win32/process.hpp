@@ -10,7 +10,6 @@
 
 #include "common.hpp"
 #include "handle.hpp"
-#include "thread.hpp"
 #include "token.hpp"
 #include "win32/nt.hpp"
 
@@ -19,6 +18,8 @@ namespace fs = std::filesystem;
 
 namespace pwn::windows
 {
+
+class Thread;
 
 class Process
 {
@@ -130,6 +131,30 @@ public:
         System
     };
 
+    class ThreadGroup
+    {
+    public:
+        ThreadGroup()
+        {
+        }
+
+        ThreadGroup(Process* _Process) : m_Process(_Process)
+        {
+        }
+
+        Result<std::vector<u32>>
+        List();
+
+        Thread
+        at(const u32 Tid);
+
+        Thread
+        operator[](const u32 Tid);
+
+    private:
+        Process* m_Process = nullptr;
+    };
+
     Process() = default;
 
     Process(u32, HANDLE = nullptr, bool = false);
@@ -213,6 +238,9 @@ public:
         };
         return Ok(std::shared_ptr<T>(p, deleter));
     }
+
+    Result<uptr>
+    Execute(uptr const CodePointer, usize const CodePointerSize);
 
     //
     // Submodules

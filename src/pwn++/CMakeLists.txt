@@ -114,6 +114,7 @@ message(STATUS "PWN_INCLUDE_ASSEMBLER                  ${PWN_INCLUDE_ASSEMBLER}"
 message(STATUS "PWN_INCLUDE_DISASSEMBLER               ${PWN_INCLUDE_DISASSEMBLER}")
 message(STATUS "PWN_BUILD_TOOLKIT                      ${PWN_BUILD_TOOLKIT}")
 message(STATUS "PWN_BUILD_TESTING                      ${PWN_BUILD_TESTING}")
+message(STATUS "PWN_BUILD_DOCS                         ${PWN_BUILD_DOCS}")
 message(STATUS "PWN_ENABLE_LUA_BACKDOOR                ${PWN_ENABLE_LUA_BACKDOOR}")
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC $<$<CONFIG:Debug>:_DEBUG DEBUG>)

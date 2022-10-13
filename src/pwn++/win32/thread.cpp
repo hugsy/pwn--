@@ -39,6 +39,74 @@ EXTERN_C_END
 namespace pwn::windows
 {
 
+#pragma region Thread
+
+Thread::Thread(u32 Tid, Process* Process) :
+    m_Tid {Tid},
+    m_Valid {false},
+
+    m_ThreadHandle {nullptr},
+    m_ThreadHandleAccessMask {0},
+    m_Teb {0},
+    Token {}
+{
+    if ( !Process )
+    {
+        throw std::runtime_error("Process cannot be null");
+    }
+
+    m_Process       = Process;
+    m_ProcessHandle = m_Process->Handle();
+
+    m_IsSelf = (m_Tid == ::GetCurrentThreadId());
+
+    if ( Success(ReOpenThreadWith(THREAD_QUERY_INFORMATION)) )
+    {
+        m_Valid = (m_ThreadHandle != nullptr);
+        Token   = windows::Token(m_ThreadHandle, Token::TokenType::Thread);
+    }
+}
+
+
+Thread::Thread(Thread const& OldCopy)
+{
+    m_Process                = OldCopy.m_Process;
+    m_ProcessHandle          = OldCopy.m_ProcessHandle;
+    m_ThreadHandle           = OldCopy.m_ThreadHandle;
+    m_Tid                    = OldCopy.m_Tid;
+    m_Teb                    = OldCopy.m_Teb;
+    m_Name                   = OldCopy.m_Name;
+    m_IsSelf                 = OldCopy.m_IsSelf;
+    m_ThreadHandleAccessMask = OldCopy.m_ThreadHandleAccessMask;
+    Token                    = windows::Token(m_ThreadHandle, Token::TokenType::Thread);
+    m_Valid                  = (m_ThreadHandle != nullptr);
+}
+
+
+Thread&
+Thread::operator=(Thread const& OldCopy)
+{
+    m_Process                = OldCopy.m_Process;
+    m_ProcessHandle          = OldCopy.m_ProcessHandle;
+    m_ThreadHandle           = OldCopy.m_ThreadHandle;
+    m_Tid                    = OldCopy.m_Tid;
+    m_Teb                    = OldCopy.m_Teb;
+    m_Name                   = OldCopy.m_Name;
+    m_IsSelf                 = OldCopy.m_IsSelf;
+    m_ThreadHandleAccessMask = OldCopy.m_ThreadHandleAccessMask;
+    Token                    = windows::Token(m_ThreadHandle, Token::TokenType::Thread);
+    m_Valid                  = (m_ThreadHandle != nullptr);
+    return *this;
+}
+
+
+bool
+Thread::IsValid() const
+{
+    return m_Valid;
+}
+
+
 Result<bool>
 Thread::ReOpenThreadWith(DWORD DesiredAccess)
 {
@@ -76,6 +144,16 @@ Thread::ThreadId() const
 Result<std::wstring>
 Thread::Name()
 {
+    //
+    // Make sure we're on 1607+
+    //
+    auto const Version     = pwn::windows::System::WindowsVersion();
+    const auto BuildNumber = std::get<2>(Version);
+    if ( BuildNumber < WINDOWS_VERSION_1607 )
+    {
+        return Err(ErrorCode::BadVersion);
+    }
+
     //
     // Is name in cache, just return it
     //
@@ -188,8 +266,7 @@ Thread::Name(std::wstring const& name)
 Result<Thread>
 Thread::Current()
 {
-    SharedHandle hProcess = std::make_shared<UniqueHandle>(UniqueHandle {::GetCurrentProcess()});
-    auto t                = Thread {::GetCurrentThreadId(), hProcess};
+    auto t = Thread {::GetCurrentThreadId(), nullptr};
     if ( !t.IsValid() )
     {
         return Err(ErrorCode::InitializationFailed);
@@ -233,64 +310,42 @@ Thread::QueryInternal(const THREADINFOCLASS ThreadInformationClass, const usize 
     return Ok(Buffer);
 }
 
-
-Result<std::vector<u32>>
-ThreadGroup::List()
+PTEB
+Thread::ThreadInformationBlock()
 {
-    auto h = UniqueHandle {::CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0)};
-    if ( !h )
+    if ( m_Teb )
     {
-        log::perror(L"CreateToolhelp32Snapshot()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return m_Teb;
     }
 
-    std::vector<u32> tids;
-    const u32 Pid    = pwn::windows::System::ProcessId(m_ProcessHandle->get());
-    THREADENTRY32 te = {0};
-    te.dwSize        = sizeof(te);
-    if ( ::Thread32First(h.get(), &te) )
+    if ( m_IsSelf )
     {
-        do
+        uptr teb = 0;
+        if ( GetTeb(&teb) == true )
         {
-            if ( !(te.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) + sizeof(te.th32OwnerProcessID)) )
-                continue;
-            if ( !te.th32ThreadID )
-                continue;
-
-            if ( te.th32OwnerProcessID != Pid )
-                continue;
-
-            tids.push_back(te.th32ThreadID);
-
-            te.dwSize = sizeof(te);
-        } while ( ::Thread32Next(h.get(), &te) );
+            m_Teb = (PTEB)teb;
+        }
     }
-
-    return Ok(tids);
-}
-
-Thread
-ThreadGroup::at(const u32 Tid)
-{
-    auto res = List();
-    if ( Failed(res) )
+    else
     {
-        throw std::runtime_error("Thread enumeration failed");
+        const uptr pfnGetTeb     = (uptr)&GetTeb;
+        const usize pfnGetTebLen = GetTebLength();
+
+        auto res = m_Process->Execute(pfnGetTeb, pfnGetTebLen);
+        if ( Success(res) )
+        {
+            m_Teb = reinterpret_cast<PTEB>(Value(res));
+        }
     }
 
-    const auto tids = Value(res);
-    if ( std::find(tids.cbegin(), tids.cend(), Tid) == std::end(tids) )
+    if ( !m_Teb )
     {
-        throw std::range_error("Invalid thread Id");
+        warn(L"TEB was not found");
     }
 
-    return Thread(Tid, m_ProcessHandle);
+    return m_Teb;
 }
 
-Thread
-ThreadGroup::operator[](const u32 Tid)
-{
-    return at(Tid);
-}
+#pragma endregion Thread
 
 } // namespace pwn::windows

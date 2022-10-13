@@ -5,6 +5,7 @@
 #include <psapi.h>
 #include <sddl.h>
 #include <shellapi.h>
+#include <tlhelp32.h>
 #include <userenv.h>
 
 #include <filesystem>
@@ -13,6 +14,7 @@
 
 #include "handle.hpp"
 #include "log.hpp"
+#include "thread.hpp"
 #include "utils.hpp"
 #include "win32/system.hpp"
 
@@ -336,6 +338,79 @@ Process::Memory::Search(std::vector<u8> const& Pattern)
 #pragma endregion Process::Memory
 
 
+#pragma region Process::ThreadGroup
+
+Result<std::vector<u32>>
+Process::ThreadGroup::List()
+{
+    if ( !m_Process )
+    {
+        return Err(ErrorCode::InitializationFailed);
+    }
+
+    auto h = UniqueHandle {::CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0)};
+    if ( !h )
+    {
+        log::perror(L"CreateToolhelp32Snapshot()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    std::vector<u32> tids;
+    const u32 Pid    = m_Process->ProcessId();
+    THREADENTRY32 te = {0};
+    te.dwSize        = sizeof(te);
+    if ( ::Thread32First(h.get(), &te) )
+    {
+        do
+        {
+            if ( !(te.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) + sizeof(te.th32OwnerProcessID)) )
+                continue;
+            if ( !te.th32ThreadID )
+                continue;
+
+            if ( te.th32OwnerProcessID != Pid )
+                continue;
+
+            tids.push_back(te.th32ThreadID);
+
+            te.dwSize = sizeof(te);
+        } while ( ::Thread32Next(h.get(), &te) );
+    }
+
+    return Ok(tids);
+}
+
+Thread
+Process::ThreadGroup::at(const u32 Tid)
+{
+    if ( !m_Process )
+    {
+        throw std::runtime_error("Thread initialization failed");
+    }
+
+    auto res = List();
+    if ( Failed(res) )
+    {
+        throw std::runtime_error("Thread enumeration failed");
+    }
+
+    const auto tids = Value(res);
+    if ( std::find(tids.cbegin(), tids.cend(), Tid) == std::end(tids) )
+    {
+        throw std::range_error("Invalid thread Id");
+    }
+
+    return Thread(Tid, m_Process);
+}
+
+Thread
+Process::ThreadGroup::operator[](const u32 Tid)
+{
+    return at(Tid);
+}
+
+#pragma endregion Process::ThreadGroup
+
 #pragma region Process
 
 
@@ -413,7 +488,7 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
 
             // Threads
             {
-                this->Threads = windows::ThreadGroup(m_ProcessHandle);
+                this->Threads = windows::Process::ThreadGroup(this);
             }
 
 
@@ -448,7 +523,7 @@ Process::Process(Process const& Copy)
     m_Peb                     = Copy.m_Peb;
     Token                     = windows::Token(m_ProcessHandle, windows::Token::TokenType::Process);
     Memory                    = windows::Process::Memory::Memory(this);
-    Threads                   = windows::ThreadGroup(m_ProcessHandle);
+    Threads                   = windows::Process::ThreadGroup(this);
 }
 
 bool
@@ -507,40 +582,14 @@ Process::ProcessEnvironmentBlock()
         //
         // Copy the function from the local process to the remote
         //
-        const uptr pfnGetPeb = (uptr)&GetPeb;
-        const usize FuncLen  = GetPebLength();
-        const std::vector<u8> sc(FuncLen);
-        RtlCopyMemory((void*)sc.data(), (void*)pfnGetPeb, FuncLen);
+        const uptr pfnGetPeb     = (uptr)&GetPeb;
+        const usize pfnGetPebLen = GetPebLength();
 
-        auto const ptr = Value(Memory.Allocate(0x1000, L"rwx"));
-        Memory.Write(ptr, sc);
-
-        //
-        // Execute the remote thread
-        //
+        auto res = Execute(pfnGetPeb, pfnGetPebLen);
+        if ( Success(res) )
         {
-            DWORD ExitCode = 0;
-            auto hThread   = pwn::UniqueHandle {::CreateRemoteThreadEx(
-                m_ProcessHandle->get(),
-                nullptr,
-                0,
-                reinterpret_cast<LPTHREAD_START_ROUTINE>(ptr),
-                (LPVOID)(ptr + 0x100),
-                0,
-                nullptr,
-                nullptr)};
-
-            ::WaitForSingleObject(hThread.get(), INFINITE);
-            if ( ::GetExitCodeThread(hThread.get(), &ExitCode) && ExitCode == 1 )
-            {
-                auto res = Memory.Read(ptr + 0x100, sizeof(uptr));
-                if ( Success(res) )
-                {
-                    m_Peb = (PPEB)(*(uptr*)(Value(res).data()));
-                }
-            }
+            m_Peb = reinterpret_cast<PPEB>(Value(res));
         }
-        Memory.Free(ptr);
     }
 
     //
@@ -552,6 +601,58 @@ Process::ProcessEnvironmentBlock()
     }
 
     return m_Peb;
+}
+
+
+Result<uptr>
+Process::Execute(uptr const CodePointer, usize const CodePointerSize)
+{
+    uptr Result                = 0;
+    const usize AllocationSize = CodePointerSize + sizeof(uptr);
+    const std::vector<u8> sc(CodePointerSize);
+    RtlCopyMemory((void*)sc.data(), (void*)CodePointer, CodePointerSize);
+
+    //
+    // Allocate the memory and copy the code
+    //
+    auto res = Memory.Allocate(AllocationSize, L"rwx");
+    if ( Failed(res) )
+    {
+        return Err(ErrorCode::AllocationError);
+    }
+
+    auto const Target = Value(res);
+    Memory.Memset(Target, AllocationSize);
+    Memory.Write(Target, sc);
+
+    //
+    // Execute it
+    //
+    {
+        DWORD ExitCode = 0;
+        auto hThread   = pwn::UniqueHandle {::CreateRemoteThreadEx(
+            m_ProcessHandle->get(),
+            nullptr,
+            0,
+            reinterpret_cast<LPTHREAD_START_ROUTINE>(Target),
+            (LPVOID)(Target + CodePointerSize),
+            0,
+            nullptr,
+            nullptr)};
+
+        ::WaitForSingleObject(hThread.get(), INFINITE);
+        if ( ::GetExitCodeThread(hThread.get(), &ExitCode) && ExitCode == 1 )
+        {
+            auto res2 = Memory.Read(Target + CodePointerSize, sizeof(uptr));
+            if ( Success(res2) )
+            {
+                Result = (*(uptr*)(Value(res2).data()));
+            }
+        }
+    }
+    Memory.Free(Target);
+
+    return Ok(Result);
 }
 
 
