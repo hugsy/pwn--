@@ -138,21 +138,26 @@ public:
         {
         }
 
-        ThreadGroup(Process* _Process) : m_Process(_Process)
+        ThreadGroup(std::shared_ptr<Process> const& _Process) : m_Process {_Process}
         {
+        }
+
+        ThreadGroup(ThreadGroup const& Copy)
+        {
+            m_Process = Copy.m_Process;
         }
 
         Result<std::vector<u32>>
         List();
 
         Thread
-        at(const u32 Tid);
+        at(u32 Tid);
 
         Thread
-        operator[](const u32 Tid);
+        operator[](u32 Tid);
 
     private:
-        Process* m_Process = nullptr;
+        std::shared_ptr<Process> m_Process = nullptr;
     };
 
     Process() = default;
@@ -162,6 +167,12 @@ public:
     Process(Process const&);
 
     ~Process();
+
+    Process&
+    operator=(Process const& Copy);
+
+    auto
+    operator<=>(Process const&) const = default;
 
     bool
     IsValid();
@@ -175,8 +186,6 @@ public:
     u32 const
     ProcessId() const;
 
-    auto
-    operator<=>(Process const&) const = default;
 
     ///
     /// @brief Calculate and store the address of the ProcessEnvironmentBlock
@@ -247,7 +256,7 @@ public:
     //
     Process::Memory Memory;
     Token Token;
-    ThreadGroup Threads;
+    ThreadGroup& Threads = m_Threads;
 
     // TODO:
     // - modules
@@ -319,6 +328,8 @@ private:
     bool m_IsSelf                   = false;
     bool m_IsWow64                  = false;
     PPEB m_Peb                      = nullptr;
+
+    ThreadGroup m_Threads;
 };
 
 

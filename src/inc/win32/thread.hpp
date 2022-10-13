@@ -18,7 +18,7 @@ class Thread
 public:
     Thread() = default;
 
-    Thread(u32 Tid, Process* Process);
+    Thread(u32 Tid, std::shared_ptr<Process> const& Process);
 
     Thread(Thread const& OldCopy);
 
@@ -130,7 +130,7 @@ private:
     bool m_IsSelf                      = false;
     PTEB m_Teb                         = nullptr;
     std::optional<std::wstring> m_Name = std::nullopt;
-    Process* m_Process                 = nullptr;
+    std::shared_ptr<Process> m_Process = nullptr;
     SharedHandle m_ProcessHandle       = nullptr;
     SharedHandle m_ThreadHandle        = nullptr;
     u32 m_ThreadHandleAccessMask       = 0;

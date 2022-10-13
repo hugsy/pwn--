@@ -345,7 +345,7 @@ Process::ThreadGroup::List()
 {
     if ( !m_Process )
     {
-        return Err(ErrorCode::InitializationFailed);
+        return Err(ErrorCode::NotInitialized);
     }
 
     auto h = UniqueHandle {::CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0)};
@@ -404,7 +404,7 @@ Process::ThreadGroup::at(const u32 Tid)
 }
 
 Thread
-Process::ThreadGroup::operator[](const u32 Tid)
+Process::ThreadGroup::operator[](u32 Tid)
 {
     return at(Tid);
 }
@@ -429,7 +429,7 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
         m_IsSelf      = (m_Pid == ::GetCurrentProcessId());
         m_KillOnClose = m_IsSelf ? false : kill_on_delete;
 
-        // Get a handle
+        // Get a handle to the "real process"
         {
             m_ProcessHandle = std::make_shared<UniqueHandle>(pwn::UniqueHandle {hProcess});
 
@@ -488,9 +488,8 @@ Process::Process(u32 pid, HANDLE hProcess, bool kill_on_delete) :
 
             // Threads
             {
-                this->Threads = windows::Process::ThreadGroup(this);
+                this->m_Threads = windows::Process::ThreadGroup(std::make_shared<Process>(*this));
             }
-
 
             m_Valid = true;
         }
@@ -509,7 +508,26 @@ Process::~Process()
     }
 }
 
-Process::Process(Process const& Copy)
+Process::Process(Process const& Copy) :
+    m_Valid {Copy.m_Valid},
+    m_Pid {Copy.m_Pid},
+    m_Ppid {Copy.m_Ppid},
+    m_Path {Copy.m_Path},
+    m_IntegrityLevel {Copy.m_IntegrityLevel},
+    m_ProcessHandle {Copy.m_ProcessHandle},
+    m_ProcessHandleAccessMask {Copy.m_ProcessHandleAccessMask},
+    m_KillOnClose {Copy.m_KillOnClose},
+    m_IsSelf {Copy.m_IsSelf},
+    m_Peb {Copy.m_Peb},
+    m_Threads {Copy.m_Threads}
+{
+    Token  = windows::Token(m_ProcessHandle, windows::Token::TokenType::Process);
+    Memory = windows::Process::Memory::Memory(this);
+}
+
+
+Process&
+Process::operator=(Process const& Copy)
 {
     m_Valid                   = Copy.m_Valid;
     m_Pid                     = Copy.m_Pid;
@@ -521,9 +539,11 @@ Process::Process(Process const& Copy)
     m_KillOnClose             = Copy.m_KillOnClose;
     m_IsSelf                  = Copy.m_IsSelf;
     m_Peb                     = Copy.m_Peb;
-    Token                     = windows::Token(m_ProcessHandle, windows::Token::TokenType::Process);
-    Memory                    = windows::Process::Memory::Memory(this);
-    Threads                   = windows::Process::ThreadGroup(this);
+    m_Threads                 = Copy.m_Threads;
+
+    Token  = windows::Token(m_ProcessHandle, windows::Token::TokenType::Process);
+    Memory = windows::Process::Memory::Memory(this);
+    return *this;
 }
 
 bool

@@ -41,7 +41,7 @@ namespace pwn::windows
 
 #pragma region Thread
 
-Thread::Thread(u32 Tid, Process* Process) :
+Thread::Thread(u32 Tid, std::shared_ptr<Process> const& Process) :
     m_Tid {Tid},
     m_Valid {false},
 
@@ -266,12 +266,20 @@ Thread::Name(std::wstring const& name)
 Result<Thread>
 Thread::Current()
 {
-    auto t = Thread {::GetCurrentThreadId(), nullptr};
-    if ( !t.IsValid() )
+    Process CurrentProcess;
+
+    auto res = Process::Current();
+    if ( Failed(res) )
+    {
+        return Err(Error(res).code);
+    }
+
+    auto CurrentThread = Value(res).Threads.at(::GetCurrentThreadId());
+    if ( !CurrentThread.IsValid() )
     {
         return Err(ErrorCode::InitializationFailed);
     }
-    return Ok(t);
+    return Ok(CurrentThread);
 }
 
 
