@@ -24,6 +24,7 @@ option(PWN_INCLUDE_ASSEMBLER "Compile with assembler support" OFF)
 option(PWN_INCLUDE_DISASSEMBLER "Compile with disassembler support" ON)
 option(PWN_BUILD_TOOLKIT "Compile the executables of pwn++ toolkit" ON)
 option(PWN_BUILD_TESTING "Compile the test suite" ON)
+option(PWN_BUILD_DOCS "Generate the Doxygen API files" OFF)
 option(PWN_ENABLE_LUA_BACKDOOR "Enable Lua scripting for backdoor" ON)
 
 set(PWNLIB_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
@@ -39,7 +40,10 @@ if(PWN_INCLUDE_DISASSEMBLER)
     option(ZYDIS_BUILD_TOOLS "" OFF)
     option(ZYDIS_BUILD_EXAMPLES "" OFF)
     option(ZYDIS_BUILD_SHARED_LIB "" OFF)
+    cmake_policy(PUSH)
+    set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
     add_subdirectory(${PWNLIB_ROOT_DIR}/deps/zydis)
+    cmake_policy(POP)
 endif()
 
 if(PWN_ENABLE_LUA_BACKDOOR)
@@ -65,4 +69,11 @@ endif()
 #
 if(PWN_BUILD_TOOLKIT)
     add_subdirectory(tools)
+endif()
+
+#
+# Build dics
+#
+if(PWN_BUILD_DOCS)
+    add_subdirectory(docs)
 endif()

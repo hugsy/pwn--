@@ -8,3 +8,5 @@ src/inc/constants.hpp
 src/_build
 src/_build
 untracked/
+docs/Doxyfile
+docs/api/
