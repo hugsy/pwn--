@@ -24,7 +24,6 @@ env:
   CMAKE_FLAGS: "-DPWN_BUILD_DOCS=ON -DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF"
 
 jobs:
-  # Single deploy job since we're just deploying
   deploy:
     environment:
       name: github-pages
@@ -41,12 +40,11 @@ jobs:
       - name: Generate API
         run: |
           mkdir build
-          cmake -S . -B ./build -A x64 ${{ env.CMAKE_FLAGS }}
-          cmake --build ./build --verbose --target Doxygen -A x64 --config Debug
+          cmake -S . -B ./build ${{ env.CMAKE_FLAGS }}
+          cmake --build ./build --verbose --target Doxygen --config Debug
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          # Upload entire repository
           path: 'docs'
       - name: Deploy to GitHub Pages
         id: deployment
