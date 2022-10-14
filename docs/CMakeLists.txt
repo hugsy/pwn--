@@ -36,7 +36,7 @@ foreach(OS ${VERSIONS})
     file(
         GENERATE
         OUTPUT ${DOXYGEN_OUTPUT_DIR}/index.html
-        CONTENT "<html><body><script> window.location.href=window.location.href.replace('#/','')+'/api/${OS}/html/index.html'; </script></body></html>"
+        CONTENT "<html><head><script>var base=window.location.href.replace(/#\\\/.*/g,''); document.body.innerHTML=\"<meta http-equiv='Refresh' content=\\\"0; url='\"+base+\"/api/${OS}/html/index.html'\\\">\"; </script></head></html> "
         TARGET Doxygen-${OS}
     )
 endforeach()
