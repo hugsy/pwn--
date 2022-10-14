@@ -1,27 +1,44 @@
 find_package(Doxygen REQUIRED)
 
-get_target_property(PWN_PUBLIC_INTERFACES pwn++ INTERFACE_INCLUDE_DIRECTORIES)
-file(GLOB_RECURSE PWN_PUBLIC_HEADERS ${PWN_PUBLIC_INTERFACES}/*.hpp)
-
+set(VERSIONS win32 linux)
 set(PWN_DOCS_ROOT_DIR "${PWNLIB_ROOT_DIR}/docs")
-set(PWN_DOCS_API_ROOT_DIR "${PWN_DOCS_ROOT_DIR}/api")
-
-set(DOXYGEN_INDEX_FILE "${PWN_DOCS_API_ROOT_DIR}/html/index.html")
-set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/src)
-set(DOXYGEN_OUTPUT_DIR ${PWN_DOCS_API_ROOT_DIR})
-set(DOXYGEN_CSS "${PWN_DOCS_ROOT_DIR}/css/doxygen-awesome.css ${PWN_DOCS_ROOT_DIR}/css/doxygen-awesome-sidebar-only.css")
-set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)
+set(PWN_SRC_ROOT_DIR "${PWNLIB_ROOT_DIR}/src/inc")
+set(PWN_DOCS_CSS_ROOT_DIR "${PWN_DOCS_ROOT_DIR}/css")
 set(DOXYFILE_IN ${PWN_DOCS_ROOT_DIR}/Doxyfile.in)
-set(DOXYFILE_OUT ${PWN_DOCS_ROOT_DIR}/Doxyfile)
+set(DOXYGEN_CSS "${PWN_DOCS_CSS_ROOT_DIR}/doxygen-awesome.css ${PWN_DOCS_CSS_ROOT_DIR}/doxygen-awesome-sidebar-only.css")
 
-configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
+foreach(OS ${VERSIONS})
+    set(PWN_DOCS_API_ROOT_DIR "${PWN_DOCS_ROOT_DIR}/api/${OS}")
+    set(PWN_SRC_WIN32_ROOT_DIR "${PWN_SRC_ROOT_DIR}/${OS}")
 
-add_custom_command(
-    OUTPUT ${DOXYGEN_INDEX_FILE}
-    DEPENDS ${PROJECT_NAME}
-    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
-    MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
-    WORKING_DIRECTORY ${PWN_DOCS_API_ROOT_DIR}
-    COMMENT "Generating API Docs")
+    file(GLOB PWN_PUBLIC_COMMON_HEADERS ${PWN_SRC_ROOT_DIR}/*.hpp)
+    file(GLOB_RECURSE PWN_PUBLIC_WIN32_HEADERS ${PWN_SRC_WIN32_ROOT_DIR}/*.hpp)
 
-add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
+    set(PWN_PUBLIC_HEADERS ${PWN_PUBLIC_COMMON_HEADERS} ${PWN_PUBLIC_WIN32_HEADERS})
+
+    set(DOXYGEN_INPUT_DIR "${PWN_SRC_ROOT_DIR} ${PWN_SRC_WIN32_ROOT_DIR}")
+    set(DOXYGEN_OUTPUT_DIR ${PWN_DOCS_API_ROOT_DIR})
+    set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)
+    set(DOXYFILE_OUT ${PWN_DOCS_ROOT_DIR}/Doxyfile.${OS})
+
+    configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
+
+    add_custom_command(
+        OUTPUT ${DOXYGEN_INDEX_FILE}
+        DEPENDS ${PWN_PUBLIC_HEADERS}
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
+        MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
+        WORKING_DIRECTORY ${PWN_DOCS_API_ROOT_DIR}
+        COMMENT "Generating API Docs for ${OS}")
+
+    add_custom_target(Doxygen-${OS} ALL DEPENDS ${DOXYGEN_INDEX_FILE})
+
+    file(
+        GENERATE
+        OUTPUT ${DOXYGEN_OUTPUT_DIR}/index.html
+        CONTENT "<html><head><meta http-equiv='Refresh' content=\"0; url='/api/${OS}/html/index.html' \" /></head></html>"
+        TARGET Doxygen-${OS}
+    )
+endforeach()
+
+add_custom_target(Doxygen ALL DEPENDS Doxygen-win32 Doxygen-linux)

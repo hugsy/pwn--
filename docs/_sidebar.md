@@ -23,6 +23,5 @@
 
 - API
 
-    - [Namespaces](#)
-    - [Classes](#)
-    - [Functions](#)
+    - [Windows](/api/win32/index.html)
+    - [Linux](/api/linux/index.html)
