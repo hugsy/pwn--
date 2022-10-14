@@ -9,4 +9,6 @@ src/_build
 src/_build
 untracked/
 docs/Doxyfile
+docs/Doxyfile.linux
+docs/Doxyfile.win32
 docs/api/

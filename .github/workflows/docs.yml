@@ -20,6 +20,9 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 
+env:
+  CMAKE_FLAGS: "-DPWN_BUILD_DOCS=ON -DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF"
+
 jobs:
   # Single deploy job since we're just deploying
   deploy:
@@ -30,8 +33,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Install packages
+        run: |
+          sudo apt update && sudo apt install -y doxygen cmake
       - name: Setup Pages
         uses: actions/configure-pages@v2
+      - name: Generate API
+        run: |
+          mkdir build
+          cmake -S . -B ./build -A x64 ${{ env.CMAKE_FLAGS }}
+          cmake --build ./build --verbose --target Doxygen
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
