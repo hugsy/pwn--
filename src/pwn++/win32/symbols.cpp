@@ -117,7 +117,7 @@ GetHandle()
 
             // Initialize the debug engine for the target process
             {
-                ::SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
+                SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
 
                 __hProcess = ::GetCurrentProcess(); // TODO: adjust
 
@@ -142,7 +142,7 @@ Symbols::EnumerateModules()
     }
     std::vector<std::tuple<uptr, std::wstring>> Modules;
 
-    auto EnumModulesCb = [&Modules](PCWSTR ModuleName, DWORD64 BaseOfDll, PVOID UserContext) -> BOOL
+    auto EnumModulesCb = [&Modules](PCWSTR ModuleName, uptr BaseOfDll, PVOID UserContext) -> bool
     {
         UnreferencedParameter(UserContext);
         Modules.push_back({(uptr)BaseOfDll, std::wstring {ModuleName}});

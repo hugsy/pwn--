@@ -52,13 +52,13 @@ namespace win = windows;
 
 } // namespace pwn
 
-/// namespace pwn::windows::System
+/// namespace pwn::windows, class System
 #include "win32/system.hpp"
 
-/// namespace pwn::windows::Process
+/// namespace pwn::windows, class Process
 #include "win32/process.hpp"
 
-/// namespace pwn::windows::Thread
+/// namespace pwn::windows, class Thread
 #include "win32/thread.hpp"
 
 /// namespace pwn::windows::registry
@@ -82,8 +82,11 @@ namespace win = windows;
 /// namespace pwn::windows::rpc
 #include "win32/rpc.hpp"
 
-/// namespace pwn::windows::ObjectManager
+/// namespace pwn::windows, class ObjectManager
 #include "win32/object.hpp"
+
+/// namespace pwn::windows, class Symbols
+#include "win32/symbols.hpp"
 
 // namespace pwn::backdoor
 #ifdef PWN_USE_BACKDOOR

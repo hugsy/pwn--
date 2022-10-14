@@ -27,6 +27,7 @@ if(MSVC)
         ${TEST_DIR}/pwn_win_thread.cpp
         ${TEST_DIR}/pwn_win_token.cpp
         ${TEST_DIR}/pwn_win_object.cpp
+        ${TEST_DIR}/pwn_win_symbols.cpp
     )
 else()
     set(TEST_DIR ${COMMON_TEST_DIR}/linux)
