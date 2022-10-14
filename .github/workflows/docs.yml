@@ -42,7 +42,7 @@ jobs:
         run: |
           mkdir build
           cmake -S . -B ./build -A x64 ${{ env.CMAKE_FLAGS }}
-          cmake --build ./build --verbose --target Doxygen
+          cmake --build ./build --verbose --target Doxygen -A x64 --config Debug
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
