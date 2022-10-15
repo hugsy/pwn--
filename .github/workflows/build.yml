@@ -108,7 +108,7 @@ jobs:
         cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }}
 
     - name: Run tests
-      if: build.type == 'full'
+      if: matrix.build == 'full'
       continue-on-error: true
       run: |
         cd build
