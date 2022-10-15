@@ -17,7 +17,7 @@ jobs:
   build:
     env:
       CMAKE_CONFIGURATION: ${{ github.ref_name == 'main' && 'RelWithDebInfo' || 'Debug' }}
-      CMAKE_FLAGS: "${{ matrix.build == 'full' && '${{ env.CMAKE_FLAGS_FULL }}' || '${{ env.CMAKE_FLAGS_LITE }}' }}"
+      CMAKE_FLAGS: "${{ matrix.build == 'full' && '-DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_BUILD_DOCS=OFF -DPWN_INCLUDE_DISASSEMBLER=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=ON' || '-DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_BUILD_DOCS=OFF -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF' }}"
 
     name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}"
 
@@ -88,7 +88,7 @@ jobs:
     - name: Initialize cmake (win32)
       if: matrix.os == 'windows-latest' && matrix.platform == 'x86'
       run: |
-        cmake -S . -B ./build -A win32 $CMAKE_FLAGS
+        cmake -S . -B ./build -A win32 ${{ env.CMAKE_FLAGS }}
 
     - name: Initialize cmake (generic)
       if: matrix.os != 'windows-latest' || matrix.platform != 'x86'
@@ -104,17 +104,17 @@ jobs:
       continue-on-error: true
       run: |
         cd build
-        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config $CMAKE_CONFIGURATION -T test
+        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ env.CMAKE_CONFIGURATION }} -T test
         cd ..
 
     - name: Prepare artifact
       run: |
-        cmake --install ./build --config $CMAKE_CONFIGURATION --prefix ./artifact --verbose
+        cmake --install ./build --config ${{ env.CMAKE_CONFIGURATION }} --prefix ./artifact --verbose
 
     - name: Publish artifact
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ env.PROJECT_NAME }}_${{ matrix.platform }}_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_$CMAKE_CONFIGURATION_${{ env.GITHUB_SHA_SHORT }}_${{ matrix.build }}
+        name: ${{ env.PROJECT_NAME }}_${{ matrix.platform }}_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_${{ env.CMAKE_CONFIGURATION }}_${{ env.GITHUB_SHA_SHORT }}_${{ matrix.build }}
         path: artifact/
 
     - name: Notify on success
@@ -131,7 +131,7 @@ jobs:
           [Job #${{ github.run_number }}](${{ env.RUN_URL }}) The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }} succeeded:
           ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
           ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
-          ● Compiled as **`$CMAKE_CONFIGURATION`** for `${{ matrix.os }}-${{ matrix.platform }}`
+          ● Compiled as **`${{ env.CMAKE_CONFIGURATION }}`** for `${{ matrix.os }}-${{ matrix.platform }}`
           ● Details: [Link](${{ env.RUN_URL }})
         color: 0x00ff00
         username: ${{ github.actor }} via GithubBot
@@ -151,7 +151,7 @@ jobs:
           [Job #${{ github.run_number }}](${{ env.RUN_URL }}) The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }} failed:
           ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
           ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
-          ● Compiled as **`$CMAKE_CONFIGURATION`** for `${{ matrix.os }}-${{ matrix.platform }}`
+          ● Compiled as **`${{ env.CMAKE_CONFIGURATION }}`** for `${{ matrix.os }}-${{ matrix.platform }}`
           ● Details: [Link](${{ env.RUN_URL }})
         color: 0xff0000
         username: ${{ github.actor }} via GithubBot
