@@ -5,12 +5,12 @@ env:
   PROJECT_NAME: "pwn++"
   REPO: hugsy/pwn--
   VERBOSE: "1"
-  CMAKE_FLAGS: "-DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_INCLUDE_DISASSEMBLER=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_BUILD_DOCS=OFF"
+  CMAKE_FLAGS_COMMON: "-DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_BUILD_DOCS=OFF"
 
 on: push
 
 jobs:
-  mini_build:
+  build:
     name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.configuration }}"
 
     strategy:
@@ -19,6 +19,7 @@ jobs:
         os: ['windows-latest'] # 'linux-latest' removed since gcc-11 nor clang-15 supports std::format
         platform: ['x64', 'x86']
         configuration: ['Debug', 'RelWithDebInfo']
+        build: ['lite', 'full']
         include:
           - runs-on: ubuntu-latest
             c_compiler: clang-16
@@ -26,17 +27,27 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
 
-    - name: Sets Windows specific environment variables
+    - name: Update cmake settings (light build)
+      if: matrix.build == 'lite'
+      env:
+        CMAKE_FLAGS: "${{ env.CMAKE_FLAGS_COMMON }} -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF"
+
+    - name: Update cmake settings (full build)
+      if: matrix.build == 'lite'
+      env:
+        CMAKE_FLAGS: "${{ env.CMAKE_FLAGS_COMMON }} -DPWN_INCLUDE_DISASSEMBLER=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=ON"
+
+    - name: Set Windows specific environment variables
       if: matrix.os == 'windows-latest'
       shell: powershell
       run: |
         echo "NB_CPU=$env:NUMBER_OF_PROCESSORS" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-    - name: Sets Linux specific environment variables
+    - name: Set Linux specific environment variables
       if: matrix.os == 'ubuntu-latest'
       env:
         CC:  ${{ matrix.c_compiler}}
@@ -83,18 +94,19 @@ jobs:
     - name: Initialize cmake (win32)
       if: matrix.os == 'windows-latest' && matrix.platform == 'x86'
       run: |
-        cmake -S . -B ./build -A win32 ${{ env.CMAKE_FLAGS }}
+        cmake -S . -B ./build -A win32 $CMAKE_FLAGS
 
     - name: Initialize cmake (generic)
       if: matrix.os != 'windows-latest' || matrix.platform != 'x86'
       run: |
-        cmake -S . -B ./build -A ${{ matrix.platform }} ${{ env.CMAKE_FLAGS }}
+        cmake -S . -B ./build -A ${{ matrix.platform }} $CMAKE_FLAGS
 
-    - name: Build pwn++ library
+    - name: Build pwn++ (light) library
       run: |
         cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }}
 
     - name: Run tests
+      if: build.type == 'full'
       continue-on-error: true
       run: |
         cd build
