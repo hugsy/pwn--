@@ -11,7 +11,7 @@ on: push
 
 jobs:
   build:
-    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.configuration }}"
+    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.configuration }}/${{ matrix.build }}"
 
     strategy:
       fail-fast: false
@@ -38,7 +38,7 @@ jobs:
       run: env
 
     - name: Update cmake settings (full build)
-      if: matrix.build == 'lite'
+      if: matrix.build == 'full'
       env:
         CMAKE_FLAGS: "${{ env.CMAKE_FLAGS_COMMON }} -DPWN_INCLUDE_DISASSEMBLER=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=ON"
       run: env
