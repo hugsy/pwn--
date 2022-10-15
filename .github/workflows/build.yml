@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['windows-latest'] # 'linux-latest' removed since gcc-11 nor clang-15 supports std::format
+        os: ['windows-latest'] # 'ubuntu-latest' removed since gcc-12 nor clang-16 supports std::format
         platform: ['x64', 'x86']
         configuration: ['Debug', 'RelWithDebInfo']
         build: ['lite', 'full']
@@ -61,7 +61,7 @@ jobs:
         echo "CXX=${CXX}" >> $GITHUB_ENV
 
     - name: Inject slug/short variables
-      uses: rlespinasse/github-slug-action@v3.x
+      uses: rlespinasse/github-slug-action@v4
 
     - name: Initialize CodeQL
       if: matrix.os == 'ubuntu-latest'
