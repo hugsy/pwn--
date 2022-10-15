@@ -13,7 +13,7 @@ on:
 
 jobs:
   build:
-    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.configuration }}/${{ matrix.build }}"
+    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}"
 
     strategy:
       fail-fast: false
@@ -36,25 +36,25 @@ jobs:
       if: matrix.build == 'lite'
       env:
         CMAKE_FLAGS: "${{ env.CMAKE_FLAGS_COMMON }} -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF"
-      run: echo
+      run: echo lite
 
     - name: Update cmake build (full)
       if: matrix.build == 'full'
       env:
         CMAKE_FLAGS: "${{ env.CMAKE_FLAGS_COMMON }} -DPWN_INCLUDE_DISASSEMBLER=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=ON"
-      run: echo
+      run: echo full
 
     - name: Update cmake configuration (main branch)
       if: github.ref_name == 'main'
       env:
         CMAKE_CONFIGURATION: "RelWithDebInfo"
-      run: echo
+      run: echo RelWithDebInfo
 
     - name: Update cmake settings (dev branches)
       if: github.ref_name != 'main'
       env:
         CMAKE_CONFIGURATION: "Debug"
-      run: echo
+      run: echo Debug
 
     - name: Set Windows specific environment variables
       if: matrix.os == 'windows-latest'
