@@ -17,7 +17,7 @@ jobs:
   build:
     env:
       CMAKE_CONFIGURATION: ${{ github.ref_name == 'main' && 'RelWithDebInfo' || 'Debug' }}
-      CMAKE_FLAGS: "${{ matrix.build == 'full' && env.CMAKE_FLAGS_FULL || env.CMAKE_FLAGS_LITE }}"
+      CMAKE_FLAGS: "${{ matrix.build == 'full' && '${{ env.CMAKE_FLAGS_FULL }}' || '${{ env.CMAKE_FLAGS_LITE }}' }}"
 
     name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}"
 
