@@ -1,0 +1,30 @@
+name: "Code Analysis"
+
+on:
+  push:
+    branches: [main, dev]
+
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  codeql:
+    runs-on: windows-latest
+
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2

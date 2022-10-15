@@ -7,7 +7,9 @@ env:
   VERBOSE: "1"
   CMAKE_FLAGS_COMMON: "-DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_BUILD_DOCS=OFF"
 
-on: push
+on:
+  push:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -18,7 +20,6 @@ jobs:
       matrix:
         os: ['windows-latest'] # 'ubuntu-latest' removed since gcc-12 nor clang-16 supports std::format
         platform: ['x64', 'x86']
-        configuration: ['Debug', 'RelWithDebInfo']
         build: ['lite', 'full']
         include:
           - runs-on: ubuntu-latest
@@ -31,17 +32,29 @@ jobs:
       with:
         submodules: true
 
-    - name: Update cmake settings (light build)
+    - name: Update cmake build (light)
       if: matrix.build == 'lite'
       env:
         CMAKE_FLAGS: "${{ env.CMAKE_FLAGS_COMMON }} -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF"
-      run: env
+      run: echo
 
-    - name: Update cmake settings (full build)
+    - name: Update cmake build (full)
       if: matrix.build == 'full'
       env:
         CMAKE_FLAGS: "${{ env.CMAKE_FLAGS_COMMON }} -DPWN_INCLUDE_DISASSEMBLER=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=ON"
-      run: env
+      run: echo
+
+    - name: Update cmake configuration (main branch)
+      if: github.ref_name == 'main'
+      env:
+        CMAKE_CONFIGURATION: "RelWithDebInfo"
+      run: echo
+
+    - name: Update cmake settings (dev branches)
+      if: github.ref_name != 'main'
+      env:
+        CMAKE_CONFIGURATION: "Debug"
+      run: echo
 
     - name: Set Windows specific environment variables
       if: matrix.os == 'windows-latest'
@@ -63,11 +76,8 @@ jobs:
     - name: Inject slug/short variables
       uses: rlespinasse/github-slug-action@v4
 
-    - name: Initialize CodeQL
-      if: matrix.os == 'ubuntu-latest'
-      uses: github/codeql-action/init@v1
-      with:
-        languages: cpp
+    - name: Build environment information
+      run: env
 
     - name: Add msbuild to PATH
       if: matrix.os == 'windows-latest'
@@ -105,28 +115,24 @@ jobs:
 
     - name: Build pwn++ (light) library
       run: |
-        cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }}
+        cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config $CMAKE_CONFIGURATION
 
     - name: Run tests
       if: matrix.build == 'full'
       continue-on-error: true
       run: |
         cd build
-        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ matrix.configuration }} -T test
+        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config $CMAKE_CONFIGURATION -T test
         cd ..
-
-    - name: Perform CodeQL Analysis
-      if: matrix.os == 'ubuntu-latest'
-      uses: github/codeql-action/analyze@v1
 
     - name: Prepare artifact
       run: |
-        cmake --install ./build --config ${{ matrix.configuration }} --prefix ./artifact --verbose
+        cmake --install ./build --config $CMAKE_CONFIGURATION --prefix ./artifact --verbose
 
     - name: Publish artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
-        name: ${{ env.PROJECT_NAME }}_${{ matrix.platform }}_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_${{ matrix.configuration }}_${{ env.GITHUB_SHA_SHORT }}
+        name: ${{ env.PROJECT_NAME }}_${{ matrix.platform }}_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_$CMAKE_CONFIGURATION_${{ env.GITHUB_SHA_SHORT }}_${{ matrix.build }}
         path: artifact/
 
     - name: Notify on success
@@ -143,7 +149,7 @@ jobs:
           [Job #${{ github.run_number }}](${{ env.RUN_URL }}) The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }} succeeded:
           ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
           ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
-          ● Compiled as **`${{ matrix.configuration }}`** for `${{ matrix.os }}-${{ matrix.platform }}`
+          ● Compiled as **`$CMAKE_CONFIGURATION`** for `${{ matrix.os }}-${{ matrix.platform }}`
           ● Details: [Link](${{ env.RUN_URL }})
         color: 0x00ff00
         username: ${{ github.actor }} via GithubBot
@@ -163,7 +169,7 @@ jobs:
           [Job #${{ github.run_number }}](${{ env.RUN_URL }}) The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }} failed:
           ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
           ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
-          ● Compiled as **`${{ matrix.configuration }}`** for `${{ matrix.os }}-${{ matrix.platform }}`
+          ● Compiled as **`$CMAKE_CONFIGURATION`** for `${{ matrix.os }}-${{ matrix.platform }}`
           ● Details: [Link](${{ env.RUN_URL }})
         color: 0xff0000
         username: ${{ github.actor }} via GithubBot
