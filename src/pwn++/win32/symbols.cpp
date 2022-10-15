@@ -1,9 +1,13 @@
 #include "symbols.hpp"
 
+#include "handle.hpp"
 #include "log.hpp"
 
-static HANDLE __hProcess = nullptr;
-static HMODULE __hModule = nullptr;
+static HANDLE __hProcess                        = nullptr;
+static HMODULE __hModule                        = nullptr;
+static std::optional<std::wstring> __SymbolPath = std::nullopt;
+static pwn::SharedHandle __spProcess            = nullptr;
+
 
 #pragma region Declaration
 struct SYMBOL_INFOW
@@ -56,6 +60,8 @@ static SymFromNameW_t SymFromNameW = nullptr;
 typedef BOOL (*SymFromAddrW_t)(HANDLE hProcess, uptr Address, uptr* Displacement, SYMBOL_INFOW* Symbol);
 static SymFromAddrW_t SymFromAddrW = nullptr;
 
+typedef BOOL (*SymSetSearchPathW_t)(HANDLE hProcess, PCTSTR SearchPath);
+static SymSetSearchPathW_t SymSetSearchPathW = nullptr;
 
 #ifndef SYMOPT_CASE_INSENSITIVE
 #define SYMOPT_CASE_INSENSITIVE 0x00000001
@@ -109,10 +115,11 @@ GetHandle()
                 SymInitializeW = (SymInitializeW_t)::GetProcAddress(__hModule, "SymInitializeW");
                 SymEnumerateModulesW64 =
                     (SymEnumerateModulesW64_t)::GetProcAddress(__hModule, "SymEnumerateModulesW64");
-                SymLoadModuleExW = (SymLoadModuleExW_t)::GetProcAddress(__hModule, "SymLoadModuleExW");
-                SymEnumSymbolsW  = (SymEnumSymbolsW_t)::GetProcAddress(__hModule, "SymEnumSymbolsW");
-                SymFromNameW     = (SymFromNameW_t)::GetProcAddress(__hModule, "SymFromNameW");
-                SymFromAddrW     = (SymFromAddrW_t)::GetProcAddress(__hModule, "SymFromAddrW");
+                SymLoadModuleExW  = (SymLoadModuleExW_t)::GetProcAddress(__hModule, "SymLoadModuleExW");
+                SymEnumSymbolsW   = (SymEnumSymbolsW_t)::GetProcAddress(__hModule, "SymEnumSymbolsW");
+                SymFromNameW      = (SymFromNameW_t)::GetProcAddress(__hModule, "SymFromNameW");
+                SymFromAddrW      = (SymFromAddrW_t)::GetProcAddress(__hModule, "SymFromAddrW");
+                SymSetSearchPathW = (SymSetSearchPathW_t)::GetProcAddress(__hModule, "SymSetSearchPathW");
             }
 
             // Initialize the debug engine for the target process
@@ -125,6 +132,14 @@ GetHandle()
                 {
                     log::perror(L"SymInitialize()");
                     return nullptr;
+                }
+
+                if ( __SymbolPath )
+                {
+                    if ( Failed(pwn::windows::Symbols::SetSymbolPath(__SymbolPath.value())) )
+                    {
+                        return nullptr;
+                    }
                 }
             }
         }
@@ -239,5 +254,30 @@ Symbols::ResolveFromAddress(const uptr TargetAddress)
 
     return Ok(std::wstring {pSymbol->Name});
 }
+
+Result<bool>
+Symbols::SetSymbolPath(std::wstring_view const& NewSymbolPath)
+{
+    __SymbolPath = NewSymbolPath;
+    if ( __hProcess )
+    {
+        PCWSTR SymPath = __SymbolPath.has_value() ? __SymbolPath.value().c_str() : nullptr;
+        if ( SymPath )
+        {
+            if ( SymSetSearchPathW(__hProcess, SymPath) == FALSE )
+            {
+                log::perror(L"SymSetSearchPath()");
+                return Err(ErrorCode::ExternalApiCallFailed);
+            }
+
+            return Ok(true);
+        }
+
+        return Ok(false);
+    }
+
+    return Err(ErrorCode::InitializationFailed);
+}
+
 
 } // namespace pwn::windows

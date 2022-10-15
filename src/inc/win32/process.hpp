@@ -248,8 +248,29 @@ public:
         return Ok(std::shared_ptr<T>(p, deleter));
     }
 
+
+    ///
+    ///@brief Copy code to the process, and execute in a thread
+    ///
+    ///@param CodePointer
+    ///@param CodePointerSize
+    ///
+    ///@return `Result<uptr>`
+    ///
     Result<uptr>
     Execute(uptr const CodePointer, usize const CodePointerSize);
+
+
+    ///
+    /// @brief Try to re-open the current handle access with new one (accumulate)
+    ///
+    /// @param DesiredAccess The new access privileges to ask
+    ///
+    /// @return `Result<bool>`
+    ///
+    Result<bool>
+    ReOpenProcessWith(const DWORD DesiredAccess);
+
 
     //
     // Submodules
@@ -298,15 +319,6 @@ public:
     System(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operation = L"open");
 
 private:
-    ///
-    /// @brief
-    ///
-    /// @param DesiredAccess
-    /// @return Result<bool>
-    ///
-    Result<bool>
-    ReOpenProcessWith(const DWORD DesiredAccess);
-
     ///
     /// @brief Should not be called directly
     ///
