@@ -14,13 +14,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  env:
-    CMAKE_CONFIGURATION: ${{ github.ref_name == 'main' && 'RelWithDebInfo' || 'Debug' }}
-
   build:
-    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}"
     env:
-      CMAKE_FLAGS: "${{ matrix.matrix.build == 'full' && env.CMAKE_FLAGS_FULL || env.CMAKE_FLAGS_LITE }}"
+      CMAKE_CONFIGURATION: ${{ github.ref_name == 'main' && 'RelWithDebInfo' || 'Debug' }}
+      CMAKE_FLAGS: "${{ matrix.build == 'full' && env.CMAKE_FLAGS_FULL || env.CMAKE_FLAGS_LITE }}"
+
+    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}"
 
     strategy:
       fail-fast: false
