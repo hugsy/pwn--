@@ -90,11 +90,11 @@ jobs:
     - name: Initialize cmake (generic)
       if: matrix.os != 'windows-latest' || matrix.platform != 'x86'
       run: |
-        cmake -S . -B ./build -A ${{ matrix.platform }} $CMAKE_FLAGS
+        cmake -S . -B ./build -A ${{ matrix.platform }} ${{ env.CMAKE_FLAGS }}
 
     - name: Build pwn++ (light) library
       run: |
-        cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config $CMAKE_CONFIGURATION
+        cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ env.CMAKE_CONFIGURATION }}
 
     - name: Run tests
       if: matrix.build == 'full'
