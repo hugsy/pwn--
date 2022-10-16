@@ -163,7 +163,6 @@ namespace pwn
 ///
 /// @brief Global context definition
 ///
-///
 struct GlobalContext
 {
 #ifdef PWN_USE_BACKDOOR

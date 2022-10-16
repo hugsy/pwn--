@@ -11,119 +11,137 @@ using namespace pwn::log;
 extern struct pwn::GlobalContext pwn::Context;
 
 
-namespace pwn::disasm
+namespace pwn::Assembly
 {
 
-namespace
+Disassembler::Disassembler() : Disassembler(pwn::Context.architecture){}
+
+Disassembler::Disassembler(pwn::Architecture const & arch)
+    : m_Valid{false},
+    m_Buffer{nullptr},
+    m_BufferSize{0},
+    m_Offset{0},
+    m_StartAddress{DefaultBaseAddress}
 {
-
-std::vector<std::wstring>
-disassemble_to_string(
-    _In_ ZydisMachineMode arch,
-    _In_ ZydisAddressWidth mode,
-    _In_ const u8* code,
-    _In_ const size_t code_size)
-{
-    std::vector<std::wstring> insns;
-    ZydisDecoder decoder;
-    ZydisDecoderInit(&decoder, arch, mode);
-
-    ZydisFormatter formatter;
-    ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
-
-    ZyanU64 runtime_address = DEFAULT_BASE_ADDRESS;
-    ZyanUSize offset        = 0;
-    const ZyanUSize length  = sizeof(code);
-    ZydisDecodedInstruction instruction;
-
-    while ( ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&decoder, code + offset, length - offset, &instruction)) )
+    switch ( arch.id )
     {
-        char buffer[256];
-        ZydisFormatterFormatInstruction(&formatter, &instruction, buffer, sizeof(buffer), runtime_address);
+    case ArchitectureType::x86:
+        m_MachineMode = ZYDIS_MACHINE_MODE_LONG_COMPAT_32;
+        m_AddressWidth = ZYDIS_ADDRESS_WIDTH_32;
+        break;
 
-        insns.push_back(pwn::utils::to_widestring(buffer));
+    case ArchitectureType::x64:
+        m_MachineMode = ZYDIS_MACHINE_MODE_LONG_64;
+        m_AddressWidth = ZYDIS_ADDRESS_WIDTH_64;
+        break;
 
-        offset += instruction.length;
-        runtime_address += instruction.length;
-
-        offset += instruction.length;
-        runtime_address += instruction.length;
+    default:
+        err(L"Unknown/unsupported architecture");
+        return;
     }
 
-    return insns;
-}
-
-void
-print_disassembled_code(
-    _In_ ZydisMachineMode arch,
-    _In_ ZydisAddressWidth mode,
-    _In_ const u8* code,
-    _In_ const size_t code_size)
-{
-    auto insns = disassemble_to_string(arch, mode, code, code_size);
-    for ( auto const& insn : insns )
+    ZyanStatus zStatus = ::ZydisDecoderInit(&m_Decoder, m_ZydisMachineMode, m_ZydisAddressWidth);
+    if(!ZYAN_SUCCESS(zStatus))
     {
-        ok(L"%s", insn);
+        return;
     }
-}
-} // namespace
 
+    zStatus = ::ZydisFormatterInit(&m_Formatter, ZYDIS_FORMATTER_STYLE_INTEL);
+    if(!ZYAN_SUCCESS(zStatus))
+    {
+        return;
+    }
 
-///
-/// @brief x86 specific disassembly function
-///
-/// @param [in] code code the code to disassemble
-/// @param [in] code_size code_size is the size of code
-///
-/// @return
-///
-void
-x86(_In_ const u8* code, _In_ const size_t code_size)
-{
-    return print_disassembled_code(ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_ADDRESS_WIDTH_32, code, code_size);
+    m_Valid = true;
 }
 
 
-///
-/// @brief x64 specific disassembly function
-///
-/// @param [inout] code code the code to disassemble
-/// @param [inout] code_size code_size is the size of code
-///
-/// @return
-///
-void
-x64(_In_ const u8* code, _In_ const size_t code_size)
+Result<ZydisDecodedInstruction>
+Disassembler::Disassemble(std::vector<u8> const& bytes)
 {
-    return print_disassembled_code(ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64, code, code_size);
+    if(!m_Valid)
+    {
+        return Err(ErrorCode::NotInitialized);
+    }
+
+    if(bytes.data() != m_Buffer || bytes.size() != m_BufferSize)
+    {
+        m_Buffer = bytes.data();
+        m_BufferSize = bytes.size();
+        m_Offset = 0;
+    }
+
+    if(m_BufferSize < m_Offset)
+    {
+        return Err(ErrorCode::BufferTooSmall);
+    }
+
+    usize Left = m_BufferSize - m_Offset;
+    if(Left > m_BufferSize)
+    {
+        return Err(ErrorCode::OverflowError);
+    }
+
+    ZydisDecodedInstruction insn;
+    if ( !ZYAN_SUCCESS(::ZydisDecoderDecodeBuffer(&m_Decoder,&bytes[m_Offset], Left, &insn)) )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    m_Offset += insn.length;
+
+    return Ok(insn);
+}
+
+
+Result<std::string>
+Disassemble::Format(ZydisDecodedInstruction const& insn)
+{
+    std::string buffer;
+    buffer.resize(256);
+
+    if ( !ZYAN_SUCCESS(::ZydisFormatterFormatInstruction(&m_Formatter, insn, buffer.data(), buffer.size(), m_StartAddress+m_Offset))
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    return Ok(buffer);
+}
+
+
+void
+Disassemble::X86(std::vector<u8> const& bytes)
+{
+    // return print_disassembled_code(ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_ADDRESS_WIDTH_32, code, code_size);
+}
+
+
+
+void
+Disassemble::X64(std::vector<u8> const& bytes)
+{
+    // return print_disassembled_code(ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64, code, code_size);
 }
 
 
 ///
 /// @brief Generic function for disassemble code based on the context
 ///
-/// @param [inout] code code the code to disassemble
-/// @param [inout] code_size code_size is the size of code
+/// @param [in] code a vector of bytes to disassemble
 ///
 /// @return
 ///
 void
-disassemble(_In_ const u8* code, _In_ const size_t code_size)
+Disassemble::Print(std::vector<u8> const& bytes)
 {
-    switch ( pwn::Context.architecture.id )
+    Disassembler dis{pwn::Context.architecture};
+
+    for ( auto const& insn : dis.Disassemble(bytes) )
     {
-    case ArchitectureType::x86:
-        return x86(code, code_size);
-
-    case ArchitectureType::x64:
-        return x64(code, code_size);
-
-    default:
-        break;
+        ok(L"%s", insn);
     }
 
-    throw std::runtime_error("unsupported architecture\n");
 }
-} // namespace pwn::disasm
+} // namespace pwn::Assembly
 
 #endif /* PWN_NO_DISASSEMBLER */

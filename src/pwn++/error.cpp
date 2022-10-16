@@ -1,5 +1,7 @@
 #include "error.hpp"
 
+#include "log.hpp"
+
 // clang-format off
 #ifdef _WIN32
 // #include <windows.h>
@@ -11,13 +13,14 @@
 // clang-format on
 
 
-Err::Err(ErrorCode ErrCode) :
+Err::Err(ErrorCode ec) :
 #ifdef _WIN32
-    ErrorType(ErrCode, ::GetLastError())
+    ErrorType(ec, ::GetLastError())
 #else
-    ErrorType(ErrCode, errno)
+    ErrorType(ec, errno)
 #endif
 {
+    err(L"{}", ec);
 }
 
 bool
