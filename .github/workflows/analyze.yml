@@ -19,18 +19,20 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout repository
+      - name: Checkout 
         uses: actions/checkout@v3
+        with:
+          submodules: true
 
-      - name: Initialize CodeQL
+      - name: Initialize 
         uses: github/codeql-action/init@v2
 
       - name: Build
         run: |
           Import-Module .\.github\Invoke-VisualStudio.ps1
           Invoke-VisualStudio2022x64
-          cmake -S . -B ./build -A x64  -DPWN_BUILD_TOOLKIT=OFF -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF -DPWN_BUILD_DOCS=OFF -DPWN_BUILD_TESTING=OFF 
+          cmake -S . -B ./build -A x64  -DPWN_BUILD_TOOLKIT=OFF -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF -DPWN_BUILD_DOCS=OFF -DPWN_BUILD_TESTING=OFF -DPWN_LOG_USE_COLOR=OFF 
           cmake --build ./build --verbose --config Debug
 
-      - name: Perform CodeQL Analysis
+      - name: Analyze
         uses: github/codeql-action/analyze@v2
