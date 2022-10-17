@@ -27,7 +27,9 @@ jobs:
 
       - name: Build
         run: |
-          cmake -S . -B ./build -A x64  -DPWN_BUILD_TOOLKIT=OFF- PWN_INCLUDE_DISASSEMBLER=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF -DPWN_BUILD_DOCS=OFF -DPWN_BUILD_TESTING=OFF 
+          Import-Module .\.github\Invoke-VisualStudio.ps1
+          Invoke-VisualStudio2022x64
+          cmake -S . -B ./build -A x64  -DPWN_BUILD_TOOLKIT=OFF -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF -DPWN_BUILD_DOCS=OFF -DPWN_BUILD_TESTING=OFF 
           cmake --build ./build --verbose --config Debug
 
       - name: Perform CodeQL Analysis
