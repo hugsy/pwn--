@@ -1,5 +1,7 @@
 #include "log.hpp"
 
+#include "pwn.hpp"
+
 #include <cassert>
 #include <cstdio>
 #include <format>
@@ -7,6 +9,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
+
+extern struct GlobalContext Context;
 
 namespace pwn::log
 {
@@ -96,6 +100,11 @@ GetPriorityWideString(const LogLevel level)
 void
 Log(const LogLevel level, std::source_location const& location, std::wostringstream& msg)
 {
+    if(Context.log_level < level)
+    {
+        return;
+    }
+
     std::wostringstream prefix;
     prefix << GetPriorityWideString(level);
 

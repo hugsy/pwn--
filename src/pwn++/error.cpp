@@ -1,23 +1,29 @@
 #include "error.hpp"
 
+#include "log.hpp"
+
 // clang-format off
-#ifdef _WIN32
-// #include <windows.h>
+#if defined(PWN_BUILD_FOR_WINDOWS)
 #include <phnt_windows.h>
 #include <phnt.h>
-#else
+#elif defined(PWN_BUILD_FOR_LINUX)
 #include <errno.h>
-#endif // _WIN32
+#else
+#error "noooope"
+#endif // PWN_BUILD_FOR_WINDOWS
 // clang-format on
 
 
-Err::Err(ErrorCode ErrCode) :
-#ifdef _WIN32
-    ErrorType(ErrCode, ::GetLastError())
+Err::Err(ErrorCode ec) :
+#if defined(PWN_BUILD_FOR_WINDOWS)
+    ErrorType(ec, ::GetLastError())
+#elif defined(PWN_BUILD_FOR_LINUX)
+    ErrorType(ec, errno)
 #else
-    ErrorType(ErrCode, errno)
+#error "noooope"
 #endif
 {
+    err(L"ERROR_{}_{}", (uint32_t)this->code, this->number);
 }
 
 bool
