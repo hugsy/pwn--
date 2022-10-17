@@ -181,7 +181,7 @@ struct std::formatter<ErrorType, char> : std::formatter<std::string, char>
     auto
     format(ErrorType const a, format_context& ctx)
     {
-        std::ostream os;
+        std::ostringstream os;
         os << a;
         return formatter<string, char>::format(os.str().c_str(), ctx);
     }
