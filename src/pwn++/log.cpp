@@ -1,5 +1,7 @@
 #include "log.hpp"
 
+#include "pwn.hpp"
+
 #include <cassert>
 #include <cstdio>
 #include <format>
@@ -102,7 +104,7 @@ Log(const LogLevel level, std::source_location const& location, std::wostringstr
     {
         return;
     }
-    
+
     std::wostringstream prefix;
     prefix << GetPriorityWideString(level);
 
