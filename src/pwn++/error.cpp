@@ -20,7 +20,7 @@ Err::Err(ErrorCode ec) :
     ErrorType(ec, errno)
 #endif
 {
-    err(L"{}", this);
+    err(L"{}", (ErrorType&)(*this));
 }
 
 bool
