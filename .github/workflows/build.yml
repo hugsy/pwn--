@@ -5,20 +5,25 @@ env:
   PROJECT_NAME: "pwn++"
   REPO: hugsy/pwn--
   VERBOSE: "1"
-  CMAKE_FLAGS: "-DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_INCLUDE_DISASSEMBLER=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_BUILD_DOCS=OFF"
 
-on: push
+on:
+  push:
+  workflow_dispatch:
 
 jobs:
-  mini_build:
-    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.configuration }}"
+  build:
+    env:
+      CMAKE_CONFIGURATION: ${{ github.ref_name == 'main' && 'RelWithDebInfo' || 'Debug' }}
+      CMAKE_FLAGS: "${{ matrix.build == 'full' && '-DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_BUILD_DOCS=OFF -DPWN_INCLUDE_DISASSEMBLER=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=ON' || '-DPWN_INCLUDE_ASSEMBLER=OFF -DPWN_BUILD_DOCS=OFF -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF' }}"
+
+    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}"
 
     strategy:
       fail-fast: false
       matrix:
-        os: ['windows-latest'] # 'linux-latest' removed since gcc-11 nor clang-15 supports std::format
+        os: ['windows-latest'] # 'ubuntu-latest' removed since gcc-12 nor clang-16 supports std::format
         platform: ['x64', 'x86']
-        configuration: ['Debug', 'RelWithDebInfo']
+        build: ['lite', 'full']
         include:
           - runs-on: ubuntu-latest
             c_compiler: clang-16
@@ -26,17 +31,17 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: true
 
-    - name: Sets Windows specific environment variables
+    - name: Set Windows specific environment variables
       if: matrix.os == 'windows-latest'
       shell: powershell
       run: |
         echo "NB_CPU=$env:NUMBER_OF_PROCESSORS" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-    - name: Sets Linux specific environment variables
+    - name: Set Linux specific environment variables
       if: matrix.os == 'ubuntu-latest'
       env:
         CC:  ${{ matrix.c_compiler}}
@@ -48,13 +53,7 @@ jobs:
         echo "CXX=${CXX}" >> $GITHUB_ENV
 
     - name: Inject slug/short variables
-      uses: rlespinasse/github-slug-action@v3.x
-
-    - name: Initialize CodeQL
-      if: matrix.os == 'ubuntu-latest'
-      uses: github/codeql-action/init@v1
-      with:
-        languages: cpp
+      uses: rlespinasse/github-slug-action@v4
 
     - name: Add msbuild to PATH
       if: matrix.os == 'windows-latest'
@@ -80,6 +79,9 @@ jobs:
       run: |
         ln -s ../pwn++ ../pwn--
 
+    - name: Build environment information
+      run: env
+
     - name: Initialize cmake (win32)
       if: matrix.os == 'windows-latest' && matrix.platform == 'x86'
       run: |
@@ -92,27 +94,24 @@ jobs:
 
     - name: Build pwn++ library
       run: |
-        cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.configuration }}
+        cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ env.CMAKE_CONFIGURATION }}
 
     - name: Run tests
+      if: matrix.build == 'full'
       continue-on-error: true
       run: |
         cd build
-        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ matrix.configuration }} -T test
+        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ env.CMAKE_CONFIGURATION }} -T test
         cd ..
-
-    - name: Perform CodeQL Analysis
-      if: matrix.os == 'ubuntu-latest'
-      uses: github/codeql-action/analyze@v1
 
     - name: Prepare artifact
       run: |
-        cmake --install ./build --config ${{ matrix.configuration }} --prefix ./artifact --verbose
+        cmake --install ./build --config ${{ env.CMAKE_CONFIGURATION }} --prefix ./artifact --verbose
 
     - name: Publish artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
-        name: ${{ env.PROJECT_NAME }}_${{ matrix.platform }}_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_${{ matrix.configuration }}_${{ env.GITHUB_SHA_SHORT }}
+        name: ${{ env.PROJECT_NAME }}_${{ matrix.platform }}_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_${{ env.CMAKE_CONFIGURATION }}_${{ env.GITHUB_SHA_SHORT }}_${{ matrix.build }}
         path: artifact/
 
     - name: Notify on success
@@ -129,7 +128,7 @@ jobs:
           [Job #${{ github.run_number }}](${{ env.RUN_URL }}) The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }} succeeded:
           ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
           ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
-          ● Compiled as **`${{ matrix.configuration }}`** for `${{ matrix.os }}-${{ matrix.platform }}`
+          ● Compiled as **`${{ env.CMAKE_CONFIGURATION }}`** for `${{ matrix.os }}-${{ matrix.platform }}`
           ● Details: [Link](${{ env.RUN_URL }})
         color: 0x00ff00
         username: ${{ github.actor }} via GithubBot
@@ -149,7 +148,7 @@ jobs:
           [Job #${{ github.run_number }}](${{ env.RUN_URL }}) The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }} failed:
           ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
           ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
-          ● Compiled as **`${{ matrix.configuration }}`** for `${{ matrix.os }}-${{ matrix.platform }}`
+          ● Compiled as **`${{ env.CMAKE_CONFIGURATION }}`** for `${{ matrix.os }}-${{ matrix.platform }}`
           ● Details: [Link](${{ env.RUN_URL }})
         color: 0xff0000
         username: ${{ github.actor }} via GithubBot
