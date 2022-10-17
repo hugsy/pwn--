@@ -79,6 +79,20 @@ struct ErrorType
 {
     ErrorCode code;
     uint32_t number;
+
+    friend std::wostream&
+    operator<<(std::wostream& wos, ErrorType const& e)
+    {
+        wos << L"ErrorType(Code=" << (uint32_t)e.code << L", GLE=" << (uint32_t)e.number << L")";
+        return wos;
+    }
+
+    friend std::ostream&
+    operator<<(std::ostream& os, ErrorType const& e)
+    {
+        os << "ErrorType(Code=" << (uint32_t)e.code << ", GLE=" << (uint32_t)e.number << ")";
+        return os;
+    }
 };
 
 template<class T>
@@ -100,20 +114,6 @@ struct Err : ErrorType
 
     bool
     operator==(ErrorCode code) const;
-
-    friend std::wostream&
-    operator<<(std::wostream& wos, Err const& e)
-    {
-        wos << L"Error(Code=" << (uint32_t)e.code << L", GLE=" << (uint32_t)e.number << L")";
-        return wos;
-    }
-
-    friend std::ostream&
-    operator<<(std::ostream& os, Err const& e)
-    {
-        os << "Error(Code=" << (uint32_t)e.code << ", GLE=" << (uint32_t)e.number << ")";
-        return os;
-    }
 };
 
 template<class T>
