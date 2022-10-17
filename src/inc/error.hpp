@@ -181,6 +181,8 @@ struct std::formatter<ErrorType, char> : std::formatter<std::string, char>
     auto
     format(ErrorType const a, format_context& ctx)
     {
-        return formatter<string, char>::format(std::format("ERROR_{}", (uint32_t)a), ctx);
+        std::ostream os;
+        os << a;
+        return formatter<string, char>::format(os.str().c_str(), ctx);
     }
 };
