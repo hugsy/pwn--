@@ -5,14 +5,12 @@
 
 #include "log.hpp"
 
-using namespace pwn::log;
 
-
-namespace pwn::windows::service
+namespace pwn::windows
 {
 
-auto
-Create(std::wstring_view const& ServiceName, std::wstring_view const& ServicePath) -> Result<DWORD>
+Result<DWORD>
+Service::Create(std::wstring_view const& ServiceName, std::wstring_view const& ServicePath)
 {
     auto hManager = ServiceHandle {::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
     if ( !hManager )
@@ -45,8 +43,8 @@ Create(std::wstring_view const& ServiceName, std::wstring_view const& ServicePat
 }
 
 
-auto
-Start(std::wstring_view const& ServiceName) -> Result<DWORD>
+Result<DWORD>
+Service::Start(std::wstring_view const& ServiceName)
 {
 
     auto hManager = ServiceHandle {::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
@@ -75,8 +73,8 @@ Start(std::wstring_view const& ServiceName) -> Result<DWORD>
 }
 
 
-auto
-Stop(std::string_view const& ServiceName, const u32 Timeout) -> Result<DWORD>
+Result<DWORD>
+Service::Stop(std::wstring_view const& ServiceName, const u32 Timeout)
 {
     DWORD dwResult = ERROR_SUCCESS;
     DWORD dwBytes  = 0;
@@ -86,7 +84,7 @@ Stop(std::string_view const& ServiceName, const u32 Timeout) -> Result<DWORD>
         auto hManager = ServiceHandle {::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
         if ( !hManager )
         {
-            perror(L"OpenSCManager()");
+            log::perror(L"OpenSCManager()");
             dwResult = ::GetLastError();
             break;
         }
@@ -95,7 +93,7 @@ Stop(std::string_view const& ServiceName, const u32 Timeout) -> Result<DWORD>
             ::OpenServiceW(hManager.get(), (LPCWSTR)ServiceName.data(), SERVICE_STOP | SERVICE_QUERY_STATUS)};
         if ( !hService )
         {
-            perror(L"OpenService()");
+            log::perror(L"OpenService()");
             dwResult = ::GetLastError();
             break;
         }
@@ -103,7 +101,7 @@ Stop(std::string_view const& ServiceName, const u32 Timeout) -> Result<DWORD>
         SERVICE_STATUS_PROCESS Status = {0};
         if ( ::ControlService(hService.get(), SERVICE_CONTROL_STOP, (SERVICE_STATUS*)&Status) == 0 )
         {
-            perror(L"ControlService()");
+            log::perror(L"ControlService()");
             dwResult = ::GetLastError();
             break;
         }
@@ -123,7 +121,7 @@ Stop(std::string_view const& ServiceName, const u32 Timeout) -> Result<DWORD>
                      sizeof(SERVICE_STATUS_PROCESS),
                      &dwBytes) == 0 )
             {
-                perror(L"QueryServiceStatusEx()");
+                log::perror(L"QueryServiceStatusEx()");
                 break;
             }
 
@@ -137,7 +135,7 @@ Stop(std::string_view const& ServiceName, const u32 Timeout) -> Result<DWORD>
             const std::chrono::duration<double> diff = end - start;
             if ( diff.count() > Timeout )
             {
-                perror(L"StopService()");
+                log::perror(L"StopService()");
                 dwResult = ERROR_TIMEOUT;
                 break;
             }
@@ -151,8 +149,8 @@ Stop(std::string_view const& ServiceName, const u32 Timeout) -> Result<DWORD>
 }
 
 
-auto
-Destroy(std::wstring_view const& ServiceName) -> Result<DWORD>
+Result<DWORD>
+Service::Destroy(std::wstring_view const& ServiceName)
 {
     DWORD dwResult = ERROR_SUCCESS;
 
@@ -161,7 +159,7 @@ Destroy(std::wstring_view const& ServiceName) -> Result<DWORD>
         auto hManager = ServiceHandle {::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
         if ( !hManager )
         {
-            perror(L"StartService()");
+            log::perror(L"StartService()");
             dwResult = ::GetLastError();
             break;
         }
@@ -169,14 +167,14 @@ Destroy(std::wstring_view const& ServiceName) -> Result<DWORD>
         auto hService = ServiceHandle {::OpenService(hManager.get(), ServiceName.data(), DELETE)};
         if ( !hService )
         {
-            perror(L"OpenService()");
+            log::perror(L"OpenService()");
             dwResult = ::GetLastError();
             break;
         }
 
         if ( ::DeleteService(hService.get()) == 0 )
         {
-            perror(L"DeleteService()");
+            log::perror(L"DeleteService()");
             dwResult = ::GetLastError();
             break;
         }
@@ -187,8 +185,8 @@ Destroy(std::wstring_view const& ServiceName) -> Result<DWORD>
 }
 
 
-auto
-List() -> Result<std::vector<ServiceInfo>>
+Result<std::vector<ServiceInfo>>
+Service::List()
 {
     std::vector<ServiceInfo> services;
     DWORD dwResult = ERROR_SUCCESS;
@@ -198,7 +196,7 @@ List() -> Result<std::vector<ServiceInfo>>
         auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ENUMERATE_SERVICE));
         if ( !hManager )
         {
-            perror(L"StartService()");
+            log::perror(L"StartService()");
             dwResult = ::GetLastError();
             break;
         }
@@ -226,7 +224,7 @@ List() -> Result<std::vector<ServiceInfo>>
 
         if ( (bRes == 0) && ::GetLastError() != ERROR_MORE_DATA )
         {
-            perror(L"EnumServicesStatusEx(1)");
+            log::perror(L"EnumServicesStatusEx(1)");
             dwResult = ::GetLastError();
             break;
         }
@@ -251,7 +249,7 @@ List() -> Result<std::vector<ServiceInfo>>
                  (LPDWORD)&dwResumeHandle,
                  nullptr) == 0 )
         {
-            perror(L"EnumServicesStatusEx(2)");
+            log::perror(L"EnumServicesStatusEx(2)");
             dwResult = ::GetLastError();
             break;
         }
@@ -285,8 +283,8 @@ List() -> Result<std::vector<ServiceInfo>>
 }
 
 
-auto
-IsRunning(const std::wstring_view& ServiceName) -> Result<bool>
+Result<bool>
+Service::IsRunning(const std::wstring_view& ServiceName)
 {
     DWORD dwResult = ERROR_SUCCESS;
     bool bRes      = false;
@@ -296,7 +294,7 @@ IsRunning(const std::wstring_view& ServiceName) -> Result<bool>
         auto hManager = ServiceHandle(::OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
         if ( !hManager )
         {
-            perror(L"OpenSCManager()");
+            log::perror(L"OpenSCManager()");
             dwResult = ::GetLastError();
             break;
         }
@@ -304,7 +302,7 @@ IsRunning(const std::wstring_view& ServiceName) -> Result<bool>
         auto hService = ServiceHandle(::OpenService(hManager.get(), ServiceName.data(), SERVICE_QUERY_STATUS));
         if ( !hService )
         {
-            perror(L"OpenService()");
+            log::perror(L"OpenService()");
             dwResult = ::GetLastError();
             break;
         }
@@ -318,7 +316,7 @@ IsRunning(const std::wstring_view& ServiceName) -> Result<bool>
                  sizeof(SERVICE_STATUS_PROCESS),
                  &dwBytes) == 0 )
         {
-            perror(L"QueryServiceStatusEx()");
+            log::perror(L"QueryServiceStatusEx()");
             break;
         }
 
@@ -339,4 +337,4 @@ IsRunning(const std::wstring_view& ServiceName) -> Result<bool>
     return Ok(bRes);
 }
 
-} // namespace pwn::windows::service
+} // namespace pwn::windows

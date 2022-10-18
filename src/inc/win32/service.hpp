@@ -4,10 +4,17 @@
 #include "handle.hpp"
 
 
-namespace pwn::windows::service
+namespace pwn::windows
 {
+///
+///@brief Managed handle for service, autocall to `CloseServiceHandle` on destruction
+///
+///
 using ServiceHandle = pwn::GenericHandle<SC_HANDLE__, CloseServiceHandle>;
 
+///
+///@brief Basic service information
+///
 using ServiceInfo = struct
 {
     std::wstring Name;
@@ -17,66 +24,69 @@ using ServiceInfo = struct
     DWORD ProcessId;
 };
 
-
-///
-/// @brief Register a new service against the Windows Service Manager
-///
-/// @param[in] ServiceName name of the service to start
-/// @param[in] ServiceBinaryPath path of the binary associated to the service
-/// @return a Result object, with the last error code
-///
-PWNAPI auto
-Create(std::wstring_view const& ServiceName, std::wstring_view const& ServiceBinaryPath) -> Result<DWORD>;
-
-
-///
-/// @brief
-///
-/// @param[in] ServiceName
-/// @return DWORD
-///
-PWNAPI auto
-Start(std::wstring_view const& ServiceName) -> Result<DWORD>;
+class Service
+{
+public:
+    ///
+    /// @brief Register a new service against the Windows Service Manager
+    ///
+    /// @param[in] ServiceName name of the service to start
+    /// @param[in] ServiceBinaryPath path of the binary associated to the service
+    /// @return a Result object, with the last error code
+    ///
+    static Result<DWORD>
+    Create(std::wstring_view const& ServiceName, std::wstring_view const& ServiceBinaryPath);
 
 
-///
-/// @brief Starts a service
-///
-/// @param[in] ServiceName
-/// @param[inopt] Timeout
-/// @return DWORD
-///
-PWNAPI auto
-Stop(std::string_view const& ServiceName, const u32 Timeout = 10000) -> Result<DWORD>;
+    ///
+    /// @brief Start a service against the Windows Service Manager
+    ///
+    /// @param[in] ServiceName
+    /// @return DWORD
+    ///
+    static Result<DWORD>
+    Start(std::wstring_view const& ServiceName);
 
 
-///
-/// @brief Delete a service from the service manager.
-///
-/// @param[in] ServiceName name of the service to delete
-/// @return a Result<DWORD> of the error code of the function, sets last error on failure.
-///
-PWNAPI auto
-Destroy(std::wstring_view const& ServiceName) -> Result<DWORD>;
+    ///
+    /// @brief Stop a service
+    ///
+    /// @param[in] ServiceName
+    /// @param[in] Timeout
+    /// @return DWORD
+    ///
+    static Result<DWORD>
+    Stop(std::wstring_view const& ServiceName, const u32 Timeout = 10000);
 
 
-///
-/// @brief List all the services.
-///
-/// @return std::vector<ServiceInfo> An iterable of pwn::service::ServiceInfo containing basic service
-/// information.
-///
-PWNAPI auto
-List() -> Result<std::vector<ServiceInfo>>;
+    ///
+    /// @brief Delete a service from the service manager.
+    ///
+    /// @param[in] ServiceName name of the service to delete
+    /// @return a Result<DWORD> of the error code of the function, sets last error on failure.
+    ///
+    static Result<DWORD>
+    Destroy(std::wstring_view const& ServiceName);
 
 
-///
-/// @brief Checks if a service is running.
-///
-/// @param ServiceName name of the service to query
-/// @return Result<BOOL>: TRUE if the service has a running status. Throws an exception if any error occurs.
-///
-PWNAPI auto
-IsRunning(std::wstring_view const& ServiceName) -> Result<bool>;
+    ///
+    /// @brief List all the services.
+    ///
+    /// @return std::vector<ServiceInfo> An iterable of pwn::service::ServiceInfo containing basic service
+    /// information.
+    ///
+    static Result<std::vector<ServiceInfo>>
+    List();
 
-} // namespace pwn::windows::service
+
+    ///
+    /// @brief Checks if a service is running.
+    ///
+    /// @param ServiceName name of the service to query
+    /// @return Result<BOOL>: TRUE if the service has a running status. Throws an exception if any error occurs.
+    ///
+    static Result<bool>
+    IsRunning(std::wstring_view const& ServiceName);
+};
+
+} // namespace pwn::windows
