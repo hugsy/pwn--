@@ -21,12 +21,12 @@ using ServiceInfo = struct
 ///
 /// @brief Register a new service against the Windows Service Manager
 ///
-/// @param[in] lpwszName name of the service to start
-/// @param[in] lpwszPath path of the binary associated to the service
+/// @param[in] ServiceName name of the service to start
+/// @param[in] ServiceBinaryPath path of the binary associated to the service
 /// @return a Result object, with the last error code
 ///
 PWNAPI auto
-create(std::wstring_view const& ServiceName, std::wstring_view const& ServiceBinaryPath) -> Result<DWORD>;
+Create(std::wstring_view const& ServiceName, std::wstring_view const& ServiceBinaryPath) -> Result<DWORD>;
 
 
 ///
@@ -36,7 +36,7 @@ create(std::wstring_view const& ServiceName, std::wstring_view const& ServiceBin
 /// @return DWORD
 ///
 PWNAPI auto
-start(std::wstring_view const& ServiceName) -> Result<DWORD>;
+Start(std::wstring_view const& ServiceName) -> Result<DWORD>;
 
 
 ///
@@ -47,7 +47,7 @@ start(std::wstring_view const& ServiceName) -> Result<DWORD>;
 /// @return DWORD
 ///
 PWNAPI auto
-stop(std::wstring const& ServiceName, const DWORD Timeout = 10000) -> Result<DWORD>;
+Stop(std::string_view const& ServiceName, const u32 Timeout = 10000) -> Result<DWORD>;
 
 
 ///
@@ -57,7 +57,7 @@ stop(std::wstring const& ServiceName, const DWORD Timeout = 10000) -> Result<DWO
 /// @return a Result<DWORD> of the error code of the function, sets last error on failure.
 ///
 PWNAPI auto
-destroy(std::wstring const& ServiceName) -> Result<DWORD>;
+Destroy(std::wstring_view const& ServiceName) -> Result<DWORD>;
 
 
 ///
@@ -67,7 +67,7 @@ destroy(std::wstring const& ServiceName) -> Result<DWORD>;
 /// information.
 ///
 PWNAPI auto
-list() -> Result<std::vector<ServiceInfo>>;
+List() -> Result<std::vector<ServiceInfo>>;
 
 
 ///
@@ -77,6 +77,6 @@ list() -> Result<std::vector<ServiceInfo>>;
 /// @return Result<BOOL>: TRUE if the service has a running status. Throws an exception if any error occurs.
 ///
 PWNAPI auto
-is_running(std::wstring_view const& ServiceName) -> Result<bool>;
+IsRunning(std::wstring_view const& ServiceName) -> Result<bool>;
 
 } // namespace pwn::windows::service

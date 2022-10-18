@@ -12,91 +12,71 @@ namespace pwn::windows::service
 {
 
 auto
-create(std::string_view const& ServiceName, std::string_view const& ServicePath) -> Result<DWORD>
+Create(std::wstring_view const& ServiceName, std::wstring_view const& ServicePath) -> Result<DWORD>
 {
-    DWORD dwResult = ERROR_SUCCESS;
-
-    do
+    auto hManager = ServiceHandle {::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
+    if ( !hManager )
     {
-        auto hManager = ServiceHandle {::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
-        if ( !hManager )
-        {
-            perror(L"OpenSCManager()");
-            dwResult = ::GetLastError();
-            break;
-        }
+        log::perror(L"OpenSCManager()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
 
-        auto hService = ServiceHandle {::CreateServiceW(
-            hManager.get(),
-            (LPCWSTR)ServiceName.data(),
-            nullptr,
-            SERVICE_ALL_ACCESS,
-            SERVICE_WIN32_OWN_PROCESS,
-            SERVICE_DEMAND_START,
-            SERVICE_ERROR_IGNORE,
-            (LPCWSTR)ServicePath.data(),
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr)};
-        if ( !hService )
-        {
-            perror(L"CreateService()");
-            dwResult = ::GetLastError();
-            break;
-        }
-    } while ( false );
+    auto hService = ServiceHandle {::CreateServiceW(
+        hManager.get(),
+        (LPCWSTR)ServiceName.data(),
+        nullptr,
+        SERVICE_ALL_ACCESS,
+        SERVICE_WIN32_OWN_PROCESS,
+        SERVICE_DEMAND_START,
+        SERVICE_ERROR_IGNORE,
+        (LPCWSTR)ServicePath.data(),
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr)};
+    if ( !hService )
+    {
+        log::perror(L"CreateService()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
 
-    ::SetLastError(dwResult);
-    return Ok(dwResult);
+    return Ok(ERROR_SUCCESS);
 }
 
 
 auto
-start(std::wstring_view const& ServiceName) -> Result<DWORD>
+Start(std::wstring_view const& ServiceName) -> Result<DWORD>
 {
-    DWORD dwResult = ERROR_SUCCESS;
 
-    SC_HANDLE t = ::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
-    t->unused;
-
-    do
+    auto hManager = ServiceHandle {::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
+    if ( !hManager )
     {
-        auto hManager = ServiceHandle {::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
-        if ( !hManager )
-        {
-            perror(L"OpenSCManager()");
-            dwResult = ::GetLastError();
-            break;
-        }
+        log::perror(L"OpenSCManager()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
 
 
-        auto hService = ServiceHandle {::OpenServiceW(hManager.get(), ServiceName.data(), SERVICE_START)};
-        if ( !hService )
-        {
-            perror(L"OpenService()");
-            dwResult = ::GetLastError();
-            break;
-        }
+    auto hService = ServiceHandle {::OpenServiceW(hManager.get(), ServiceName.data(), SERVICE_START)};
+    if ( !hService )
+    {
+        log::perror(L"OpenService()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
 
 
-        if ( ::StartServiceW(hService.get(), 0, nullptr) == 0 )
-        {
-            perror(L"StartService()");
-            dwResult = ::GetLastError();
-            break;
-        }
+    if ( ::StartServiceW(hService.get(), 0, nullptr) == 0 )
+    {
+        log::perror(L"StartService()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
 
-    } while ( false );
-
-    ::SetLastError(dwResult);
-    return Ok(dwResult);
+    return Ok(ERROR_SUCCESS);
 }
 
 
 auto
-stop(std::string_view const& ServiceName, const DWORD Timeout) -> Result<DWORD>
+Stop(std::string_view const& ServiceName, const u32 Timeout) -> Result<DWORD>
 {
     DWORD dwResult = ERROR_SUCCESS;
     DWORD dwBytes  = 0;
@@ -172,7 +152,7 @@ stop(std::string_view const& ServiceName, const DWORD Timeout) -> Result<DWORD>
 
 
 auto
-destroy(std::wstring_view const& ServiceName) -> Result<DWORD>
+Destroy(std::wstring_view const& ServiceName) -> Result<DWORD>
 {
     DWORD dwResult = ERROR_SUCCESS;
 
@@ -208,7 +188,7 @@ destroy(std::wstring_view const& ServiceName) -> Result<DWORD>
 
 
 auto
-list() -> Result<std::vector<ServiceInfo>>
+List() -> Result<std::vector<ServiceInfo>>
 {
     std::vector<ServiceInfo> services;
     DWORD dwResult = ERROR_SUCCESS;
@@ -306,7 +286,7 @@ list() -> Result<std::vector<ServiceInfo>>
 
 
 auto
-is_running(const std::wstring_view& ServiceName) -> Result<bool>
+IsRunning(const std::wstring_view& ServiceName) -> Result<bool>
 {
     DWORD dwResult = ERROR_SUCCESS;
     bool bRes      = false;
