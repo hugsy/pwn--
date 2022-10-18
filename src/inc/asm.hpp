@@ -1,19 +1,12 @@
 #pragma once
 
-#include "pwn.hpp"
-
-namespace pwn::assm
-{
 #if defined(PWN_INCLUDE_ASSEMBLER)
-//     _Success_(return) bool PWNAPI assemble(_In_ const char* code, _In_ const size_t code_size, _Out_ std::vector<u8>&
-//     bytes); _Success_(return) bool PWNAPI x64(_In_ const char* code, _In_ const size_t code_size, _Out_
-//     std::vector<u8>& bytes); _Success_(return) bool PWNAPI x86(_In_ const char* code, _In_ const size_t code_size,
-//     _Out_ std::vector<u8>& bytes);
 
-//     _Success_(return) PWNAPI std::vector<u8> assemble(_In_ const char* code, _In_ const size_t code_size);
-//     _Success_(return) PWNAPI std::vector<u8> x64(_In_ const char* code, _In_ const size_t code_size);
-//     _Success_(return) PWNAPI std::vector<u8> x86(_In_ const char* code, _In_ const size_t code_size);
+#include "common.hpp"
 
-#endif /* !PWN_NO_ASSEMBLER */
+namespace pwn::Assembly
+{
 
-} // namespace pwn::assm
+} // namespace pwn::Assembly
+
+#endif // PWN_INCLUDE_ASSEMBLER

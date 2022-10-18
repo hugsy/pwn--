@@ -4,11 +4,7 @@
 
 #include "asm.hpp"
 #include "log.hpp"
-#include "nt.hpp"
-
-#pragma comment(lib, "ntdll.lib")
-
-using namespace pwn::log;
+#include "system.hpp"
 
 
 #ifndef __KERNEL_CONSTANTS__
@@ -36,7 +32,7 @@ using namespace pwn::log;
 #  define SYSTEM_PID           0x4
 
 #else
-#error "unsupported os"
+#error "Unsupported OS"
 #endif
 
 #endif
@@ -75,7 +71,7 @@ Kernel::Shellcode::StealSystemToken()
 
 
 Result<std::vector<uptr>>
-KFindBigPoolAddressesFromTag(const u32 Tag)
+Kernel::FindBigPoolAddressesFromTag(const u32 Tag)
 {
     auto res = System::Query<SYSTEM_BIGPOOL_INFORMATION>(SystemBigPoolInformation);
     if ( Failed(res) )

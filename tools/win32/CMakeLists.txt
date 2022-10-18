@@ -2,21 +2,32 @@
 # Build Windows test tools
 #
 
+enable_language(ASM_MASM)
+
 set(PWNLIB_TOOLS_WIN32_DIR ${PWNLIB_TOOLS_DIR}/win32 CACHE INTERNAL "PWNLIB_TOOLS_WIN32_DIR")
 
 set(
     WIN32_TOOLS
 
     AppContainMe
-    Backdoor
     BasicExample
     ExploitTemplate
     HexdumpFile
     ProcessReparent
 )
 
+if(PWN_INCLUDE_BACKDOOR)
+    set(
+        WIN32_TOOLS
+
+        ${WIN32_TOOLS}
+        Backdoor
+    )
+endif(PWN_INCLUDE_BACKDOOR)
+
 foreach(TOOL_DIR ${WIN32_TOOLS})
-    add_executable(${TOOL_DIR} WIN32 ${PWNLIB_TOOLS_WIN32_DIR}/${TOOL_DIR}/main.cpp)
+    file(GLOB SOURCE_FILES ${PWNLIB_TOOLS_WIN32_DIR}/${TOOL_DIR}/*.cpp ${PWNLIB_TOOLS_WIN32_DIR}/${TOOL_DIR}/*.asm)
+    add_executable(${TOOL_DIR} WIN32 ${SOURCE_FILES})
     add_dependencies(${TOOL_DIR} ${CMAKE_PROJECT_NAME})
     target_compile_features(${TOOL_DIR} PUBLIC cxx_std_20)
     set_target_properties(${TOOL_DIR} PROPERTIES CXX_STANDARD 20)

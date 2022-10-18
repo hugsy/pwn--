@@ -19,15 +19,15 @@
 /// namespace pwn::crypto
 #include "crypto.hpp"
 
-#ifdef PWN_HAS_ASSEMBLER
+#ifdef PWN_INCLUDE_ASSEMBLER
 /// namespace pwn::assm
 #include "asm.hpp"
-#endif // PWN_HAS_ASSEMBLER
+#endif // PWN_INCLUDE_ASSEMBLER
 
 /// namespace pwn::disassm
-#ifdef PWN_HAS_DISASSEMBLER
+#ifdef PWN_INCLUDE_DISASSEMBLER
 #include "disasm.hpp"
-#endif // PWN_HAS_DISASSEMBLER
+#endif // PWN_INCLUDE_DISASSEMBLER
 
 
 #pragma region pwn::windows
@@ -89,7 +89,7 @@ namespace win = windows;
 #include "win32/symbols.hpp"
 
 // namespace pwn::backdoor
-#ifdef PWN_USE_BACKDOOR
+#ifdef PWN_INCLUDE_BACKDOOR
 #include "backdoor.hpp"
 #endif
 
@@ -165,7 +165,7 @@ namespace pwn
 ///
 struct GlobalContext
 {
-#ifdef PWN_USE_BACKDOOR
+#ifdef PWN_INCLUDE_BACKDOOR
     std::jthread m_backdoor_thread;
     std::vector<std::shared_ptr<pwn::backdoor::ThreadConfig>> m_backdoor_clients;
 #endif

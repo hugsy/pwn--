@@ -1,3 +1,5 @@
+#ifdef PWN_INCLUDE_BACKDOOR
+
 #include "backdoor.hpp"
 
 #include <iostream>
@@ -578,3 +580,5 @@ stop() -> Result<bool>
 }
 
 } // namespace pwn::backdoor
+
+#endif // PWN_INCLUDE_BACKDOOR

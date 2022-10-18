@@ -1,12 +1,7 @@
+#ifdef PWN_INCLUDE_DISASSEMBLER
 #include "disasm.hpp"
 
-#if defined(PWN_INCLUDE_DISASSEMBLER)
-#include <Zydis/Zydis.h>
-
-#include <string>
-#include <vector>
-
-using namespace pwn::log;
+namespace log = pwn::log;
 
 extern struct pwn::GlobalContext pwn::Context;
 
@@ -14,24 +9,26 @@ extern struct pwn::GlobalContext pwn::Context;
 namespace pwn::Assembly
 {
 
-Disassembler::Disassembler() : Disassembler(pwn::Context.architecture){}
+Disassembler::Disassembler() : Disassembler(pwn::Context.architecture)
+{
+}
 
-Disassembler::Disassembler(pwn::Architecture const & arch)
-    : m_Valid{false},
-    m_Buffer{nullptr},
-    m_BufferSize{0},
-    m_Offset{0},
-    m_StartAddress{DefaultBaseAddress}
+Disassembler::Disassembler(Architecture const& arch) :
+    m_Valid {false},
+    m_Buffer {nullptr},
+    m_BufferSize {0},
+    m_Offset {0},
+    m_StartAddress {DefaultBaseAddress}
 {
     switch ( arch.id )
     {
     case ArchitectureType::x86:
-        m_MachineMode = ZYDIS_MACHINE_MODE_LONG_COMPAT_32;
+        m_MachineMode  = ZYDIS_MACHINE_MODE_LONG_COMPAT_32;
         m_AddressWidth = ZYDIS_ADDRESS_WIDTH_32;
         break;
 
     case ArchitectureType::x64:
-        m_MachineMode = ZYDIS_MACHINE_MODE_LONG_64;
+        m_MachineMode  = ZYDIS_MACHINE_MODE_LONG_64;
         m_AddressWidth = ZYDIS_ADDRESS_WIDTH_64;
         break;
 
@@ -41,13 +38,13 @@ Disassembler::Disassembler(pwn::Architecture const & arch)
     }
 
     ZyanStatus zStatus = ::ZydisDecoderInit(&m_Decoder, m_ZydisMachineMode, m_ZydisAddressWidth);
-    if(!ZYAN_SUCCESS(zStatus))
+    if ( !ZYAN_SUCCESS(zStatus) )
     {
         return;
     }
 
     zStatus = ::ZydisFormatterInit(&m_Formatter, ZYDIS_FORMATTER_STYLE_INTEL);
-    if(!ZYAN_SUCCESS(zStatus))
+    if ( !ZYAN_SUCCESS(zStatus) )
     {
         return;
     }
@@ -59,31 +56,31 @@ Disassembler::Disassembler(pwn::Architecture const & arch)
 Result<ZydisDecodedInstruction>
 Disassembler::Disassemble(std::vector<u8> const& bytes)
 {
-    if(!m_Valid)
+    if ( !m_Valid )
     {
         return Err(ErrorCode::NotInitialized);
     }
 
-    if(bytes.data() != m_Buffer || bytes.size() != m_BufferSize)
+    if ( bytes.data() != m_Buffer || bytes.size() != m_BufferSize )
     {
-        m_Buffer = bytes.data();
+        m_Buffer     = bytes.data();
         m_BufferSize = bytes.size();
-        m_Offset = 0;
+        m_Offset     = 0;
     }
 
-    if(m_BufferSize < m_Offset)
+    if ( m_BufferSize < m_Offset )
     {
         return Err(ErrorCode::BufferTooSmall);
     }
 
     usize Left = m_BufferSize - m_Offset;
-    if(Left > m_BufferSize)
+    if ( Left > m_BufferSize )
     {
         return Err(ErrorCode::OverflowError);
     }
 
     ZydisDecodedInstruction insn;
-    if ( !ZYAN_SUCCESS(::ZydisDecoderDecodeBuffer(&m_Decoder,&bytes[m_Offset], Left, &insn)) )
+    if ( !ZYAN_SUCCESS(::ZydisDecoderDecodeBuffer(&m_Decoder, &bytes[m_Offset], Left, &insn)) )
     {
         return Err(ErrorCode::ExternalApiCallFailed);
     }
@@ -116,7 +113,6 @@ Disassemble::X86(std::vector<u8> const& bytes)
 }
 
 
-
 void
 Disassemble::X64(std::vector<u8> const& bytes)
 {
@@ -134,14 +130,13 @@ Disassemble::X64(std::vector<u8> const& bytes)
 void
 Disassemble::Print(std::vector<u8> const& bytes)
 {
-    Disassembler dis{pwn::Context.architecture};
+    Disassembler dis {pwn::Context.architecture};
 
     for ( auto const& insn : dis.Disassemble(bytes) )
     {
         ok(L"%s", insn);
     }
-
 }
 } // namespace pwn::Assembly
 
-#endif /* PWN_NO_DISASSEMBLER */
+#endif // PWN_INCLUDE_DISASSEMBLER

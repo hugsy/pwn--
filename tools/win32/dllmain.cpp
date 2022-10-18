@@ -1,10 +1,7 @@
 
 #include "pwn.hpp"
 
-
-using namespace pwn::log;
-using namespace pwn::utils::random;
-using namespace pwn::backdoor;
+namespace utils = pwn::utils::random;
 
 
 void
@@ -13,8 +10,9 @@ OnAttachRoutine()
     //
     // Initialize the RNG
     //
-    pwn::utils::random::seed();
+    utils::random::seed();
 
+#ifdef PWN_INCLUDE_BACKDOOR
     //
     // Start the backdoor thread
     //
@@ -25,13 +23,16 @@ OnAttachRoutine()
             return;
         }
     }
+#endif // PWN_INCLUDE_BACKDOOR
 }
 
 
 void
 OnDetachRoutine()
 {
+#ifdef PWN_INCLUDE_BACKDOOR
     pwn::backdoor::stop();
+#endif // PWN_INCLUDE_BACKDOOR
 }
 
 

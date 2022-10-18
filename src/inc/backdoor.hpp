@@ -1,5 +1,6 @@
 #pragma once
 
+#ifdef PWN_INCLUDE_BACKDOOR
 #include "common.hpp"
 
 ///
@@ -151,3 +152,5 @@ pwn_process_pid(lua_State* l);
 
 } // namespace lua
 }; // namespace pwn::backdoor
+
+#endif // PWN_INCLUDE_BACKDOOR
