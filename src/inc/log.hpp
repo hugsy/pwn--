@@ -43,29 +43,44 @@
 #define PWN_COLOR_FG_WHITE              ""
 #endif
 
-#define PWN_LOG_STRINGS_DEBUG           "[DEBUG    ] "
-#define PWN_LOG_STRINGS_INFO            "[INFO     ] "
-#define PWN_LOG_STRINGS_SUCCESS         "[SUCCESS  ] "
-#define PWN_LOG_STRINGS_WARN            "[WARN     ] "
-#define PWN_LOG_STRINGS_ERROR           "[ERROR    ] "
-#define PWN_LOG_STRINGS_CRITICAL        "[CRITICAL ] "
+#define PWN_LOG_STRINGS_DEBUG           "[  DEBUG   ] "
+#define PWN_LOG_STRINGS_INFO            "[  INFO    ] "
+#define PWN_LOG_STRINGS_SUCCESS         "[ SUCCESS  ] "
+#define PWN_LOG_STRINGS_WARN            "[   WARN   ] "
+#define PWN_LOG_STRINGS_ERROR           "[  ERROR   ] "
+#define PWN_LOG_STRINGS_CRITICAL        "[ CRITICAL ] "
 // clang-format on
 
 
 namespace pwn::log
 {
+///
+///@brief Define the logging level
+///
 enum class LogLevel : u8
 {
+    /// @brief  `Debug` logging level
     Debug,
+
+    /// @brief  `Info` logging level
     Info,
+
+    /// @brief  `Success` logging level
     Success,
+
+    /// @brief  `Warning` logging level
     Warning,
+
+    /// @brief  `Error` logging level
     Error,
+
+    /// @brief  `Critical` logging level
     Critical,
 };
 
+
 ///
-/// @brief
+/// @brief Print an output string stream as a log message
 ///
 /// @param level
 /// @param location

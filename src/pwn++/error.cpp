@@ -23,7 +23,9 @@ Err::Err(ErrorCode ec) :
 #error "noooope"
 #endif
 {
-    err(L"ERROR_{}_{}", (uint32_t)this->code, this->number);
+    std::ostringstream os;
+    os << *this << std::endl;
+    err(os);
 }
 
 bool

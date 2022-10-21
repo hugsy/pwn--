@@ -108,7 +108,6 @@ GetHandle()
         __hModule = LoadLibraryW(L"DbgHelp.dll");
         if ( __hModule && !__hProcess )
         {
-
             // Initialize the function pointers
             {
                 SymSetOptions  = (SymSetOptions_t)::GetProcAddress(__hModule, "SymSetOptions");
@@ -174,6 +173,14 @@ Symbols::EnumerateModules()
 }
 
 
+bool
+EnumSymProcCb(SYMBOL_INFOW* pSymInfo, ULONG SymbolSize, std::vector<SymbolInfo>* ModuleSymbolInfo)
+{
+    ModuleSymbolInfo->push_back(std::move(CreateSymbolInfo(pSymInfo)));
+    return true;
+};
+
+
 Result<std::vector<SymbolInfo>>
 Symbols::EnumerateFromModule(std::wstring_view const& ModuleName, std::wstring_view const& Mask)
 {
@@ -183,14 +190,6 @@ Symbols::EnumerateFromModule(std::wstring_view const& ModuleName, std::wstring_v
         return Err(ErrorCode::NotInitialized);
     }
 
-    std::vector<SymbolInfo> ModuleSymbolInfo;
-    auto EnumSymProc = [&ModuleSymbolInfo](SYMBOL_INFOW* pSymInfo, ULONG SymbolSize, PVOID UserContext) -> bool
-    {
-        UnreferencedParameter(UserContext);
-        ModuleSymbolInfo.push_back(CreateSymbolInfo(pSymInfo));
-        return true;
-    };
-
     u64 BaseOfDll = SymLoadModuleExW(hProcess, nullptr, ModuleName.data(), nullptr, 0, 0, nullptr, 0);
     if ( !BaseOfDll )
     {
@@ -198,7 +197,8 @@ Symbols::EnumerateFromModule(std::wstring_view const& ModuleName, std::wstring_v
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    if ( ::SymEnumSymbolsW(hProcess, BaseOfDll, Mask.data(), &EnumSymProc, nullptr) == FALSE )
+    std::vector<SymbolInfo> ModuleSymbolInfo;
+    if ( ::SymEnumSymbolsW(hProcess, BaseOfDll, Mask.data(), &EnumSymProcCb, &ModuleSymbolInfo) == FALSE )
     {
         log::perror(L"SymEnumSymbolsW()");
         return Err(ErrorCode::ExternalApiCallFailed);
