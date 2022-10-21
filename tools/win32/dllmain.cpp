@@ -1,7 +1,7 @@
 
 #include "pwn.hpp"
 
-namespace utils = pwn::utils::random;
+namespace utils = pwn::utils;
 
 
 void
@@ -20,7 +20,7 @@ OnAttachRoutine()
         auto res = pwn::backdoor::start();
         if ( Failed(res) )
         {
-            return;
+            err(L"Backdoor initialization failed");
         }
     }
 #endif // PWN_INCLUDE_BACKDOOR
@@ -39,8 +39,8 @@ OnDetachRoutine()
 BOOL APIENTRY
 DllMain(_In_ HMODULE hModule, _In_ DWORD ul_reason_for_call, _In_ LPVOID lpReserved)
 {
-    UNREFERENCED_PARAMETER(hModule);
-    UNREFERENCED_PARAMETER(lpReserved);
+    UnreferencedParameter(hModule);
+    UnreferencedParameter(lpReserved);
 
     switch ( ul_reason_for_call )
     {

@@ -275,6 +275,15 @@ p64(_In_ u64 v) -> std::vector<u8>;
 PWNAPI auto
 flatten(const std::vector<flattenable_t>& args) -> std::vector<u8>;
 
+///
+///@brief
+///
+///@param a
+///@param sz
+///@return PWNAPI
+///
+PWNAPI uptr
+align(uptr a, usize sz);
 
 ///
 /// @brief

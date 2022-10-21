@@ -5,6 +5,7 @@
 #include "asm.hpp"
 #include "log.hpp"
 #include "system.hpp"
+#include "utils.hpp"
 
 
 #ifndef __KERNEL_CONSTANTS__
@@ -56,7 +57,9 @@ namespace pwn::windows
 std::vector<u8>
 Kernel::Shellcode::DebugBreak()
 {
-    return std::vector<u8>({0x90, 0x90, 0xcc, 0xcc});
+    std::vector<u8> res(sizeof(uptr));
+    std::fill(res.begin(), res.end(), 0xcc);
+    return res;
 }
 
 
@@ -64,7 +67,8 @@ std::vector<u8>
 Kernel::Shellcode::StealSystemToken()
 {
     const usize sz = CopySystemTokenLength();
-    std::vector<u8> sc(sz);
+    std::vector<u8> sc(pwn::utils::align(sz, 16));
+    std::fill(sc.begin(), sc.end(), 0xcc);
     RtlCopyMemory(sc.data(), &CopySystemToken, sz);
     return sc;
 }
@@ -87,13 +91,13 @@ Kernel::FindBigPoolAddressesFromTag(const u32 Tag)
         std::next(BigPoolInfo->AllocatedInfo, BigPoolInfo->Count),
         [&Pools, &Tag](auto const& P)
         {
-            if ( P.TagUlong == Tag )
+            if ( Tag == 0 || P.TagUlong == Tag )
             {
                 Pools.push_back((uptr)P.VirtualAddress);
             }
         });
 
-    return Pools;
+    return Ok(Pools);
 }
 
 } // namespace pwn::windows

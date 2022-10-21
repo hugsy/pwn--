@@ -147,6 +147,13 @@ GetHandle()
     return __hProcess;
 }
 
+bool
+EnumerateModulesW64Cb(PCWSTR ModuleName, uptr BaseOfDll, std::vector<std::tuple<uptr, std::wstring>>* Modules)
+{
+    Modules->push_back({(uptr)BaseOfDll, std::wstring {ModuleName}});
+    return true;
+};
+
 Result<std::vector<std::tuple<uptr, std::wstring>>>
 Symbols::EnumerateModules()
 {
@@ -155,16 +162,9 @@ Symbols::EnumerateModules()
     {
         return Err(ErrorCode::NotInitialized);
     }
+
     std::vector<std::tuple<uptr, std::wstring>> Modules;
-
-    auto EnumModulesCb = [&Modules](PCWSTR ModuleName, uptr BaseOfDll, PVOID UserContext) -> bool
-    {
-        UnreferencedParameter(UserContext);
-        Modules.push_back({(uptr)BaseOfDll, std::wstring {ModuleName}});
-        return TRUE;
-    };
-
-    if ( SymEnumerateModulesW64(hProcess, &EnumModulesCb, nullptr) == FALSE )
+    if ( SymEnumerateModulesW64(hProcess, &EnumerateModulesW64Cb, &Modules) == FALSE )
     {
         log::perror(L"SymEnumerateModulesW64()");
         return Err(ErrorCode::ExternalApiCallFailed);

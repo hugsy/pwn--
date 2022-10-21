@@ -1,14 +1,10 @@
 #include "log.hpp"
 
-#include "pwn.hpp"
-
 #include <cassert>
 #include <cstdio>
-#include <format>
 #include <iostream>
-#include <string>
-#include <string_view>
-#include <vector>
+
+#include "pwn.hpp"
 
 extern struct GlobalContext Context;
 
@@ -47,6 +43,11 @@ GetPriorityString(const LogLevel level)
 void
 Log(const LogLevel level, std::source_location const& location, std::ostringstream& msg)
 {
+    if ( Context.log_level >= level )
+    {
+        return;
+    }
+
     std::ostringstream prefix;
     prefix << GetPriorityString(level);
 
@@ -69,27 +70,27 @@ GetPriorityWideString(const LogLevel level)
     switch ( level )
     {
     case LogLevel::Debug:
-        return WIDECHAR(PWN_COLOR_BOLD) WIDECHAR(PWN_LOG_STRINGS_DEBUG) WIDECHAR(PWN_COLOR_RESET);
+        return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_LOG_STRINGS_DEBUG) WIDECHAR2(PWN_COLOR_RESET);
 
     case LogLevel::Success:
-        return WIDECHAR(PWN_COLOR_BOLD) WIDECHAR(PWN_COLOR_FG_GREEN) WIDECHAR(PWN_LOG_STRINGS_SUCCESS)
-            WIDECHAR(PWN_COLOR_RESET);
+        return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_GREEN) WIDECHAR2(PWN_LOG_STRINGS_SUCCESS)
+            WIDECHAR2(PWN_COLOR_RESET);
 
     case LogLevel::Info:
-        return WIDECHAR(PWN_COLOR_BOLD) WIDECHAR(PWN_COLOR_FG_CYAN) WIDECHAR(PWN_LOG_STRINGS_INFO)
-            WIDECHAR(PWN_COLOR_RESET);
+        return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_CYAN) WIDECHAR2(PWN_LOG_STRINGS_INFO)
+            WIDECHAR2(PWN_COLOR_RESET);
 
     case LogLevel::Warning:
-        return WIDECHAR(PWN_COLOR_BOLD) WIDECHAR(PWN_COLOR_FG_YELLOW) WIDECHAR(PWN_LOG_STRINGS_WARN)
+        return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_YELLOW) WIDECHAR2(PWN_LOG_STRINGS_WARN)
             WIDECHAR(PWN_COLOR_RESET);
 
     case LogLevel::Error:
-        return WIDECHAR(PWN_COLOR_BOLD) WIDECHAR(PWN_COLOR_FG_RED) WIDECHAR(PWN_LOG_STRINGS_ERROR)
-            WIDECHAR(PWN_COLOR_RESET);
+        return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_RED) WIDECHAR2(PWN_LOG_STRINGS_ERROR)
+            WIDECHAR2(PWN_COLOR_RESET);
 
     case LogLevel::Critical:
-        return WIDECHAR(PWN_COLOR_BOLD) WIDECHAR(PWN_COLOR_FG_MAGENTA) WIDECHAR(PWN_LOG_STRINGS_CRITICAL)
-            WIDECHAR(PWN_COLOR_RESET);
+        return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_MAGENTA) WIDECHAR2(PWN_LOG_STRINGS_CRITICAL)
+            WIDECHAR2(PWN_COLOR_RESET);
 
     default:
         return L"";
@@ -100,7 +101,7 @@ GetPriorityWideString(const LogLevel level)
 void
 Log(const LogLevel level, std::source_location const& location, std::wostringstream& msg)
 {
-    if(Context.log_level < level)
+    if ( Context.log_level >= level )
     {
         return;
     }

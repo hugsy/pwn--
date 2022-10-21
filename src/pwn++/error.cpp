@@ -27,6 +27,18 @@ Err::Err(ErrorCode ec) :
 }
 
 bool
+ErrorType::operator==(const ErrorType& rhs) const
+{
+    return this->code == rhs.code && this->number == rhs.number;
+}
+
+bool
+ErrorType::operator==(ErrorCode code) const
+{
+    return this->code == code;
+}
+
+bool
 Err::operator==(const Err& rhs) const
 {
     return this->code == rhs.code;

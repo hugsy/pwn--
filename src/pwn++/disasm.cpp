@@ -1,10 +1,11 @@
-#ifdef PWN_INCLUDE_DISASSEMBLER
 #include "disasm.hpp"
 
-namespace log = pwn::log;
+#include "pwn.hpp"
+
+
+#ifdef PWN_INCLUDE_DISASSEMBLER
 
 extern struct pwn::GlobalContext pwn::Context;
-
 
 namespace pwn::Assembly
 {
@@ -17,8 +18,7 @@ Disassembler::Disassembler(Architecture const& arch) :
     m_Valid {false},
     m_Buffer {nullptr},
     m_BufferSize {0},
-    m_Offset {0},
-    m_StartAddress {DefaultBaseAddress}
+    m_BufferOffset {0}
 {
     switch ( arch.id )
     {
@@ -37,7 +37,7 @@ Disassembler::Disassembler(Architecture const& arch) :
         return;
     }
 
-    ZyanStatus zStatus = ::ZydisDecoderInit(&m_Decoder, m_ZydisMachineMode, m_ZydisAddressWidth);
+    ZyanStatus zStatus = ::ZydisDecoderInit(&m_Decoder, m_MachineMode, m_AddressWidth);
     if ( !ZYAN_SUCCESS(zStatus) )
     {
         return;
@@ -52,8 +52,18 @@ Disassembler::Disassembler(Architecture const& arch) :
     m_Valid = true;
 }
 
+void
+Disassembler::SetOffset(usize newOffset)
+{
+    if ( newOffset > m_BufferSize )
+    {
+        return;
+    }
 
-Result<ZydisDecodedInstruction>
+    m_BufferOffset = newOffset;
+}
+
+Result<Instruction>
 Disassembler::Disassemble(std::vector<u8> const& bytes)
 {
     if ( !m_Valid )
@@ -63,80 +73,135 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
 
     if ( bytes.data() != m_Buffer || bytes.size() != m_BufferSize )
     {
-        m_Buffer     = bytes.data();
+        m_Buffer     = (u8*)bytes.data();
         m_BufferSize = bytes.size();
-        m_Offset     = 0;
+        SetOffset(0);
     }
 
-    if ( m_BufferSize < m_Offset )
+    if ( m_BufferSize < m_BufferOffset )
     {
         return Err(ErrorCode::BufferTooSmall);
     }
 
-    usize Left = m_BufferSize - m_Offset;
+    usize Left = m_BufferSize - m_BufferOffset;
     if ( Left > m_BufferSize )
     {
         return Err(ErrorCode::OverflowError);
     }
 
+    if ( Left == 0 )
+    {
+        return Err(ErrorCode::NoMoreData);
+    }
+
     ZydisDecodedInstruction insn;
-    if ( !ZYAN_SUCCESS(::ZydisDecoderDecodeBuffer(&m_Decoder, &bytes[m_Offset], Left, &insn)) )
+    if ( !ZYAN_SUCCESS(::ZydisDecoderDecodeBuffer(&m_Decoder, &bytes[m_BufferOffset], Left, &insn)) )
     {
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    m_Offset += insn.length;
+    m_BufferOffset += insn.length;
 
     return Ok(insn);
 }
 
+Result<std::vector<Instruction>>
+Disassembler::DisassembleAll(std::vector<u8> const& Bytes)
+{
+    std::vector<Instruction> insns;
+
+    while ( true )
+    {
+        auto res = Disassemble(Bytes);
+        if ( Failed(res) )
+        {
+            auto e = Error(res);
+            if ( e == ErrorCode::NoMoreData )
+            {
+                break;
+            }
+
+            return Err(e.code);
+        }
+
+        auto insn = Value(res);
+        insns.push_back(std::move(insn));
+    }
+
+    return Ok(insns);
+}
+
 
 Result<std::string>
-Disassemble::Format(ZydisDecodedInstruction const& insn)
+Disassembler::Format(Instruction const& insn, uptr Address)
 {
-    std::string buffer;
-    buffer.resize(256);
+    char buffer[1024] = {0};
 
-    if ( !ZYAN_SUCCESS(::ZydisFormatterFormatInstruction(&m_Formatter, insn, buffer.data(), buffer.size(), m_StartAddress+m_Offset))
+    if ( !ZYAN_SUCCESS(::ZydisFormatterFormatInstruction(&m_Formatter, &insn, buffer, sizeof(buffer), Address)) )
     {
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    return Ok(buffer);
+    return Ok(std::string(buffer));
 }
 
 
-void
-Disassemble::X86(std::vector<u8> const& bytes)
+Result<std::vector<std::string>>
+Disassembler::Format(std::vector<Instruction> const& insns, uptr addr)
 {
-    // return print_disassembled_code(ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_ADDRESS_WIDTH_32, code, code_size);
-}
+    std::vector<std::string> insns_str;
+    uptr current_addr = addr;
 
-
-void
-Disassemble::X64(std::vector<u8> const& bytes)
-{
-    // return print_disassembled_code(ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64, code, code_size);
-}
-
-
-///
-/// @brief Generic function for disassemble code based on the context
-///
-/// @param [in] code a vector of bytes to disassemble
-///
-/// @return
-///
-void
-Disassemble::Print(std::vector<u8> const& bytes)
-{
-    Disassembler dis {pwn::Context.architecture};
-
-    for ( auto const& insn : dis.Disassemble(bytes) )
+    for ( auto const& insn : insns )
     {
-        ok(L"%s", insn);
+        auto res = Format(insn, current_addr);
+        if ( Failed(res) )
+        {
+            break;
+        }
+
+        current_addr += insn.length;
+        insns_str.push_back(Value(res));
+    }
+
+    return Ok(insns_str);
+}
+
+
+void
+Disassembler::Print(std::vector<u8> const& bytes, std::optional<Architecture> arch)
+{
+    auto disArch = arch.value_or(pwn::Context.architecture);
+    Disassembler dis {disArch};
+    auto res = dis.DisassembleAll(bytes);
+    if ( Success(res) )
+    {
+        auto const& insns = Value(res);
+        for ( auto const& insn : insns )
+        {
+            auto fmtInsn = dis.Format(insn, DefaultBaseAddress);
+            if ( Success(fmtInsn) )
+            {
+                std::cout << Value(fmtInsn) << std::endl;
+            }
+        }
     }
 }
+
+
+void
+Disassembler::X86(std::vector<u8> const& bytes)
+{
+    return Disassembler::Print(bytes, Architectures[1].second);
+}
+
+
+void
+Disassembler::X64(std::vector<u8> const& bytes)
+{
+    return Disassembler::Print(bytes, Architectures[0].second);
+}
+
 } // namespace pwn::Assembly
 
 #endif // PWN_INCLUDE_DISASSEMBLER

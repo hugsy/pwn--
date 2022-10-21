@@ -48,27 +48,39 @@ enum class ErrorCode : uint32_t
     ///@brief Indicates the object initialization has not been completed properly
     ///
     NotInitialized,
-    ServiceError,
-    FilesystemError,
-    AlpcError,
-    ExternalApiCallFailed,
 
     ///
     ///@brief Object initialization (typically constructor) has failed
     ///
     InitializationFailed,
 
+    ServiceError,
+    FilesystemError,
+    AlpcError,
+
     ///
-    ///@brief Typically used for external API call failures
+    ///@brief Typically used when errors occured outside of the scope of pwn++
     ///
     ExternalError,
+
+    ///
+    ///@brief Typically used for OS (Linux, Win32) API call failures
+    ///
+    ExternalApiCallFailed,
 
     ///
     ///@brief Indicates that the operation succeeded, but no more data is available.
     ///
     NoMoreData,
 
+    ///
+    ///@brief The operation succeeded partially
+    ///
     PartialResult,
+
+    ///
+    ///@brief Version mismatch between expected vs provided
+    ///
     BadVersion,
 };
 
@@ -79,6 +91,12 @@ struct ErrorType
 {
     ErrorCode code;
     uint32_t number;
+
+    bool
+    operator==(const ErrorType& rhs) const;
+
+    bool
+    operator==(ErrorCode code) const;
 
     friend std::wostream&
     operator<<(std::wostream& wos, ErrorType const& e)

@@ -42,10 +42,12 @@ using u64 = uint64_t;
 #if defined(PWN_BUILD_FOR_WINDOWS)
 using uptr  = ULONG_PTR;
 using usize = SIZE_T;
+using ssize = SSIZE_T;
 
 #elif defined(PWN_BUILD_FOR_LINUX)
 using uptr  = uintptr_t;
 using usize = size_t;
+using ssize = ssize_t;
 
 #endif
 
@@ -109,7 +111,7 @@ auto inline GetProcAddressWrapper(M hMod, std::string_view const& lpszProcName)
 
 ///
 /// @brief A constexpr map
-/// @link https://xuhuisun.com/post/c++-weekly-2-constexpr-map/
+/// @ref https://xuhuisun.com/post/c++-weekly-2-constexpr-map/
 ///
 /// @tparam Key
 /// @tparam Value
@@ -144,7 +146,7 @@ struct CMap
 
 ///
 /// @brief A constexpr generic buffer
-/// @link https://www.cppstories.com/2021/constexpr-new-cpp20/
+/// @ref https://www.cppstories.com/2021/constexpr-new-cpp20/
 ///
 /// @tparam T
 ///

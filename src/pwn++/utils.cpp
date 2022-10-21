@@ -502,6 +502,13 @@ string_to_bytes(_In_ std::string_view const& str) -> std::vector<u8>
 }
 
 
+uptr
+align(uptr a, usize sz)
+{
+    return (a + sz - 1) & (~(sz - 1));
+}
+
+
 /**
  * @brief Create a DeBruijn cyclic pattern
  *
