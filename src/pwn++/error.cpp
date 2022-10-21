@@ -26,11 +26,13 @@ Err::Err(ErrorCode ec) :
 #if defined(PWN_BUILD_FOR_WINDOWS)
     std::wostringstream os;
     os << *this;
+    os << L" : " << this->Code();
     if ( this->number )
     {
         os << L" - " << this->LastError();
     }
     os << std::endl;
+
 #elif defined(PWN_BUILD_FOR_LINUX)
     std::ostringstream os;
     os << *this << std::endl;
@@ -42,7 +44,7 @@ Err::Err(ErrorCode ec) :
 std::wstring
 ErrorType::Code()
 {
-    return L"";
+    return pwn::log::FormatErrorCode(this->code);
 }
 
 

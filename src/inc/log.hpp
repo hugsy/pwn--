@@ -139,6 +139,17 @@ Log(const LogLevel level, std::source_location const& location, std::wstring_vie
     Log(level, location, msg);
 }
 
+
+///
+///@brief
+///
+///@param code
+///@return std::wstring
+///
+std::wstring PWNAPI
+FormatErrorCode(ErrorCode const& code);
+
+
 ///
 ///@brief
 ///
