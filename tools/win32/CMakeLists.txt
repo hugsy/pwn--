@@ -14,6 +14,7 @@ set(
     ExploitTemplate
     HexdumpFile
     ProcessReparent
+    SyscallTrace
 )
 
 if(PWN_INCLUDE_BACKDOOR)

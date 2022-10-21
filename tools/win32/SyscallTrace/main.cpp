@@ -1,7 +1,7 @@
 ///
 /// @file SyscallTrace.cpp
 ///
-/// @author hugsy (hugsy [AT] blah [DOT] cat)
+/// @author @hugsy
 ///
 /// @brief Basic syscall tracer based on ProcessInstrumentationCallback
 ///
@@ -10,79 +10,78 @@
 
 #include <pwn.hpp>
 
-#pragma comment(lib, "Dbghelp.lib")
-#include <Dbghelp.h>
-
-#ifndef ProcessInstrumentationCallback
-#define ProcessInstrumentationCallback ((PROCESS_INFORMATION_CLASS)40)
-#endif // ProcessInstrumentationCallback
-
-typedef struct _PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION
-{
-    ULONG Version;
-    ULONG Reserved;
-    PVOID Callback;
-} PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION, *PPROCESS_INSTRUMENTATION_CALLBACK_INFORMATION;
-
-extern "C" PTEB
+EXTERN_C_START
+PTEB
 NtCurrentTeb();
 
-IMPORT_EXTERNAL_FUNCTION(
-    L"ntdll.dll",
-    NtSetInformationProcess,
-    NTSTATUS,
-    HANDLE ProcessHandle,
-    PROCESS_INFORMATION_CLASS ProcessInformationClass,
-    PVOID ProcessInformation,
-    ULONG ProcessInformationLength);
-
-bool
-InstallInstrumentationCallback(const HANDLE hProcess, const PVOID CallbackRoutine)
-{
-    PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION Callback = {0};
-    Callback.Version                                      = 0;
-    Callback.Reserved                                     = 0;
-    Callback.Callback                                     = CallbackRoutine;
-
-    return NT_SUCCESS(NtSetInformationProcess(hProcess, ProcessInstrumentationCallback, &Callback, sizeof(Callback)));
-}
+void
+Trampoline();
+EXTERN_C_END
 
 static bool bKeepActive            = false;
 static bool bHasInitializedSymbols = false;
 
+EXTERN_C
 void
-InstrumentationHook(PCONTEXT Context)
+InstrumentationHook(uptr PreviousPc, uptr PreviousRetcode, uptr PreviousSp, uptr NextPc)
 {
-    //
-    // +0x2d0 InstrumentationCallbackSp : Uint8B
-    // +0x2d8 InstrumentationCallbackPreviousPc : Uint8B
-    // +0x2e0 InstrumentationCallbackPreviousSp : Uint8B
-    // +0x2ec InstrumentationCallbackDisabled : UChar
-    //
-    PBYTE teb        = reinterpret_cast<PBYTE>(::NtCurrentTeb());
-    bool is_disabled = (teb[0x2ec] == 1);
-    Context->Rip     = *((uptr*)(teb + 0x02D8));
-    Context->Rsp     = *((uptr*)(teb + 0x02E0));
-    Context->Rcx     = Context->R10;
+    static bool bAlreadyInCallback = false;
 
-
-    if ( is_disabled == false )
+    if ( !bAlreadyInCallback )
     {
-        //
-        // Disable instrumentation to avoid endless recursive loop
-        //
-        teb[0x2ec] = 1;
-    }
-    else
-    {
-        //
-        // On 2nd call, restore flag to allow further processing
-        //
-        teb[0x2ec] = 0;
-    }
+        bAlreadyInCallback                   = true;
+        PTEB Teb                             = reinterpret_cast<PTEB>(::NtCurrentTeb());
+        Teb->InstrumentationCallbackDisabled = 1;
+        // Teb->InstrumentationCallbackPreviousPc = PreviousPc;
+        // Teb->InstrumentationCallbackPreviousSp = PreviousSp;
 
-    ::RtlRestoreContext(Context, nullptr);
+        CONTEXT Context {0};
+        ::RtlCaptureContext(&Context);
+
+
+        const bool bIsDisabled = (Teb->InstrumentationCallbackDisabled == 1);
+        Context.Rip            = *((uptr*)(Teb->InstrumentationCallbackPreviousPc));
+        Context.Rsp            = *((uptr*)(Teb->InstrumentationCallbackPreviousSp));
+        Context.Rcx            = Context.R10;
+
+
+        if ( bIsDisabled == false )
+        {
+            //
+            // Disable instrumentation to avoid endless recursive loop
+            //
+            Teb->InstrumentationCallbackDisabled = 1;
+
+
+            //
+            // On 2nd call, restore flag to allow further processing
+            //
+            Teb->InstrumentationCallbackDisabled = 0;
+        }
+
+        ::RtlRestoreContext(&Context, nullptr);
+        bAlreadyInCallback = false;
+    }
 }
+
+
+bool
+ConsoleCtrlHandler(DWORD signum)
+{
+    switch ( signum )
+    {
+    case CTRL_C_EVENT:
+        dbg(L"Stopping...\n");
+        bKeepActive = false;
+        break;
+
+    default:
+        break;
+    }
+
+    return true;
+}
+
 
 auto
 wmain(const int argc, const wchar_t** argv) -> int
@@ -91,75 +90,82 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     const auto target_process = (argc >= 2) ? std::wstring(argv[1]) : std::wstring(L"notepad.exe");
 
-    dbg(L"targetting {}", target_process);
+    dbg(L"Looking for '{}'...", target_process);
 
     //
     // Look for the process
     //
-    // u32 pid = -1;
-    // {
-    //     auto res = pwn::windows::system::PidOf(target_process);
-    //     if ( !Success(res) )
-    //     {
-    //         err(L"failed to find PID of '{}'", target_process);
-    //         return EXIT_FAILURE;
-    //     }
+    u32 pid = -1;
+    {
+        auto res = pwn::windows::System::PidOf(target_process);
+        if ( Failed(res) )
+        {
+            err(L"Failed to find PID of '{}'", target_process);
+            return EXIT_FAILURE;
+        }
 
-    //     auto const& pids = Value(res);
-    //     if ( pids.size() == 0 )
-    //     {
-    //         err(L"empty set of  PIDs named '{}'", target_process);
-    //         return EXIT_FAILURE;
-    //     }
-    //     pid = pids.front();
-    //     info(L"found '{}' with pid={}", target_process, pid);
-    // }
+        auto const& pids = Value(res);
+        if ( pids.size() == 0 )
+        {
+            err(L"No process named '{}' found", target_process);
+            return EXIT_FAILURE;
+        }
+        pid = pids.front();
+        info(L"Found '{}' with pid={}", target_process, pid);
+    }
 
+    pid = ::GetCurrentProcessId();
+
+
+    pwn::windows::Process Process {pid};
+    if ( !Process.IsValid() )
+    {
+        return EXIT_FAILURE;
+    }
+
+    //
+    // NtSetInformationProcess() requires to have PROCESS_SET_INFORMATION
+    //
+    if ( Failed(Process.ReOpenProcessWith(PROCESS_SET_INFORMATION)) )
+    {
+        return EXIT_FAILURE;
+    }
+
+    const pwn::SharedHandle hProcess = Process.Handle();
+    ok(L"Got handle with PROCESS_SET_INFORMATION to {} -> {:p}", target_process, hProcess->get());
 
     //
     // Install the instrumentation callback
     //
+    dbg(L"Trying to install the instrumentation callback...");
     {
-        auto hProcess = pwn::UniqueHandle(::OpenProcess(PROCESS_ALL_ACCESS, false, ::GetCurrentProcessId()));
-        if ( hProcess )
+        PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION Callback {};
+        Callback.Version  = 0;
+        Callback.Reserved = 0;
+        Callback.Callback = Trampoline;
+
+        NTSTATUS Status =
+            ::NtSetInformationProcess(hProcess->get(), ProcessInstrumentationCallback, &Callback, sizeof(Callback));
+
+        if ( !NT_SUCCESS(Status) )
         {
-            ok(L"got handle to {} -> {:p}", target_process, hProcess.get());
-
-            if ( false == InstallInstrumentationCallback(hProcess.get(), InstrumentationHook) )
-            {
-                err(L"InstallInstrumentationCallback() failed");
-                return EXIT_FAILURE;
-            }
-            ok(L"installed callback");
-
-            // ::SymSetOptions(SYMOPT_UNDNAME);
-            // ::SymInitialize(hProcess.get(), nullptr, true);
-            // ok(L"initialized symbols");
-
-            /*
-            ::SetConsoleCtrlHandler(
-                (PHANDLER_ROUTINE)[&hProcess](DWORD signum)->bool {
-                    switch ( signum )
-                    {
-                    case CTRL_C_EVENT:
-                        dbg(L"Stopping...\n");
-                        bKeepActive = false;
-                        break;
-
-                    default:
-                        break;
-                    }
-
-                    return true;
-                },
-                true);
-            */
-
-            bKeepActive = true;
-
-            ::WaitForSingleObject(hProcess.get(), INFINITE);
+            pwn::log::ntperror(L"NtSetInformationProcess()", Status);
+            return EXIT_FAILURE;
         }
+
+        ok(L"Callback installed!");
     }
 
-    return EXIT_SUCCESS;
+    //
+    // Wait for Ctrl-C or target process to finish
+    //
+    if ( ::SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleCtrlHandler, true) == FALSE )
+    {
+        pwn::log::perror(L"SetConsoleCtrlHandler()");
+        return EXIT_FAILURE;
+    }
+
+    bKeepActive = true;
+
+    return ::WaitForSingleObject(hProcess->get(), INFINITE) == WAIT_OBJECT_0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

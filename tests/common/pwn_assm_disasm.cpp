@@ -53,6 +53,24 @@ TEST_CASE("Disassemble", "[pwn::Assembly]")
             auto const& insns = Value(res);
             REQUIRE(insns.size() == 4);
         }
+
+        // disassemble until int3
+        {
+            auto WantedArch = Architecture::Find("x64");
+            pwn::Assembly::Disassembler d {WantedArch};
+
+            d.SetOffset(0);
+            auto res = d.DisassembleUntil(
+                code,
+                [](auto const& i)
+                {
+                    return i.mnemonic == ZydisMnemonic::ZYDIS_MNEMONIC_INT3;
+                });
+            REQUIRE(Success(res));
+
+            auto const& insns = Value(res);
+            REQUIRE(insns.size() == 2);
+        }
     }
 
     SECTION("x86")
