@@ -146,6 +146,12 @@ struct ErrorType
         os << "ErrorType(Code=" << (uint32_t)e.code << ", GLE=" << (uint32_t)e.number << ")";
         return os;
     }
+
+    std::wstring
+    Code();
+
+    std::wstring
+    LastError();
 };
 
 template<class T>

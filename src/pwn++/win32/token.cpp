@@ -42,7 +42,6 @@ Token::ReOpenTokenWith(const DWORD DesiredAccess)
 
     if ( bRes == FALSE || !hToken )
     {
-        log::perror(L"OpenToken()");
         return Err(ErrorCode::PermissionDenied);
     }
 

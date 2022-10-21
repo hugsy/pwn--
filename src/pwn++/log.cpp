@@ -121,31 +121,30 @@ Log(const LogLevel level, std::source_location const& location, std::wostringstr
 }
 
 
-///
-/// @brief perror() style of function for Windows
-///
-/// @param [in] prefix
-///
-void PWNAPI
-perror(const std::wstring_view& prefix)
+std::wstring
+FormatLastError(const u32 gle)
 {
-    const u32 sysMsgSz = 1024;
-    auto sysMsg        = std::wstring();
-    sysMsg.reserve(sysMsgSz);
-    const auto eNum = ::GetLastError();
+    wchar_t msg[1024] = {0};
 
     ::FormatMessageW(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
         nullptr,
-        eNum,
+        gle,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        sysMsg.data(),
-        sysMsgSz,
+        msg,
+        __countof(msg),
         nullptr);
 
-    const usize max_len  = ::wcslen((wchar_t*)sysMsg.c_str());
-    const auto sysMsgStr = std::wstring_view(sysMsg.c_str(), max_len);
-    err(L"{}, errcode={:#x}: {}", prefix, eNum, sysMsgStr);
+    return std::wstring(msg);
+}
+
+
+void PWNAPI
+perror(const std::wstring_view& prefix)
+{
+    const auto eNum = ::GetLastError();
+    auto msg        = FormatLastError(eNum);
+    err(L"{}, errcode={:#x}: {}", prefix, eNum, msg.c_str());
 }
 
 

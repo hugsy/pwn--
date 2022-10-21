@@ -139,6 +139,15 @@ Log(const LogLevel level, std::source_location const& location, std::wstring_vie
     Log(level, location, msg);
 }
 
+///
+///@brief
+///
+///@param gle
+///@return std::wstring
+///
+std::wstring PWNAPI
+FormatLastError(const u32 gle);
+
 
 ///
 /// @brief Basic equivalent of Linux Glibc's `perror`

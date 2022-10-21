@@ -60,7 +60,7 @@ Process::Memory::Read(uptr const Address, usize Length)
 {
     if ( !m_Process || !m_ProcessHandle )
     {
-        return Err(ErrorCode::InitializationFailed);
+        return Err(ErrorCode::NotInitialized);
     }
 
     auto out = std::vector<u8>(Length);
@@ -72,8 +72,7 @@ Process::Memory::Read(uptr const Address, usize Length)
              Length,
              &dwNbRead) == false )
     {
-        log::perror(L"ReadProcessMemory()");
-        return Err(ErrorCode::RuntimeError);
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
     return Ok(out);
@@ -92,7 +91,7 @@ Process::Memory::Write(uptr const Address, std::vector<u8> data)
 {
     if ( !m_Process || !m_ProcessHandle )
     {
-        return Err(ErrorCode::InitializationFailed);
+        return Err(ErrorCode::NotInitialized);
     }
 
     usize dwNbWritten;
@@ -103,8 +102,7 @@ Process::Memory::Write(uptr const Address, std::vector<u8> data)
              data.size(),
              &dwNbWritten) != false )
     {
-        log::perror(L"WriteProcessMemory()");
-        return Err(ErrorCode::RuntimeError);
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
     return Ok(dwNbWritten);
@@ -115,7 +113,7 @@ Process::Memory::Allocate(const size_t Size, const wchar_t Permission[3], const 
 {
     if ( !m_Process || !m_ProcessHandle )
     {
-        return Err(ErrorCode::InitializationFailed);
+        return Err(ErrorCode::NotInitialized);
     }
 
     u32 flProtect = 0;
@@ -144,7 +142,6 @@ Process::Memory::Allocate(const size_t Size, const wchar_t Permission[3], const 
         flProtect ? flProtect : PAGE_GUARD);
     if ( buffer == 0u )
     {
-        log::perror(L"VirtualAllocEx()");
         return Err(ErrorCode::AllocationError);
     }
 
