@@ -5,66 +5,43 @@ set(PWNLIB_TEST_DIR ${PWNLIB_ROOT_DIR}/tests CACHE INTERNAL "PWNLIB_TEST_DIR")
 
 enable_testing()
 
-set(COMMON_TEST_DIR ${PWNLIB_TEST_DIR})
-
-set(
-    SOURCE_FILES
-
-    ${COMMON_TEST_DIR}/main.cpp
-    ${COMMON_TEST_DIR}/pwn_utils.cpp
-    ${COMMON_TEST_DIR}/pwn_crypto.cpp
-    ${COMMON_TEST_DIR}/pwn_assm_disasm.cpp
-)
+set(TEST_CATEGORIES common)
 
 if(MSVC)
-    set(TEST_DIR ${COMMON_TEST_DIR}/win32)
-    set(
-        SOURCE_FILES
-
-        ${SOURCE_FILES}
-        ${TEST_DIR}/pwn_win_system.cpp
-        ${TEST_DIR}/pwn_win_process.cpp
-        ${TEST_DIR}/pwn_win_thread.cpp
-        ${TEST_DIR}/pwn_win_token.cpp
-        ${TEST_DIR}/pwn_win_object.cpp
-        ${TEST_DIR}/pwn_win_symbols.cpp
-    )
+    set(TEST_CATEGORIES ${TEST_CATEGORIES} win32)
 else()
-    set(TEST_DIR ${COMMON_TEST_DIR}/linux)
-    set(
-        SOURCE_FILES
-
-        ${SOURCE_FILES}
-        ${TEST_DIR}/pwn_linux_system.cpp
-    )
+    set(TEST_CATEGORIES ${TEST_CATEGORIES} linux)
 endif(MSVC)
 
-add_executable(tests ${SOURCE_FILES})
-add_dependencies(tests pwn++)
+foreach(CATEGORY ${TEST_CATEGORIES})
+    set(EXE_NAME tests-${CATEGORY})
+    set(DIR_NAME ${PWNLIB_TEST_DIR}/${CATEGORY})
+    file(GLOB TEST_FILES ${DIR_NAME}/*.cpp)
+    set(SOURCE_FILES ${TEST_FILES} ${PWNLIB_TEST_DIR}/main.cpp)
 
-set_target_properties(tests PROPERTIES CXX_STANDARD 20)
-target_compile_features(tests PUBLIC cxx_std_20)
+    add_executable(${EXE_NAME} ${SOURCE_FILES})
+    add_dependencies(${EXE_NAME} ${CMAKE_PROJECT_NAME})
 
-target_compile_options(tests PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_OPTIONS>)
-target_compile_definitions(tests PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_DEFINITIONS>)
-target_include_directories(tests PRIVATE ${TEST_DIR} $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INCLUDE_DIRECTORIES>)
+    set_target_properties(${EXE_NAME} PROPERTIES CXX_STANDARD 20)
+    target_compile_features(${EXE_NAME} PUBLIC cxx_std_20)
 
-target_link_libraries(tests PRIVATE $<TARGET_LINKER_FILE:${CMAKE_PROJECT_NAME}> $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_LINK_LIBRARIES>)
-target_link_options(tests PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_LINK_OPTIONS> /SUBSYSTEM:Console)
+    target_compile_options(${EXE_NAME} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_OPTIONS>)
+    target_compile_definitions(${EXE_NAME} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_DEFINITIONS>)
+    target_include_directories(${EXE_NAME} PRIVATE ${PWNLIB_TEST_DIR} ${DIR_NAME} $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INCLUDE_DIRECTORIES>)
 
-if(MSVC)
-    target_compile_definitions(tests PRIVATE CATCH_CONFIG_NO_WINDOWS_SEH)
-else()
-    target_compile_definitions(tests PRIVATE _GNU_SOURCE=1)
-endif(MSVC)
+    target_link_libraries(${EXE_NAME} PRIVATE $<TARGET_LINKER_FILE:${CMAKE_PROJECT_NAME}> $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_LINK_LIBRARIES>)
+    target_link_options(${EXE_NAME} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_LINK_OPTIONS> /SUBSYSTEM:Console)
 
-add_test(
-    NAME tests
-    COMMAND $<TARGET_FILE:tests>
-)
+    if(MSVC)
+        target_compile_definitions(${EXE_NAME} PRIVATE CATCH_CONFIG_NO_WINDOWS_SEH)
+    else()
+        target_compile_definitions(${EXE_NAME} PRIVATE _GNU_SOURCE=1)
+    endif(MSVC)
 
-add_custom_command(
-    TARGET tests POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    $<TARGET_FILE:pwn++> $<TARGET_FILE_DIR:tests>
-)
+    add_test(NAME ${EXE_NAME} COMMAND $<TARGET_FILE:${EXE_NAME}>)
+
+    add_custom_command(TARGET ${EXE_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:${CMAKE_PROJECT_NAME}> $<TARGET_FILE_DIR:${EXE_NAME}>
+    )
+endforeach()

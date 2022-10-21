@@ -1,6 +1,5 @@
+#include <catch.hpp>
 #include <pwn.hpp>
-
-#include "./catch.hpp"
 
 
 #if defined(PWN_INCLUDE_ASSEMBLER)

@@ -1,6 +1,6 @@
 #include <pwn.hpp>
 
-#include "./catch.hpp"
+#include "../catch.hpp"
 #define NS "pwn::utils"
 
 #include <iostream>

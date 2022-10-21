@@ -25,8 +25,7 @@ Err::Err(ErrorCode ec) :
 {
 #if defined(PWN_BUILD_FOR_WINDOWS)
     std::wostringstream os;
-    os << *this;
-    os << L" : " << this->Code();
+    os << *this << L" : " << this->Code();
     if ( this->number )
     {
         os << L" - " << this->LastError();

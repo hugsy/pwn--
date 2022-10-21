@@ -1,6 +1,6 @@
 #include <pwn.hpp>
 
-#include "./catch.hpp"
+#include "../catch.hpp"
 #define NS "pwn::crypto"
 
 static std::vector<u8> data {0x41, 0x42, 0x43, 0x44};
