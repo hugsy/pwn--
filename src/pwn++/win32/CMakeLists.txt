@@ -11,6 +11,12 @@ set(ASM_X86_DIR ${SOURCE_DIR}/asm/x86)
 set(ASM_X64_DIR ${SOURCE_DIR}/asm/x64)
 
 #
+# ASM_ARMASM is sched. for 3.26
+# see - https://gitlab.kitware.com/cmake/cmake/-/merge_requests/7793
+#
+# set(ASM_ARM64_DIR ${SOURCE_DIR}/asm/arm64)
+
+#
 # Source files
 #
 set(
@@ -57,6 +63,9 @@ set(
 
     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${ASM_X86_DIR}/get_teb.asm>
     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${ASM_X86_DIR}/copy_system_token.asm>
+
+    # $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>:${ASM_ARM64_DIR}/get_teb.asm>
+    # $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>:${ASM_ARM64_DIR}/copy_system_token.asm>
 )
 
 if(PWN_ENABLE_LUA_BACKDOOR)
@@ -79,18 +88,18 @@ target_compile_definitions(
     ${PROJECT_NAME}
     PUBLIC
     _UNICODE UNICODE
-    $<$<CONFIG:Debug>:_DISABLE_VECTOR_ANNOTATION _DISABLE_STRING_ANNOTATION >
 
     PRIVATE
+    $<$<CONFIG:Debug>:_DISABLE_VECTOR_ANNOTATION _DISABLE_STRING_ANNOTATION >
 )
 
 target_compile_options(
     ${PROJECT_NAME}
     PUBLIC
     $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
-    $<$<CONFIG:Debug>:/fsanitize=address>
 
     PRIVATE
+    $<$<CONFIG:Debug>:/fsanitize=address>
     /diagnostics:caret /Zl /ZH:SHA_256
     $<IF:$<CONFIG:Debug>,/sdl /WX /Gy /Gm- /permissive-,/WX /Zi /Zf /Gm /Gm- /permissive- >
 )

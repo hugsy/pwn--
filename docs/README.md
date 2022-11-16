@@ -1,6 +1,10 @@
 # pwn++
 
 <p align="center">
+  <img src="https://i.imgur.com/39XyWFo.png" alt="logo" title="logo pwn++" />
+</p>
+
+<p align="center">
 
   <a href="https://github.dev/hugsy/pwn--">
     <img alt="Read Code" src="https://img.shields.io/badge/Code-Read%20pwn++-brightgreen?logo=visualstudiocode" />

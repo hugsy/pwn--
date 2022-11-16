@@ -18,32 +18,23 @@ void
 Trampoline();
 EXTERN_C_END
 
-static bool bKeepActive            = false;
-static bool bHasInitializedSymbols = false;
+static bool bKeepActive = false;
+
 
 EXTERN_C
 void
-InstrumentationHook(uptr PreviousPc, uptr PreviousRetcode, uptr PreviousSp, uptr NextPc)
+InstrumentationHook(PCONTEXT Context)
 {
     static bool bAlreadyInCallback = false;
 
-    if ( !bAlreadyInCallback )
+    if ( bAlreadyInCallback == false )
     {
-        bAlreadyInCallback                   = true;
-        PTEB Teb                             = reinterpret_cast<PTEB>(::NtCurrentTeb());
-        Teb->InstrumentationCallbackDisabled = 1;
-        // Teb->InstrumentationCallbackPreviousPc = PreviousPc;
-        // Teb->InstrumentationCallbackPreviousSp = PreviousSp;
-
-        CONTEXT Context {0};
-        ::RtlCaptureContext(&Context);
-
-
+        bAlreadyInCallback     = true;
+        PTEB Teb               = reinterpret_cast<PTEB>(::NtCurrentTeb());
         const bool bIsDisabled = (Teb->InstrumentationCallbackDisabled == 1);
-        Context.Rip            = *((uptr*)(Teb->InstrumentationCallbackPreviousPc));
-        Context.Rsp            = *((uptr*)(Teb->InstrumentationCallbackPreviousSp));
-        Context.Rcx            = Context.R10;
-
+        Context->Rip           = *((uptr*)(Teb->InstrumentationCallbackPreviousPc));
+        Context->Rsp           = *((uptr*)(Teb->InstrumentationCallbackPreviousSp));
+        Context->Rcx           = Context->R10;
 
         if ( bIsDisabled == false )
         {
@@ -52,6 +43,8 @@ InstrumentationHook(uptr PreviousPc, uptr PreviousRetcode, uptr PreviousSp, uptr
             //
             Teb->InstrumentationCallbackDisabled = 1;
 
+            pwn::windows::Symbols::ResolveFromAddress(Context->Rax);
+
 
             //
             // On 2nd call, restore flag to allow further processing
@@ -59,7 +52,7 @@ InstrumentationHook(uptr PreviousPc, uptr PreviousRetcode, uptr PreviousSp, uptr
             Teb->InstrumentationCallbackDisabled = 0;
         }
 
-        ::RtlRestoreContext(&Context, nullptr);
+        ::RtlRestoreContext(Context, nullptr);
         bAlreadyInCallback = false;
     }
 }

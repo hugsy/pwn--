@@ -1,10 +1,27 @@
 # pwn++
 
 
-|                                                               View                                                               |                                                                                                      Code                                                                                                      |                                                                                    Build                                                                                    |                                                Talk                                                |
-| :------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------: |
-| [![Read code](https://img.shields.io/badge/Code-Read%20pwn++-brightgreen?logo=visualstudiocode)](https://github.dev/hugsy/pwn--) | [![Open in Visual Studio Code](https://img.shields.io/static/v1?logo=visualstudiocode&label=&message=Open%20in%20VSCode&labelColor=2c2c32&color=007acc&logoColor=007acc)](https://open.vscode.dev/hugsy/pwn--) | [![CI - MSVC](https://github.com/hugsy/pwn--/workflows/CI%20Build%20for%20MSVC/badge.svg)](https://github.com/hugsy/pwn--/actions?query=workflow%3A%22CI+Build+for+MSVC%22) | [![Discord](https://img.shields.io/badge/Discord-pwn%2b%2b-purple)](https://discord.gg/5HmwPxy3HP) |
+<p align="center">
+  <img src="https://i.imgur.com/39XyWFo.png" alt="logo" title="logo pwn++" />
+</p>
 
+<p align="center">
+  <a href="https://github.dev/hugsy/pwn--">
+    <img alt="Read Code" src="https://img.shields.io/badge/Code-Read%20pwn++-brightgreen?logo=visualstudiocode" />
+  </a>
+
+  <a href="https://open.vscode.dev/hugsy/pwn--">
+    <img alt="Open in Visual Studio Code" src="https://img.shields.io/static/v1?logo=visualstudiocode&label=&message=Open%20in%20VSCode&labelColor=2c2c32&color=007acc&logoColor=007acc" />
+  </a>
+
+  <a href="https://github.com/hugsy/pwn--/actions?query=workflow%3A%22CI+Build+for+MSVC%22">
+    <img alt="CI - MSVC" src="https://github.com/hugsy/pwn--/workflows/CI%20Build%20for%20MSVC/badge.svg" />
+  </a>
+
+  <a href="https://discord.gg/5HmwPxy3HP">
+    <img alt="Discord" src="https://img.shields.io/badge/Discord-pwn%2b%2b-purple" />
+  </a>
+</p>
 
 A rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL in modern C++, battery-included pwn kit for Windows (and a bit for Linux).
 
