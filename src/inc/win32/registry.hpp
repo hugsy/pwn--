@@ -50,46 +50,22 @@ public:
     static inline HKEY const HKCC = HKEY_CURRENT_CONFIG;
 
 
-    static Result<DWORD>
-    ReadDword(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
-    {
-        return Read<DWORD>(hKeyRoot, SubKey, KeyName);
-    }
-
-    static Result<DWORD64>
-    ReadQword(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
-    {
-        return Read<DWORD64>(hKeyRoot, SubKey, KeyName);
-    }
-
-    static Result<std::wstring>
-    ReadString(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
-    {
-        // auto res = Read<WCHAR[256]>(hKeyRoot, SubKey, KeyName);
-        // if ( Failed(res) )
-        // {
-        //     return Err(Error(res).code);
-        // }
-        // return Ok(std::wstring(Value(res)));
-        return Err(ErrorCode::NotImplementedError);
-    }
-
-    static Result<std::vector<u8>>
-    ReadBytes(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
-    {
-        // auto res = Read<u8[256]>(hKeyRoot, SubKey, KeyName);
-        // if ( Failed(res) )
-        // {
-        //     return Err(Error(res).code);
-        // }
-        // return Ok(std::move(Value(res)));
-        return Err(ErrorCode::NotImplementedError);
-    }
-
-
-private:
-    template<typename T, usize S = sizeof(T)>
-    Result<T> static Read(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
+    ///
+    ///@brief
+    ///
+    ///@tparam T
+    ///@tparam S
+    ///@param hKeyRoot
+    ///@param SubKey
+    ///@param KeyName
+    ///@return Result<T>
+    ///
+    template<typename T>
+    Result<T> static Read(
+        const HKEY hKeyRoot,
+        const std::wstring_view& SubKey,
+        const std::wstring_view& KeyName,
+        const usize Size = sizeof(T))
     {
         auto hKey =
             RegistryHandle {[&hKeyRoot, &SubKey]()
@@ -107,14 +83,32 @@ private:
         }
 
         T KeyValue;
-        DWORD ValueSize = S;
-        switch ( ::RegQueryValueExW(hKey.get(), KeyName.data(), 0, nullptr, (PBYTE)&KeyValue, &ValueSize) )
+        DWORD ValueSize = Size;
+        u32 res         = 0;
+
+        if constexpr ( std::is_same_v<T, std::wstring> )
+        {
+            do
+            {
+                KeyValue.resize(ValueSize);
+                res = ::RegQueryValueExW(hKey.get(), KeyName.data(), 0, nullptr, (PBYTE)&KeyValue[0], &ValueSize);
+                ValueSize /= sizeof(wchar_t);
+            } while ( res == ERROR_MORE_DATA );
+
+            KeyValue.resize(ValueSize - 1);
+            KeyValue.shrink_to_fit();
+        }
+        else
+        {
+            res = ::RegQueryValueExW(hKey.get(), KeyName.data(), 0, nullptr, (PBYTE)&KeyValue, &ValueSize);
+        }
+
+        switch ( res )
         {
         case ERROR_SUCCESS:
             break;
 
         case ERROR_MORE_DATA:
-            // TODO: handle case
             return Err(ErrorCode::BufferTooSmall);
 
         case ERROR_FILE_NOT_FOUND:
@@ -126,6 +120,42 @@ private:
 
         return Ok(KeyValue);
     }
+
+
+    ///
+    ///@brief
+    ///
+    ///@param hKeyRoot
+    ///@param SubKey
+    ///@param KeyName
+    ///@return Result<DWORD>
+    ///
+    static Result<DWORD>
+    ReadDword(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
+    {
+        return Read<DWORD>(hKeyRoot, SubKey, KeyName);
+    }
+
+    static Result<DWORD64>
+    ReadQword(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
+    {
+        return Read<DWORD64>(hKeyRoot, SubKey, KeyName);
+    }
+
+    static Result<std::wstring>
+    ReadWideString(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
+    {
+        return Read<std::wstring>(hKeyRoot, SubKey, KeyName, 256);
+    }
+
+    static Result<std::vector<u8>>
+    ReadBytes(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
+    {
+        return Err(ErrorCode::NotImplementedError);
+    }
+
+
+private:
 };
 
 

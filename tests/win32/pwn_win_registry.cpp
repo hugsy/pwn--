@@ -27,14 +27,15 @@ TEST_CASE("Windows - Registry", "[" NS "]")
     {
     }
 
-    SECTION("Registry: read wstring")
+    SECTION("Registry: read string as wstring")
     {
-        auto res = pwn::windows::Registry::ReadString(
+        auto res = pwn::windows::Registry::ReadWideString(
             pwn::windows::Registry::HKLM,
-            L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
-            L"BuildLab");
+            L"SYSTEM\\CurrentControlSet\\Control\\Session Manager\\KnownDLLs",
+            L"user32");
 
-        REQUIRE(Failed(res));
+        REQUIRE(Success(res));
+        CHECK(Value(res) == L"user32.dll");
     }
 
 
