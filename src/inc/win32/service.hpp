@@ -9,6 +9,7 @@ namespace pwn::windows
 ///
 ///@brief Managed handle for service, autocall to `CloseServiceHandle` on destruction
 ///
+///@note SC_HANDLE = struct SC_HANDLE__
 ///
 using ServiceHandle = pwn::GenericHandle<SC_HANDLE__, CloseServiceHandle>;
 

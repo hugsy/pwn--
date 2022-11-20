@@ -117,6 +117,9 @@ enum class ErrorCode : uint32_t
 
     ///@brief Version mismatch between expected vs provided
     BadVersion,
+
+    /// @brief Expected entry (file, pipe, registry key, etc.) was not found
+    NotFound,
 };
 
 ///
