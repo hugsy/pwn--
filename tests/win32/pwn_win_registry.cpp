@@ -12,6 +12,31 @@ TEST_CASE("Windows - Registry", "[" NS "]")
         REQUIRE(pwn::windows::Registry::HKU == HKEY_USERS);
     }
 
+    SECTION("Registry: not existing")
+    {
+        // Bad Key
+        {
+            auto res = pwn::windows::Registry::ReadDword(
+                pwn::windows::Registry::HKLM,
+                L"SYSTEM\\CurrentControlSet\\Control\\LsaFoobar",
+                L"RunAsPplButDontReallyExist");
+
+            REQUIRE(Failed(res));
+            CHECK(Error(res).code == ErrorCode::ExternalApiCallFailed);
+        }
+
+        // Bad value
+        {
+            auto res = pwn::windows::Registry::ReadDword(
+                pwn::windows::Registry::HKLM,
+                L"SYSTEM\\CurrentControlSet\\Control\\Lsa",
+                L"RunAsPplButDontReallyExist");
+
+            REQUIRE(Failed(res));
+            CHECK(Error(res).code == ErrorCode::NotFound);
+        }
+    }
+
     SECTION("Registry: read dword")
     {
         auto res = pwn::windows::Registry::ReadDword(
@@ -38,13 +63,16 @@ TEST_CASE("Windows - Registry", "[" NS "]")
         CHECK(Value(res) == L"user32.dll");
     }
 
-
     SECTION("Registry: read bytes")
     {
         auto res = pwn::windows::Registry::ReadBytes(
             pwn::windows::Registry::HKLM,
             L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
             L"DigitalProductId");
-        REQUIRE(Failed(res));
+
+        REQUIRE(Success(res));
+        auto const& raw = Value(res);
+        const u16 sz    = *((u16*)&raw[0]);
+        CHECK(raw.size() == sz);
     }
 }

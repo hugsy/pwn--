@@ -51,10 +51,9 @@ public:
 
 
     ///
-    ///@brief
+    ///@brief Query the registry for a specific value in the given key.
     ///
     ///@tparam T
-    ///@tparam S
     ///@param hKeyRoot
     ///@param SubKey
     ///@param KeyName
@@ -95,8 +94,16 @@ public:
                 ValueSize /= sizeof(wchar_t);
             } while ( res == ERROR_MORE_DATA );
 
-            KeyValue.resize(ValueSize - 1);
+            KeyValue.resize(ValueSize - 1); // because null byte
             KeyValue.shrink_to_fit();
+        }
+        else if constexpr ( std::is_same_v<T, std::vector<u8>> )
+        {
+            do
+            {
+                KeyValue.resize(ValueSize);
+                res = ::RegQueryValueExW(hKey.get(), KeyName.data(), 0, nullptr, (PBYTE)&KeyValue[0], &ValueSize);
+            } while ( res == ERROR_MORE_DATA );
         }
         else
         {
@@ -123,7 +130,7 @@ public:
 
 
     ///
-    ///@brief
+    ///@brief Helper to the templated `Read` function, to directly extract a DWORD from registry
     ///
     ///@param hKeyRoot
     ///@param SubKey
@@ -136,22 +143,46 @@ public:
         return Read<DWORD>(hKeyRoot, SubKey, KeyName);
     }
 
+    ///
+    ///@brief Helper to the templated `Read` function, to directly extract a QWORD from registry
+    ///
+    ///@param hKeyRoot
+    ///@param SubKey
+    ///@param KeyName
+    ///@return Result<DWORD64>
+    ///
     static Result<DWORD64>
     ReadQword(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
     {
         return Read<DWORD64>(hKeyRoot, SubKey, KeyName);
     }
 
+    ///
+    ///@brief Helper to the templated `Read` function, to directly extract a string from registry
+    ///
+    ///@param hKeyRoot
+    ///@param SubKey
+    ///@param KeyName
+    ///@return Result<std::wstring>
+    ///
     static Result<std::wstring>
     ReadWideString(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
     {
         return Read<std::wstring>(hKeyRoot, SubKey, KeyName, 256);
     }
 
+    ///
+    ///@brief Helper to the templated `Read` function, to directly extract a vector of bytes from registry
+    ///
+    ///@param hKeyRoot
+    ///@param SubKey
+    ///@param KeyName
+    ///@return Result<std::vector<u8>>
+    ///
     static Result<std::vector<u8>>
     ReadBytes(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
     {
-        return Err(ErrorCode::NotImplementedError);
+        return Read<std::vector<u8>>(hKeyRoot, SubKey, KeyName, 16);
     }
 
 
