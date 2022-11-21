@@ -42,11 +42,25 @@ IMPORT_EXTERNAL_FUNCTION(
 
 
 EXTERN_C_START
+#ifndef _M_ARM64
 bool
 GetPeb(uptr* peb);
 
 usize
 GetPebLength();
+#else
+bool
+GetPeb(uptr* peb)
+{
+    return false;
+}
+
+usize
+GetPebLength()
+{
+    return 0;
+}
+#endif // _M_ARM64
 EXTERN_C_END
 
 

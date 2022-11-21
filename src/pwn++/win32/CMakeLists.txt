@@ -99,7 +99,8 @@ target_compile_options(
     $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
 
     PRIVATE
-    $<$<CONFIG:Debug>:/fsanitize=address>
+
+    $<$<NOT:$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>>:$<$<CONFIG:Debug>:/fsanitize=address>>
     /diagnostics:caret /Zl /ZH:SHA_256
     $<IF:$<CONFIG:Debug>,/sdl /WX /Gy /Gm- /permissive-,/WX /Zi /Zf /Gm /Gm- /permissive- >
 )
@@ -110,7 +111,8 @@ target_compile_options(
 target_link_options(
     ${PROJECT_NAME}
     PUBLIC
-    $<$<CONFIG:Debug>:/InferAsanLibs>
+
+    $<$<NOT:$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>>:$<$<CONFIG:Debug>:/InferAsanLibs>>
 
     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:/SAFESEH:NO>
 

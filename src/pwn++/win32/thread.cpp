@@ -23,11 +23,26 @@
 #define WINDOWS_VERSION_22H2 19045
 
 EXTERN_C_START
+
+#ifndef _M_ARM64
 bool
 GetTeb(uptr* teb);
 
 usize
 GetTebLength();
+#else
+bool
+GetTeb(uptr* teb)
+{
+    return false;
+}
+
+usize
+GetTebLength()
+{
+    return 0;
+}
+#endif // _M_ARM64
 EXTERN_C_END
 
 #ifdef _WIN64
