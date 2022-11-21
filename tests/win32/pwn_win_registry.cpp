@@ -3,7 +3,7 @@
 #include "../catch.hpp"
 #define NS "pwn::windows"
 
-TEST_CASE("Windows - Registry", "[" NS "]")
+TEST_CASE("Windows::Registry - Read", "[" NS "]")
 {
     SECTION("Registry: basic checks")
     {
@@ -63,6 +63,21 @@ TEST_CASE("Windows - Registry", "[" NS "]")
         CHECK(Value(res) == L"user32.dll");
     }
 
+    SECTION("Registry: read string array")
+    {
+        auto res =
+            pwn::windows::Registry::ReadWideStringArray(pwn::windows::Registry::HKLM, L"SYSTEM\\Setup", L"CloneTag");
+
+        REQUIRE(Success(res));
+        auto const& value = Value(res);
+        CHECK(value.size() >= 1);
+
+        for ( auto const& entry : value )
+        {
+            CHECK(entry.size() >= 0);
+        }
+    }
+
     SECTION("Registry: read bytes")
     {
         auto res = pwn::windows::Registry::ReadBytes(
@@ -75,4 +90,8 @@ TEST_CASE("Windows - Registry", "[" NS "]")
         const u16 sz    = *((u16*)&raw[0]);
         CHECK(raw.size() == sz);
     }
+}
+
+TEST_CASE("Windows::Registry - Write", "[" NS "]")
+{
 }

@@ -29,31 +29,35 @@ class Registry
 {
 public:
     ///
-    ///@brief
+    ///@brief Alias to `HKEY_LOCAL_MACHINE`
     ///
     static inline HKEY const HKLM = HKEY_LOCAL_MACHINE;
 
     ///
-    ///@brief
+    ///@brief Alias to `HKEY_CURRENT_USER`
     ///
     static inline HKEY const HKCU = HKEY_CURRENT_USER;
 
     ///
-    ///@brief
+    ///@brief Alias to `HKEY_USERS`
     ///
     static inline HKEY const HKU = HKEY_USERS;
 
-
+    ///
+    ///@brief Alias to `HKEY_CLASSES_ROOT`
+    ///
     static inline HKEY const HKCR = HKEY_CLASSES_ROOT;
 
-
+    ///
+    ///@brief Alias to `HKEY_CURRENT_CONFIG`
+    ///
     static inline HKEY const HKCC = HKEY_CURRENT_CONFIG;
 
 
     ///
-    ///@brief Query the registry for a specific value in the given key.
+    ///@brief The generic function to query the registry for a specific value in the given key.
     ///
-    ///@tparam T
+    ///@tparam T the expected output type - is used to infer the type of data to get
     ///@param hKeyRoot
     ///@param SubKey
     ///@param KeyName
@@ -85,19 +89,36 @@ public:
         DWORD ValueSize = Size;
         u32 res         = 0;
 
-        if constexpr ( std::is_same_v<T, std::wstring> )
+        if constexpr ( std::is_same_v<T, std::wstring> ) // REG_SZ
         {
+            DWORD ValueLength = ValueSize / sizeof(wchar_t);
             do
             {
-                KeyValue.resize(ValueSize);
+                KeyValue.resize(ValueLength);
                 res = ::RegQueryValueExW(hKey.get(), KeyName.data(), 0, nullptr, (PBYTE)&KeyValue[0], &ValueSize);
-                ValueSize /= sizeof(wchar_t);
+                ValueLength = ValueSize / sizeof(wchar_t);
             } while ( res == ERROR_MORE_DATA );
 
-            KeyValue.resize(ValueSize - 1); // because null byte
+            KeyValue.resize(ValueLength - 1); // because null byte
             KeyValue.shrink_to_fit();
         }
-        else if constexpr ( std::is_same_v<T, std::vector<u8>> )
+        else if constexpr ( std::is_same_v<T, std::vector<std::wstring>> ) // REG_MULTI_SZ
+        {
+            std::wstring TempValue;
+            DWORD TempValueLength = ValueSize / sizeof(wchar_t);
+            do
+            {
+                TempValue.resize(TempValueLength);
+                res = ::RegQueryValueExW(hKey.get(), KeyName.data(), 0, nullptr, (PBYTE)&TempValue[0], &ValueSize);
+                TempValueLength = ValueSize / sizeof(wchar_t);
+            } while ( res == ERROR_MORE_DATA );
+
+            TempValue.resize(TempValueLength - 1); // because null byte
+            TempValue.shrink_to_fit();
+
+            KeyValue = std::move(pwn::utils::split(TempValue, L'\0'));
+        }
+        else if constexpr ( std::is_same_v<T, std::vector<u8>> ) // REG_BINARY
         {
             do
             {
@@ -105,7 +126,7 @@ public:
                 res = ::RegQueryValueExW(hKey.get(), KeyName.data(), 0, nullptr, (PBYTE)&KeyValue[0], &ValueSize);
             } while ( res == ERROR_MORE_DATA );
         }
-        else
+        else // REG_DWORD, REG_QWORD, TODO
         {
             res = ::RegQueryValueExW(hKey.get(), KeyName.data(), 0, nullptr, (PBYTE)&KeyValue, &ValueSize);
         }
@@ -171,6 +192,12 @@ public:
         return Read<std::wstring>(hKeyRoot, SubKey, KeyName, 256);
     }
 
+    static Result<std::vector<std::wstring>>
+    ReadWideStringArray(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
+    {
+        return Read<std::vector<std::wstring>>(hKeyRoot, SubKey, KeyName, 16);
+    }
+
     ///
     ///@brief Helper to the templated `Read` function, to directly extract a vector of bytes from registry
     ///
@@ -183,6 +210,75 @@ public:
     ReadBytes(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
     {
         return Read<std::vector<u8>>(hKeyRoot, SubKey, KeyName, 16);
+    }
+
+
+    ///
+    ///@brief Sets the registry for a specific value in the given key.
+    ///
+    ///@tparam T
+    ///@param hKeyRoot
+    ///@param SubKey
+    ///@param KeyName
+    ///@return Result<T>
+    ///
+    template<typename T>
+    Result<u32> static Write(
+        const HKEY hKeyRoot,
+        std::wstring_view const& SubKey,
+        std::wstring_view const& KeyName,
+        T const& KeyValue)
+    {
+        u32 res            = 0;
+        DWORD KeyValueSize = 0;
+        auto hKey =
+            RegistryHandle {[&hKeyRoot, &SubKey]()
+                            {
+                                HKEY h;
+                                if ( ::RegOpenKeyExW(hKeyRoot, SubKey.data(), 0, KEY_SET_VALUE, &h) != ERROR_SUCCESS )
+                                {
+                                    return static_cast<HKEY>(INVALID_HANDLE_VALUE);
+                                }
+                                return h;
+                            }()};
+        if ( !hKey )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+
+        if constexpr ( std::is_same_v<T, std::wstring> ) // REG_SZ
+        {
+            KeyValueSize = KeyValue.size() * sizeof(wchar_t);
+            res          = ::RegSetValueExW(hKey.get(), KeyName.data(), 0, REG_SZ, (PBYTE)&KeyValue[0], KeyValueSize);
+        }
+        else if constexpr ( std::is_same_v<T, std::vector<u8>> ) // REG_BINARY
+        {
+            KeyValueSize = KeyValue.size();
+            res = ::RegSetValueExW(hKey.get(), KeyName.data(), 0, REG_BINARY, (PBYTE)&KeyValue[0], KeyValueSize);
+        }
+        else
+        {
+            KeyValueSize       = sizeof(T);
+            const KeyValueType = (KeyValueSize == 8) ? REG_QWORD : (KeyValueSize == 0) ? REG_NONE : REG_DWORD;
+            res = ::RegSetValueExW(hKey.get(), KeyName.data(), 0, KeyValueType, (PBYTE)&KeyValue, KeyValueSize);
+        }
+
+        switch ( res )
+        {
+        case ERROR_SUCCESS:
+            break;
+
+        case ERROR_MORE_DATA:
+            return Err(ErrorCode::BufferTooSmall);
+
+        case ERROR_FILE_NOT_FOUND:
+            return Err(ErrorCode::NotFound);
+
+        default:
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+
+        return Ok(KeyValue);
     }
 
 
