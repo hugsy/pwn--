@@ -256,10 +256,10 @@ public:
             KeyValueSize = KeyValue.size();
             res = ::RegSetValueExW(hKey.get(), KeyName.data(), 0, REG_BINARY, (PBYTE)&KeyValue[0], KeyValueSize);
         }
-        else
+        else // REG_QWORD, REG_DWORD, REG_NONE
         {
-            KeyValueSize       = sizeof(T);
-            const KeyValueType = (KeyValueSize == 8) ? REG_QWORD : (KeyValueSize == 0) ? REG_NONE : REG_DWORD;
+            KeyValueSize             = sizeof(T);
+            const DWORD KeyValueType = (KeyValueSize == 8) ? REG_QWORD : (KeyValueSize == 0) ? REG_NONE : REG_DWORD;
             res = ::RegSetValueExW(hKey.get(), KeyName.data(), 0, KeyValueType, (PBYTE)&KeyValue, KeyValueSize);
         }
 

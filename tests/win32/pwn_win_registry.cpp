@@ -3,7 +3,7 @@
 #include "../catch.hpp"
 #define NS "pwn::windows"
 
-TEST_CASE("Windows::Registry - Read", "[" NS "]")
+TEST_CASE("Windows::Registry - Read Value", "[" NS "]")
 {
     SECTION("Registry: basic checks")
     {
@@ -92,6 +92,14 @@ TEST_CASE("Windows::Registry - Read", "[" NS "]")
     }
 }
 
-TEST_CASE("Windows::Registry - Write", "[" NS "]")
+TEST_CASE("Windows::Registry - Write Value", "[" NS "]")
+{
+}
+
+TEST_CASE("Windows::Registry - Enumerate Keys", "[" NS "]")
+{
+}
+
+TEST_CASE("Windows::Registry - Enumerate Values", "[" NS "]")
 {
 }
