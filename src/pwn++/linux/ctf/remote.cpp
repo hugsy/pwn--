@@ -24,10 +24,10 @@
 /// Remote
 ///
 pwn::linux::ctf::Remote::Remote(_In_ std::wstring const& host, _In_ u16 port) :
-    m_host(host),
-    m_port(port),
-    m_protocol(L"tcp"),
-    m_socket(-1)
+    m_Host(host),
+    m_Port(port),
+    m_Protocol(L"tcp"),
+    m_Socket(-1)
 {
     if ( !connect() )
     {
@@ -44,7 +44,7 @@ pwn::linux::ctf::Remote::~Remote()
 auto
 pwn::linux::ctf::Remote::__send_internal(_In_ std::vector<u8> const& out) -> size_t
 {
-    auto res = ::send(m_socket, reinterpret_cast<const char*>(&out[0]), out.size() & 0xffff, 0);
+    auto res = ::send(m_Socket, reinterpret_cast<const char*>(&out[0]), out.size() & 0xffff, 0);
     if ( res < 0 )
     {
         err(L"send() function: %#x\n", errno);
@@ -98,7 +98,7 @@ pwn::linux::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAUL
     std::vector<u8> network_data(cache_data);
     network_data.resize(cache_data.size() + size);
 
-    auto res = ::recv(m_socket, reinterpret_cast<char*>(&network_data[idx]), (u32)size, 0);
+    auto res = ::recv(m_Socket, reinterpret_cast<char*>(&network_data[idx]), (u32)size, 0);
     if ( res < 0 )
     {
         err(L"recv() function: %#x\n", errno);
@@ -125,7 +125,7 @@ auto
 pwn::linux::ctf::Remote::__peek_internal() -> size_t
 {
     auto buf = std::make_unique<u8[]>(PWN_TUBE_PIPE_DEFAULT_SIZE);
-    auto res = ::recv(m_socket, reinterpret_cast<char*>(buf.get()), PWN_TUBE_PIPE_DEFAULT_SIZE, MSG_PEEK);
+    auto res = ::recv(m_Socket, reinterpret_cast<char*>(buf.get()), PWN_TUBE_PIPE_DEFAULT_SIZE, MSG_PEEK);
     if ( res < 0 )
     {
         perror("recv()");
@@ -139,17 +139,17 @@ pwn::linux::ctf::Remote::__peek_internal() -> size_t
 auto
 pwn::linux::ctf::Remote::init() -> bool
 {
-    if ( m_protocol == L"tcp" )
+    if ( m_Protocol == L"tcp" )
     {
-        m_socket = ::socket(AF_INET, SOCK_STREAM, 0);
+        m_Socket = ::socket(AF_INET, SOCK_STREAM, 0);
         // TODO: supporter d'autres proto
     }
     else
     {
-        throw std::invalid_argument("m_protocol");
+        throw std::invalid_argument("m_Protocol");
     }
 
-    if ( m_socket < 0 )
+    if ( m_Socket < 0 )
     {
         err(L"socket() function: %#x\n", errno);
         cleanup();
@@ -170,10 +170,10 @@ pwn::linux::ctf::Remote::connect() -> bool
 
     sockaddr_in sin = {0};
     sin.sin_family  = AF_INET;
-    sin.sin_port    = htons(m_port);
-    inet_pton(AF_INET, pwn::utils::to_string(m_host).c_str(), &sin.sin_addr.s_addr);
+    sin.sin_port    = htons(m_Port);
+    inet_pton(AF_INET, pwn::utils::to_string(m_Host).c_str(), &sin.sin_addr.s_addr);
 
-    if ( ::connect(m_socket, (struct sockaddr*)&sin, sizeof(sin)) < 0 )
+    if ( ::connect(m_Socket, (struct sockaddr*)&sin, sizeof(sin)) < 0 )
     {
         err(L"connect() function failed with error: %#x\n", errno);
         disconnect();
@@ -181,7 +181,7 @@ pwn::linux::ctf::Remote::connect() -> bool
         return false;
     }
 
-    dbg(L"connected to %s:%d\n", m_host.c_str(), m_port);
+    dbg(L"connected to %s:%d\n", m_Host.c_str(), m_Port);
     return true;
 }
 
@@ -191,14 +191,14 @@ pwn::linux::ctf::Remote::disconnect() -> bool
 {
     auto res = true;
 
-    if ( ::close(m_socket) < 0 )
+    if ( ::close(m_Socket) < 0 )
     {
         err(L"closesocket() function failed with error: %#x\n", errno);
         res = false;
     }
 
     cleanup();
-    dbg(L"session to %s:%d closed\n", m_host.c_str(), m_port);
+    dbg(L"session to %s:%d closed\n", m_Host.c_str(), m_Port);
     return res;
 }
 

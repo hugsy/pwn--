@@ -96,9 +96,8 @@ Tube::recvuntil(_In_ std::vector<u8> const& pattern) -> std::vector<u8>
         {
             // line separator found, copy the rest of the buffer to the queue
             std::copy(in.begin() + idx, in.end(), std::back_inserter(m_receive_buffer));
-
             in.erase(in.begin() + idx, in.end());
-
+            dbg("Received {} bytes", in.size());
             return in;
         }
     }

@@ -126,6 +126,9 @@ enum class ErrorCode : uint32_t
 
     /// @brief Expected entry (file, pipe, registry key, etc.) was not found
     NotFound,
+
+    /// @brief An established connection was expected, but not found
+    NotConnected,
 };
 
 ///

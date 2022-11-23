@@ -11,16 +11,34 @@
 namespace pwn::windows::ctf
 {
 
+enum class SocketState : u8
+{
+    Disconnected,
+    Initialized,
+    WaitingForConnection,
+    Connected,
+};
 
 ///
-/// A Remote session (pwntools-like)
+///@brief Remote session
+///
 ///
 class Remote : public Tube
 {
 public:
     PWNAPI
-    Remote(_In_ std::wstring const& host, _In_ u16 port);
+    Remote(std::wstring_view const& host, const u16 port);
     PWNAPI ~Remote();
+
+    auto
+    Connect() -> Result<bool>;
+
+    auto
+    Disconnect() -> Result<bool>;
+
+    auto
+    Reconnect() -> bool;
+
 
 protected:
     auto
@@ -35,29 +53,19 @@ protected:
 
 private:
     auto
-    init() -> bool;
+    InitializeSocket() -> Result<bool>;
 
-    auto
-    connect() -> bool;
+    const std::wstring m_Host;
+    const std::wstring m_Protocol;
+    const u16 m_Port;
 
-    auto
-    disconnect() -> bool;
-
-    auto
-    cleanup() -> bool;
-
-    auto
-    reconnect() -> bool;
-
-    std::wstring m_host;
-    std::wstring m_protocol;
-    u16 m_port;
-    SOCKET m_socket;
+    SOCKET m_Socket;
+    SocketState m_State;
 };
 
 
 ///
-/// A Process session (pwntools-like)
+///@brief A Process session
 ///
 class Process : public Tube
 {

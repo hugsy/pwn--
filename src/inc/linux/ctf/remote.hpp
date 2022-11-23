@@ -50,10 +50,10 @@ private:
     auto
     reconnect() -> bool;
 
-    std::wstring m_host;
-    std::wstring m_protocol;
-    u16 m_port;
-    int m_socket;
+    std::wstring m_Host;
+    std::wstring m_Protocol;
+    u16 m_Port;
+    int m_Socket;
 };
 
 
