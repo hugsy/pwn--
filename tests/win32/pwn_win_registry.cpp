@@ -65,8 +65,10 @@ TEST_CASE("Windows::Registry - Read Value", "[" NS "]")
 
     SECTION("Registry: read string array")
     {
-        auto res =
-            pwn::windows::Registry::ReadWideStringArray(pwn::windows::Registry::HKLM, L"SYSTEM\\Setup", L"CloneTag");
+        auto res = pwn::windows::Registry::ReadWideStringArray(
+            pwn::windows::Registry::HKLM,
+            L"SYSTEM\\CurrentControlSet\\Control",
+            L"PreshutdownOrder");
 
         REQUIRE(Success(res));
         auto const& value = Value(res);
@@ -96,10 +98,24 @@ TEST_CASE("Windows::Registry - Write Value", "[" NS "]")
 {
 }
 
+
 TEST_CASE("Windows::Registry - Enumerate Keys", "[" NS "]")
 {
+    auto res = pwn::windows::Registry::ListKeys(
+        pwn::windows::Registry::HKCU,
+        L"Software\\Microsoft\\Windows NT\\CurrentVersion");
+    REQUIRE(Success(res));
+    auto const& entries = Value(res);
+    CHECK(entries.size() > 0);
 }
+
 
 TEST_CASE("Windows::Registry - Enumerate Values", "[" NS "]")
 {
+    auto res = pwn::windows::Registry::ListValues(
+        pwn::windows::Registry::HKCU,
+        L"Software\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon");
+    REQUIRE(Success(res));
+    auto const& entries = Value(res);
+    CHECK(entries.size() > 0);
 }

@@ -1036,10 +1036,10 @@ Process::QueryInternal(const PROCESSINFOCLASS ProcessInformationClass, const usi
 Result<bool>
 System(_In_ const std::wstring& CommandLine, _In_ const std::wstring& Operation)
 {
-    auto args = pwn::utils::split(CommandLine, L' ');
+    auto args = pwn::utils::StringLib::Split(CommandLine, L' ');
     auto cmd {args[0]};
     args.erase(args.begin());
-    auto params  = pwn::utils::join(args);
+    auto params  = pwn::utils::StringLib::Join(args, L' ');
     bool success = static_cast<bool>(
         reinterpret_cast<long long>(
             ::ShellExecuteW(nullptr, Operation.c_str(), cmd.c_str(), params.c_str(), nullptr, SW_SHOW)) > 32);

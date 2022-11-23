@@ -21,18 +21,18 @@ TEST_CASE("base64", "[" NS "]")
         vec {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f};
     std::string const vec_enc = "MDEyMzQ1Njc4OTo7PD0+Pw==";
 
-    SECTION("Base64 encoding test")
+    SECTION("Base64 encoding/decoding test")
     {
         auto encoded_string1 = pwn::utils::Base64::Encode(vec.data(), vec.size());
         auto encoded_string2 = pwn::utils::Base64::Encode(vec);
-        REQUIRE(Success(encoded_string1) == true);
-        REQUIRE(Success(encoded_string2) == true);
+        REQUIRE(Success(encoded_string1));
+        REQUIRE(Success(encoded_string2));
         REQUIRE(Value(encoded_string1) == Value(encoded_string2));
         REQUIRE(Value(encoded_string2) == vec_enc);
     }
 
 
-    SECTION("Base64 dencoding test")
+    SECTION("Base64  test")
     {
         auto p = pwn::utils::Base64::Decode(vec_enc);
         REQUIRE(Success(p));
@@ -48,40 +48,41 @@ TEST_CASE("cyclic", "[" NS "]")
 {
     SECTION("cyclic buffer with period=4")
     {
-        std::vector<u8> buf;
-        REQUIRE(pwn::utils::cyclic(0x20, 4, buf));
-        REQUIRE(buf.size() == 0x20);
-        REQUIRE(buf[0] == 'a');
-        REQUIRE(buf[4] == 'b');
-        REQUIRE(buf[8] == 'c');
+        auto res = pwn::utils::cyclic(0x20, 4);
+        REQUIRE(Success(res));
+        std::vector<u8> const& buf = Value(res);
+        CHECK(buf.size() == 0x20);
+        CHECK(::memcmp((void*)buf.data(), (void*)"aaaabaaacaaadaaaeaaafaaagaaahaaa", 0x20) == 0);
     }
-
 
     SECTION("cyclic buffer with period determined from architecture")
     {
-        std::vector<u8> buf;
         pwn::Context.set("x64");
-        REQUIRE(pwn::utils::cyclic(0x30, buf));
-        REQUIRE(buf.size() == 0x30);
-        pwn::utils::hexdump(buf);
-        REQUIRE(buf[0] == 'a');
-        REQUIRE(buf[8] == 'b');
-        REQUIRE(buf[16] == 'c');
+        auto res = pwn::utils::cyclic(0x30);
+        REQUIRE(Success(res));
+        std::vector<u8> const& buf = Value(res);
+        CHECK(buf.size() == 0x30);
+        CHECK(::memcmp((void*)buf.data(), (void*)"aaaaaaaabaaaaaaacaaaaaaadaaaaaaaeaaaaaaafaaaaaaa", 0x30) == 0);
     }
 }
 
 
 TEST_CASE("strings", "[" NS "]")
 {
-    const char* str0         = "TEST test 1234";
-    const std::string str1   = "TEST test 1234";
+    const std::string str0   = "TEST test 1234";
+    const std::string str1   = "0000 test 0000";
     const std::wstring wstr0 = L"TEST test 1234";
     const std::wstring wstr1 = L"0000 test 0000";
+    const std::string str    = "TEST test 1234X0000 test 0000";
+    const std::wstring wstr  = L"TEST test 1234X0000 test 0000";
 
-    REQUIRE(pwn::utils::to_widestring(str0) == wstr0);
-    REQUIRE_FALSE(pwn::utils::to_widestring(str0) == wstr1);
-    REQUIRE(pwn::utils::to_widestring(str1) == wstr0);
-    REQUIRE_FALSE(pwn::utils::to_widestring(str1) == wstr1);
-    REQUIRE(pwn::utils::to_string(wstr0) == str1);
-    REQUIRE_FALSE(pwn::utils::to_string(wstr1) == str1);
+    CHECK(pwn::utils::StringLib::To<std::wstring>(str0) == wstr0);
+    CHECK(pwn::utils::StringLib::To<std::string>(wstr0) == str0);
+    CHECK(pwn::utils::StringLib::To<std::vector<u8>>(wstr0).size() == wstr0.size());
+
+    CHECK(pwn::utils::StringLib::Join(std::vector {str0, str1}, 'X') == str);
+    CHECK(pwn::utils::StringLib::Join(std::vector {wstr0, wstr1}, L'X') == wstr);
+
+    CHECK(pwn::utils::StringLib::Split(str, 'X') == std::vector {str0, str1});
+    CHECK(pwn::utils::StringLib::Split(wstr, L'X') == std::vector {wstr0, wstr1});
 }

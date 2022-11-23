@@ -1,8 +1,10 @@
 #pragma once
 
 #include <concepts>
+#include <filesystem>
 #include <optional>
 #include <type_traits>
+#include <unordered_map>
 #include <variant>
 
 #include "common.hpp"
@@ -165,81 +167,102 @@ public:
 };
 
 
-///
-/// @brief Convert a `std::string` to `std::wstring`
-///
-/// @param str the string to convert
-/// @return std::wstring
-///
-PWNAPI auto
-to_widestring(const std::string_view& str) noexcept -> std::wstring;
+class StringLib
+{
+public:
+    ///
+    ///@brief Inefficient but generic templated string conversion function
+    ///
+    ///@tparam ToType
+    ///@tparam FromType
+    ///@tparam T
+    ///@param src
+    ///@return ToType
+    ///
+    template<typename ToType, typename FromType, typename T = char>
+    static ToType
+    To(FromType const& src)
+    {
+        ToType dst;
+        std::transform(
+            src.cbegin(),
+            src.cend(),
+            std::back_inserter(dst),
+            [](auto const c)
+            {
+                return static_cast<T>(c);
+            });
+        return dst;
+    }
 
+    template<typename T, typename L>
+    static std::vector<T>
+    Split(T const& src, const L delim)
+    {
+        T cur;
+        std::vector<T> dst;
+        std::for_each(
+            src.cbegin(),
+            src.cend(),
+            [&dst, &cur, &delim](const L& x)
+            {
+                if ( x == delim )
+                {
+                    dst.push_back(cur);
+                    cur.clear();
+                }
+                else
+                {
+                    cur += x;
+                }
+            });
+        if ( !cur.empty() )
+        {
+            dst.push_back(cur);
+        }
+        return dst;
+    }
 
-///
-/// @brief Alias for `pwn::utils::to_widestring`
-///
-/// @param str the string to convert
-/// @return std::wstring
-///
-PWNAPI auto
-to_wstring(const std::string_view& str) noexcept -> std::wstring;
+    ///
+    /// @brief
+    ///
+    template<typename T, typename L>
+    static T
+    Join(const std::vector<T>& Src, const L delim)
+    {
+        T Dst;
+        std::for_each(
+            Src.cbegin(),
+            Src.cend() - 1,
+            [&Dst, &delim](const T& x)
+            {
+                Dst += x + T {delim};
+            });
+        Dst += Src.back();
+        return Dst;
+    }
 
+    ///
+    /// @brief
+    ///
+    template<typename T>
+    T
+    Strip(T const& Src)
+    {
+        T Dst {Src};
+        for ( auto const& c : Src )
+        {
+            std::erase_if(
+                Dst,
+                [&c](auto const& x)
+                {
+                    return x == c;
+                });
+        }
+        return Dst;
+    }
+};
 
-///
-/// @brief
-///
-PWNAPI auto
-to_string(const std::wstring_view& ws) -> std::string;
-
-
-///
-/// @brief
-///
-PWNAPI auto
-wstring_to_bytes(_In_ const std::wstring_view& str) -> std::vector<u8>;
-
-
-///
-/// @brief
-///
-PWNAPI auto
-string_to_bytes(_In_ std::string_view const& str) -> std::vector<u8>;
-
-///
-/// @brief
-///
-PWNAPI auto
-to_wstring(std::string_view const& str) noexcept -> std::wstring;
-
-///
-/// @brief
-///
-PWNAPI auto
-to_widestring(std::string_view const& str) noexcept -> std::wstring;
-
-///
-/// @brief
-///
-PWNAPI auto
-split(_In_ const std::wstring& ws, _In_ wchar_t delim) -> std::vector<std::wstring>;
-
-///
-/// @brief
-///
-PWNAPI auto
-join(_In_ const std::vector<std::wstring>& args) -> std::wstring;
-
-///
-/// @brief
-///
-PWNAPI auto
-strip(_In_ std::wstring const& args) -> std::wstring;
-
-///
-/// @brief
-///
-PWNAPI auto
-strip(_In_ std::string const& args) -> std::string;
 
 ///
 /// @brief
@@ -247,17 +270,20 @@ strip(_In_ std::string const& args) -> std::string;
 PWNAPI auto
 p8(_In_ u8 v) -> std::vector<u8>;
 
+
 ///
 /// @brief
 ///
 PWNAPI auto
 p16(_In_ u16 v) -> std::vector<u8>;
 
+
 ///
 /// @brief
 ///
 PWNAPI auto
 p32(_In_ u32 v) -> std::vector<u8>;
+
 
 ///
 /// @brief
@@ -290,30 +316,10 @@ align(uptr a, usize sz);
 ///
 /// @param dwSize
 /// @param dwPeriod
-/// @param buffer
-/// @return true
 /// @return false
 ///
 PWNAPI auto
-cyclic(_In_ u32 dwSize, _In_ u32 dwPeriod, _Out_ std::vector<u8>& buffer) -> bool;
-
-///
-/// @brief
-///
-PWNAPI auto
-cyclic(_In_ u32 dwSize, _In_ u32 dwPeriod) -> std::vector<u8>;
-
-///
-/// @brief
-///
-PWNAPI auto
-cyclic(_In_ u32 dwSize, _Out_ std::vector<u8>& buffer) -> bool;
-
-///
-/// @brief
-///
-PWNAPI auto
-cyclic(_In_ u32 dwSize) -> std::vector<u8>;
+cyclic(_In_ u32 Size, _In_ u32 Period = 0) -> Result<std::vector<u8>>;
 
 
 ///
@@ -331,6 +337,7 @@ hexdump(const u8* Buffer, const usize BufferSize);
 ///
 PWNAPI void
 hexdump(std::vector<u8> const& bytes);
+
 
 ///
 /// @brief
@@ -350,13 +357,35 @@ sleep(const std::chrono::duration<Rep, Period>& sleep_duration)
 /// @brief Pause the execution
 ///
 void PWNAPI
-pause();
+Pause();
 
 
 ///
 /// @brief Breakpoint the execution
 ///
 void PWNAPI
-debugbreak();
+DebugBreak();
+
+
+///
+///@brief Get the security characteristics of an executable. Ported from
+/// https://github.com/hugsy/stuff/blob/main/CheckSec.c#L131
+///
+///@param FilePath
+///@return Result<std::unordered_map<u16, bool>>
+///
+Result<std::unordered_map<u16, bool>>
+GetExecutableCharacteristics(std::filesystem::path const& FilePath);
+
+
+///
+///@brief Get the executable signature information. Ported from
+/// https://github.com/hugsy/stuff/blob/main/CheckSec.c#L66
+///
+///@param FilePath
+///@return Result<bool>
+///
+Result<bool>
+GetExecutableSignature(std::filesystem::path const& FilePath);
 
 } // namespace pwn::utils

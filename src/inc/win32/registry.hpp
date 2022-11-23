@@ -8,7 +8,12 @@
 /// @link https://docs.microsoft.com/en-us/windows/win32/sysinfo/registry-element-size-limits
 ///
 
+// clang-format off
 #include "common.hpp"
+
+#include "handle.hpp"
+#include "utils.hpp"
+// clang-format on
 
 #define MAX_REGSZ_KEY_SIZE 255
 #define MAX_REGSZ_VALUE_NAME_SIZE 16383
@@ -116,7 +121,7 @@ public:
             TempValue.resize(TempValueLength - 1); // because null byte
             TempValue.shrink_to_fit();
 
-            KeyValue = std::move(pwn::utils::split(TempValue, L'\0'));
+            KeyValue = std::move(pwn::utils::StringLib::Split(TempValue, L'\0'));
         }
         else if constexpr ( std::is_same_v<T, std::vector<u8>> ) // REG_BINARY
         {
@@ -159,10 +164,8 @@ public:
     ///@return Result<DWORD>
     ///
     static Result<DWORD>
-    ReadDword(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
-    {
-        return Read<DWORD>(hKeyRoot, SubKey, KeyName);
-    }
+    ReadDword(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName);
+
 
     ///
     ///@brief Helper to the templated `Read` function, to directly extract a QWORD from registry
@@ -173,10 +176,8 @@ public:
     ///@return Result<DWORD64>
     ///
     static Result<DWORD64>
-    ReadQword(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
-    {
-        return Read<DWORD64>(hKeyRoot, SubKey, KeyName);
-    }
+    ReadQword(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName);
+
 
     ///
     ///@brief Helper to the templated `Read` function, to directly extract a string from registry
@@ -187,16 +188,20 @@ public:
     ///@return Result<std::wstring>
     ///
     static Result<std::wstring>
-    ReadWideString(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
-    {
-        return Read<std::wstring>(hKeyRoot, SubKey, KeyName, 256);
-    }
+    ReadWideString(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName);
 
+
+    ///
+    ///@brief Helper to the templated `Read` function, to directly extract an array of string from registry
+    ///
+    ///@param hKeyRoot
+    ///@param SubKey
+    ///@param KeyName
+    ///@return Result<std::vector<std::wstring>>
+    ///
     static Result<std::vector<std::wstring>>
-    ReadWideStringArray(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
-    {
-        return Read<std::vector<std::wstring>>(hKeyRoot, SubKey, KeyName, 16);
-    }
+    ReadWideStringArray(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName);
+
 
     ///
     ///@brief Helper to the templated `Read` function, to directly extract a vector of bytes from registry
@@ -207,10 +212,7 @@ public:
     ///@return Result<std::vector<u8>>
     ///
     static Result<std::vector<u8>>
-    ReadBytes(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
-    {
-        return Read<std::vector<u8>>(hKeyRoot, SubKey, KeyName, 16);
-    }
+    ReadBytes(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName);
 
 
     ///
@@ -280,6 +282,28 @@ public:
 
         return Ok(KeyValue);
     }
+
+
+    ///
+    ///@brief Enumerates the subkeys of the specified open registry key.
+    ///
+    ///@param hKeyRoot
+    ///@param SubKey
+    ///@return Result<std::vector<std::wstring>>
+    ///
+    static Result<std::vector<std::wstring>>
+    ListKeys(const HKEY hKeyRoot, std::wstring_view const& SubKey);
+
+
+    ///
+    ///@brief Enumerates the values for the specified open registry key.
+    ///
+    ///@param hKeyRoot
+    ///@param SubKey
+    ///@return Result<std::vector<std::wstring>>
+    ///
+    static Result<std::vector<std::wstring>>
+    ListValues(const HKEY hKeyRoot, std::wstring_view const& SubKey);
 
 
 private:

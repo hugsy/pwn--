@@ -124,7 +124,7 @@ pwn::windows::filesystem::mkdir(const std::wstring_view& name) -> Result<bool>
 {
     std::wstring root = L"";
 
-    for ( auto subdir : pwn::utils::split(std::wstring(name), L'\\') )
+    for ( auto subdir : pwn::utils::StringLib::Split(std::wstring(name), L'\\') )
     {
         if ( (::CreateDirectoryW((root + subdir).c_str(), nullptr) != 0) || ::GetLastError() == ERROR_ALREADY_EXISTS )
         {
@@ -175,8 +175,7 @@ pwn::windows::filesystem::tmpfile(const std::wstring_view& prefix) -> Result<std
 {
     std::wstring path = std::wstring(prefix);
     HANDLE hFile      = INVALID_HANDLE_VALUE;
-
-    u32 max_attempt = 5;
+    u32 max_attempt   = 5;
 
     do
     {

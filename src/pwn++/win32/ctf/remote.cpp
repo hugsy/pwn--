@@ -182,7 +182,7 @@ pwn::windows::ctf::Remote::connect() -> bool
 
     sockaddr_in sin = {0};
     sin.sin_family  = AF_INET;
-    inet_pton(AF_INET, pwn::utils::to_string(m_host).c_str(), &sin.sin_addr.s_addr);
+    inet_pton(AF_INET, pwn::utils::StringLib::To<std::string>(m_host).c_str(), &sin.sin_addr.s_addr);
     sin.sin_port = htons(m_port);
 
     if ( ::connect(m_socket, (SOCKADDR*)&sin, sizeof(sin)) == SOCKET_ERROR )
@@ -193,7 +193,7 @@ pwn::windows::ctf::Remote::connect() -> bool
         return false;
     }
 
-    dbg(L"connected to %s:%d\n", m_host.c_str(), m_port);
+    dbg(L"connected to {}:{}", m_host.c_str(), m_port);
     return true;
 }
 
@@ -205,12 +205,12 @@ pwn::windows::ctf::Remote::disconnect() -> bool
 
     if ( ::closesocket(m_socket) == SOCKET_ERROR )
     {
-        err(L"closesocket() failed: %ld\n", ::WSAGetLastError());
+        err(L"closesocket() failed: {}", ::WSAGetLastError());
         res = false;
     }
 
     cleanup();
-    dbg(L"session to %s:%d closed\n", m_host.c_str(), m_port);
+    dbg(L"session to {}:{} closed", m_host.c_str(), m_port);
     return res;
 }
 

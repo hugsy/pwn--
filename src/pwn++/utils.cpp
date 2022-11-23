@@ -5,10 +5,12 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <ranges>
 #include <sstream>
 #include <thread>
 #include <type_traits>
 
+#include "handle.hpp"
 #include "log.hpp"
 #include "pwn.hpp"
 
@@ -23,6 +25,7 @@ extern struct pwn::GlobalContext pwn::Context;
 #define PWN_UTILS_PRINTABLE_CHARSET       PWN_UTILS_ALNUM_CHARSET "!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ "
 // clang-format on
 
+namespace fs = std::filesystem;
 
 namespace pwn::utils
 {
@@ -84,9 +87,9 @@ constexpr std::string_view b64_charset =
     "0123456789+/";
 
 
-//
-// better rand() using xorshift, stolen from gamozo
-//
+///
+/// better rand() using xorshift, stolen from gamozo
+///
 auto
 xorshift64() -> u64
 {
@@ -99,36 +102,41 @@ xorshift64() -> u64
 }
 
 
-/*++
-
-C version of the algorithm implemented in GEF
-
---*/
+///
+///@brief C version of the algorithm implemented in GEF
+///
+///@param t
+///@param p
+///@param dwSize
+///@param Alphabet
+///@param period
+///@param aIndex
+///@param lpResult
+///
 void
-__create_cyclic_buffer(
-    _In_ u32 t,
-    _In_ u32 p,
-    _In_ usize dwSize,
-    _In_ const std::string& Alphabet,
-    _In_ u32 period,
-    _In_ u32* aIndex,
-    _Inout_ std::vector<u8>& lpResult)
+create_cyclic_buffer(
+    const u32 t,
+    const u32 p,
+    const usize DesiredBufferSize,
+    const std::string_view& Alphabet,
+    const u32 Period,
+    u32* aIndex,
+    std::vector<u8>& Result)
 {
-    usize dwAlphabetLen = Alphabet.size();
 
-    if ( lpResult.size() == dwSize )
+    if ( Result.size() == DesiredBufferSize )
     {
         return;
     }
 
-    if ( t > period )
+    if ( t > Period )
     {
-        if ( (period % p) == 0 )
+        if ( (Period % p) == 0 )
         {
-            for ( uint32_t j = 1; j < p + 1; j++ )
+            for ( u32 j = 1; j < p + 1; j++ )
             {
-                lpResult.push_back(Alphabet[aIndex[j]]);
-                if ( lpResult.size() == dwSize )
+                Result.push_back(Alphabet[aIndex[j]]);
+                if ( Result.size() == DesiredBufferSize )
                 {
                     return;
                 }
@@ -138,13 +146,15 @@ __create_cyclic_buffer(
     else
     {
         aIndex[t] = aIndex[t - p];
-        __create_cyclic_buffer(t + 1, p, dwSize, Alphabet, period, aIndex, lpResult);
-        for ( uint32_t j = aIndex[t - p] + 1; j < dwAlphabetLen; j++ )
+        create_cyclic_buffer(t + 1, p, DesiredBufferSize, Alphabet, Period, aIndex, Result);
+        for ( u32 j = aIndex[t - p] + 1; j < Alphabet.size(); j++ )
         {
             aIndex[t] = j;
-            __create_cyclic_buffer(t + 1, t, dwSize, Alphabet, period, aIndex, lpResult);
+            create_cyclic_buffer(t + 1, t, DesiredBufferSize, Alphabet, Period, aIndex, Result);
         }
     }
+
+    return;
 }
 
 } // namespace
@@ -375,133 +385,6 @@ Base64::Decode(std::string_view const& in) -> Result<std::vector<u8>>
     return Ok(out);
 }
 
-
-auto
-to_string(_In_ std::wstring_view const& wstr) -> std::string
-{
-    std::string out;
-    std::transform(
-        wstr.begin(),
-        wstr.end(),
-        std::back_inserter(out),
-        [](wchar_t const c)
-        {
-            return static_cast<char>(c);
-        });
-    return out;
-}
-
-
-auto
-to_wstring(std::string_view const& str) noexcept -> std::wstring
-{
-    return to_widestring(str);
-}
-
-
-auto
-to_widestring(std::string_view const& str) noexcept -> std::wstring
-{
-    std::wstring out;
-    std::transform(
-        str.begin(),
-        str.end(),
-        std::back_inserter(out),
-        [](char const c)
-        {
-            return static_cast<wchar_t>(c);
-        });
-    return out;
-}
-
-
-auto
-split(_In_ const std::wstring& ws, _In_ const wchar_t delim = L' ') -> std::vector<std::wstring>
-{
-    std::vector<std::wstring> out;
-    std::wstringstream wss(ws);
-    std::wstring token;
-
-    while ( std::getline(wss, token, delim) )
-    {
-        out.push_back(token);
-    }
-
-    return out;
-}
-
-
-auto
-join(_In_ const std::vector<std::wstring>& args) -> std::wstring // todo: replace w/ c++17 variadic
-{
-    std::wstring res;
-    for ( auto const& x : args )
-        res += std::wstring {x};
-    return res;
-}
-
-
-template<typename T, typename N>
-auto static inline strippable_string(_In_ T const& in, _In_ N const& chars_to_strip) -> T
-{
-    T out {in};
-    for ( auto const& c : out )
-    {
-        std::erase_if(
-            out,
-            [&c](auto const& x)
-            {
-                return x == c;
-            });
-    }
-    return out;
-}
-
-
-auto
-strip(_In_ std::wstring const& str) -> std::wstring
-{
-    const std::array<wchar_t, 3> chars_to_strip = {' ', '\r', '\n'};
-    return strippable_string(str, chars_to_strip);
-}
-
-
-auto
-strip(_In_ std::string const& str) -> std::string
-{
-    const std::array<char, 3> chars_to_strip = {' ', '\r', '\n'};
-    return strippable_string(str, chars_to_strip);
-}
-
-
-auto
-wstring_to_bytes(_In_ std::wstring_view const& str) -> std::vector<u8>
-{
-    std::vector<u8> out;
-    for ( wchar_t i : str )
-    {
-        out.push_back((u8)i);
-        out.push_back(0x00);
-    }
-    return out;
-}
-
-auto
-string_to_bytes(_In_ std::string_view const& str) -> std::vector<u8>
-{
-    std::vector<u8> out;
-    std::transform(
-        str.begin(),
-        str.end(),
-        std::back_inserter(out),
-        [](char const c)
-        {
-            return c;
-        });
-    return out;
-}
-
-
 uptr
 align(uptr a, usize sz)
 {
@@ -509,55 +392,16 @@ align(uptr a, usize sz)
 }
 
 
-/**
- * @brief Create a DeBruijn cyclic pattern
- *
- * @param dwSize
- * @param dwPeriod
- * @param buffer
- * @return true
- * @return false
- */
-auto
-cyclic(_In_ u32 dwSize, _In_ u32 dwPeriod, _Out_ std::vector<u8>& buffer) -> bool
+Result<std::vector<u8>>
+cyclic(_In_ u32 Size, _In_ u32 Period)
 {
-    const std::string lpAlphabet("abcdefghijklmnopqrstuvwxyz");
-    buffer.clear();
-
-    auto aIndex = std::make_unique<u32[]>(lpAlphabet.size() * dwPeriod);
-    __create_cyclic_buffer(1, 1, dwSize, lpAlphabet, dwPeriod, aIndex.get(), buffer);
-    return true;
-}
-
-
-auto
-cyclic(_In_ u32 dwSize, _In_ u32 dwPeriod) -> std::vector<u8>
-{
-    std::vector<u8> buffer;
-    if ( cyclic(dwSize, dwPeriod, buffer) != 0 )
-    {
-        return buffer;
-    }
-    throw std::runtime_error("cyclic failed");
-}
-
-
-auto
-cyclic(_In_ u32 dwSize, _Out_ std::vector<u8>& buffer) -> bool
-{
-    return cyclic(dwSize, pwn::Context.ptrsize, buffer);
-}
-
-
-auto
-cyclic(_In_ u32 dwSize) -> std::vector<u8>
-{
-    std::vector<u8> buffer;
-    if ( cyclic(dwSize, pwn::Context.ptrsize, buffer) != 0 )
-    {
-        return buffer;
-    }
-    throw std::runtime_error("cyclic failed");
+    std::vector<u8> Buffer;
+    const std::string_view Alphabet = "abcdefghijklmnopqrstuvwxyz";
+    Buffer.clear();
+    u32 _Period = Period ? Period : pwn::Context.ptrsize;
+    auto aIndex = std::make_unique<u32[]>(Alphabet.size() * _Period);
+    create_cyclic_buffer(1, 1, Size, Alphabet, _Period, aIndex.get(), Buffer);
+    return Ok(Buffer);
 }
 
 
@@ -631,7 +475,7 @@ __flatten(_In_ const flattenable_t& v) -> std::vector<u8>
     if ( const auto ptr = std::get_if<1>(&v) )
     {
         const std::wstring& s(*ptr);
-        return wstring_to_bytes(s);
+        return StringLib::To<std::vector<u8>>(s);
     }
 
     if ( const auto ptr = std::get_if<2>(&v) )
@@ -658,7 +502,7 @@ flatten(_In_ const std::vector<flattenable_t>& args) -> std::vector<u8>
 
 
 void
-pause()
+Pause()
 {
     dbg("Pausing, press enter to resume...");
     std::cin.get();
@@ -666,10 +510,89 @@ pause()
 
 
 void
-debugbreak()
+DebugBreak()
 {
     dbg("Breakpointing...");
-    DebugBreak();
+    ::DebugBreak();
+}
+
+
+Result<std::unordered_map<u16, bool>>
+GetExecutableCharacteristics(fs::path const& FilePath)
+{
+    std::unordered_map<u16, bool> SecProps {
+        {IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA, false},
+        {IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE, false},
+        {IMAGE_DLLCHARACTERISTICS_FORCE_INTEGRITY, false},
+        {IMAGE_DLLCHARACTERISTICS_NX_COMPAT, false},
+        {IMAGE_DLLCHARACTERISTICS_NO_ISOLATION, false},
+        {IMAGE_DLLCHARACTERISTICS_NO_SEH, false},
+        {IMAGE_DLLCHARACTERISTICS_NO_BIND, false},
+        {IMAGE_DLLCHARACTERISTICS_APPCONTAINER, false},
+        {IMAGE_DLLCHARACTERISTICS_WDM_DRIVER, false},
+        {IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE, false},
+#ifdef IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT
+        {IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT, false},
+#endif // IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT
+    };
+
+    auto hFile = pwn::UniqueHandle {::CreateFileW(
+        FilePath.c_str(),
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        nullptr,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        nullptr)};
+    if ( !hFile )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    const u32 FileSize = ::GetFileSize(hFile.get(), nullptr);
+
+    auto hFileMap = pwn::UniqueHandle {::CreateFileMappingW(hFile.get(), nullptr, PAGE_READONLY, 0, 0, nullptr)};
+    if ( !hFileMap )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    uptr pMappedData = (uptr)::MapViewOfFile(hFileMap.get(), FILE_MAP_READ, 0, 0, 0);
+
+    const IMAGE_DOS_HEADER* pDosHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(pMappedData);
+
+    if ( pDosHeader->e_magic != IMAGE_DOS_SIGNATURE )
+    {
+        return Err(ErrorCode::BadSignature);
+    }
+
+    if ( pDosHeader->e_lfanew >= FileSize )
+    {
+        return Err(ErrorCode::ParsingError);
+    }
+
+
+    const IMAGE_NT_HEADERS* pPeHeader = reinterpret_cast<IMAGE_NT_HEADERS*>(pMappedData + pDosHeader->e_lfanew);
+
+    if ( pPeHeader->Signature != IMAGE_NT_SIGNATURE )
+    {
+        return Err(ErrorCode::ParsingError);
+    }
+
+    IMAGE_OPTIONAL_HEADER const& pOptionalHeader = pPeHeader->OptionalHeader;
+
+    for ( auto Flag : std::views::keys(SecProps) )
+    {
+        SecProps[Flag] = (pOptionalHeader.DllCharacteristics & Flag) != 0;
+    }
+
+    return Ok(SecProps);
+}
+
+Result<bool>
+GetExecutableSignature(fs::path const& FilePath)
+{
+    return Ok(true);
 }
 
 } // namespace pwn::utils
