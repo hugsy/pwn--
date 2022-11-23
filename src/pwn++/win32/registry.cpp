@@ -48,16 +48,16 @@ Registry::ReadBytes(const HKEY hKeyRoot, const std::wstring_view& SubKey, const 
 Result<std::vector<std::wstring>>
 Registry::ListKeys(const HKEY hKeyRoot, std::wstring_view const& SubKey)
 {
-    auto hKey =
-        RegistryHandle {[&hKeyRoot, &SubKey]()
-                        {
-                            HKEY h;
-                            if ( ::RegOpenKeyExW(hKeyRoot, SubKey.data(), 0, KEY_QUERY_VALUE, &h) != ERROR_SUCCESS )
-                            {
-                                return static_cast<HKEY>(INVALID_HANDLE_VALUE);
-                            }
-                            return h;
-                        }()};
+    auto hKey = RegistryHandle {
+        [&hKeyRoot, &SubKey]()
+        {
+            HKEY h;
+            if ( ::RegOpenKeyExW(hKeyRoot, SubKey.data(), 0, KEY_ENUMERATE_SUB_KEYS, &h) != ERROR_SUCCESS )
+            {
+                return static_cast<HKEY>(INVALID_HANDLE_VALUE);
+            }
+            return h;
+        }()};
     if ( !hKey )
     {
         return Err(ErrorCode::ExternalApiCallFailed);
@@ -94,6 +94,7 @@ Registry::ListKeys(const HKEY hKeyRoot, std::wstring_view const& SubKey)
             break;
 
         case ERROR_MORE_DATA:
+            CurrentKeySize *= 2;
             CurrentKeyName.resize(CurrentKeySize);
             break;
 
@@ -114,16 +115,16 @@ Registry::ListKeys(const HKEY hKeyRoot, std::wstring_view const& SubKey)
 Result<std::vector<std::wstring>>
 Registry::ListValues(const HKEY hKeyRoot, std::wstring_view const& SubKey)
 {
-    auto hKey = RegistryHandle {
-        [&hKeyRoot, &SubKey]()
-        {
-            HKEY h;
-            if ( ::RegOpenKeyExW(hKeyRoot, SubKey.data(), 0, KEY_ENUMERATE_SUB_KEYS, &h) != ERROR_SUCCESS )
-            {
-                return static_cast<HKEY>(INVALID_HANDLE_VALUE);
-            }
-            return h;
-        }()};
+    auto hKey =
+        RegistryHandle {[&hKeyRoot, &SubKey]()
+                        {
+                            HKEY h;
+                            if ( ::RegOpenKeyExW(hKeyRoot, SubKey.data(), 0, KEY_QUERY_VALUE, &h) != ERROR_SUCCESS )
+                            {
+                                return static_cast<HKEY>(INVALID_HANDLE_VALUE);
+                            }
+                            return h;
+                        }()};
     if ( !hKey )
     {
         return Err(ErrorCode::ExternalApiCallFailed);
@@ -160,6 +161,7 @@ Registry::ListValues(const HKEY hKeyRoot, std::wstring_view const& SubKey)
             break;
 
         case ERROR_MORE_DATA:
+            CurrentValueSize *= 2;
             CurrentValueName.resize(CurrentValueSize);
             break;
 

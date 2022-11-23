@@ -245,20 +245,17 @@ public:
     ///
     /// @brief
     ///
-    template<typename T>
-    T
-    Strip(T const& Src)
+    template<typename T, typename L>
+    static T
+    Strip(T const& Src, const L c)
     {
         T Dst {Src};
-        for ( auto const& c : Src )
-        {
-            std::erase_if(
-                Dst,
-                [&c](auto const& x)
-                {
-                    return x == c;
-                });
-        }
+        std::erase_if(
+            Dst,
+            [&c](auto const& x)
+            {
+                return x == c;
+            });
         return Dst;
     }
 };
@@ -347,7 +344,7 @@ hexdump(std::vector<u8> const& bytes);
 ///
 template<class Rep, class Period>
 void
-sleep(const std::chrono::duration<Rep, Period>& sleep_duration)
+Sleep(const std::chrono::duration<Rep, Period>& sleep_duration)
 {
     std::this_thread::sleep_for(sleep_duration);
 }
