@@ -42,11 +42,25 @@ IMPORT_EXTERNAL_FUNCTION(
 
 
 EXTERN_C_START
+#ifndef _M_ARM64
 bool
 GetPeb(uptr* peb);
 
 usize
 GetPebLength();
+#else
+bool
+GetPeb(uptr* peb)
+{
+    return false;
+}
+
+usize
+GetPebLength()
+{
+    return 0;
+}
+#endif // _M_ARM64
 EXTERN_C_END
 
 
@@ -1022,10 +1036,10 @@ Process::QueryInternal(const PROCESSINFOCLASS ProcessInformationClass, const usi
 Result<bool>
 System(_In_ const std::wstring& CommandLine, _In_ const std::wstring& Operation)
 {
-    auto args = pwn::utils::split(CommandLine, L' ');
+    auto args = pwn::utils::StringLib::Split(CommandLine, L' ');
     auto cmd {args[0]};
     args.erase(args.begin());
-    auto params  = pwn::utils::join(args);
+    auto params  = pwn::utils::StringLib::Join(args, L' ');
     bool success = static_cast<bool>(
         reinterpret_cast<long long>(
             ::ShellExecuteW(nullptr, Operation.c_str(), cmd.c_str(), params.c_str(), nullptr, SW_SHOW)) > 32);
@@ -1068,7 +1082,7 @@ AppContainer::AppContainer(
     m_SidAsString = str;
     ::LocalFree(str);
 
-    dbg(L"sid={}\n", m_SidAsString.c_str());
+    dbg(L"sid={}", m_SidAsString.c_str());
 
     //
     // Get the folder path
@@ -1080,7 +1094,7 @@ AppContainer::AppContainer(
         ::CoTaskMemFree(path);
     }
 
-    dbg(L"folder_path={}\n", m_FolderPath.c_str());
+    dbg(L"folder_path={}", m_FolderPath.c_str());
 
 
     //
@@ -1172,12 +1186,12 @@ AppContainer::~AppContainer()
         {
             delete[] m_SecurityCapabilities.Capabilities[i].Sid;
         }
-        delete[](u8*) m_SecurityCapabilities.Capabilities;
+        delete[] (u8*)m_SecurityCapabilities.Capabilities;
     }
 
     if ( m_StartupInfo.lpAttributeList != nullptr )
     {
-        delete[](u8*) m_StartupInfo.lpAttributeList;
+        delete[] (u8*)m_StartupInfo.lpAttributeList;
     }
 
     if ( m_AppContainerSid != nullptr )
@@ -1187,7 +1201,7 @@ AppContainer::~AppContainer()
 }
 
 
-_Success_(return )
+_Success_(return)
 auto
 AppContainer::allow_file_or_directory(_In_ const std::wstring& file_or_directory_name) -> bool
 {
@@ -1195,7 +1209,7 @@ AppContainer::allow_file_or_directory(_In_ const std::wstring& file_or_directory
 }
 
 
-_Success_(return )
+_Success_(return)
 auto
 AppContainer::allow_registry_key(_In_ const std::wstring& regkey) -> bool
 {
@@ -1203,7 +1217,7 @@ AppContainer::allow_registry_key(_In_ const std::wstring& regkey) -> bool
 }
 
 
-_Success_(return )
+_Success_(return)
 auto
 AppContainer::spawn() -> bool
 {
@@ -1236,7 +1250,7 @@ AppContainer::spawn() -> bool
 }
 
 
-_Success_(return )
+_Success_(return)
 auto
 AppContainer::set_named_object_access(
     const std::wstring& ObjectName,
@@ -1332,7 +1346,7 @@ AppContainer::set_named_object_access(
 }
 
 
-_Success_(return )
+_Success_(return)
 auto
 AppContainer::join(_In_ const u32 dwTimeout) -> bool
 {
@@ -1340,7 +1354,7 @@ AppContainer::join(_In_ const u32 dwTimeout) -> bool
 }
 
 
-_Success_(return )
+_Success_(return)
 auto
 AppContainer::restore_acls() -> bool
 {
@@ -1351,9 +1365,9 @@ AppContainer::restore_acls() -> bool
         auto const& ObjectName = std::get<0>(acl);
         auto const& ObjectType = std::get<1>(acl);
         auto const& pOldAcl    = std::get<2>(acl);
-        dbg(L"restoring original acl for '{}'\n", ObjectName.c_str());
-        bRes &= static_cast<int>(
-            ::SetNamedSecurityInfo(
+        dbg(L"restoring original acl for '{}'", ObjectName.c_str());
+        bRes &= static_cast<bool>(
+            ::SetNamedSecurityInfoW(
                 (PWSTR)ObjectName.c_str(),
                 ObjectType,
                 DACL_SECURITY_INFORMATION,

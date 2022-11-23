@@ -82,6 +82,9 @@ enum class ErrorCode : uint32_t
     /// @brief Error code `AllocationError`
     AllocationError,
 
+    /// @brief An error happened while parsing data
+    ParsingError,
+
     /// @brief Error code `BufferTooBig`
     BufferTooBig,
 
@@ -117,6 +120,12 @@ enum class ErrorCode : uint32_t
 
     ///@brief Version mismatch between expected vs provided
     BadVersion,
+
+    ///@brief Signature mismatch between expected vs provided
+    BadSignature,
+
+    /// @brief Expected entry (file, pipe, registry key, etc.) was not found
+    NotFound,
 };
 
 ///

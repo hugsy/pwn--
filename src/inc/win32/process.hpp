@@ -365,23 +365,23 @@ public:
 
     ~AppContainer();
 
-    _Success_(return )
+    _Success_(return)
     auto
     allow_file_or_directory(_In_ const std::wstring& file_or_directory_name) -> bool;
 
-    _Success_(return )
+    _Success_(return)
     auto
     allow_registry_key(_In_ const std::wstring& regkey) -> bool;
 
-    _Success_(return )
+    _Success_(return)
     auto
     spawn() -> bool;
 
-    _Success_(return )
+    _Success_(return)
     auto
     restore_acls() -> bool;
 
-    _Success_(return )
+    _Success_(return)
     auto
     join(_In_ u32 dwTimeout = INFINITE) -> bool;
 

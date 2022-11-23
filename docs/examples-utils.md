@@ -6,15 +6,17 @@
 #include <pwn++\pwn.h>
 int wmain()
 {
-    std::vector<u8> buf;
-
     ok(L"pwntools.utils.cyclic() with a period of 4, and a length of 0x20 bytes\n");
-    if ( pwn::utils::cyclic(0x20, 4, buf) )
-        pwn::utils::hexdump(buf);
+    {
+        auto res = pwn::utils::cyclic(0x20, 4);
+        pwn::utils::hexdump(Value(res));
+    }
 
     ok(L"nice, now with period=sizeof(PTR)\n");
-    if ( pwn::utils::cyclic(0x30, buf) )
-        pwn::utils::hexdump(buf);
+    {
+        auto res = pwn::utils::cyclic(0x30);
+        pwn::utils::hexdump(Value(res));
+    }
 
     return 0;
 }

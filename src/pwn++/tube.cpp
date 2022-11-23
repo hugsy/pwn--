@@ -23,7 +23,7 @@ Tube::send(_In_ std::vector<u8> const& data) -> size_t
 auto
 Tube::send(_In_ std::string const& str) -> size_t
 {
-    return __send_internal(pwn::utils::string_to_bytes(str));
+    return __send_internal(pwn::utils::StringLib::To<std::vector<u8>>(str));
 }
 
 
@@ -46,7 +46,7 @@ Tube::sendline(_In_ std::vector<u8> const& data) -> size_t
 auto
 Tube::sendline(_In_ std::string const& str) -> size_t
 {
-    return sendline(pwn::utils::string_to_bytes(str));
+    return sendline(pwn::utils::StringLib::To<std::vector<u8>>(str));
 }
 
 
@@ -108,7 +108,7 @@ Tube::recvuntil(_In_ std::vector<u8> const& pattern) -> std::vector<u8>
 auto
 Tube::recvuntil(_In_ std::string const& pattern) -> std::vector<u8>
 {
-    return recvuntil(pwn::utils::string_to_bytes(pattern));
+    return recvuntil(pwn::utils::StringLib::To<std::vector<u8>>(pattern));
 }
 
 
@@ -162,7 +162,7 @@ static bool __bReplLoop = false;
 
 
 #ifdef PWN_BUILD_FOR_WINDOWS
-_Success_(return )
+_Success_(return)
 static BOOL WINAPI
 __pwn_interactive_repl_sighandler(_In_ DWORD signum)
 {

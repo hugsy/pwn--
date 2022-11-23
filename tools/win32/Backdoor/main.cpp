@@ -34,7 +34,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     // Enter to exit
     //
-    pwn::utils::pause();
+    pwn::utils::Pause();
 
     //
     // Stop the thread

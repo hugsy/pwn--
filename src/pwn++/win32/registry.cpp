@@ -1,104 +1,183 @@
 #include "registry.hpp"
 
-// missing HKEY_CLASSES_ROOT HKEY_CURRENT_CONFIG
 
-
-HKEY
-pwn::reg::hklm()
+namespace pwn::windows
 {
-    return HKEY_LOCAL_MACHINE;
+
+#pragma region Registry::Read
+
+Result<DWORD>
+Registry::ReadDword(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
+{
+    return Read<DWORD>(hKeyRoot, SubKey, KeyName);
 }
 
 
-HKEY
-pwn::reg::hkcu()
+Result<DWORD64>
+Registry::ReadQword(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
 {
-    return HKEY_CURRENT_USER;
+    return Read<DWORD64>(hKeyRoot, SubKey, KeyName);
 }
 
 
-HKEY
-pwn::reg::hku()
+Result<std::wstring>
+Registry::ReadWideString(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
 {
-    return HKEY_USERS;
+    return Read<std::wstring>(hKeyRoot, SubKey, KeyName, 256);
 }
 
 
-_Success_(return == ERROR_SUCCESS)
-DWORD
-pwn::reg::read_dword(_In_ HKEY hKeyRoot, _In_ const std::wstring& SubKey, _In_ const std::wstring& KeyName, _Out_ PDWORD lpdwKeyValue)
+Result<std::vector<std::wstring>>
+Registry::ReadWideStringArray(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
 {
-    HKEY hKey;
-    LSTATUS lStatus = ::RegOpenKeyExW(hKeyRoot, SubKey.c_str(), 0, KEY_READ, &hKey);
-    if ( lStatus != ERROR_SUCCESS )
-        return lStatus;
-
-    DWORD dwKeyValueSize = sizeof(DWORD);
-
-    lStatus = ::RegQueryValueExW(hKey, KeyName.c_str(), 0, NULL, (PBYTE)lpdwKeyValue, &dwKeyValueSize);
-
-    ::RegCloseKey(hKey);
-    return lStatus;
+    return Read<std::vector<std::wstring>>(hKeyRoot, SubKey, KeyName, 16);
 }
 
 
-_Success_(return == ERROR_SUCCESS)
-DWORD
-pwn::reg::read_bool(_In_ HKEY hKeyRoot, _In_ const std::wstring& SubKey, _In_ const std::wstring& KeyName, _Out_ PBOOL lpbKeyValue)
+Result<std::vector<u8>>
+Registry::ReadBytes(const HKEY hKeyRoot, const std::wstring_view& SubKey, const std::wstring_view& KeyName)
 {
-    HKEY hKey;
-    LSTATUS lStatus = ::RegOpenKeyExW(hKeyRoot, SubKey.c_str(), 0, KEY_READ, &hKey);
-    if ( lStatus != ERROR_SUCCESS )
-        return lStatus;
+    return Read<std::vector<u8>>(hKeyRoot, SubKey, KeyName, 16);
+}
 
-    DWORD dwKeyValueSize = sizeof(BOOL);
+#pragma endregion
 
-    lStatus = ::RegQueryValueExW(hKey, KeyName.c_str(), 0, NULL, (PBYTE)lpbKeyValue, &dwKeyValueSize);
 
-    ::RegCloseKey(hKey);
-    return lStatus;
+#pragma region Registry::Enumerate
+
+Result<std::vector<std::wstring>>
+Registry::ListKeys(const HKEY hKeyRoot, std::wstring_view const& SubKey)
+{
+    auto hKey = RegistryHandle {
+        [&hKeyRoot, &SubKey]()
+        {
+            HKEY h;
+            if ( ::RegOpenKeyExW(hKeyRoot, SubKey.data(), 0, KEY_ENUMERATE_SUB_KEYS, &h) != ERROR_SUCCESS )
+            {
+                return static_cast<HKEY>(INVALID_HANDLE_VALUE);
+            }
+            return h;
+        }()};
+    if ( !hKey )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    std::vector<std::wstring> Entries;
+    DWORD dwIndex = 0;
+
+    DWORD CurrentKeySize = 256;
+    DWORD CurrentKeyType = 0;
+    std::wstring CurrentKeyName;
+    CurrentKeyName.resize(CurrentKeySize);
+
+    bool bHasMoreKey = true;
+
+    while ( bHasMoreKey )
+    {
+        CurrentKeyName.clear();
+
+        LONG res = ::RegEnumKeyExW(
+            hKey.get(),
+            dwIndex,
+            &CurrentKeyName[0],
+            &CurrentKeySize,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr);
+
+        switch ( res )
+        {
+        case ERROR_NO_MORE_ITEMS:
+            bHasMoreKey = false;
+            break;
+
+        case ERROR_MORE_DATA:
+            CurrentKeySize *= 2;
+            CurrentKeyName.resize(CurrentKeySize);
+            break;
+
+        case ERROR_SUCCESS:
+            dwIndex++;
+            Entries.push_back(CurrentKeyName);
+            break;
+
+        default:
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+    }
+
+    return Ok(Entries);
 }
 
 
-_Success_(return == ERROR_SUCCESS)
-DWORD
-pwn::reg::read_wstring(_In_ HKEY hKeyRoot, _In_ const std::wstring& SubKey, _In_ const std::wstring& KeyName, _Out_ std::wstring& KeyValue)
+Result<std::vector<std::wstring>>
+Registry::ListValues(const HKEY hKeyRoot, std::wstring_view const& SubKey)
 {
-    HKEY hKey;
-    LSTATUS lStatus = ::RegOpenKeyExW(hKeyRoot, SubKey.c_str(), 0, KEY_READ, &hKey);
-    if ( lStatus != ERROR_SUCCESS )
-        return lStatus;
+    auto hKey =
+        RegistryHandle {[&hKeyRoot, &SubKey]()
+                        {
+                            HKEY h;
+                            if ( ::RegOpenKeyExW(hKeyRoot, SubKey.data(), 0, KEY_QUERY_VALUE, &h) != ERROR_SUCCESS )
+                            {
+                                return static_cast<HKEY>(INVALID_HANDLE_VALUE);
+                            }
+                            return h;
+                        }()};
+    if ( !hKey )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
 
-    DWORD dwBufferSize = MAX_REGSZ_VALUE_SIZE;
-    auto lpwsBuffer    = std::vector<WCHAR>(dwBufferSize);
+    std::vector<std::wstring> Entries;
+    DWORD dwIndex = 0;
 
-    lStatus = ::RegQueryValueExW(hKey, KeyName.c_str(), 0, NULL, (PBYTE)lpwsBuffer.data(), &dwBufferSize);
+    DWORD CurrentValueSize = 256;
+    DWORD CurrentValueType = 0;
+    std::wstring CurrentValueName;
+    CurrentValueName.resize(CurrentValueSize);
 
-    if ( lStatus == ERROR_SUCCESS )
-        KeyValue = lpwsBuffer.data();
+    bool bHasMoreValue = true;
 
-    ::RegCloseKey(hKey);
-    return lStatus;
+    while ( bHasMoreValue )
+    {
+        CurrentValueName.clear();
+
+        LONG res = ::RegEnumValueW(
+            hKey.get(),
+            dwIndex,
+            &CurrentValueName[0],
+            &CurrentValueSize,
+            nullptr,
+            &CurrentValueType,
+            nullptr,
+            nullptr);
+
+        switch ( res )
+        {
+        case ERROR_NO_MORE_ITEMS:
+            bHasMoreValue = false;
+            break;
+
+        case ERROR_MORE_DATA:
+            CurrentValueSize *= 2;
+            CurrentValueName.resize(CurrentValueSize);
+            break;
+
+        case ERROR_SUCCESS:
+            dwIndex++;
+            Entries.push_back(CurrentValueName);
+            break;
+
+        default:
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+    }
+
+    return Ok(Entries);
 }
 
+#pragma endregion
 
-_Success_(return == ERROR_SUCCESS)
-DWORD
-pwn::reg::read_binary(_In_ HKEY hKeyRoot, _In_ const std::wstring& SubKey, _In_ const std::wstring& KeyName, _Out_ std::vector<BYTE>& KeyValue)
-{
-    HKEY hKey;
-    LSTATUS lStatus = ::RegOpenKeyExW(hKeyRoot, SubKey.c_str(), 0, KEY_READ, &hKey);
-    if ( lStatus != ERROR_SUCCESS )
-        return lStatus;
-
-    DWORD dwBufferSize = MAX_REGSZ_VALUE_SIZE;
-    KeyValue.resize(dwBufferSize);
-
-    lStatus = ::RegQueryValueExW(hKey, KeyName.c_str(), 0, NULL, (PBYTE)KeyValue.data(), &dwBufferSize);
-
-    if ( lStatus == ERROR_SUCCESS )
-        KeyValue.resize(dwBufferSize);
-
-    ::RegCloseKey(hKey);
-    return lStatus;
-}
+} // namespace pwn::windows

@@ -61,7 +61,7 @@ namespace win = windows;
 /// namespace pwn::windows, class Thread
 #include "win32/thread.hpp"
 
-/// namespace pwn::windows::registry
+/// namespace pwn::windows, class Registry
 #include "win32/registry.hpp"
 
 /// namespace pwn::windows::kernel
@@ -76,7 +76,7 @@ namespace win = windows;
 /// namespace pwn::windows::filesystem
 #include "win32/fs.hpp"
 
-/// namespace pwn::windowsdows::alpc
+/// namespace pwn::windows::alpc
 #include "win32/alpc.hpp"
 
 /// namespace pwn::windows::rpc

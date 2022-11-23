@@ -158,26 +158,16 @@ wmain(const int argc, const wchar_t** argv) -> int
     return 0;
 
 
-    // pwn::utils::pause();
-
-    // auto random_buffer = pwn::utils::random::buffer(0x40);
-    // dbg(L"random_buffer=");
-    // pwn::utils::hexdump(random_buffer);
-
-    // auto encoded_buffer = Value(pwn::utils::Base64::Encode(random_buffer));
-    // dbg(L"b64=\"{}\"", pwn::utils::to_widestring(encoded_buffer));
-
-
     std::vector<u8> encoded_buffer;
     if ( argc >= 2 )
     {
         std::wstring arg {argv[1]};
-        auto decoded_string = Value(pwn::utils::Base64::Decode(pwn::utils::to_string(arg)));
+        auto decoded_string = Value(pwn::utils::Base64::Decode(pwn::utils::StringLib::To<std::string>(arg)));
         encoded_buffer      = decoded_string;
         pwn::utils::hexdump(encoded_buffer);
     }
 
-    // pwn::utils::debugbreak();
+    // pwn::utils::DebugBreak();
 
     info(L"sending syscall...");
     Status = NtSetInformationProcess(
@@ -231,7 +221,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     // dbg(L"ended notepad");
 
 
-    // pwn::utils::pause();
+    // pwn::utils::Pause();
     return EXIT_SUCCESS;
     */
 }

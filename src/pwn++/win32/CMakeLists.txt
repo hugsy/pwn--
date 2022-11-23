@@ -23,37 +23,41 @@ set(
     HEADER_FILES
 
     ${HEADER_DIR}/framework.hpp
-    ${HEADER_DIR}/system.hpp
+
+    ${HEADER_DIR}/alpc.hpp
+    ${HEADER_DIR}/fs.hpp
+    ${HEADER_DIR}/job.hpp
+    ${HEADER_DIR}/kernel.hpp
+    ${HEADER_DIR}/object.hpp
     ${HEADER_DIR}/process.hpp
+    ${HEADER_DIR}/registry.hpp
+    ${HEADER_DIR}/rpc.hpp
+    ${HEADER_DIR}/service.hpp
+    ${HEADER_DIR}/symbols.hpp
+    ${HEADER_DIR}/system.hpp
     ${HEADER_DIR}/thread.hpp
     ${HEADER_DIR}/token.hpp
-    ${HEADER_DIR}/registry.hpp
-    ${HEADER_DIR}/kernel.hpp
-    ${HEADER_DIR}/job.hpp
-    ${HEADER_DIR}/service.hpp
-    ${HEADER_DIR}/fs.hpp
-    ${HEADER_DIR}/alpc.hpp
-    ${HEADER_DIR}/rpc.hpp
-    ${HEADER_DIR}/object.hpp
-    ${HEADER_DIR}/symbols.hpp
+
     ${HEADER_DIR}/ctf/remote.hpp
 )
 
 set(
     SOURCE_FILES
 
-    ${SOURCE_DIR}/system.cpp
+    ${SOURCE_DIR}/alpc.cpp
+    ${SOURCE_DIR}/fs.cpp
+    ${SOURCE_DIR}/job.cpp
+    ${SOURCE_DIR}/kernel.cpp
+    ${SOURCE_DIR}/object.cpp
     ${SOURCE_DIR}/process.cpp
+    ${SOURCE_DIR}/registry.cpp
+    ${SOURCE_DIR}/rpc.cpp
+    ${SOURCE_DIR}/service.cpp
+    ${SOURCE_DIR}/symbols.cpp
+    ${SOURCE_DIR}/system.cpp
     ${SOURCE_DIR}/thread.cpp
     ${SOURCE_DIR}/token.cpp
-    ${SOURCE_DIR}/kernel.cpp
-    ${SOURCE_DIR}/job.cpp
-    ${SOURCE_DIR}/service.cpp
-    ${SOURCE_DIR}/fs.cpp
-    ${SOURCE_DIR}/alpc.cpp
-    ${SOURCE_DIR}/rpc.cpp
-    ${SOURCE_DIR}/object.cpp
-    ${SOURCE_DIR}/symbols.cpp
+
     ${SOURCE_DIR}/ctf/remote.cpp
 
     $<$<BOOL:0>:${CMAKE_GENERATOR_PLATFORM}>
@@ -99,7 +103,8 @@ target_compile_options(
     $<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
 
     PRIVATE
-    $<$<CONFIG:Debug>:/fsanitize=address>
+
+    $<$<NOT:$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>>:$<$<CONFIG:Debug>:/fsanitize=address>>
     /diagnostics:caret /Zl /ZH:SHA_256
     $<IF:$<CONFIG:Debug>,/sdl /WX /Gy /Gm- /permissive-,/WX /Zi /Zf /Gm /Gm- /permissive- >
 )
@@ -110,7 +115,8 @@ target_compile_options(
 target_link_options(
     ${PROJECT_NAME}
     PUBLIC
-    $<$<CONFIG:Debug>:/InferAsanLibs>
+
+    $<$<NOT:$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>>:$<$<CONFIG:Debug>:/InferAsanLibs>>
 
     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:/SAFESEH:NO>
 

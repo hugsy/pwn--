@@ -123,11 +123,11 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
             }
 
 
-            ok(L"spawing process '{}'\n", processName);
+            ok(L"spawing process '{}'", processName);
 
             if ( !app.spawn() )
             {
-                err(L"failed to launch '{}'\n", processName);
+                err(L"failed to launch '{}'", processName);
                 pwn::log::perror(L"appcontainer::spawn()");
                 return EXIT_FAILURE;
             }
@@ -138,7 +138,7 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
     }
     catch ( std::runtime_error& e )
     {
-        err(L"container initialization failed: {}\n", pwn::utils::to_widestring(e.what()));
+        err(L"container initialization failed: {}", pwn::utils::StringLib::To<std::wstring, std::string>(e.what()));
         return EXIT_FAILURE;
     }
 
