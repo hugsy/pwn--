@@ -3,98 +3,167 @@
 #include "common.hpp"
 
 
-#define PWN_TUBE_PIPE_DEFAULT_SIZE 1024
-#define PWN_LINESEP '\n'
-#define PWN_INTERACTIVE_PROMPT ">>> "
-
-
 ///
-/// Generic interface that represent a tube
-/// Tube definition (process, remote) are OS-specific
+/// @brief Generic interface that represent a tube. Tube definition (process, remote) are OS-specific
 ///
 class Tube
 {
 public:
-    /// <summary>
-    /// Move data given as argument to the send buffer, tries to send.
-    /// This pure function should be defined for each new derived tube.
-    /// </summary>
-    PWNAPI auto send(_In_ std::vector<u8> const& str) -> size_t;
-    PWNAPI auto send(_In_ std::string const& str) -> size_t;
+    ///
+    ///@brief Default read size from the pipe
+    ///
+    static constexpr usize PIPE_DEFAULT_SIZE = 1024;
 
-    /// <summary>
-    /// Read bytes from the tube, moves the read bytes to the receive buffer.
-    /// This pure function should be defined for each new derived tube.
-    /// </summary>
-    PWNAPI auto recv(_In_ size_t size) -> std::vector<u8>;
+    ///
+    ///@brief Default line separator
+    ///
+    static constexpr u8 LINE_SEPARATOR = '\n';
 
-    /// <summary>
-    /// Send the data (as byte vector) followed by a line separator
-    /// </summary>
-    PWNAPI auto sendline(_In_ std::vector<u8> const& data) -> size_t;
+    ///
+    ///@brief Default prompt
+    ///
+    static constexpr std::string_view INTERACTIVE_PROMPT = "(pwn)> ";
 
-    /// <summary>
-    /// Send the data (as str) followed by a line separator
-    /// </summary>
-    /// <param name="str"></param>
-    /// <returns></returns>
-    PWNAPI auto sendline(_In_ std::string const& str) -> size_t;
 
-    /// <summary>
-    /// Read from tube until receiving the given pattern, and return that data.
-    /// </summary>
-    PWNAPI auto recvuntil(_In_ std::vector<u8> const& pattern) -> std::vector<u8>;
-    PWNAPI auto recvuntil(_In_ std::string const& pattern) -> std::vector<u8>;
+    ///
+    ///@brief Move data given as argument to the send buffer, tries to send.
+    ///
+    ///@param str
+    ///@return A Result object with the number of bytes sent
+    PWNAPI Result<usize>
+    send(std::vector<u8> const& str);
 
-    /// <summary>
-    /// Read from tube until receiving a line separator and return it.
-    /// </summary>
-    PWNAPI auto recvline() -> std::vector<u8>;
+    ///
+    ///@brief Move data given as argument to the send buffer, tries to send.
+    ///
+    ///@param str
+    ///@return A Result object with the number of bytes sent
+    ///
+    PWNAPI Result<usize>
+    send(std::string const& str);
 
-    /// <summary>
-    /// Convenience function combining in one call recvuntil() + send()
-    /// </summary>
-    /// <param name="pattern"></param>
-    /// <param name="data"></param>
-    /// <returns></returns>
-    PWNAPI auto sendafter(_In_ std::string const& pattern, _In_ std::string const& data) -> size_t;
-    PWNAPI auto sendafter(_In_ std::vector<u8> const& pattern, _In_ std::vector<u8> const& data) -> size_t;
 
-    /// <summary>
-    /// Convenience function combining in one call recvuntil() + sendline()
-    /// </summary>
-    /// <param name="pattern"></param>
-    /// <param name="data"></param>
-    /// <returns></returns>
-    PWNAPI auto sendlineafter(_In_ std::string const& pattern, _In_ std::string const& data) -> size_t;
-    PWNAPI auto sendlineafter(_In_ std::vector<u8> const& pattern, _In_ std::vector<u8> const& data) -> size_t;
+    ///
+    /// @brief Read bytes from the tube, moves the read bytes to the receive buffer.
+    ///
+    ///@param size The number of expected to be received (default: `Tube::PIPE_DEFAULT_SIZE`)
+    ///@return Result<std::vector<u8>>
+    ///
+    Result<std::vector<u8>>
+    recv(_In_ size_t size = Tube::PIPE_DEFAULT_SIZE);
 
-    /// <summary>
-    /// Peek into the tube to see if any data is available.
-    /// </summary>
-    PWNAPI auto peek() -> size_t;
 
-    /// <summary>
-    /// Basic REPL.
-    /// TODO: improve
-    /// </summary>
-    /// <returns></returns>
-    PWNAPI void interactive();
+    ///
+    ///@brief Send the data (as byte vector) followed by a line separator
+    ///
+    ///@param data
+    ///@return Result<usize> A Result object with the number of bytes sent
+    ///
+    Result<usize>
+    sendline(_In_ std::vector<u8> const& data);
 
+    ///
+    ///@brief  Send the data (as str) followed by a line separator
+    ///
+    ///@param str
+    ///@return Result<usize> A Result object with the number of bytes sent
+    ///
+    PWNAPI Result<usize>
+    sendline(_In_ std::string const& str);
+
+
+    ///
+    ///@brief Read from tube until receiving the given pattern, and return that data.
+    ///
+    PWNAPI Result<std::vector<u8>>
+    recvuntil(_In_ std::vector<u8> const& pattern);
+
+    ///
+    ///@brief
+    ///
+    ///@param pattern
+    ///@return Result<std::vector<u8>>
+    ///
+    PWNAPI Result<std::vector<u8>>
+    recvuntil(_In_ std::string const& pattern);
+
+
+    ///
+    ///@brief Read from tube until receiving a line separator and return it.
+    ///
+    PWNAPI Result<std::vector<u8>>
+    recvline();
+
+
+    ///
+    ///@brief function combining in one call recvuntil() + send()
+    ///
+    ///@param pattern
+    ///@param data
+    ///@return
+    ///
+    PWNAPI Result<usize>
+    sendafter(_In_ std::string const& pattern, _In_ std::string const& data);
+
+    ///
+    ///@brief
+    ///
+    ///@param pattern
+    ///@param data
+    ///@return Result<usize>
+    ///
+    PWNAPI Result<usize>
+    sendafter(_In_ std::vector<u8> const& pattern, _In_ std::vector<u8> const& data);
+
+
+    ///
+    ///@brief Convenience function combining in one call recvuntil() + sendline()
+    ///
+    ///@param pattern
+    ///@param data
+    ///@return
+    ///
+    PWNAPI Result<usize>
+    sendlineafter(_In_ std::string const& pattern, _In_ std::string const& data);
+
+    ///
+    ///@brief
+    ///
+    ///@param pattern
+    ///@param data
+    ///@return PWNAPI
+    ///
+    PWNAPI Result<usize>
+    sendlineafter(_In_ std::vector<u8> const& pattern, _In_ std::vector<u8> const& data);
+
+
+    ///
+    /// @brief Peek into the tube to see if any data is available.
+    ///
+    PWNAPI Result<usize>
+    peek();
+
+
+    ///
+    /// @brief Basic REPL.
+    ///
+    PWNAPI void
+    interactive();
 
 
 protected:
-    Tube()= default;
-    ~Tube()= default;
+    Tube()  = default;
+    ~Tube() = default;
 
-    virtual auto __send_internal(_In_ std::vector<u8> const& data) -> size_t = 0;
-    virtual auto __recv_internal(_In_ size_t size) -> std::vector<u8> = 0;
-    virtual auto __peek_internal() -> size_t = 0;
+    virtual Result<usize>
+    send_internal(_In_ std::vector<u8> const& data) = 0;
+
+    virtual Result<std::vector<u8>>
+    recv_internal(_In_ size_t size) = 0;
+
+    virtual Result<usize>
+    peek_internal() = 0;
 
     std::vector<u8> m_receive_buffer;
     std::vector<u8> m_send_buffer;
 };
-
-
-
-

@@ -14,11 +14,11 @@
 // clang-format on
 
 
-Err::Err(ErrorCode ec) :
+Err::Err(ErrorCode ec, uint32_t en) :
 #if defined(PWN_BUILD_FOR_WINDOWS)
-    ErrorType(ec, ::GetLastError())
+    ErrorType(ec, en ? en : ::GetLastError())
 #elif defined(PWN_BUILD_FOR_LINUX)
-    ErrorType(ec, errno)
+    ErrorType(ec, en || errno)
 #else
 #error "noooope"
 #endif
@@ -37,6 +37,16 @@ Err::Err(ErrorCode ec) :
     os << *this << std::endl;
 #endif // PWN_BUILD_FOR_WINDOWS
     err(os);
+}
+
+
+Err::Err(Err const& e) : Err(e.code, e.number)
+{
+}
+
+
+Err::Err(ErrorType const& e) : Err(e.code, e.number)
+{
 }
 
 

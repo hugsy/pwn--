@@ -262,8 +262,8 @@ hexdump(const u8* Buffer, const usize BufferSize)
     auto hexstr = __hexdump(Buffer, BufferSize);
 
     {
-        std::lock_guard<std::mutex> guard(pwn::Context.m_console_mutex);
-        std::wcout << hexstr.str() << std::endl;
+        std::lock_guard<std::mutex> guard(pwn::Context.m_ConsoleMutex);
+        std::wcout << hexstr.str();
     }
 }
 

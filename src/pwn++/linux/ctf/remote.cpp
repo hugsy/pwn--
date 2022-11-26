@@ -63,13 +63,13 @@ pwn::linux::ctf::Remote::__send_internal(_In_ std::vector<u8> const& out) -> siz
 
 
 auto
-pwn::linux::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) -> std::vector<u8>
+pwn::linux::ctf::Remote::__recv_internal(_In_ size_t size = Tube::PIPE_DEFAULT_SIZE) -> std::vector<u8>
 {
     std::vector<u8> cache_data;
     size_t idx    = 0;
     bool is_debug = (std::get<0>(pwn::context::get_log_level()) == pwn::log::LogLevel::Debug);
 
-    size = MIN(size, PWN_TUBE_PIPE_DEFAULT_SIZE);
+    size = MIN(size, Tube::PIPE_DEFAULT_SIZE);
 
     // Try to read from the cache
     if ( !m_receive_buffer.empty() )
@@ -124,8 +124,8 @@ pwn::linux::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAUL
 auto
 pwn::linux::ctf::Remote::__peek_internal() -> size_t
 {
-    auto buf = std::make_unique<u8[]>(PWN_TUBE_PIPE_DEFAULT_SIZE);
-    auto res = ::recv(m_Socket, reinterpret_cast<char*>(buf.get()), PWN_TUBE_PIPE_DEFAULT_SIZE, MSG_PEEK);
+    auto buf = std::make_unique<u8[]>(Tube::PIPE_DEFAULT_SIZE);
+    auto res = ::recv(m_Socket, reinterpret_cast<char*>(buf.get()), Tube::PIPE_DEFAULT_SIZE, MSG_PEEK);
     if ( res < 0 )
     {
         perror("recv()");
@@ -243,7 +243,7 @@ pwn::linux::ctf::Process::__recv_internal(_In_ size_t size) -> std::vector<u8>
     u32 dwRead;
     std::vector<u8> out;
 
-    size = MIN(size, PWN_TUBE_PIPE_DEFAULT_SIZE) & 0xffffffff;
+    size = MIN(size, Tube::PIPE_DEFAULT_SIZE) & 0xffffffff;
     out.resize(size);
 
     // TODO

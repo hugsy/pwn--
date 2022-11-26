@@ -5,17 +5,49 @@ Namespace: `pwn::ctf`
 
 Description: Some pwntools goodies
 
+### Local processes
+
 ```cpp
 #include <pwn++\pwn.h>
 
-using namespace pwn::log;
-namespace ctx = pwn::context;
-namespace ctf = pwn::ctf;
-namespace utils = pwn::utils;
+void wmain()
+{
+    namespace log = pwn::log;
+    namespace ctf = pwn::ctf;
+    namespace utils = pwn::utils;
+
+    pwn::Context.set("x64");
+    pwn::Context.set(log::LogLevel::Debug);
+
+    {
+        auto p = ctf::Process(L"python.exe -i");
+        p.recvuntil(">>> ");
+        p.sendline("print('hi python')");
+        p.recvuntil(">>> ");
+        p.interactive();
+        ok(L"bye!");
+    }
+
+    utils::Pause();
+}
+```
+
+
+
+### Remote processes
+
+```cpp
+#include <pwn++\pwn.h>
 
 void wmain()
 {
-    ctx::set_log_level(LogLevel::Debug);
+    namespace log = pwn::log;
+    namespace ctf = pwn::ctf;
+    namespace utils = pwn::utils;
+
+    pwn::Context.set("x64");
+    pwn::Context.set(log::LogLevel::Debug);
+
     {
         auto io = ctf::Remote(L"target_vm", 1337);
         io.recvuntil(">>> ");
@@ -23,17 +55,17 @@ void wmain()
         io.recvuntil(">>> ");
 
         io.interactive();
-        ok(L"done\n");
+        ok(L"done");
     }
 
-    utils::pause();
+    utils::Pause();
 }
 ```
 
 Then the Linux tool `socat` can be used to bind easily a Python REPL to the TCP/1337 of `target_vm`
 
 ```bash
-$ socat TCP-L:1337,fork,reuseaddr EXEC:/usr/bin/python3.8,pty,stderr
+$ socat TCP-L:1337,fork,reuseaddr EXEC:/usr/bin/python3,pty,stderr
 ```
 
 ```text

@@ -22,7 +22,7 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
     }
 
     pwn::Context.set("x64");
-    pwn::Context.log_level = pwn::log::LogLevel::Debug;
+    pwn::Context.LogLevel = pwn::log::LogLevel::Debug;
 
     const std::wstring containerName {L"appcontainer-" + pwn::utils::random::alnum(10)};
     const std::wstring processName {argv[1]};

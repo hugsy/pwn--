@@ -42,8 +42,8 @@ pwn::GlobalContext::set(Endianess end)
 void
 pwn::GlobalContext::set(log::LogLevel new_log_level)
 {
-    log_level = new_log_level;
-    if ( log_level == log::LogLevel::Debug )
+    LogLevel = new_log_level;
+    if ( LogLevel == log::LogLevel::Debug )
     {
         dbg("Setting DEBUG log level");
     }

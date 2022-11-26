@@ -523,7 +523,7 @@ AllowNextClient() -> Result<bool>
                     // Insert the client configuration in the global context
                     //
                     {
-                        std::lock_guard<std::mutex> lock(pwn::Context.m_config_mutex);
+                        std::lock_guard<std::mutex> lock(pwn::Context.m_ConfigMutex);
                         Context.m_backdoor_clients.push_back(client);
                     }
 
@@ -566,7 +566,7 @@ auto
 stop() -> Result<bool>
 {
     std::vector<HANDLE> handles;
-    std::lock_guard<std::mutex> lock(pwn::Context.m_config_mutex);
+    std::lock_guard<std::mutex> lock(pwn::Context.m_ConfigMutex);
     const usize sz = Context.m_backdoor_clients.size();
 
     for ( auto const& client : Context.m_backdoor_clients )

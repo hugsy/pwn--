@@ -39,6 +39,7 @@ set(
     ${HEADER_DIR}/token.hpp
 
     ${HEADER_DIR}/ctf/remote.hpp
+    ${HEADER_DIR}/ctf/process.hpp
 )
 
 set(
@@ -59,6 +60,7 @@ set(
     ${SOURCE_DIR}/token.cpp
 
     ${SOURCE_DIR}/ctf/remote.cpp
+    ${SOURCE_DIR}/ctf/process.cpp
 
     $<$<BOOL:0>:${CMAKE_GENERATOR_PLATFORM}>
 

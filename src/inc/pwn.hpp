@@ -107,6 +107,7 @@ namespace windows::ctf
 namespace ctf = win::ctf;
 } // namespace pwn
 
+#include "win32/ctf/process.hpp"
 #include "win32/ctf/remote.hpp"
 
 #endif
@@ -170,14 +171,13 @@ struct GlobalContext
     std::vector<std::shared_ptr<pwn::backdoor::ThreadConfig>> m_backdoor_clients;
 #endif
     u64 m_seed;
-    std::mutex m_console_mutex;
-    std::mutex m_config_mutex;
-    log::LogLevel log_level = log::LogLevel::Info;
+    std::mutex m_ConsoleMutex;
+    std::mutex m_ConfigMutex;
+    log::LogLevel LogLevel = log::LogLevel::Info;
 
     Architecture architecture;
     Endianess endianess;
     usize ptrsize;
-    usize instruction_size;
 
     GlobalContext();
 
@@ -199,10 +199,19 @@ struct GlobalContext
 ///
 extern PWNAPI struct GlobalContext Context;
 
+///
+///@brief pwn++ banner string
+///
 constexpr std::wstring_view Banner = PWN_LIBRARY_NAME L" v" PWN_LIBRARY_VERSION L" - " PWN_LIBRARY_VERSION_RELEASE;
 
+///
+///@brief pwn++ version string
+///
 constexpr std::wstring_view Version = PWN_LIBRARY_VERSION;
 
+///
+///@brief pwn++ version info as a tuple, (major, minor)
+///
 constexpr std::tuple<u16, u16> VersionInfo {PWN_LIBRARY_VERSION_MAJOR, PWN_LIBRARY_VERSION_MINOR};
 
 

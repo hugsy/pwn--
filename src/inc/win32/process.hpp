@@ -177,12 +177,27 @@ public:
     bool
     IsValid();
 
+    ///
+    ///@brief Get the process path
+    ///
+    ///@return fs::path const&
+    ///
     fs::path const&
     Path() const;
 
+
+    ///
+    ///@brief Get the process parent id
+    ///
     u32 const
     ParentProcessId() const;
 
+
+    ///
+    ///@brief Get the process id
+    ///
+    ///@return u32 const
+    ///
     u32 const
     ProcessId() const;
 

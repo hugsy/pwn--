@@ -24,6 +24,9 @@
 
 extern struct pwn::GlobalContext pwn::Context;
 
+///
+/// Remote
+///
 
 pwn::windows::ctf::Remote::Remote(std::wstring_view const& host, const u16 port) :
     m_Host(host),
@@ -59,43 +62,43 @@ pwn::windows::ctf::Remote::~Remote()
 }
 
 
-auto
-pwn::windows::ctf::Remote::__send_internal(_In_ std::vector<u8> const& out) -> size_t
+Result<usize>
+pwn::windows::ctf::Remote::send_internal(_In_ std::vector<u8> const& out)
 {
     if ( m_State != SocketState::Connected )
     {
-        return 0;
+        return Err(ErrorCode::NotConnected);
     }
 
     auto res = ::send(m_Socket, reinterpret_cast<const char*>(&out[0]), out.size() & 0xffff, 0);
     if ( res == SOCKET_ERROR )
     {
         err(L"send() function: {#x}", ::WSAGetLastError());
-        return 0;
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    dbg(L"sent {} bytes\n", out.size());
-    if ( pwn::Context.log_level == pwn::log::LogLevel::Debug )
+    dbg(L"sent {} bytes", out.size());
+    if ( pwn::Context.LogLevel == pwn::log::LogLevel::Debug )
     {
         pwn::utils::hexdump(out);
     }
 
-    return out.size();
+    return Ok(out.size());
 }
 
 
-auto
-pwn::windows::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) -> std::vector<u8>
+Result<std::vector<u8>>
+pwn::windows::ctf::Remote::recv_internal(_In_ size_t size = Tube::PIPE_DEFAULT_SIZE)
 {
     if ( m_State != SocketState::Connected )
     {
-        return {};
+        return Err(ErrorCode::NotConnected);
     }
 
     std::vector<u8> cache_data;
     size_t idx = 0;
 
-    size = min(size, PWN_TUBE_PIPE_DEFAULT_SIZE);
+    size = min(size, Tube::PIPE_DEFAULT_SIZE);
 
     //
     // Try to read from the cache
@@ -113,11 +116,11 @@ pwn::windows::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFA
         if ( cache_data.size() >= size )
         {
             dbg(L"recv2 {} bytes\n", cache_data.size());
-            if ( pwn::Context.log_level == pwn::log::LogLevel::Debug )
+            if ( pwn::Context.LogLevel == pwn::log::LogLevel::Debug )
             {
                 pwn::utils::hexdump(cache_data);
             }
-            return cache_data;
+            return Ok(cache_data);
         }
 
         //
@@ -133,43 +136,49 @@ pwn::windows::ctf::Remote::__recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFA
     auto res = ::recv(m_Socket, reinterpret_cast<char*>(&network_data[idx]), (u32)size, 0);
     if ( res == SOCKET_ERROR )
     {
-        pwn::log::perror(L"recv()");
-        throw std::runtime_error("::recv() failed");
-    }
-    else
-    {
-        usize sz = cache_data.size() + res;
-        if ( sz )
+        ULONG reason = ::WSAGetLastError();
+        switch ( reason )
         {
-            network_data.resize(sz);
-            dbg(L"recv {} bytes", sz);
-            if ( pwn::Context.log_level == pwn::log::LogLevel::Debug )
-            {
-                pwn::utils::hexdump(network_data);
-            }
+        case WSAECONNABORTED:
+        case WSAECONNRESET:
+            return Err(ErrorCode::ConnectionError, reason);
+
+        default:
+            return Err(ErrorCode::ExternalApiCallFailed, reason);
         }
     }
-    return network_data;
+
+    usize sz = cache_data.size() + res;
+    if ( sz )
+    {
+        network_data.resize(sz);
+        dbg(L"recv {} bytes", sz);
+        if ( pwn::Context.LogLevel == pwn::log::LogLevel::Debug )
+        {
+            pwn::utils::hexdump(network_data);
+        }
+    }
+
+    return Ok(network_data);
 }
 
 
-auto
-pwn::windows::ctf::Remote::__peek_internal() -> size_t
+Result<usize>
+pwn::windows::ctf::Remote::peek_internal()
 {
     if ( m_State != SocketState::Connected )
     {
-        return 0;
+        return Err(ErrorCode::NotConnected);
     }
 
-    auto buf = std::make_unique<u8[]>(PWN_TUBE_PIPE_DEFAULT_SIZE);
-    auto res = ::recv(m_Socket, reinterpret_cast<char*>(buf.get()), PWN_TUBE_PIPE_DEFAULT_SIZE, MSG_PEEK);
+    auto buf = std::make_unique<u8[]>(Tube::PIPE_DEFAULT_SIZE);
+    auto res = ::recv(m_Socket, reinterpret_cast<char*>(buf.get()), Tube::PIPE_DEFAULT_SIZE, MSG_PEEK);
     if ( res == SOCKET_ERROR )
     {
-        pwn::log::perror(L"recv()");
-        throw std::runtime_error("::peek() failed");
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    return res;
+    return Ok(res);
 }
 
 
@@ -187,8 +196,7 @@ pwn::windows::ctf::Remote::InitializeSocket() -> Result<bool>
 
     if ( m_Socket == INVALID_SOCKET )
     {
-        err(L"socket() failed: {#x}", ::WSAGetLastError());
-        return Err(ErrorCode::InitializationFailed);
+        return Err(ErrorCode::InitializationFailed, ::WSAGetLastError());
     }
 
     return Ok(true);
@@ -226,8 +234,7 @@ pwn::windows::ctf::Remote::Connect() -> Result<bool>
 
     if ( ::connect(m_Socket, (SOCKADDR*)&sin, sizeof(sin)) == SOCKET_ERROR )
     {
-        err(L"connect() failed: {:#x}", ::WSAGetLastError());
-        return Err(ErrorCode::ConnectionError);
+        return Err(ErrorCode::ConnectionError, ::WSAGetLastError());
     }
 
     m_State = SocketState::Connected;
@@ -263,100 +270,4 @@ auto
 pwn::windows::ctf::Remote::Reconnect() -> bool
 {
     return Success(Disconnect()) && Success(Connect());
-}
-
-
-///
-/// Process
-///
-auto
-pwn::windows::ctf::Process::__send_internal(_In_ std::vector<u8> const& out) -> size_t
-{
-    DWORD dwRead  = 0;
-    auto bSuccess = ::WriteFile(m_ChildPipeStdin, &out[0], out.size() & 0xffffffff, &dwRead, nullptr);
-    if ( bSuccess == 0 )
-    {
-        pwn::log::perror(L"ReadFile()");
-    }
-
-    return dwRead;
-}
-
-
-auto
-pwn::windows::ctf::Process::__recv_internal(_In_ size_t size) -> std::vector<u8>
-{
-    DWORD dwRead;
-    std::vector<u8> out;
-
-    size = min(size, PWN_TUBE_PIPE_DEFAULT_SIZE) & 0xffffffff;
-    out.resize(size);
-
-    auto bSuccess = ::ReadFile(m_ChildPipeStdout, &out[0], size & 0xffffffff, &dwRead, nullptr);
-    if ( bSuccess == 0 )
-    {
-        pwn::log::perror(L"ReadFile()");
-    }
-
-    return out;
-}
-
-
-auto
-pwn::windows::ctf::Process::__peek_internal() -> size_t
-{
-    throw std::exception("not implemented");
-}
-
-
-auto
-pwn::windows::ctf::Process::create_pipes() -> bool
-{
-    SECURITY_ATTRIBUTES sa  = {0};
-    sa.nLength              = sizeof(SECURITY_ATTRIBUTES);
-    sa.bInheritHandle       = 1;
-    sa.lpSecurityDescriptor = nullptr;
-
-    return (CreatePipe(&m_ParentStdin, &m_ChildPipeStdin, &sa, 0) != 0) &&
-           (CreatePipe(&m_ParentStdout, &m_ChildPipeStdout, &sa, 0) != 0) &&
-           (SetHandleInformation(m_ChildPipeStdout, HANDLE_FLAG_INHERIT, 0) != 0);
-}
-
-
-auto
-pwn::windows::ctf::Process::spawn_process() -> bool
-{
-    if ( !create_pipes() )
-    {
-        err(L"failed to create pipes\n");
-        return false;
-    }
-
-    STARTUPINFO si         = {0};
-    PROCESS_INFORMATION pi = {nullptr};
-
-    si.cb         = sizeof(STARTUPINFO);
-    si.hStdError  = m_ChildPipeStdout;
-    si.hStdOutput = m_ChildPipeStdout;
-    si.hStdInput  = m_ChildPipeStdin;
-    si.dwFlags |= STARTF_USESTDHANDLES;
-
-    if ( ::CreateProcessW(
-             nullptr,
-             m_commandline.data(),
-             nullptr,
-             nullptr,
-             1,
-             0,
-             nullptr,
-             nullptr,
-             reinterpret_cast<LPSTARTUPINFOW>(&si),
-             reinterpret_cast<LPPROCESS_INFORMATION>(&pi)) != 0 )
-    {
-        // m_hProcess = pwn::UniqueHandle(pi.hProcess);
-        ::CloseHandle(pi.hThread);
-        return true;
-    }
-
-    return false;
 }

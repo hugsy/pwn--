@@ -71,7 +71,7 @@ protected:
     __send_internal(_In_ std::vector<u8> const& out) -> size_t;
 
     auto
-    __recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) -> std::vector<u8>;
+    __recv_internal(_In_ size_t size = Tube::PIPE_DEFAULT_SIZE) -> std::vector<u8>;
 
     auto
     __peek_internal() -> size_t;

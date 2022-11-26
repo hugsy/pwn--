@@ -12,148 +12,148 @@ using namespace std::literals::chrono_literals;
 
 extern struct pwn::GlobalContext pwn::Context;
 
+namespace utils = pwn::utils;
 
-auto
-Tube::send(_In_ std::vector<u8> const& data) -> size_t
+
+Result<usize>
+Tube::send(_In_ std::vector<u8> const& data)
 {
-    return __send_internal(data);
+    return send_internal(data);
 }
 
 
-auto
-Tube::send(_In_ std::string const& str) -> size_t
+Result<usize>
+Tube::send(_In_ std::string const& str)
 {
-    return __send_internal(pwn::utils::StringLib::To<std::vector<u8>>(str));
+    return send_internal(utils::StringLib::To<std::vector<u8>>(str));
 }
 
 
-auto
-Tube::recv(_In_ size_t size) -> std::vector<u8>
+Result<std::vector<u8>>
+Tube::recv(_In_ size_t size)
 {
-    return __recv_internal(size);
+    return recv_internal(size);
 }
 
 
-auto
-Tube::sendline(_In_ std::vector<u8> const& data) -> size_t
+Result<usize>
+Tube::sendline(_In_ std::vector<u8> const& data)
 {
-    auto send_data(data);
-    send_data.push_back(PWN_LINESEP);
+    std::vector<u8> send_data(data);
+    send_data.push_back(Tube::LINE_SEPARATOR);
     return send(send_data);
 }
 
 
-auto
-Tube::sendline(_In_ std::string const& str) -> size_t
+Result<usize>
+Tube::sendline(_In_ std::string const& str)
 {
-    return sendline(pwn::utils::StringLib::To<std::vector<u8>>(str));
+    return sendline(utils::StringLib::To<std::vector<u8>>(str));
 }
 
 
-auto
-Tube::recvuntil(_In_ std::vector<u8> const& pattern) -> std::vector<u8>
+Result<std::vector<u8>>
+Tube::recvuntil(_In_ std::vector<u8> const& pattern)
 {
     size_t idx = 0;
     std::vector<u8> in;
 
     while ( true )
     {
+        //
         // append new data received from the pipe
+        //
         {
-            auto in2 = recv(PWN_TUBE_PIPE_DEFAULT_SIZE);
-            if ( in2.empty() )
+            auto res = recv(Tube::PIPE_DEFAULT_SIZE);
+            if ( Failed(res) )
+            {
+                return Err(Error(res));
+            }
+
+            std::vector<u8> const& chunk = Value(res);
+            if ( chunk.empty() )
             {
                 continue;
             }
-            std::copy(in2.begin(), in2.end(), std::back_inserter(in));
+            std::copy(chunk.cbegin(), chunk.cend(), std::back_inserter(in));
         }
 
+        //
         // look for the pattern
-        if ( std::find_if(
-                 in.begin(),
-                 in.end(),
-                 [&idx, &pattern, &in](u8 const& x)
-                 {
-                     idx++;
-                     auto i  = idx;
-                     auto sz = pattern.size();
-
-                     if ( i < sz )
-                     {
-                         return false;
-                     }
-
-                     for ( size_t j = 0; j < sz; j++ )
-                     {
-                         if ( pattern.at(j) != in.at((i - sz) + j) )
-                         {
-                             return false;
-                         }
-                     }
-
-                     return true;
-                 }) != in.end() )
+        //
+        auto ContainsSubVector = [&in, &pattern]() -> bool
         {
+            return std::search(in.cbegin(), in.cend(), pattern.cbegin(), pattern.cend()) != in.end();
+        };
+
+        if ( ContainsSubVector() )
+        {
+            //
             // line separator found, copy the rest of the buffer to the queue
-            std::copy(in.begin() + idx, in.end(), std::back_inserter(m_receive_buffer));
-            in.erase(in.begin() + idx, in.end());
+            //
+            std::copy(in.begin(), in.end(), std::back_inserter(m_receive_buffer));
             dbg("Received {} bytes", in.size());
-            return in;
+            return Ok(in);
         }
     }
+
+    //
+    // The loop was exited without the pattern being found, return an error
+    //
+    return Err(ErrorCode::NotFound);
 }
 
 
-auto
-Tube::recvuntil(_In_ std::string const& pattern) -> std::vector<u8>
+Result<std::vector<u8>>
+Tube::recvuntil(_In_ std::string const& pattern)
 {
     return recvuntil(pwn::utils::StringLib::To<std::vector<u8>>(pattern));
 }
 
 
-auto
-Tube::recvline() -> std::vector<u8>
+Result<std::vector<u8>>
+Tube::recvline()
 {
-    return recvuntil(std::vector<u8> {PWN_LINESEP});
+    return recvuntil(std::vector<u8> {Tube::LINE_SEPARATOR});
 }
 
 
-auto
-Tube::sendafter(_In_ std::vector<u8> const& pattern, _In_ std::vector<u8> const& data) -> size_t
+Result<usize>
+Tube::sendafter(_In_ std::vector<u8> const& pattern, _In_ std::vector<u8> const& data)
 {
     recvuntil(pattern);
     return send(data);
 }
 
 
-auto
-Tube::sendafter(_In_ std::string const& pattern, _In_ std::string const& data) -> size_t
+Result<usize>
+Tube::sendafter(_In_ std::string const& pattern, _In_ std::string const& data)
 {
     recvuntil(pattern);
     return send(data);
 }
 
 
-auto
-Tube::sendlineafter(_In_ std::vector<u8> const& pattern, _In_ std::vector<u8> const& data) -> size_t
+Result<usize>
+Tube::sendlineafter(_In_ std::vector<u8> const& pattern, _In_ std::vector<u8> const& data)
 {
     recvuntil(pattern);
     return sendline(data);
 }
 
 
-auto
-Tube::sendlineafter(_In_ std::string const& pattern, _In_ std::string const& data) -> size_t
+Result<usize>
+Tube::sendlineafter(_In_ std::string const& pattern, _In_ std::string const& data)
 {
     recvuntil(pattern);
     return sendline(data);
 }
 
 
-auto
-Tube::peek() -> size_t
+Result<usize>
+Tube::peek()
 {
-    return __peek_internal();
+    return peek_internal();
 }
 
 
@@ -191,7 +191,7 @@ Tube::interactive()
     ::SetConsoleCtrlHandler(__pwn_interactive_repl_sighandler, 1);
 #endif
 
-    ok(L"Entering interactive mode...\n");
+    ok(L"Entering interactive mode...");
 
     // the `remote` thread reads and prints received data
     std::thread remote(
@@ -201,28 +201,27 @@ Tube::interactive()
             {
                 while ( true )
                 {
-                    try
+                    auto res = recv(Tube::PIPE_DEFAULT_SIZE);
+                    if ( Failed(res) )
                     {
-                        auto raw_input = recv(PWN_TUBE_PIPE_DEFAULT_SIZE);
-                        auto input     = std::string(raw_input.begin(), raw_input.end());
-
-                        {
-                            std::lock_guard<std::mutex> guard(pwn::Context.m_console_mutex);
-                            std::cout << input << std::flush;
-                        }
-
-                        if ( raw_input.size() < PWN_TUBE_PIPE_DEFAULT_SIZE )
-                        {
-                            break;
-                        }
-
-                        std::this_thread::sleep_for(0.1s); // for debug, remove later
-                    }
-                    catch ( std::exception const& e )
-                    {
-                        err("Unexpected exception caught, reason: {}\n", e.what());
+                        __bReplLoop = false;
                         break;
                     }
+
+                    std::vector<u8> const& raw_input = Value(res);
+                    auto input                       = std::string(raw_input.begin(), raw_input.end());
+
+                    {
+                        std::lock_guard<std::mutex> guard(pwn::Context.m_ConsoleMutex);
+                        std::cout << input << std::flush;
+                    }
+
+                    if ( raw_input.size() < Tube::PIPE_DEFAULT_SIZE )
+                    {
+                        break;
+                    }
+
+                    utils::Sleep(0.1s); // for debug, remove later
                 }
             }
         });
@@ -230,9 +229,9 @@ Tube::interactive()
     while ( __bReplLoop )
     {
         {
-            std::lock_guard<std::mutex> guard(pwn::Context.m_console_mutex);
-            std::wcout << PWN_INTERACTIVE_PROMPT;
-            std::wcout.flush();
+            std::lock_guard<std::mutex> guard(pwn::Context.m_ConsoleMutex);
+            std::cout << Tube::INTERACTIVE_PROMPT;
+            std::cout.flush();
         }
 
         std::string cmd;
@@ -252,5 +251,5 @@ Tube::interactive()
     ::SetConsoleCtrlHandler(nullptr, 1);
 #endif
 
-    ok("Leaving interactive mode...\n");
+    ok("Leaving interactive mode...");
 }

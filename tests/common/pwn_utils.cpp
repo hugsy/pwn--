@@ -89,3 +89,8 @@ TEST_CASE("strings", "[" NS "]")
     CHECK(pwn::utils::StringLib::Strip(str1, '0') == " test ");
     CHECK(pwn::utils::StringLib::Strip(wstr1, L'0') == L" test ");
 }
+
+
+TEST_CASE("security properties", "[" NS "]")
+{
+}

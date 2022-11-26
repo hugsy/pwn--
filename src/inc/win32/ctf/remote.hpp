@@ -22,7 +22,6 @@ enum class SocketState : u8
 ///
 ///@brief Remote session
 ///
-///
 class Remote : public Tube
 {
 public:
@@ -41,14 +40,16 @@ public:
 
 
 protected:
-    auto
-    __send_internal(_In_ std::vector<u8> const& out) -> size_t;
+    Result<usize>
+    send_internal(_In_ std::vector<u8> const& out);
 
-    auto
-    __recv_internal(_In_ size_t size) -> std::vector<u8>;
 
-    auto
-    __peek_internal() -> size_t;
+    Result<std::vector<u8>>
+    recv_internal(_In_ size_t size);
+
+
+    Result<usize>
+    peek_internal();
 
 
 private:
@@ -63,43 +64,5 @@ private:
     SocketState m_State;
 };
 
-
-///
-///@brief A Process session
-///
-class Process : public Tube
-{
-public:
-    Process()  = default;
-    ~Process() = default;
-
-protected:
-    auto
-    __send_internal(_In_ std::vector<u8> const& out) -> size_t;
-
-    auto
-    __recv_internal(_In_ size_t size = PWN_TUBE_PIPE_DEFAULT_SIZE) -> std::vector<u8>;
-
-    auto
-    __peek_internal() -> size_t;
-
-
-private:
-    auto
-    create_pipes() -> bool;
-
-    auto
-    spawn_process() -> bool;
-
-    std::wstring m_processname;
-    std::wstring m_commandline;
-
-    pwn::UniqueHandle m_hProcess;
-
-    HANDLE m_ChildPipeStdin  = INVALID_HANDLE_VALUE;
-    HANDLE m_ChildPipeStdout = INVALID_HANDLE_VALUE;
-    HANDLE m_ParentStdin     = ::GetStdHandle(STD_INPUT_HANDLE);
-    HANDLE m_ParentStdout    = ::GetStdHandle(STD_OUTPUT_HANDLE);
-};
 
 } // namespace pwn::windows::ctf

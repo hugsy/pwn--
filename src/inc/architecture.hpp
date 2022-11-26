@@ -62,9 +62,10 @@ struct Architecture
     Find(std::string_view const& sv);
 };
 
-static constexpr std::array<std::pair<std::string_view, Architecture>, 2> Architectures {{
+static constexpr std::array<std::pair<std::string_view, Architecture>, 3> Architectures {{
     {"x64", {"x64", ArchitectureType::x64, 8, Endianess::little}},
     {"x86", {"x86", ArchitectureType::x86, 4, Endianess::little}},
+    {"arm64", {"arm64", ArchitectureType::arm64, 8, Endianess::little}},
 }};
 
 

@@ -79,7 +79,7 @@ ConsoleCtrlHandler(DWORD signum)
 auto
 wmain(const int argc, const wchar_t** argv) -> int
 {
-    pwn::Context.log_level = pwn::log::LogLevel::Debug;
+    pwn::Context.LogLevel = pwn::log::LogLevel::Debug;
 
     const auto target_process = (argc >= 2) ? std::wstring(argv[1]) : std::wstring(L"notepad.exe");
 

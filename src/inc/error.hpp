@@ -136,8 +136,8 @@ enum class ErrorCode : uint32_t
 ///
 struct ErrorType
 {
-    ErrorCode code;
-    uint32_t number;
+    ErrorCode code  = ErrorCode::UnknownError;
+    uint32_t number = 0;
 
     bool
     operator==(const ErrorType& rhs) const;
@@ -174,11 +174,11 @@ using Result = std::variant<SuccessType<T>, ErrorType>;
 
 struct Err : ErrorType
 {
-    Err(ErrorCode ErrCode = ErrorCode::GenericError);
+    Err(ErrorCode ErrCode = ErrorCode::GenericError, uint32_t ErrNumber = 0);
 
-    Err(Err const& e) : Err(e.code)
-    {
-    }
+    Err(Err const& e);
+
+    Err(ErrorType const& e);
 
     bool
     operator==(const Err& rhs) const;
@@ -189,14 +189,16 @@ struct Err : ErrorType
     friend std::wostream&
     operator<<(std::wostream& wos, Err const& e)
     {
-        wos << L"Err(Code=" << (uint32_t)e.code << L", GLE=0x" << std::hex << (uint32_t)e.number << L")";
+        wos << L"Err(Code=" << (uint32_t)e.code << L", GLE=0x" << std::hex << std::setfill(L'0') << std::setw(8)
+            << (uint32_t)e.number << L")";
         return wos;
     }
 
     friend std::ostream&
     operator<<(std::ostream& os, Err const& e)
     {
-        os << "Err(Code=" << (uint32_t)e.code << ", GLE=0x" << std::hex << (uint32_t)e.number << ")";
+        os << "Err(Code=" << (uint32_t)e.code << ", GLE=0x" << std::hex << std::setfill('0') << std::setw(8)
+           << (uint32_t)e.number << ")";
         return os;
     }
 };
