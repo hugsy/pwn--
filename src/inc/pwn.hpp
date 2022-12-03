@@ -164,8 +164,9 @@ namespace pwn
 ///
 /// @brief Global context definition
 ///
-struct GlobalContext
+class GlobalContext
 {
+public:
 #ifdef PWN_INCLUDE_BACKDOOR
     std::jthread m_backdoor_thread;
     std::vector<std::shared_ptr<pwn::backdoor::ThreadConfig>> m_backdoor_clients;
@@ -181,18 +182,73 @@ struct GlobalContext
 
     GlobalContext();
 
+
+    template<typename T>
     void
-    set(std::string_view const& type);
+    set(T const& arg)
+    {
+        if constexpr ( std::is_same_v<T, std::string_view> )
+        {
+            SetArchitecture(arg);
+            return;
+        }
+
+        if constexpr ( std::is_same_v<T, std::wstring_view> )
+        {
+            SetArchitecture(utils::StringLib::To<std::string>(arg));
+            return;
+        }
+
+        if constexpr ( std::is_same_v<T, log::LogLevel> )
+        {
+            SetLogLevel(arg);
+            return;
+        }
+
+        if constexpr ( std::is_same_v<T, Endianess> )
+        {
+            SetEndianess(arg);
+            return;
+        }
+
+        throw new std::bad_typeid();
+    }
 
     void
-    set(std::wstring_view const& type);
+    set(const char* arg)
+    {
+        return set(std::string_view(arg));
+    }
 
-    void
-    set(Endianess end);
 
+private:
+    ///
+    ///@brief Set the Architecture object
+    ///
+    ///@param type
+    ///
     void
-    set(log::LogLevel new_log_level);
+    SetArchitecture(std::string_view const& type);
+
+
+    ///
+    ///@brief Set the Endianess object
+    ///
+    ///@param end
+    ///
+    void
+    SetEndianess(Endianess end);
+
+
+    ///
+    ///@brief Set the Log Level object
+    ///
+    ///@param new_log_level
+    ///
+    void
+    SetLogLevel(log::LogLevel new_log_level);
 };
+
 
 ///
 /// @brief The global context information are stored in this global variable

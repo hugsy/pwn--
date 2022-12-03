@@ -5,14 +5,14 @@ PWNAPI struct pwn::GlobalContext pwn::Context;
 
 pwn::GlobalContext::GlobalContext()
 {
-    m_seed = std::chrono::system_clock::now().time_since_epoch().count();
-    std::srand(m_seed);
+    pwn::utils::random::seed(std::chrono::system_clock::now().time_since_epoch().count());
+
     set("x64");
 };
 
 
 void
-pwn::GlobalContext::set(std::string_view const& type)
+pwn::GlobalContext::SetArchitecture(std::string_view const& type)
 {
     try
     {
@@ -34,13 +34,14 @@ pwn::GlobalContext::set(std::string_view const& type)
 
 
 void
-pwn::GlobalContext::set(Endianess end)
+pwn::GlobalContext::SetEndianess(Endianess end)
 {
     endianess = end;
 }
 
+
 void
-pwn::GlobalContext::set(log::LogLevel new_log_level)
+pwn::GlobalContext::SetLogLevel(log::LogLevel new_log_level)
 {
     LogLevel = new_log_level;
     if ( LogLevel == log::LogLevel::Debug )

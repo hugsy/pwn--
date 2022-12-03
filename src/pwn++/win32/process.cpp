@@ -1034,7 +1034,7 @@ Process::QueryInternal(const PROCESSINFOCLASS ProcessInformationClass, const usi
 #pragma endregion Process
 
 Result<bool>
-System(_In_ const std::wstring& CommandLine, _In_ const std::wstring& Operation)
+Process::System(_In_ const std::wstring& CommandLine, _In_ const std::wstring& Operation)
 {
     auto args = pwn::utils::StringLib::Split(CommandLine, L' ');
     auto cmd {args[0]};

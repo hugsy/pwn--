@@ -173,6 +173,8 @@ random::seed(std::optional<u64> seed)
     {
         pwn::Context.m_seed = time(nullptr);
     }
+
+    std::srand(pwn::Context.m_seed);
 }
 
 
@@ -222,10 +224,14 @@ auto
 random::buffer(_In_ u32 length) -> std::vector<u8>
 {
     std::vector<u8> buffer;
-    for ( u32 i = 0; i < length; i++ )
-    {
-        buffer.push_back(random::byte());
-    }
+    buffer.resize(length);
+    std::for_each(
+        buffer.begin(),
+        buffer.end(),
+        [](u8& x)
+        {
+            x = random::byte();
+        });
     return buffer;
 }
 

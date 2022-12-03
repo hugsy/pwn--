@@ -19,7 +19,7 @@ public:
         HANDLE hJob = ::CreateJobObjectW(nullptr, name);
         if ( !hJob && ::GetLastError() == ERROR_ALREADY_EXISTS )
         {
-            hJob = ::OpenJobObject(JOB_OBJECT_ALL_ACCESS, FALSE, name);
+            hJob = ::OpenJobObjectW(JOB_OBJECT_ALL_ACCESS, FALSE, name);
         }
 
         if ( !hJob )
