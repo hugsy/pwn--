@@ -98,14 +98,14 @@ pwn::windows::ctf::Remote::recv_internal(_In_ size_t size = Tube::PIPE_DEFAULT_S
     std::vector<u8> cache_data;
     size_t idx = 0;
 
-    size = min(size, Tube::PIPE_DEFAULT_SIZE);
+    size = std::min(size, Tube::PIPE_DEFAULT_SIZE);
 
     //
     // Try to read from the cache
     //
     if ( !m_receive_buffer.empty() )
     {
-        auto sz = min(size, m_receive_buffer.size());
+        auto sz = std::min(size, m_receive_buffer.size());
         std::copy(m_receive_buffer.begin(), m_receive_buffer.begin() + sz, std::back_inserter(cache_data));
 
         m_receive_buffer.erase(m_receive_buffer.begin(), m_receive_buffer.begin() + sz);

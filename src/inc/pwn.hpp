@@ -1,20 +1,21 @@
 #pragma once
 
-#include "architecture.hpp"
-#include "common.hpp"
-
-
 /**
  *
  * Common namespace definition
  *
  */
 
+// clang-format off
+#include "architecture.hpp"
+#include "common.hpp"
+
 /// namespace pwn::log
 #include "log.hpp"
 
 /// namespace pwn::utils
 #include "utils.hpp"
+#include "memory.hpp"
 
 /// namespace pwn::crypto
 #include "crypto.hpp"
@@ -28,6 +29,7 @@
 #ifdef PWN_INCLUDE_DISASSEMBLER
 #include "disasm.hpp"
 #endif // PWN_INCLUDE_DISASSEMBLER
+// clang-format on
 
 
 #pragma region pwn::windows

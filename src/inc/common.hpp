@@ -285,3 +285,6 @@ public:
 private:
     N m_val = 0;
 };
+
+
+using flattenable_t = std::variant<std::string, std::wstring, std::vector<u8>>;

@@ -10,8 +10,6 @@
 #include "common.hpp"
 
 
-using flattenable_t = std::variant<std::string, std::wstring, std::vector<u8>>;
-
 ///
 /// @brief Same as Python's `all`
 ///

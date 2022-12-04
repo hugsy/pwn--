@@ -60,6 +60,7 @@ set(
     ${COMMON_SOURCE_DIR}/pwn.cpp
     ${COMMON_SOURCE_DIR}/tube.cpp
     ${COMMON_SOURCE_DIR}/utils.cpp
+    ${COMMON_SOURCE_DIR}/memory.cpp
 )
 
 set(COMMON_HEADER_DIR ${PWNLIB_SRC_HDR_DIR})
@@ -91,6 +92,7 @@ set(
     ${COMMON_HEADER_DIR}/tube.hpp
     ${COMMON_HEADER_DIR}/utils.hpp
     ${COMMON_HEADER_DIR}/error.hpp
+    ${COMMON_HEADER_DIR}/memory.hpp
 )
 
 if(PWN_ENABLE_LUA_BACKDOOR)

@@ -54,7 +54,7 @@ pwn::windows::ctf::Process::recv_internal(_In_ size_t size)
     DWORD dwRead = 0;
     std::vector<u8> out;
 
-    size = min(size, Tube::PIPE_DEFAULT_SIZE) & 0xffffffff;
+    size = std::min(size, Tube::PIPE_DEFAULT_SIZE) & 0xffffffff;
     out.clear();
     out.resize(size);
 
