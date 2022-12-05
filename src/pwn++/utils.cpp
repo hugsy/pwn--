@@ -282,7 +282,7 @@ hexdump(const std::vector<u8>& bytes)
 
 
 void
-hexdump(const MemoryView& view)
+hexdump(MemoryView const& view)
 {
     hexdump((const u8*)view.data(), (usize)view.size());
 }
@@ -417,62 +417,69 @@ cyclic(_In_ u32 Size, _In_ u32 Period)
     return Ok(Buffer);
 }
 
-
-/**
- * @brief C++17 port of flat() from pwnlib
- *
- * @tparam T
- * @param v
- * @return std::vector<u8>
- */
+///
+/// @brief
+///
+/// @param v
+/// @return std::vector<u8>
+///
 template<typename T>
-auto
-PackToByteVector(T v) -> std::vector<u8>
+std::vector<u8>
+PackInt(T v, Endianess e)
+    requires std::integral<T>
 {
+    const Endianess endian = e == Endianess::unknown ? e : pwn::Context.endianness;
+    const usize sz         = sizeof(v);
     std::vector<u8> out;
-    if ( pwn::Context.endianess == Endianess::little )
+    out.resize(sz);
+
+    if ( endian == Endianess::little )
     {
-        for ( auto i = sizeof(T) - 1; i >= 0; i-- )
+        for ( i32 i = sz - 1; i >= 0; i-- )
         {
-            out.push_back((v >> (8 * i)) & 0xff);
+            out[i] = (v >> (8 * i)) & 0xff;
+        }
+    }
+    else if ( endian == Endianess::big )
+    {
+        for ( i32 i = 0; i < sz; i++ )
+        {
+            out[(sz - i - 1)] = (v >> (8 * i)) & 0xff;
         }
     }
     else
     {
-        for ( auto i = 0; i < sizeof(T); i++ )
-        {
-            out.push_back((v >> (8 * i)) & 0xff);
-        }
+        throw std::out_of_range("bad endian");
     }
 
     return out;
 }
 
-auto
-p8(_In_ u8 v) -> std::vector<u8>
+std::vector<u8>
+Pack::p64(u64 v, Endianess e)
 {
-    return PackToByteVector(v);
+    return PackInt(v, e);
 }
 
 
-auto
-p16(_In_ u16 v) -> std::vector<u8>
+std::vector<u8>
+Pack::p32(u32 v, Endianess e)
 {
-    return PackToByteVector(v);
+    return PackInt(v, e);
 }
 
 
-auto
-p32(_In_ u32 v) -> std::vector<u8>
+std::vector<u8>
+Pack::p16(u16 v, Endianess e)
 {
-    return PackToByteVector(v);
+    return PackInt(v, e);
 }
 
 
-auto
-p64(_In_ u64 v) -> std::vector<u8>
+std::vector<u8>
+Pack::p8(u8 v, Endianess e)
 {
-    return PackToByteVector(v);
+    return PackInt(v, e);
 }
 
 
@@ -503,6 +510,7 @@ auto
 flatten(_In_ const std::vector<flattenable_t>& args) -> std::vector<u8>
 {
     std::vector<u8> flat;
+
     for ( const auto& arg : args )
     {
         auto tmp = FlattenToByteVector(arg);

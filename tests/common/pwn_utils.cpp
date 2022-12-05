@@ -91,6 +91,43 @@ TEST_CASE("strings", "[" NS "]")
 }
 
 
+TEST_CASE("pack/unpack/flatten", "[" NS "]")
+{
+    SECTION("LittleEndian")
+    {
+        pwn::Context.set(Endianess::little);
+        CHECK(pwn::utils::Pack::p8(0x41) == std::vector<u8> {0x41});
+        CHECK(pwn::utils::Pack::p16(0x4142) == std::vector<u8> {0x42, 0x41});
+        CHECK(pwn::utils::Pack::p32(0x41424344) == std::vector<u8> {0x44, 0x43, 0x42, 0x41});
+        CHECK(
+            pwn::utils::Pack::p64(0x4142434445464748) ==
+            std::vector<u8> {0x48, 0x47, 0x46, 0x45, 0x44, 0x43, 0x42, 0x41});
+
+        CHECK(pwn::utils::Pack::Flatten(pwn::utils::Pack::p32(0x41424344)) == std::vector<u8> {0x44, 0x43, 0x42, 0x41});
+        CHECK(
+            pwn::utils::Pack::Flatten(pwn::utils::Pack::p32(0x41424344), pwn::utils::Pack::p64(0x45464748'494a4b4c)) ==
+            std::vector<u8> {0x44, 0x43, 0x42, 0x41, 0x4c, 0x4b, 0x4a, 0x49, 0x48, 0x47, 0x46, 0x45});
+    }
+
+    SECTION("BigEndian")
+    {
+        pwn::Context.set(Endianess::big);
+        CHECK(pwn::utils::Pack::p8(0x41) == std::vector<u8> {0x41});
+        CHECK(pwn::utils::Pack::p16(0x4142) == std::vector<u8> {0x41, 0x42});
+        CHECK(pwn::utils::Pack::p32(0x41424344) == std::vector<u8> {0x41, 0x42, 0x43, 0x44});
+        CHECK(
+            pwn::utils::Pack::p64(0x4142434445464748) ==
+            std::vector<u8> {0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48});
+
+        CHECK(pwn::utils::Pack::Flatten(pwn::utils::Pack::p32(0x41424344)) == std::vector<u8> {0x41, 0x42, 0x43, 0x44});
+
+        CHECK(
+            pwn::utils::Pack::Flatten(pwn::utils::Pack::p32(0x41424344), pwn::utils::Pack::p64(0x45464748'494a4b4c)) ==
+            std::vector<u8> {0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c});
+    }
+}
+
+
 TEST_CASE("security properties", "[" NS "]")
 {
 }

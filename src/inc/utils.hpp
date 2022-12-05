@@ -265,39 +265,98 @@ public:
 ///
 /// @brief
 ///
-PWNAPI auto
-p8(_In_ u8 v) -> std::vector<u8>;
-
-
-///
-/// @brief
-///
-PWNAPI auto
-p16(_In_ u16 v) -> std::vector<u8>;
-
-
-///
-/// @brief
-///
-PWNAPI auto
-p32(_In_ u32 v) -> std::vector<u8>;
-
-
-///
-/// @brief
-///
-PWNAPI auto
-p64(_In_ u64 v) -> std::vector<u8>;
-
-
-///
-/// @brief
-///
 /// @param args
 /// @return std::vector<u8>
 ///
 PWNAPI auto
 flatten(const std::vector<flattenable_t>& args) -> std::vector<u8>;
+
+
+struct Pack
+{
+
+    ///
+    ///@brief
+    ///
+    ///@param v
+    ///@return std::vector<u8>
+    ///
+    static std::vector<u8>
+    p64(u64 v, Endianess e = Endianess::unknown);
+
+
+    ///
+    ///@brief
+    ///
+    ///@param v
+    ///@return std::vector<u8>
+    ///
+    static std::vector<u8>
+    p32(u32 v, Endianess e = Endianess::unknown);
+
+
+    ///
+    ///@brief
+    ///
+    ///@param v
+    ///@return std::vector<u8>
+    ///
+    static std::vector<u8>
+    p16(u16 v, Endianess e = Endianess::unknown);
+
+
+    ///
+    ///@brief
+    ///
+    ///@param v
+    ///@return std::vector<u8>
+    ///
+    static std::vector<u8>
+    p8(u8 v, Endianess e = Endianess::unknown);
+
+
+    ///
+    ///@brief P
+    ///
+    ///@tparam T
+    ///@tparam Args
+    ///@param arg
+    ///@param args
+    ///@return constexpr std::vector<u8>
+    ///
+    template<Flattenable T, Flattenable... Args>
+    static constexpr std::vector<u8>
+    Flatten(T arg, Args... args)
+    {
+        std::vector<u8> out;
+
+        if constexpr ( std::is_same_v<T, std::string> )
+        {
+            std::vector<u8> s = StringLib::To<std::vector<u8>>(std::string(arg));
+            out.insert(out.end(), s.begin(), s.end());
+        }
+
+        if constexpr ( std::is_same_v<T, std::wstring> )
+        {
+            std::vector<u8> s = StringLib::To<std::vector<u8>>(std::wstring(arg));
+            out.insert(out.end(), s.begin(), s.end());
+        }
+
+        if constexpr ( std::is_same_v<T, std::vector<u8>> )
+        {
+            out.insert(out.end(), arg.begin(), arg.end());
+        }
+
+        if constexpr ( sizeof...(args) > 0 )
+        {
+            auto rec = Flatten(args...);
+            out.insert(out.end(), rec.begin(), rec.end());
+        }
+
+        return out;
+    }
+};
+
 
 ///
 ///@brief

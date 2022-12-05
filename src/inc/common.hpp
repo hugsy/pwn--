@@ -288,3 +288,40 @@ private:
 
 
 using flattenable_t = std::variant<std::string, std::wstring, std::vector<u8>>;
+
+template<typename T>
+concept Flattenable = std::same_as<T, std::vector<u8>> || std::same_as<T, std::string> || std::same_as<T, std::wstring>;
+
+template<Flattenable T, Flattenable... Args>
+constexpr usize
+SumSizeOfFlattenable(T arg, Args... args)
+{
+    usize sz = 0;
+
+    if constexpr ( std::is_same_v<T, std::string> )
+    {
+        sz += arg.size();
+    }
+    else if constexpr ( std::is_same_v<T, std::wstring> )
+    {
+        sz += arg.size() * sizeof(wchar_t);
+    }
+    else if constexpr ( std::is_same_v<T, std::vector<u8>> )
+    {
+        sz += arg.size();
+    }
+    else
+    {
+        sz += sizeof(arg);
+    }
+
+    if constexpr ( sizeof...(args) > 0 )
+    {
+        return sz + SumSizeOfFlattenable(args...);
+    }
+
+    return sz;
+}
+
+
+// TODO: get rid of `flattenable_t`

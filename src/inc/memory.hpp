@@ -256,34 +256,40 @@ public:
         std::memset(m_Pointer, c, m_Size);
     }
 
+    template<Flattenable T, Flattenable... Args>
     constexpr void
-    Flatten(const std::vector<flattenable_t>& args)
+    Flatten(T arg, Args... args)
     {
-        usize off = 0;
-
-        for ( const auto& arg : args )
+        if constexpr ( std::is_same_v<T, std::string> )
         {
-            if ( const auto ptr = std::get_if<0>(&arg) )
-            {
-                std::string s(*ptr);
-                usize sz = std::min(s.size(), m_Size);
-                std::memcpy(m_Pointer + off, s.c_str(), sz);
-                off += sz;
-            }
+            std::string s(arg);
+            usize sz = std::min(s.size(), m_Size);
+            std::memcpy(m_Pointer + m_Cursor, s.c_str(), sz);
+            m_Cursor += sz;
+        }
 
-            if ( const auto ptr = std::get_if<2>(&arg) )
-            {
-                auto s   = std::get<2>(arg);
-                usize sz = std::min(s.size(), m_Size);
-                std::memcpy(m_Pointer, s.data(), sz);
-                off += sz;
-            }
+        if constexpr ( std::is_same_v<T, std::vector<u8>> )
+        {
+            std::vector<u8> s(arg);
+            usize sz = std::min(s.size(), m_Size);
+            std::memcpy(m_Pointer + m_Cursor, s.data(), sz);
+            m_Cursor += sz;
+        }
+
+        if constexpr ( sizeof...(args) > 0 )
+        {
+            Flatten(args...);
+        }
+        else
+        {
+            m_Cursor = 0;
         }
     }
 
 private:
-    u8* m_Pointer;
-    usize m_Size;
+    u8* m_Pointer {nullptr};
+    uptr m_Cursor {0};
+    usize m_Size {0};
 };
 
 constexpr bool
