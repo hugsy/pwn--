@@ -275,7 +275,7 @@ hexdump(const u8* Buffer, const usize BufferSize)
 
 
 void
-hexdump(const std::vector<u8>& bytes)
+hexdump(std::vector<u8> const& bytes)
 {
     hexdump((const u8*)bytes.data(), (usize)bytes.size());
 }
@@ -428,7 +428,7 @@ std::vector<u8>
 PackInt(T v, Endianess e)
     requires std::integral<T>
 {
-    const Endianess endian = (e == Endianess::unknown) ? e : pwn::Context.endianess;
+    const Endianess endian = (e != Endianess::unknown) ? e : pwn::Context.endianess;
     const usize sz         = sizeof(v);
     std::vector<u8> out;
     out.resize(sz);

@@ -9,9 +9,12 @@
 
 TEST_CASE("hexdump", "[" NS "]")
 {
-    std::vector<u8> const vec {0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41};
+    std::vector<u8> vec {0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41};
     pwn::utils::hexdump(vec);
     pwn::utils::hexdump(&vec[0], ((usize)vec.size()));
+
+    pwn::utils::MemoryView view(vec);
+    pwn::utils::hexdump(view);
 }
 
 

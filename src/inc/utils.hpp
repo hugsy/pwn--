@@ -11,11 +11,11 @@
 #include "common.hpp"
 
 
-class MemoryView;
-
-
 namespace pwn::utils
 {
+
+class MemoryView;
+
 namespace random
 {
 ///
@@ -356,7 +356,7 @@ hexdump(std::vector<u8> const& bytes);
 /// @brief
 ///
 PWNAPI void
-hexdump(MemoryView const& view);
+hexdump(pwn::utils::MemoryView const& view);
 
 
 ///
