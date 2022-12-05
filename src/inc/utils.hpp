@@ -14,45 +14,6 @@
 class MemoryView;
 
 
-///
-/// @brief Same as Python's `all`
-///
-/// @tparam Args an `std::integral` templating type
-/// @param args the variadic parameters to check
-/// @return true if all variadic parameters are true
-/// @return false otherwise
-///
-template<std::integral... Args>
-bool
-all(Args... args);
-
-
-///
-/// @brief Same as Python's `any`
-///
-/// @tparam Args an `std::integral` templating type
-/// @param args the variadic parameters to check
-/// @return true if any variadic parameter is true
-/// @return false otherwise
-///
-template<std::integral... Args>
-bool
-any(Args... args);
-
-
-///
-/// @brief Opposite of `all`
-///
-/// @tparam Args an `std::integral` templating type
-/// @param args the variadic parameters to check
-/// @return true if all variadic parameters are false
-/// @return false otherwise
-///
-template<std::integral... Args>
-bool
-none(Args... args);
-
-
 namespace pwn::utils
 {
 namespace random
