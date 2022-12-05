@@ -281,6 +281,13 @@ hexdump(const std::vector<u8>& bytes)
 }
 
 
+void
+hexdump(const MemoryView& view)
+{
+    hexdump((const u8*)view.data(), (usize)view.size());
+}
+
+
 auto
 Base64::Encode(std::vector<u8> const& bytes) -> Result<std::string>
 {
@@ -420,7 +427,7 @@ cyclic(_In_ u32 Size, _In_ u32 Period)
  */
 template<typename T>
 auto
-__pack(_In_ T v) -> std::vector<u8>
+PackToByteVector(T v) -> std::vector<u8>
 {
     std::vector<u8> out;
     if ( pwn::Context.endianess == Endianess::little )
@@ -444,33 +451,32 @@ __pack(_In_ T v) -> std::vector<u8>
 auto
 p8(_In_ u8 v) -> std::vector<u8>
 {
-    return __pack(v);
+    return PackToByteVector(v);
 }
 
 
 auto
 p16(_In_ u16 v) -> std::vector<u8>
 {
-    return __pack(v);
+    return PackToByteVector(v);
 }
 
 
 auto
 p32(_In_ u32 v) -> std::vector<u8>
 {
-    return __pack(v);
+    return PackToByteVector(v);
 }
 
 
 auto
 p64(_In_ u64 v) -> std::vector<u8>
 {
-    return __pack(v);
+    return PackToByteVector(v);
 }
 
 
-auto
-__flatten(_In_ const flattenable_t& v) -> std::vector<u8>
+auto FlattenToByteVector = [](const flattenable_t& v) -> std::vector<u8>
 {
     if ( const auto ptr = std::get_if<0>(&v) )
     {
@@ -490,7 +496,7 @@ __flatten(_In_ const flattenable_t& v) -> std::vector<u8>
     }
 
     return std::vector<u8>();
-}
+};
 
 
 auto
@@ -499,7 +505,7 @@ flatten(_In_ const std::vector<flattenable_t>& args) -> std::vector<u8>
     std::vector<u8> flat;
     for ( const auto& arg : args )
     {
-        auto tmp = __flatten(arg);
+        auto tmp = FlattenToByteVector(arg);
         flat.insert(flat.end(), tmp.begin(), tmp.end());
     }
 

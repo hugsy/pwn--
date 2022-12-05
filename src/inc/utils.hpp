@@ -10,6 +10,9 @@
 #include "common.hpp"
 
 
+class MemoryView;
+
+
 ///
 /// @brief Same as Python's `all`
 ///
@@ -332,6 +335,13 @@ hexdump(const u8* Buffer, const usize BufferSize);
 ///
 PWNAPI void
 hexdump(std::vector<u8> const& bytes);
+
+
+///
+/// @brief
+///
+PWNAPI void
+hexdump(MemoryView const& view);
 
 
 ///
