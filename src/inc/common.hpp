@@ -287,8 +287,6 @@ private:
 };
 
 
-using flattenable_t = std::variant<std::string, std::wstring, std::vector<u8>>;
-
 template<typename T>
 concept Flattenable = std::same_as<T, std::vector<u8>> || std::same_as<T, std::string> || std::same_as<T, std::wstring>;
 
@@ -322,6 +320,3 @@ SumSizeOfFlattenable(T arg, Args... args)
 
     return sz;
 }
-
-
-// TODO: get rid of `flattenable_t`

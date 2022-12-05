@@ -428,7 +428,7 @@ std::vector<u8>
 PackInt(T v, Endianess e)
     requires std::integral<T>
 {
-    const Endianess endian = e == Endianess::unknown ? e : pwn::Context.endianness;
+    const Endianess endian = (e == Endianess::unknown) ? e : pwn::Context.endianess;
     const usize sz         = sizeof(v);
     std::vector<u8> out;
     out.resize(sz);
@@ -480,44 +480,6 @@ std::vector<u8>
 Pack::p8(u8 v, Endianess e)
 {
     return PackInt(v, e);
-}
-
-
-auto FlattenToByteVector = [](const flattenable_t& v) -> std::vector<u8>
-{
-    if ( const auto ptr = std::get_if<0>(&v) )
-    {
-        std::string s(*ptr);
-        return std::vector<u8>(s.begin(), s.end());
-    }
-
-    if ( const auto ptr = std::get_if<1>(&v) )
-    {
-        const std::wstring& s(*ptr);
-        return StringLib::To<std::vector<u8>>(s);
-    }
-
-    if ( const auto ptr = std::get_if<2>(&v) )
-    {
-        return std::get<2>(v);
-    }
-
-    return std::vector<u8>();
-};
-
-
-auto
-flatten(_In_ const std::vector<flattenable_t>& args) -> std::vector<u8>
-{
-    std::vector<u8> flat;
-
-    for ( const auto& arg : args )
-    {
-        auto tmp = FlattenToByteVector(arg);
-        flat.insert(flat.end(), tmp.begin(), tmp.end());
-    }
-
-    return flat;
 }
 
 

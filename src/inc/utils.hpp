@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <variant>
 
+#include "architecture.hpp"
 #include "common.hpp"
 
 
@@ -262,23 +263,14 @@ public:
 };
 
 
-///
-/// @brief
-///
-/// @param args
-/// @return std::vector<u8>
-///
-PWNAPI auto
-flatten(const std::vector<flattenable_t>& args) -> std::vector<u8>;
-
-
-struct Pack
+class Pack
 {
-
+public:
     ///
-    ///@brief
+    ///@brief Pack a 8-byte to a byte vector
     ///
-    ///@param v
+    ///@param v the value to pack
+    ///@param e the endianess (default: used from `Context`)
     ///@return std::vector<u8>
     ///
     static std::vector<u8>
@@ -286,9 +278,10 @@ struct Pack
 
 
     ///
-    ///@brief
+    ///@brief Pack a 3-byte to a byte vector
     ///
-    ///@param v
+    ///@param v the value to pack
+    ///@param e the endianess (default: used from `Context`)
     ///@return std::vector<u8>
     ///
     static std::vector<u8>
@@ -296,9 +289,10 @@ struct Pack
 
 
     ///
-    ///@brief
+    ///@brief Pack a 2-byte to a byte vector
     ///
-    ///@param v
+    ///@param v the value to pack
+    ///@param e the endianess (default: used from `Context`)
     ///@return std::vector<u8>
     ///
     static std::vector<u8>
@@ -306,9 +300,10 @@ struct Pack
 
 
     ///
-    ///@brief
+    ///@brief Pack a 1-byte to a byte vector
     ///
-    ///@param v
+    ///@param v the value to pack
+    ///@param e the endianess (default: used from `Context`)
     ///@return std::vector<u8>
     ///
     static std::vector<u8>
