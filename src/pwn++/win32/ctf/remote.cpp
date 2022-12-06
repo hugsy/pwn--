@@ -88,7 +88,7 @@ pwn::windows::ctf::Remote::send_internal(_In_ std::vector<u8> const& out)
 
 
 Result<std::vector<u8>>
-pwn::windows::ctf::Remote::recv_internal(_In_ size_t size = Tube::PIPE_DEFAULT_SIZE)
+pwn::windows::ctf::Remote::recv_internal(_In_ usize size = Tube::PIPE_DEFAULT_SIZE)
 {
     if ( m_State != SocketState::Connected )
     {
@@ -96,7 +96,7 @@ pwn::windows::ctf::Remote::recv_internal(_In_ size_t size = Tube::PIPE_DEFAULT_S
     }
 
     std::vector<u8> cache_data;
-    size_t idx = 0;
+    usize idx = 0;
 
     size = std::min(size, Tube::PIPE_DEFAULT_SIZE);
 
@@ -105,7 +105,7 @@ pwn::windows::ctf::Remote::recv_internal(_In_ size_t size = Tube::PIPE_DEFAULT_S
     //
     if ( !m_receive_buffer.empty() )
     {
-        auto sz = std::min(size, m_receive_buffer.size());
+        const usize sz = std::min(size, (usize)m_receive_buffer.size());
         std::copy(m_receive_buffer.begin(), m_receive_buffer.begin() + sz, std::back_inserter(cache_data));
 
         m_receive_buffer.erase(m_receive_buffer.begin(), m_receive_buffer.begin() + sz);

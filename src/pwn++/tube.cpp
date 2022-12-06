@@ -30,7 +30,7 @@ Tube::send(_In_ std::string const& str)
 
 
 Result<std::vector<u8>>
-Tube::recv(_In_ size_t size)
+Tube::recv(_In_ usize size)
 {
     return recv_internal(size);
 }

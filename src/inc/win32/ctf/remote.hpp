@@ -45,7 +45,7 @@ protected:
 
 
     Result<std::vector<u8>>
-    recv_internal(_In_ size_t size);
+    recv_internal(_In_ usize size);
 
 
     Result<usize>

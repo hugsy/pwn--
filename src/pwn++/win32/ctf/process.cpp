@@ -49,7 +49,7 @@ pwn::windows::ctf::Process::send_internal(_In_ std::vector<u8> const& out)
 
 
 Result<std::vector<u8>>
-pwn::windows::ctf::Process::recv_internal(_In_ size_t size)
+pwn::windows::ctf::Process::recv_internal(_In_ usize size)
 {
     DWORD dwRead = 0;
     std::vector<u8> out;

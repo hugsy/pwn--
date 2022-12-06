@@ -50,7 +50,7 @@ public:
     ///@return Result<std::vector<u8>>
     ///
     Result<std::vector<u8>>
-    recv(_In_ size_t size = Tube::PIPE_DEFAULT_SIZE);
+    recv(_In_ usize size = Tube::PIPE_DEFAULT_SIZE);
 
 
     ///
@@ -159,7 +159,7 @@ protected:
     send_internal(_In_ std::vector<u8> const& data) = 0;
 
     virtual Result<std::vector<u8>>
-    recv_internal(_In_ size_t size) = 0;
+    recv_internal(_In_ usize size) = 0;
 
     virtual Result<usize>
     peek_internal() = 0;
