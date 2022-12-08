@@ -6,13 +6,7 @@ PWNAPI struct pwn::GlobalContext pwn::Context;
 pwn::GlobalContext::GlobalContext()
 {
     pwn::utils::random::seed(std::chrono::system_clock::now().time_since_epoch().count());
-#if PWN_BUILD_ARCHITECTURE == "x86"
-    set("x86");
-#elif PWN_BUILD_ARCHITECTURE == "arm64"
-    set("arm64");
-#else
     set("x64");
-#endif
 };
 
 
