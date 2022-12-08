@@ -179,8 +179,9 @@ Process::Memory::QueryInternal(
     const uptr BaseAddress,
     const usize InitialSize)
 {
-    usize Size  = InitialSize;
-    auto Buffer = ::LocalAlloc(LPTR, Size);
+    ErrorCode ec = ErrorCode::UnknownError;
+    usize Size   = InitialSize;
+    auto Buffer  = ::LocalAlloc(LPTR, Size);
     if ( !Buffer )
     {
         return Err(ErrorCode::AllocationError);
@@ -198,13 +199,13 @@ Process::Memory::QueryInternal(
             &ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
-            break;
+            return Ok(Buffer);
         }
 
         if ( Status == STATUS_INFO_LENGTH_MISMATCH )
         {
             Size   = ReturnLength;
-            Buffer = ::LocalReAlloc(Buffer, Size, LMEM_ZEROINIT);
+            Buffer = ::LocalReAlloc(Buffer, Size, LMEM_MOVEABLE | LMEM_ZEROINIT);
             continue;
         }
 
@@ -214,17 +215,16 @@ Process::Memory::QueryInternal(
         // If doing an iteration, the last address will be invalid
         // resulting in having STATUS_INVALID_PARAMETER. We just exit.
         //
-        if ( Status == STATUS_INVALID_PARAMETER )
-        {
-            return Err(ErrorCode::InvalidParameter);
-        }
+        ec = (Status == STATUS_INVALID_PARAMETER) ? ErrorCode::InvalidParameter : ErrorCode::PermissionDenied;
 
-        return Err(ErrorCode::PermissionDenied);
+        break;
 
     } while ( true );
 
-    return Ok(Buffer);
+    ::LocalFree(Buffer);
+    return Err(ec);
 }
+
 
 Result<std::vector<std::shared_ptr<MEMORY_BASIC_INFORMATION>>>
 Process::Memory::Regions()

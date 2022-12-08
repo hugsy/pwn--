@@ -315,22 +315,27 @@ Thread::QueryInternal(const THREADINFOCLASS ThreadInformationClass, const usize 
         Status = ::NtQueryInformationThread(m_ThreadHandle->get(), ThreadInformationClass, Buffer, Size, &ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
-            break;
+            return Ok(Buffer);
         }
 
         if ( Status == STATUS_INFO_LENGTH_MISMATCH )
         {
-            Size   = ReturnLength;
-            Buffer = ::LocalReAlloc(Buffer, Size, LMEM_ZEROINIT);
-            continue;
+            HLOCAL NewBuffer = ::LocalReAlloc(Buffer, ReturnLength, LMEM_MOVEABLE | LMEM_ZEROINIT);
+            if ( NewBuffer )
+            {
+                Buffer = NewBuffer;
+                Size   = ReturnLength;
+                continue;
+            }
         }
 
         log::ntperror(L"NtQueryInformationThread()", Status);
-        return Err(ErrorCode::PermissionDenied);
+        break;
 
     } while ( true );
 
-    return Ok(Buffer);
+    ::LocalFree(Buffer);
+    return Err(ErrorCode::ExternalApiCallFailed);
 }
 
 PTEB

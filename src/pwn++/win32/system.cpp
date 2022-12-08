@@ -213,29 +213,30 @@ System::QueryInternal(const SYSTEM_INFORMATION_CLASS SystemInformationClass, con
         Status = ::NtQuerySystemInformation(SystemInformationClass, Buffer, Size, &ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
+            return Ok(Buffer);
+        }
+
+        if ( Status != STATUS_INFO_LENGTH_MISMATCH )
+        {
+            log::ntperror(L"NtQueryInformationThread()", Status);
             break;
         }
 
-        if ( Status == STATUS_INFO_LENGTH_MISMATCH )
+        HLOCAL NewBuffer = ::LocalReAlloc(Buffer, ReturnLength, LMEM_MOVEABLE | LMEM_ZEROINIT);
+        if ( NewBuffer )
         {
-            Size             = ReturnLength;
-            HLOCAL NewBuffer = ::LocalReAlloc(Buffer, Size, LMEM_MOVEABLE | LMEM_ZEROINIT);
-            if ( !NewBuffer )
-            {
-                log::perror(L"LocalReAlloc()");
-                return Err(ErrorCode::AllocationError);
-            }
-
+            Size   = ReturnLength;
             Buffer = NewBuffer;
             continue;
         }
 
-        log::ntperror(L"NtQueryInformationThread()", Status);
-        return Err(ErrorCode::PermissionDenied);
+        log::perror(L"LocalReAlloc() failed");
+        break;
 
     } while ( true );
 
-    return Ok(Buffer);
+    ::LocalFree(Buffer);
+    return Err(ErrorCode::ExternalApiCallFailed);
 }
 
 Result<std::tuple<u8, u8, u8, u8, u8>>

@@ -71,7 +71,11 @@ public:
         swap(m_Size, other.m_Size);
     }
 
-    // iterators:
+    ///
+    ///@brief Begin  iterator
+    ///
+    ///@return constexpr iterator
+    ///
     constexpr iterator
     begin() noexcept
     {
@@ -93,7 +97,11 @@ public:
         return const_iterator(data() + size());
     }
 
-    // reverse iterators
+    ///
+    ///@brief Begin reverse iterator
+    ///
+    ///@return constexpr const_iterator
+    ///
     constexpr reverse_iterator
     rbegin() noexcept
     {
@@ -115,63 +123,103 @@ public:
         return const_reverse_iterator(begin());
     }
 
-    // const iterators
+    ///
+    ///@brief Begin const iterator
+    ///
+    ///@return constexpr const_iterator
+    ///
     constexpr const_iterator
     cbegin() const noexcept
     {
         return begin();
     }
+
+    ///
+    ///@brief End const iterator
+    ///
+    ///@return constexpr const_iterator
+    ///
     constexpr const_iterator
     cend() const noexcept
     {
         return end();
     }
+
+    ///
+    ///@brief Begin reverse const iterator
+    ///
+    ///@return constexpr const_iterator
+    ///
     constexpr const_reverse_iterator
     crbegin() const noexcept
     {
         return rbegin();
     }
+
+    ///
+    ///@brief End reverse const iterator
+    ///
+    ///@return constexpr const_iterator
+    ///
     constexpr const_reverse_iterator
     crend() const noexcept
     {
         return rend();
     }
 
-    // capacity:
+    ///
+    ///@brief Empty capacity declaration
+    ///
+    ///@return true
+    ///@return false
+    ///
     constexpr bool
     empty() const noexcept
     {
         return size() == 0;
     }
+
+    ///
+    ///@brief MemoryView size
+    ///
+    ///@return constexpr usize
+    ///
     constexpr usize
     size() const noexcept
     {
         return m_Size;
     }
 
-    constexpr usize
-    itemsize() const noexcept
-    {
-        return sizeof(u8);
-    }
-
-    constexpr usize
-    nbytes() const noexcept
-    {
-        return itemsize() * size();
-    }
-
-    // element access:
+    ///
+    ///@brief Operator[] override
+    ///
+    ///@param n
+    ///@return constexpr u8&
+    ///
     constexpr u8&
     operator[](usize n) noexcept
     {
         return m_Pointer[n];
     }
+
+    ///
+    ///@brief Operator[] const override
+    ///
+    ///@param n
+    ///@return constexpr u8&
+    ///
     constexpr u8 const&
     operator[](usize n) const noexcept
     {
         return m_Pointer[n];
     }
+
+    ///
+    ///@brief MemoryView accessor
+    ///
+    ///@param n
+    ///@return constexpr u8&
+    ///
     constexpr u8&
     at(usize n)
     {
@@ -182,6 +230,13 @@ public:
 
         return m_Pointer[n];
     }
+
+    ///
+    ///@brief MemoryView const accessor
+    ///
+    ///@param n
+    ///@return constexpr u8&
+    ///
     constexpr u8 const&
     at(usize n) const
     {
@@ -219,24 +274,63 @@ public:
     {
         return m_Pointer;
     }
+
     constexpr const u8*
     data() const noexcept
     {
         return m_Pointer;
     }
 
+    ///
+    ///@brief Shift the view window
+    ///
+    ///@param n
+    ///
     constexpr void
-    remove_prefix(usize n) noexcept
+    Shift(usize n)
     {
+        if ( n >= size() )
+        {
+            throw std::out_of_range("MemoryView::Adjust");
+        }
+
+        if ( n == 0 )
+        {
+            throw std::runtime_error("MemoryView::Adjust");
+        }
+
         m_Pointer += n;
         m_Size -= n;
     }
+
+    ///
+    ///@brief Shrink the view size
+    ///
+    ///@param n
+    ///
     constexpr void
-    remove_suffix(usize n) noexcept
+    Shrink(usize n)
     {
+        if ( n >= size() )
+        {
+            throw std::out_of_range("MemoryView::Shrink");
+        }
+
+        if ( n == 0 )
+        {
+            throw std::runtime_error("MemoryView::Shrink");
+        }
+
         m_Size -= n;
     }
 
+    ///
+    ///@brief Create a subview of the given view
+    ///
+    ///@param pos
+    ///@param count
+    ///@return constexpr MemoryView
+    ///
     constexpr MemoryView
     View(usize pos = 0, usize count = npos) const
     {
@@ -250,12 +344,25 @@ public:
         return MemoryView(ptr, sz);
     }
 
+    ///
+    ///@brief Fill up the view with the given character
+    ///
+    ///@param c
+    ///
     void
     Fill(u8 c = 0x20)
     {
         std::memset(m_Pointer, c, m_Size);
     }
 
+    ///
+    ///@brief Flatten the arguments into the view
+    ///
+    ///@tparam T
+    ///@tparam Args
+    ///@param arg
+    ///@param args
+    ///
     template<Flattenable T, Flattenable... Args>
     constexpr void
     Flatten(T arg, Args... args)
@@ -284,6 +391,23 @@ public:
         {
             m_Cursor = 0;
         }
+    }
+
+    ///
+    ///@brief Export the memory view to the given container type.
+    ///
+    ///@tparam T must be `resize()`-able (vector, list, string, wstring - but not array)
+    ///@return T
+    ///
+    template<typename T>
+    T
+    To()
+    {
+        const usize sz = size();
+        T out;
+        out.resize(sz);
+        ::memcpy(out.data(), data(), sz);
+        return out;
     }
 
 private:

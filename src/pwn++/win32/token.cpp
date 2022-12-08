@@ -85,6 +85,7 @@ Token::QueryInternal(const TOKEN_INFORMATION_CLASS TokenInformationClass, const 
             continue;
         }
 
+        ::LocalFree(Buffer);
         log::ntperror(L"NtQueryInformationToken()", Status);
         return Err(ErrorCode::PermissionDenied);
 

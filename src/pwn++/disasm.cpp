@@ -116,7 +116,7 @@ Disassembler::DisassembleAll(std::vector<u8> const& Bytes)
         if ( Failed(res) )
         {
             auto e = Error(res);
-            if ( e == ErrorCode::NoMoreData )
+            if ( e.code == ErrorCode::NoMoreData )
             {
                 break;
             }
