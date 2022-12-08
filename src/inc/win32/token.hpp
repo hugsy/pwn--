@@ -117,6 +117,55 @@ public:
         return Ok(std::shared_ptr<T>(p, deleter));
     }
 
+    ///
+    ///@brief
+    ///
+    ///@tparam T
+    ///@param TokenInformation
+    ///@return Result<usize>
+    ///
+    template<class T>
+    Result<usize>
+    Update(T const& TokenInformation)
+    {
+        TOKEN_INFORMATION_CLASS TokenInformationClass = 0;
+        const DWORD NewDesiredAccess                  = TOKEN_ADJUST_DEFAULT;
+        const ULONG TokenInformationLength            = sizeof(T);
+
+        if constexpr ( std::is_same_v<T, TOKEN_DEFAULT_DACL> )
+        {
+            TokenInformationClass = TokenDefaultDacl;
+        }
+
+        if constexpr ( std::is_same_v<T, TOKEN_PRIMARY_GROUP> )
+        {
+            TokenInformationClass = TokenPrimaryGroup;
+        }
+
+        if constexpr ( std::is_same_v<T, TOKEN_OWNER> )
+        {
+            TokenInformationClass = TokenOwner;
+        }
+
+        if ( Failed(ReOpenTokenWith(NewDesiredAccess)) )
+        {
+            return Err(ErrorCode::PermissionDenied);
+        }
+
+        const NTSTATUS Status = ::NtSetInformationToken(
+            m_TokenHandle.get(),
+            TokenInformationClass,
+            (PVOID)TokenInformation,
+            TokenInformationLength);
+        if ( NT_SUCCESS(Status) )
+        {
+            return Ok(Status);
+        }
+
+        log::ntperror(L"NtSetInformationToken()", Status);
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
 protected:
     ///
     /// @brief
