@@ -2,28 +2,10 @@
 #include <pwn.hpp>
 
 
-#if defined(PWN_INCLUDE_ASSEMBLER)
-// TEST_CASE("asm x86-x64", "[pwn::Assembly]")
-// {
-//     const char* code = "xor rax, rax; inc rax; nop; ret;";
-
-//     std::vector<u8> bytes;
-//     std::vector<u8> expected {0x48, 0x31, 0xc0, 0x48, 0xff, 0xc0, 0x90, 0xc3};
-
-//     pwn::context::set_architecture(Architecture::x64);
-//     REQUIRE(pwn::assm::assemble(code, sizeof(code) - 1, bytes));
-//     REQUIRE(bytes == expected);
-
-//     pwn::context::set_architecture(Architecture::arm64);
-//     REQUIRE_FALSE(pwn::assm::assemble(code, sizeof(code) - 1, bytes));
-// }
-#endif
-
-
 #if defined(PWN_INCLUDE_DISASSEMBLER)
 TEST_CASE("Disassemble", "[pwn::Assembly]")
 {
-
+#ifdef PWN_DISASSEMBLE_X86
     SECTION("x64")
     {
         // x64 - nop; xor rax, rax; int3; ret
@@ -103,6 +85,7 @@ TEST_CASE("Disassemble", "[pwn::Assembly]")
             REQUIRE(insns.size() == 5);
         }
     }
+#endif // PWN_DISASSEMBLE_X86
 
     SECTION("Bad")
     {

@@ -24,7 +24,8 @@
 #endif
 
 #cmakedefine PWN_LOG_USE_COLOR
-#cmakedefine PWN_INCLUDE_ASSEMBLER
 #cmakedefine PWN_INCLUDE_DISASSEMBLER
+#cmakedefine PWN_DISASSEMBLE_X86
+#cmakedefine PWN_DISASSEMBLE_ARM64
 #cmakedefine PWN_INCLUDE_BACKDOOR
 // clang-format on

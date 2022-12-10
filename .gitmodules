@@ -7,3 +7,6 @@
 [submodule "deps/phnt"]
 	path = deps/phnt
 	url = https://github.com/hugsy/phnt
+[submodule "deps/arch-arm64"]
+	path = deps/arch-arm64
+	url = https://github.com/hugsy/arch-arm64
