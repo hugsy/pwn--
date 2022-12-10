@@ -24,8 +24,12 @@ struct Instruction
 {
     union
     {
-        ZydisDecodedInstruction x86;
+#ifdef PWN_DISASSEMBLE_X86
+        ::ZydisDecodedInstruction x86;
+#endif // PWN_DISASSEMBLE_X86
+#ifdef PWN_DISASSEMBLE_ARM64
         ::Instruction arm64;
+#endif // PWN_DISASSEMBLE_ARM64
     } o;
 
     u8 bytes[24];

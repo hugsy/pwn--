@@ -119,6 +119,7 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
 
     switch ( m_Architecture )
     {
+#ifdef PWN_DISASSEMBLE_X86
     case ArchitectureType::x86:
     case ArchitectureType::x64:
     {
@@ -126,9 +127,15 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
         {
             return Err(ErrorCode::ExternalApiCallFailed);
         }
+
+        assert(insn.o.x86.length < sizeof(insn.bytes));
+        ::memcpy(&insn.bytes, &insn.o.x86.raw, insn.o.x86.length);
+        insn.length += insn.o.x86.length;
         break;
     }
+#endif // PWN_DISASSEMBLE_X86
 
+#ifdef PWN_DISASSEMBLE_ARM64
     case ArchitectureType::arm64:
     {
         if ( Left < 4 )
@@ -141,7 +148,13 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
         {
             return Err(ErrorCode::ExternalApiCallFailed);
         }
+
+        insn.length += 4;
     }
+#endif // PWN_DISASSEMBLE_ARM64
+
+    default:
+        return Err(ErrorCode::InvalidInput);
     }
 
     m_BufferOffset += insn.length;
@@ -198,6 +211,12 @@ Disassembler::Format(Instruction& insn, uptr Address)
 #ifdef PWN_DISASSEMBLE_ARM64
     case ArchitectureType::arm64:
     {
+        // TODO: hack for now
+        if ( ::aarch64_decompose(insn.o.arm64.insword, &insn.o.arm64, Address) != 0 )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+
         if ( ::aarch64_disassemble(&insn.o.arm64, buffer, sizeof(buffer)) != 0 )
         {
             return Err(ErrorCode::ExternalApiCallFailed);
