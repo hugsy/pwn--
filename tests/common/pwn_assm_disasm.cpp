@@ -46,7 +46,7 @@ TEST_CASE("Disassemble", "[pwn::Assembly]")
                 code,
                 [](auto const& i)
                 {
-                    return i.mnemonic == ZydisMnemonic::ZYDIS_MNEMONIC_INT3;
+                    return i.o.x86.mnemonic == ZydisMnemonic::ZYDIS_MNEMONIC_INT3;
                 });
             REQUIRE(Success(res));
 

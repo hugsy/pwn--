@@ -41,7 +41,8 @@ Disassembler::Disassembler(Architecture const& arch) :
 
     case ArchitectureType::arm64:
 #ifdef PWN_DISASSEMBLE_ARM64
-
+#else
+        err(L"Not compiled with ARM64 support");
 #endif
         break;
 
@@ -55,6 +56,8 @@ Disassembler::Disassembler(Architecture const& arch) :
         err(L"Disassembler initialization failed.");
         return;
     }
+
+    m_Architecture = arch.id;
 
 #ifdef PWN_DISASSEMBLE_X86
     m_Valid = ZYAN_SUCCESS(::ZydisFormatterInit(&m_Formatter, ZYDIS_FORMATTER_STYLE_INTEL));
@@ -112,15 +115,36 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
         return Err(ErrorCode::NoMoreData);
     }
 
-    Instruction insn {0};
+    Instruction insn;
 
-#ifdef PWN_DISASSEMBLE_X86
-    if ( !ZYAN_SUCCESS(::ZydisDecoderDecodeBuffer(&m_Decoder, &bytes[m_BufferOffset], Left, &insn)) )
+    switch ( m_Architecture )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+    case ArchitectureType::x86:
+    case ArchitectureType::x64:
+    {
+        if ( !ZYAN_SUCCESS(::ZydisDecoderDecodeBuffer(&m_Decoder, &bytes[m_BufferOffset], Left, &insn.o.x86)) )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+        break;
     }
+
+    case ArchitectureType::arm64:
+    {
+        if ( Left < 4 )
+        {
+            return Err(ErrorCode::InvalidInput);
+        }
+
+        const u32 insword = *((u32*)&bytes[m_BufferOffset]);
+        if ( ::aarch64_decompose(insword, &insn.o.arm64, 0) != 0 )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+    }
+    }
+
     m_BufferOffset += insn.length;
-#endif
 
     return Ok(insn);
 }
@@ -153,28 +177,49 @@ Disassembler::DisassembleAll(std::vector<u8> const& Bytes)
 
 
 Result<std::string>
-Disassembler::Format(Instruction const& insn, uptr Address)
+Disassembler::Format(Instruction& insn, uptr Address)
 {
     char buffer[1024] = {0};
 
-#ifdef PWN_DISASSEMBLE_X86
-    if ( !ZYAN_SUCCESS(::ZydisFormatterFormatInstruction(&m_Formatter, &insn, buffer, sizeof(buffer), Address)) )
+    switch ( m_Architecture )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+#ifdef PWN_DISASSEMBLE_X86
+    case ArchitectureType::x86:
+    case ArchitectureType::x64:
+    {
+        if ( !ZYAN_SUCCESS(
+                 ::ZydisFormatterFormatInstruction(&m_Formatter, &insn.o.x86, buffer, sizeof(buffer), Address)) )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
     }
 #endif // PWN_DISASSEMBLE_X86
+
+#ifdef PWN_DISASSEMBLE_ARM64
+    case ArchitectureType::arm64:
+    {
+        if ( ::aarch64_disassemble(&insn.o.arm64, buffer, sizeof(buffer)) != 0 )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+    }
+#endif // PWN_DISASSEMBLE_ARM64
+
+    default:
+        return Err(ErrorCode::InvalidInput);
+    }
 
     return Ok(std::string(buffer));
 }
 
 
 Result<std::vector<std::string>>
-Disassembler::Format(std::vector<Instruction> const& insns, uptr addr)
+Disassembler::Format(std::vector<Instruction>& insns, uptr addr)
 {
     std::vector<std::string> insns_str;
     uptr current_addr = addr;
 
-    for ( auto const& insn : insns )
+    for ( auto& insn : insns )
     {
         auto res = Format(insn, current_addr);
         if ( Failed(res) )
@@ -182,10 +227,7 @@ Disassembler::Format(std::vector<Instruction> const& insns, uptr addr)
             break;
         }
 
-#ifdef PWN_DISASSEMBLE_X86
         current_addr += insn.length;
-#endif // PWN_DISASSEMBLE_X86
-
         insns_str.push_back(Value(res));
     }
 
@@ -201,8 +243,8 @@ Disassembler::Print(std::vector<u8> const& bytes, std::optional<Architecture> ar
     auto res = dis.DisassembleAll(bytes);
     if ( Success(res) )
     {
-        auto const& insns = Value(res);
-        for ( auto const& insn : insns )
+        std::vector<Instruction> insns = Value(res);
+        for ( auto& insn : insns )
         {
             auto fmtInsn = dis.Format(insn, DefaultBaseAddress);
             if ( Success(fmtInsn) )

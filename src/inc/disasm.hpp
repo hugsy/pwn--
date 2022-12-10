@@ -19,9 +19,20 @@ constexpr uptr DefaultBaseAddress = 0x40000;
 
 namespace pwn::Assembly
 {
-#ifdef PWN_DISASSEMBLE_X86
-using Instruction = ZydisDecodedInstruction;
-#endif // PWN_DISASSEMBLE_X86
+
+struct Instruction
+{
+    union
+    {
+        ZydisDecodedInstruction x86;
+        ::Instruction arm64;
+    } o;
+
+    u8 bytes[24];
+    usize length;
+    uptr address;
+};
+
 
 class Disassembler
 {
@@ -122,7 +133,7 @@ public:
     /// @return `Result<std::string>`
     ///
     Result<std::string>
-    Format(Instruction const& insn, uptr addr);
+    Format(Instruction& insn, uptr addr);
 
 
     ///
@@ -134,7 +145,7 @@ public:
     ///@return `Result<std::vector<std::string>>`
     ///
     Result<std::vector<std::string>>
-    Format(std::vector<Instruction> const& insns, uptr addr);
+    Format(std::vector<Instruction>& insns, uptr addr);
 
 
     ///
@@ -192,6 +203,7 @@ private:
 #ifdef PWN_DISASSEMBLE_ARM64
 #endif // PWN_DISASSEMBLE_ARM64
 
+    ArchitectureType m_Architecture;
     u8* m_Buffer;
     usize m_BufferSize;
     usize m_BufferOffset;
