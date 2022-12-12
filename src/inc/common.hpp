@@ -56,6 +56,8 @@ using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 
+using namespace std::literals::string_view_literals;
+
 namespace
 {
 auto static inline LoadLibraryWrapper(wchar_t const* name)
@@ -117,7 +119,7 @@ auto inline GetProcAddressWrapper(M hMod, std::string_view const& lpszProcName)
 /// @tparam Value
 /// @tparam Size
 ///
-template<typename Key, typename Value, std::size_t Size>
+template<typename Key, typename Value, usize Size>
 struct CMap
 {
     std::array<std::pair<Key, Value>, Size> data;
@@ -141,11 +143,17 @@ struct CMap
             throw std::range_error("Not Found");
         }
     }
+
+    [[nodiscard]] constexpr Value
+    operator[](const Key& key) const
+    {
+        return at(key);
+    }
 };
 
 
 ///
-/// @brief A basic  constexpr generic buffer
+/// @brief A basic constexpr generic buffer
 /// @ref https://www.cppstories.com/2021/constexpr-new-cpp20/
 ///
 /// @tparam T
@@ -287,9 +295,24 @@ private:
 };
 
 
+///
+///@brief Flattenable types
+///
+///@tparam T
+///
 template<typename T>
 concept Flattenable = std::same_as<T, std::vector<u8>> || std::same_as<T, std::string> || std::same_as<T, std::wstring>;
 
+///
+///@brief Calculate the size of a buffer that could contain *all* the given
+/// flattenable typed arguments.
+///
+///@tparam T
+///@tparam Args
+///@param arg
+///@param args
+///@return constexpr usize
+///
 template<Flattenable T, Flattenable... Args>
 constexpr usize
 SumSizeOfFlattenable(T arg, Args... args)

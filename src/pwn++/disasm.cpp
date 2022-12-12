@@ -279,14 +279,14 @@ Disassembler::Print(std::vector<u8> const& bytes, std::optional<Architecture> ar
 void
 Disassembler::X64(std::vector<u8> const& bytes)
 {
-    Disassembler::Print(bytes, Architectures[0].second);
+    Disassembler::Print(bytes, Architectures["x64"]);
 }
 
 
 void
 Disassembler::X86(std::vector<u8> const& bytes)
 {
-    Disassembler::Print(bytes, Architectures[1].second);
+    Disassembler::Print(bytes, Architectures["x86"]);
 }
 #endif // PWN_DISASSEMBLE_X86
 
@@ -294,7 +294,7 @@ Disassembler::X86(std::vector<u8> const& bytes)
 void
 Disassembler::ARM64(std::vector<u8> const& bytes)
 {
-    Disassembler::Print(bytes, Architectures[2].second);
+    Disassembler::Print(bytes, Architectures["arm64"]);
 }
 #endif
 
