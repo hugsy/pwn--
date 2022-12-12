@@ -12,11 +12,10 @@ on:
 
 jobs:
   build:
+    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}"
     env:
       CMAKE_CONFIGURATION: ${{ github.ref_name == 'main' && 'RelWithDebInfo' || 'Debug' }}
       CMAKE_FLAGS: "${{ matrix.build == 'full' && '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=ON' || '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=OFF -DPWN_DISASSEMBLE_ARM64=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF' }}"
-
-    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}"
 
     strategy:
       fail-fast: false
@@ -121,12 +120,12 @@ jobs:
     - name: Populate the successful output
       id: output_success
       if: ${{ success() }}
-      run: echo 'msg="✅ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` succeeded"' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      run: echo 'msg=✅ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` succeeded' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Populate the failed output
       id: output_failures
       if: ${{ failure() }}
-      run: echo 'msg="❌ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` failed"'' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      run: echo 'msg=❌ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` failed' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
   notify:
     runs-on: 'ubuntu-latest'
@@ -150,8 +149,9 @@ jobs:
           ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
           ● Details: [Link](${{ env.RUN_URL }})
 
-          ${{needs.build.outputs.output_success}}
-          ${{needs.build.outputs.output_failures}}
+          ${{ join(needs.*.outputs.output_success, ', ') }}
+          ${{ needs.build.outputs.output_success }}
+          ${{ needs.build.outputs.output_failures }}
 
         color: 0x0000ff
         username: ${{ github.actor }} via GithubBot
