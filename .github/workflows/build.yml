@@ -30,7 +30,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     outputs:
-      output_success: ${{ join(steps.*.outputs.msg, ', ') }}
+      output_success: ${{ join(steps.output_success.outputs.*, ', ') }}
       output_failures: ${{ steps.output_failures.outputs.msg }}
 
     steps:
@@ -120,7 +120,7 @@ jobs:
     - name: Populate the successful output
       id: output_success
       if: ${{ success() }}
-      run: echo 'msg=✅ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` succeeded' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      run: echo 'msg_${{ matrix.os }}_${{ matrix.platform }}_${{ matrix.build }}=✅ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` succeeded' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Populate the failed output
       id: output_failures
@@ -144,7 +144,7 @@ jobs:
         nodetail: true
         title: Summary of Build `${{ env.GITHUB_SHA_SHORT }}` for `${{ env.REPO }}`
         description: |
-          [Job #${{ github.run_number }}](${{ env.RUN_URL }}) The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }} succeeded:
+          [Job #${{ github.run_number }}](${{ env.RUN_URL }}): CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }}:
           ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
           ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
           ● [Detail Page](${{ env.RUN_URL }})
