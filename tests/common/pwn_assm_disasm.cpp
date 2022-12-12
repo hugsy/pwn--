@@ -87,6 +87,40 @@ TEST_CASE("Disassemble", "[pwn::Assembly]")
     }
 #endif // PWN_DISASSEMBLE_X86
 
+
+#ifdef PWN_DISASSEMBLE_ARM64
+    SECTION("arm64")
+    {
+        const std::vector<u8>
+            code {0xc8, 0x18, 0x80, 0xd2, 0x01, 0xfd, 0x47, 0xd3, 0x20, 0xf8, 0x7f, 0xd3, 0xe2, 0x03, 0x1f, 0xaa};
+
+        {
+            pwn::Context.set("arm64");
+            pwn::Assembly::Disassembler d;
+
+            auto res = d.Disassemble(code);
+            REQUIRE(Success(res));
+
+            auto const& insn = Value(res);
+            REQUIRE(insn.length == 4);
+        }
+
+
+        {
+            pwn::Context.set("x64");
+            auto a = Architecture::Find("arm64");
+            auto d = pwn::Assembly::Disassembler(a);
+
+            auto res = d.Disassemble(code);
+            REQUIRE(Success(res));
+
+            auto const& insn = Value(res);
+            REQUIRE(insn.length == 4);
+        }
+    }
+#endif // PWN_DISASSEMBLE_ARM64
+
+
     SECTION("Bad")
     {
         const std::vector<u8> code = {0xff, 0xff};

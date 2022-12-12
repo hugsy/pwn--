@@ -26,6 +26,7 @@ Disassembler::Disassembler(Architecture const& arch) :
 #ifdef PWN_DISASSEMBLE_X86
         m_Valid =
             ZYAN_SUCCESS(::ZydisDecoderInit(&m_Decoder, ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_ADDRESS_WIDTH_32));
+        m_Valid &= ZYAN_SUCCESS(::ZydisFormatterInit(&m_Formatter, ZYDIS_FORMATTER_STYLE_INTEL));
 #else
         err(L"Not compiled with X86 support");
 #endif //  PWN_DISASSEMBLE_X86
@@ -34,6 +35,7 @@ Disassembler::Disassembler(Architecture const& arch) :
     case ArchitectureType::x64:
 #ifdef PWN_DISASSEMBLE_X86
         m_Valid = ZYAN_SUCCESS(::ZydisDecoderInit(&m_Decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64));
+        m_Valid &= ZYAN_SUCCESS(::ZydisFormatterInit(&m_Formatter, ZYDIS_FORMATTER_STYLE_INTEL));
 #else
         err(L"Not compiled with X64 support");
 #endif //  PWN_DISASSEMBLE_X86
@@ -41,6 +43,7 @@ Disassembler::Disassembler(Architecture const& arch) :
 
     case ArchitectureType::arm64:
 #ifdef PWN_DISASSEMBLE_ARM64
+        m_Valid = true;
 #else
         err(L"Not compiled with ARM64 support");
 #endif
@@ -58,10 +61,6 @@ Disassembler::Disassembler(Architecture const& arch) :
     }
 
     m_Architecture = arch.id;
-
-#ifdef PWN_DISASSEMBLE_X86
-    m_Valid = ZYAN_SUCCESS(::ZydisFormatterInit(&m_Formatter, ZYDIS_FORMATTER_STYLE_INTEL));
-#endif //  PWN_DISASSEMBLE_X86
 }
 
 
@@ -115,7 +114,7 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
         return Err(ErrorCode::NoMoreData);
     }
 
-    Instruction insn;
+    Instruction insn {};
 
     switch ( m_Architecture )
     {
@@ -129,8 +128,8 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
         }
 
         assert(insn.o.x86.length < sizeof(insn.bytes));
-        ::memcpy(&insn.bytes, &insn.o.x86.raw, insn.o.x86.length);
-        insn.length += insn.o.x86.length;
+        insn.length = insn.o.x86.length;
+        ::memcpy(&insn.bytes, &insn.o.x86.raw, insn.length);
         break;
     }
 #endif // PWN_DISASSEMBLE_X86
@@ -149,7 +148,8 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
             return Err(ErrorCode::ExternalApiCallFailed);
         }
 
-        insn.length += 4;
+        insn.length = sizeof(u32);
+        break;
     }
 #endif // PWN_DISASSEMBLE_ARM64
 

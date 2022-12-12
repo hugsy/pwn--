@@ -145,7 +145,7 @@ struct CMap
 
 
 ///
-/// @brief A constexpr generic buffer
+/// @brief A basic  constexpr generic buffer
 /// @ref https://www.cppstories.com/2021/constexpr-new-cpp20/
 ///
 /// @tparam T
@@ -235,7 +235,7 @@ private:
 
 
 ///
-/// @brief constexpr bitmask class
+/// @brief A basic constexpr bitmask class
 ///
 /// @tparam T
 /// @tparam std::enable_if<std::is_enum<T>::value>::type
