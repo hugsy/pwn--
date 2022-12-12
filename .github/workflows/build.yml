@@ -32,7 +32,9 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     outputs:
-      output1: ${{ steps.output1.outputs.msg }}
+      output_success: ${{ steps.output_success.outputs.msg }}
+      output_failures: ${{ steps.output_failures.outputs.msg }}
+
     steps:
     - uses: actions/checkout@v3
       with:
@@ -118,12 +120,12 @@ jobs:
         path: artifact/
 
     - name: Populate the successful output
-      id: output1
+      id: output_success
       if: ${{ success() }}
       run: echo 'msg="✅ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` succeeded"' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Populate the failed output
-      id: output1
+      id: output_failures
       if: ${{ failure() }}
       run: echo 'msg="❌ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` failed"'' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
@@ -149,7 +151,8 @@ jobs:
           ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
           ● Details: [Link](${{ env.RUN_URL }})
 
-          ${{needs.build.outputs.output1}}
+          ${{needs.build.outputs.output_success}}
+          ${{needs.build.outputs.output_failures}}
 
         color: 0x0000ff
         username: ${{ github.actor }} via GithubBot
