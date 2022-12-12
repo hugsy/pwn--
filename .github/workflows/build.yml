@@ -30,7 +30,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     outputs:
-      output_success: ${{ steps.output_success.outputs.msg }}
+      output_success: ${{ join(steps.*.outputs.msg, ', ') }}
       output_failures: ${{ steps.output_failures.outputs.msg }}
 
     steps:
@@ -128,7 +128,7 @@ jobs:
       run: echo 'msg=❌ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` failed' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
   notify:
-    runs-on: 'ubuntu-latest'
+    runs-on: 'ubuntu-22.04'
     needs: build
     steps:
     - name: Inject slug/short variables
@@ -147,9 +147,8 @@ jobs:
           [Job #${{ github.run_number }}](${{ env.RUN_URL }}) The CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ github.actor }} on ${{ env.GITHUB_REPOSITORY }} succeeded:
           ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
           ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
-          ● Details: [Link](${{ env.RUN_URL }})
+          ● [Detail Page](${{ env.RUN_URL }})
 
-          ${{ join(needs.*.outputs.output_success, ', ') }}
           ${{ needs.build.outputs.output_success }}
           ${{ needs.build.outputs.output_failures }}
 
