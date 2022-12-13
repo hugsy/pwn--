@@ -123,13 +123,13 @@ jobs:
       id: output_success
       if: ${{ success() }}
       run: |
-        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=✅ ${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=✅ ${{ matrix.os }} ⟩ ${{ matrix.platform }} ⟩ ${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Populate the failure output
       id: output_failure
       if: ${{ failure() }}
       run: |
-        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=❌ ${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=❌ ${{ matrix.os }} ⟩ ${{ matrix.platform }} ⟩ ${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
   notify:
     runs-on: 'ubuntu-22.04'
