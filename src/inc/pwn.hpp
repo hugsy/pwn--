@@ -20,11 +20,6 @@
 /// namespace pwn::crypto
 #include "crypto.hpp"
 
-#ifdef PWN_INCLUDE_ASSEMBLER
-/// namespace pwn::assm
-#include "asm.hpp"
-#endif // PWN_INCLUDE_ASSEMBLER
-
 /// namespace pwn::disassm
 #ifdef PWN_INCLUDE_DISASSEMBLER
 #include "disasm.hpp"

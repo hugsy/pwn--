@@ -39,8 +39,7 @@ operator<<(std::wostream& wos, Endianess e)
 Architecture
 Architecture::Find(std::string_view const& sv)
 {
-    static constexpr auto map = CMap<std::string_view, Architecture, Architectures.size()> {{Architectures}};
-    return map.at(sv);
+    return Architectures.at(sv);
 }
 
 

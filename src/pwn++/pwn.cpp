@@ -13,22 +13,10 @@ pwn::GlobalContext::GlobalContext()
 void
 pwn::GlobalContext::SetArchitecture(std::string_view const& type)
 {
-    try
-    {
-        architecture = Architecture::Find(type);
-        endianess    = architecture.endian;
-        ptrsize      = architecture.ptrsize;
-
-        dbg("Selecting {}", architecture);
-    }
-    catch ( std::range_error const& e )
-    {
-        err("Invalid architecture '{}'. Value must be in:", type);
-        for ( auto const& [name, arch] : Architectures )
-        {
-            err("- {}", arch);
-        }
-    }
+    architecture = Architecture::Find(type);
+    endianess    = architecture.endian;
+    ptrsize      = architecture.ptrsize;
+    dbg("Selecting '{}'", architecture);
 }
 
 

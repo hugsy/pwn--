@@ -7,20 +7,58 @@
 // clang-format on
 
 #ifdef PWN_INCLUDE_DISASSEMBLER
+
+#if defined(PWN_DISASSEMBLE_X86)
 #include <Zydis/Zydis.h>
+#endif // PWN_DISASSEMBLE_X86
+#if defined(PWN_DISASSEMBLE_ARM64)
+#include <arm64dis.h>
+#endif // PWN_DISASSEMBLE_ARM64
 
 constexpr uptr DefaultBaseAddress = 0x40000;
 
 namespace pwn::Assembly
 {
-using Instruction = ZydisDecodedInstruction;
+
+struct Instruction
+{
+    union
+    {
+#ifdef PWN_DISASSEMBLE_X86
+        ::ZydisDecodedInstruction x86;
+#endif // PWN_DISASSEMBLE_X86
+#ifdef PWN_DISASSEMBLE_ARM64
+        ::Instruction arm64;
+#endif // PWN_DISASSEMBLE_ARM64
+    } o;
+
+    u8 bytes[24];
+    usize length;
+    uptr address;
+};
+
 
 class Disassembler
 {
 public:
+    ///
+    ///@brief Construct a new Disassembler object using the global context architecture
+    ///
     Disassembler();
 
+    ///
+    ///@brief Construct a new Disassembler object for a specific architecture
+    ///
+    ///@param arch
+    ///
     Disassembler(Architecture const& arch);
+
+    ///
+    ///@brief Destroy the Disassembler:: Disassembler object
+    ///
+    ///
+    ~Disassembler();
+
 
     ///
     ///@brief (Re-)Set the offset with the buffer
@@ -36,6 +74,7 @@ public:
     ///
     Result<Instruction>
     Disassemble(std::vector<u8> const& bytes);
+
 
     ///
     ///@brief Disassemble the given buffer until a condition is met
@@ -98,7 +137,7 @@ public:
     /// @return `Result<std::string>`
     ///
     Result<std::string>
-    Format(Instruction const& insn, uptr addr);
+    Format(Instruction& insn, uptr addr);
 
 
     ///
@@ -110,7 +149,7 @@ public:
     ///@return `Result<std::vector<std::string>>`
     ///
     Result<std::vector<std::string>>
-    Format(std::vector<Instruction> const& insns, uptr addr);
+    Format(std::vector<Instruction>& insns, uptr addr);
 
 
     ///
@@ -124,9 +163,9 @@ public:
     static void
     Print(std::vector<u8> const& bytes, std::optional<Architecture> arch);
 
-
+#ifdef PWN_DISASSEMBLE_X86
     ///
-    /// @brief x64 specific disassembly function
+    /// @brief Print buffer as x64 disassembly
     ///
     /// @param [in] bytes code the code to disassemble
     ///
@@ -137,7 +176,7 @@ public:
 
 
     ///
-    /// @brief x86 specific disassembly function
+    /// @brief Print buffer as x86 disassembly
     ///
     /// @param [in] bytes code the code to disassemble
     ///
@@ -145,14 +184,30 @@ public:
     ///
     static void
     X86(std::vector<u8> const& bytes);
+#endif // PWN_DISASSEMBLE_X86
 
+#ifdef PWN_DISASSEMBLE_ARM64
+    ///
+    /// @brief Print buffer as ARM64 disassembly
+    ///
+    /// @param [in] bytes code the code to disassemble
+    ///
+    /// @return
+    ///
+    static void
+    ARM64(std::vector<u8> const& bytes);
+#endif
 
 private:
+#ifdef PWN_DISASSEMBLE_X86
     ZydisDecoder m_Decoder;
-    ZydisMachineMode m_MachineMode;
-    ZydisAddressWidth m_AddressWidth;
     ZydisFormatter m_Formatter;
+#endif // PWN_DISASSEMBLE_X86
 
+#ifdef PWN_DISASSEMBLE_ARM64
+#endif // PWN_DISASSEMBLE_ARM64
+
+    ArchitectureType m_Architecture;
     u8* m_Buffer;
     usize m_BufferSize;
     usize m_BufferOffset;

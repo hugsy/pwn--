@@ -2,7 +2,6 @@
 
 #include <stdexcept>
 
-#include "asm.hpp"
 #include "log.hpp"
 #include "system.hpp"
 #include "utils.hpp"

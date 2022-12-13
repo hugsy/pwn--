@@ -2,28 +2,10 @@
 #include <pwn.hpp>
 
 
-#if defined(PWN_INCLUDE_ASSEMBLER)
-// TEST_CASE("asm x86-x64", "[pwn::Assembly]")
-// {
-//     const char* code = "xor rax, rax; inc rax; nop; ret;";
-
-//     std::vector<u8> bytes;
-//     std::vector<u8> expected {0x48, 0x31, 0xc0, 0x48, 0xff, 0xc0, 0x90, 0xc3};
-
-//     pwn::context::set_architecture(Architecture::x64);
-//     REQUIRE(pwn::assm::assemble(code, sizeof(code) - 1, bytes));
-//     REQUIRE(bytes == expected);
-
-//     pwn::context::set_architecture(Architecture::arm64);
-//     REQUIRE_FALSE(pwn::assm::assemble(code, sizeof(code) - 1, bytes));
-// }
-#endif
-
-
 #if defined(PWN_INCLUDE_DISASSEMBLER)
 TEST_CASE("Disassemble", "[pwn::Assembly]")
 {
-
+#ifdef PWN_DISASSEMBLE_X86
     SECTION("x64")
     {
         // x64 - nop; xor rax, rax; int3; ret
@@ -64,7 +46,7 @@ TEST_CASE("Disassemble", "[pwn::Assembly]")
                 code,
                 [](auto const& i)
                 {
-                    return i.mnemonic == ZydisMnemonic::ZYDIS_MNEMONIC_INT3;
+                    return i.o.x86.mnemonic == ZydisMnemonic::ZYDIS_MNEMONIC_INT3;
                 });
             REQUIRE(Success(res));
 
@@ -103,6 +85,41 @@ TEST_CASE("Disassemble", "[pwn::Assembly]")
             REQUIRE(insns.size() == 5);
         }
     }
+#endif // PWN_DISASSEMBLE_X86
+
+
+#ifdef PWN_DISASSEMBLE_ARM64
+    SECTION("arm64")
+    {
+        const std::vector<u8>
+            code {0xc8, 0x18, 0x80, 0xd2, 0x01, 0xfd, 0x47, 0xd3, 0x20, 0xf8, 0x7f, 0xd3, 0xe2, 0x03, 0x1f, 0xaa};
+
+        {
+            pwn::Context.set("arm64");
+            pwn::Assembly::Disassembler d;
+
+            auto res = d.Disassemble(code);
+            REQUIRE(Success(res));
+
+            auto const& insn = Value(res);
+            REQUIRE(insn.length == 4);
+        }
+
+
+        {
+            pwn::Context.set("x64");
+            auto a = Architecture::Find("arm64");
+            auto d = pwn::Assembly::Disassembler(a);
+
+            auto res = d.Disassemble(code);
+            REQUIRE(Success(res));
+
+            auto const& insn = Value(res);
+            REQUIRE(insn.length == 4);
+        }
+    }
+#endif // PWN_DISASSEMBLE_ARM64
+
 
     SECTION("Bad")
     {

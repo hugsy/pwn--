@@ -17,10 +17,6 @@ set(PWN_LIBRARY_VERSION ${PROJECT_VERSION})
 set(PWN_BUILD_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
 set(PWN_BUILD_OS ${CMAKE_SYSTEM_NAME})
 
-# set(PWN_INCLUDE_ASSEMBLER ${PWN_INCLUDE_ASSEMBLER})
-# set(PWN_INCLUDE_DISASSEMBLER ${PWN_INCLUDE_DISASSEMBLER})
-# set(PWN_INCLUDE_BACKDOOR ${PWN_ENABLE_LUA_BACKDOOR})
-
 #
 # If `git` is found, declare the branch/commit hash for debugging
 #
@@ -51,7 +47,6 @@ set(COMMON_SOURCE_DIR ${PWNLIB_SRC_LIB_DIR})
 set(
     COMMON_SOURCE_FILES
 
-    ${COMMON_SOURCE_DIR}/asm.cpp
     ${COMMON_SOURCE_DIR}/architecture.cpp
     ${COMMON_SOURCE_DIR}/crypto.cpp
     ${COMMON_SOURCE_DIR}/error.cpp
@@ -82,7 +77,6 @@ set(
 
     ${COMMON_HEADER_DIR}/pwn_export.hpp
     ${COMMON_HEADER_DIR}/architecture.hpp
-    ${COMMON_HEADER_DIR}/asm.hpp
     ${COMMON_HEADER_DIR}/common.hpp
     ${COMMON_HEADER_DIR}/constants.hpp
     ${COMMON_HEADER_DIR}/crypto.hpp
@@ -112,27 +106,28 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${COMMON_HEADER_DIR})
 # Print out cmake compile info
 #
 message(STATUS "PWN_LOG_USE_COLOR                      ${PWN_LOG_USE_COLOR}")
-message(STATUS "PWN_INCLUDE_ASSEMBLER                  ${PWN_INCLUDE_ASSEMBLER}")
-message(STATUS "PWN_INCLUDE_DISASSEMBLER               ${PWN_INCLUDE_DISASSEMBLER}")
+
 message(STATUS "PWN_BUILD_TOOLKIT                      ${PWN_BUILD_TOOLKIT}")
 message(STATUS "PWN_BUILD_TESTING                      ${PWN_BUILD_TESTING}")
 message(STATUS "PWN_BUILD_DOCS                         ${PWN_BUILD_DOCS}")
+message(STATUS "PWN_INCLUDE_DISASSEMBLER               ${PWN_INCLUDE_DISASSEMBLER}")
 message(STATUS "PWN_ENABLE_LUA_BACKDOOR                ${PWN_ENABLE_LUA_BACKDOOR}")
-
-target_compile_definitions(${PROJECT_NAME} PUBLIC $<$<CONFIG:Debug>:_DEBUG DEBUG>)
-
-if(PWN_INCLUDE_DISASSEMBLER)
-    target_link_libraries(${PROJECT_NAME} PUBLIC Zydis)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/zydis/include)
-endif()
-
-if(PWN_INCLUDE_ASSEMBLER)
-    # TODO: use asm++ when ready
-endif()
 
 if(PWN_ENABLE_LUA_BACKDOOR)
     target_link_libraries(${PROJECT_NAME} PUBLIC lua::lib)
     target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/lua/include)
+endif()
+
+if(PWN_DISASSEMBLE_X86)
+    message(STATUS "PWN_DISASSEMBLE_X86                    ${PWN_DISASSEMBLE_X86}")
+    target_link_libraries(${PROJECT_NAME} PUBLIC Zydis)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/zydis/include)
+endif()
+
+if(PWN_DISASSEMBLE_ARM64)
+    message(STATUS "PWN_DISASSEMBLE_ARM64                  ${PWN_DISASSEMBLE_ARM64}")
+    target_link_libraries(${PROJECT_NAME} PUBLIC disass_arch_arm64)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/arch-arm64/disassembler)
 endif()
 
 #
@@ -164,6 +159,8 @@ target_include_directories(
 #
 # Defines the OS-specific sources & compiler flags
 #
+target_compile_definitions(${PROJECT_NAME} PUBLIC $<$<CONFIG:Debug>:_DEBUG DEBUG>)
+
 if(WIN32)
     add_subdirectory(win32)
 else()

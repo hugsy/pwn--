@@ -23,13 +23,30 @@ Disassembler::Disassembler(Architecture const& arch) :
     switch ( arch.id )
     {
     case ArchitectureType::x86:
-        m_MachineMode  = ZYDIS_MACHINE_MODE_LONG_COMPAT_32;
-        m_AddressWidth = ZYDIS_ADDRESS_WIDTH_32;
+#ifdef PWN_DISASSEMBLE_X86
+        m_Valid =
+            ZYAN_SUCCESS(::ZydisDecoderInit(&m_Decoder, ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_ADDRESS_WIDTH_32));
+        m_Valid &= ZYAN_SUCCESS(::ZydisFormatterInit(&m_Formatter, ZYDIS_FORMATTER_STYLE_INTEL));
+#else
+        err(L"Not compiled with X86 support");
+#endif //  PWN_DISASSEMBLE_X86
         break;
 
     case ArchitectureType::x64:
-        m_MachineMode  = ZYDIS_MACHINE_MODE_LONG_64;
-        m_AddressWidth = ZYDIS_ADDRESS_WIDTH_64;
+#ifdef PWN_DISASSEMBLE_X86
+        m_Valid = ZYAN_SUCCESS(::ZydisDecoderInit(&m_Decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64));
+        m_Valid &= ZYAN_SUCCESS(::ZydisFormatterInit(&m_Formatter, ZYDIS_FORMATTER_STYLE_INTEL));
+#else
+        err(L"Not compiled with X64 support");
+#endif //  PWN_DISASSEMBLE_X86
+        break;
+
+    case ArchitectureType::arm64:
+#ifdef PWN_DISASSEMBLE_ARM64
+        m_Valid = true;
+#else
+        err(L"Not compiled with ARM64 support");
+#endif
         break;
 
     default:
@@ -37,19 +54,22 @@ Disassembler::Disassembler(Architecture const& arch) :
         return;
     }
 
-    ZyanStatus zStatus = ::ZydisDecoderInit(&m_Decoder, m_MachineMode, m_AddressWidth);
-    if ( !ZYAN_SUCCESS(zStatus) )
+    if ( !m_Valid )
     {
+        err(L"Disassembler initialization failed.");
         return;
     }
 
-    zStatus = ::ZydisFormatterInit(&m_Formatter, ZYDIS_FORMATTER_STYLE_INTEL);
-    if ( !ZYAN_SUCCESS(zStatus) )
+    m_Architecture = arch.id;
+}
+
+
+Disassembler::~Disassembler()
+{
+    if ( !m_Valid )
     {
         return;
     }
-
-    m_Valid = true;
 }
 
 void
@@ -94,10 +114,47 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
         return Err(ErrorCode::NoMoreData);
     }
 
-    ZydisDecodedInstruction insn;
-    if ( !ZYAN_SUCCESS(::ZydisDecoderDecodeBuffer(&m_Decoder, &bytes[m_BufferOffset], Left, &insn)) )
+    Instruction insn {};
+
+    switch ( m_Architecture )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+#ifdef PWN_DISASSEMBLE_X86
+    case ArchitectureType::x86:
+    case ArchitectureType::x64:
+    {
+        if ( !ZYAN_SUCCESS(::ZydisDecoderDecodeBuffer(&m_Decoder, &bytes[m_BufferOffset], Left, &insn.o.x86)) )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+
+        assert(insn.o.x86.length < sizeof(insn.bytes));
+        insn.length = insn.o.x86.length;
+        ::memcpy(&insn.bytes, &insn.o.x86.raw, insn.length);
+        break;
+    }
+#endif // PWN_DISASSEMBLE_X86
+
+#ifdef PWN_DISASSEMBLE_ARM64
+    case ArchitectureType::arm64:
+    {
+        if ( Left < 4 )
+        {
+            return Err(ErrorCode::InvalidInput);
+        }
+
+        const u32 insword = *((u32*)&bytes[m_BufferOffset]);
+        if ( ::aarch64_decompose(insword, &insn.o.arm64, 0) != 0 )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+
+        insn.length = sizeof(u32);
+        break;
+    }
+#endif // PWN_DISASSEMBLE_ARM64
+
+    default:
+        return Err(ErrorCode::InvalidInput);
     }
 
     m_BufferOffset += insn.length;
@@ -133,13 +190,42 @@ Disassembler::DisassembleAll(std::vector<u8> const& Bytes)
 
 
 Result<std::string>
-Disassembler::Format(Instruction const& insn, uptr Address)
+Disassembler::Format(Instruction& insn, uptr Address)
 {
     char buffer[1024] = {0};
 
-    if ( !ZYAN_SUCCESS(::ZydisFormatterFormatInstruction(&m_Formatter, &insn, buffer, sizeof(buffer), Address)) )
+    switch ( m_Architecture )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+#ifdef PWN_DISASSEMBLE_X86
+    case ArchitectureType::x86:
+    case ArchitectureType::x64:
+    {
+        if ( !ZYAN_SUCCESS(
+                 ::ZydisFormatterFormatInstruction(&m_Formatter, &insn.o.x86, buffer, sizeof(buffer), Address)) )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+    }
+#endif // PWN_DISASSEMBLE_X86
+
+#ifdef PWN_DISASSEMBLE_ARM64
+    case ArchitectureType::arm64:
+    {
+        // TODO: hack for now
+        if ( ::aarch64_decompose(insn.o.arm64.insword, &insn.o.arm64, Address) != 0 )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+
+        if ( ::aarch64_disassemble(&insn.o.arm64, buffer, sizeof(buffer)) != 0 )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+    }
+#endif // PWN_DISASSEMBLE_ARM64
+
+    default:
+        return Err(ErrorCode::InvalidInput);
     }
 
     return Ok(std::string(buffer));
@@ -147,12 +233,12 @@ Disassembler::Format(Instruction const& insn, uptr Address)
 
 
 Result<std::vector<std::string>>
-Disassembler::Format(std::vector<Instruction> const& insns, uptr addr)
+Disassembler::Format(std::vector<Instruction>& insns, uptr addr)
 {
     std::vector<std::string> insns_str;
     uptr current_addr = addr;
 
-    for ( auto const& insn : insns )
+    for ( auto& insn : insns )
     {
         auto res = Format(insn, current_addr);
         if ( Failed(res) )
@@ -176,8 +262,8 @@ Disassembler::Print(std::vector<u8> const& bytes, std::optional<Architecture> ar
     auto res = dis.DisassembleAll(bytes);
     if ( Success(res) )
     {
-        auto const& insns = Value(res);
-        for ( auto const& insn : insns )
+        std::vector<Instruction> insns = Value(res);
+        for ( auto& insn : insns )
         {
             auto fmtInsn = dis.Format(insn, DefaultBaseAddress);
             if ( Success(fmtInsn) )
@@ -189,18 +275,28 @@ Disassembler::Print(std::vector<u8> const& bytes, std::optional<Architecture> ar
 }
 
 
-void
-Disassembler::X86(std::vector<u8> const& bytes)
-{
-    return Disassembler::Print(bytes, Architectures[1].second);
-}
-
-
+#ifdef PWN_DISASSEMBLE_X86
 void
 Disassembler::X64(std::vector<u8> const& bytes)
 {
-    return Disassembler::Print(bytes, Architectures[0].second);
+    Disassembler::Print(bytes, Architectures["x64"]);
 }
+
+
+void
+Disassembler::X86(std::vector<u8> const& bytes)
+{
+    Disassembler::Print(bytes, Architectures["x86"]);
+}
+#endif // PWN_DISASSEMBLE_X86
+
+#ifdef PWN_DISASSEMBLE_ARM64
+void
+Disassembler::ARM64(std::vector<u8> const& bytes)
+{
+    Disassembler::Print(bytes, Architectures["arm64"]);
+}
+#endif
 
 } // namespace pwn::Assembly
 
