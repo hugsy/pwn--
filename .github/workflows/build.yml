@@ -121,13 +121,13 @@ jobs:
 
     - name: Populate the successful output
       id: output_success
-      if: matrix.os == 'windows-latest'
+      if: ${{ success() }}
       run: |
         echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=✅ ${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Populate the failure output
       id: output_failure
-      if: matrix.os == 'windows-latest'
+      if: ${{ failure() }}
       run: |
         echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=❌ ${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
@@ -155,7 +155,9 @@ jobs:
           ● [Detail Page](${{ env.RUN_URL }})
 
           ${{ needs.build.outputs.windows-latest-x64-lite }}
+          ${{ needs.build.outputs.windows-latest-x64-full }}
           ${{ needs.build.outputs.windows-latest-x86-lite }}
+          ${{ needs.build.outputs.windows-latest-x86-full }}
 
 
         color: 0x0000ff
