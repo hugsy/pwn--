@@ -123,13 +123,13 @@ jobs:
       id: output_success
       if: ${{ success() }}
       run: |
-        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=✅ ${{ matrix.os }} ⟩ ${{ matrix.platform }} ⟩ ${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=✅ ${{ matrix.os }} ➤ ${{ matrix.platform }} ➤ ${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Populate the failure output
       id: output_failure
       if: ${{ failure() }}
       run: |
-        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=❌ ${{ matrix.os }} ⟩ ${{ matrix.platform }} ⟩ ${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=❌ ${{ matrix.os }} ➤ ${{ matrix.platform }} ➤ ${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
   notify:
     runs-on: 'ubuntu-22.04'
@@ -147,7 +147,7 @@ jobs:
       uses: sarisia/actions-status-discord@v1.10.0
       with:
         nodetail: true
-        title: Summary of Build `${{ env.GITHUB_SHA_SHORT }}` for `${{ env.REPO }}`
+        title: 🚧🚧 Summary of Build `${{ env.GITHUB_SHA_SHORT }}` for `${{ env.REPO }}` 🚧🚧 
         description: |
           [Job #${{ github.run_number }}](${{ env.RUN_URL }}): CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ env.AUTHOR_URL }}:
           ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
