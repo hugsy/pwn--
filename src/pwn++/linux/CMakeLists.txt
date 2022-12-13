@@ -11,6 +11,8 @@ set(HEADER_DIR ${COMMON_HEADER_DIR}/linux)
 set(
     HEADER_FILES
 
+    ${HEADER_DIR}/framework.hpp
+
     ${HEADER_DIR}/system.hpp
     ${HEADER_DIR}/ctf/remote.hpp
 )

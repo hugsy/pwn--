@@ -88,6 +88,7 @@ set(
     ${COMMON_HEADER_DIR}/error.hpp
     ${COMMON_HEADER_DIR}/memory.hpp
     ${COMMON_HEADER_DIR}/pwn.hpp
+    ${COMMON_HEADER_DIR}/pch.hpp
 )
 
 if(PWN_ENABLE_LUA_BACKDOOR)

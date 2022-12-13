@@ -20,5 +20,4 @@
 #include <variant>
 #include <vector>
 
-
 #endif /* __cplusplus */
