@@ -30,10 +30,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     outputs:
-      windows-latest-x64-lite: ${{ steps.*.outputs.windows-latest-x64-lite }}
-      windows-latest-x64-full: ${{ steps.*.outputs.windows-latest-x64-full }}
-      windows-latest-x86-lite: ${{ steps.*.outputs.windows-latest-x86-lite }}
-      windows-latest-x86-full: ${{ steps.*.outputs.windows-latest-x86-full }}
+      windows-latest-x64-lite: ${{ join(steps.*.outputs.windows-latest-x64-lite,'') }}
+      windows-latest-x64-full: ${{ join(steps.*.outputs.windows-latest-x64-full,'') }}
+      windows-latest-x86-lite: ${{ join(steps.*.outputs.windows-latest-x86-lite,'') }}
+      windows-latest-x86-full: ${{ join(steps.*.outputs.windows-latest-x86-full,'') }}
 
     steps:
     - uses: actions/checkout@v3
