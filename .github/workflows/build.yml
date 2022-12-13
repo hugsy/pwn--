@@ -120,12 +120,16 @@ jobs:
     - name: Populate the successful output
       id: output_success
       if: ${{ success() }}
-      run: echo 'msg=${{ steps.output_success.outputs.msg }}✅ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` succeeded' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      run: |
+        echo 'msg=${{ steps.output_success.outputs.msg }}✅ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` succeeded' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo ":rocket: ${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` succeeded" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
 
     - name: Populate the failed output
       id: output_failures
       if: ${{ failure() }}
-      run: echo 'msg=${{ steps.output_failures.outputs.msg }}❌ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` failed' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      run: |
+        echo 'msg=${{ steps.output_failures.outputs.msg }}❌ Build `${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` failed' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo ":rotating_light: ${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}` failed" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
 
   notify:
     runs-on: 'ubuntu-22.04'
