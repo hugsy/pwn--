@@ -30,10 +30,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     outputs:
-      windows-latest-x64-lite: ${{ steps.output_success.outputs.windows-latest-x64-lite }}
-      windows-latest-x64-full: ${{ steps.output_success.outputs.windows-latest-x64-full }}
-      windows-latest-x86-lite: ${{ steps.output_success.outputs.windows-latest-x86-lite }}
-      windows-latest-x86-full: ${{ steps.output_success.outputs.windows-latest-x86-full }}
+      windows-latest-x64-lite: ${{ steps.*.outputs.windows-latest-x64-lite }}
+      windows-latest-x64-full: ${{ steps.*.outputs.windows-latest-x64-full }}
+      windows-latest-x86-lite: ${{ steps.*.outputs.windows-latest-x86-lite }}
+      windows-latest-x86-full: ${{ steps.*.outputs.windows-latest-x86-full }}
 
     steps:
     - uses: actions/checkout@v3
@@ -123,8 +123,13 @@ jobs:
       id: output_success
       if: matrix.os == 'windows-latest'
       run: |
-        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=${{ success() }} ${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=✅ ${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
+    - name: Populate the failure output
+      id: output_failure
+      if: matrix.os == 'windows-latest'
+      run: |
+        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=❌ ${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
   notify:
     runs-on: 'ubuntu-22.04'
