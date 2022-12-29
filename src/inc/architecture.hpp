@@ -131,10 +131,11 @@ struct std::formatter<Architecture, char> : std::formatter<std::string, char>
     auto
     format(Architecture a, format_context& ctx)
     {
-        auto arch_name = std::string(a.name);
+        std::string arch_name;
+        arch_name.resize(a.name.size());
         std::transform(
-            arch_name.begin(),
-            arch_name.end(),
+            a.name.cbegin(),
+            a.name.cend(),
             arch_name.begin(),
             [](unsigned char c)
             {
