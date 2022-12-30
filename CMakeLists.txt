@@ -52,6 +52,13 @@ if(PWN_DISASSEMBLE_ARM64)
 endif()
 
 #
+# Use ProcessHacker headers for Windows building
+#
+if(MSVC)
+    add_subdirectory(${PWNLIB_ROOT_DIR}/deps/phnt)
+endif(MSVC)
+
+#
 # Build and link the LUA VM for the process backdoor
 #
 if(PWN_ENABLE_LUA_BACKDOOR)

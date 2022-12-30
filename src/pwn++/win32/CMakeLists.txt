@@ -84,8 +84,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${HEADER_DIR})
 #
 # Use ProcessHacker phnt headers
 #
-target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/phnt)
+target_include_directories(${PROJECT_NAME} PUBLIC $<TARGET_PROPERTY:phnt,INTERFACE_INCLUDE_DIRECTORIES>)
 target_compile_definitions(${PROJECT_NAME} PUBLIC PHNT_VERSION=PHNT_20H2)
+install(DIRECTORY $<TARGET_PROPERTY:phnt,INTERFACE_INCLUDE_DIRECTORIES> DESTINATION include)
 
 #
 # Compiler flags
