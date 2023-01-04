@@ -43,7 +43,7 @@ GetPriorityString(const LogLevel level)
 void
 Log(const LogLevel level, std::source_location const& location, std::ostringstream& msg)
 {
-    if ( Context.LogLevel >= level )
+    if ( Context.LogLevel > level )
     {
         return;
     }
@@ -101,7 +101,7 @@ GetPriorityWideString(const LogLevel level)
 void
 Log(const LogLevel level, std::source_location const& location, std::wostringstream& msg)
 {
-    if ( Context.LogLevel >= level )
+    if ( Context.LogLevel > level )
     {
         return;
     }
@@ -125,80 +125,45 @@ FormatErrorCode(ErrorCode const& code)
 {
     switch ( code )
     {
-    case ErrorCode::UnknownError:
-        return L"UnknownError";
-    case ErrorCode::GenericError:
-        return L"GenericError";
-    case ErrorCode::RuntimeError:
-        return L"RuntimeError";
-    case ErrorCode::InvalidProcess:
-        return L"InvalidProcess";
-    case ErrorCode::InvalidThread:
-        return L"InvalidThread";
-    case ErrorCode::InvalidObject:
-        return L"InvalidObject";
-    case ErrorCode::InvalidInput:
-        return L"InvalidInput";
-    case ErrorCode::InvalidParameter:
-        return L"InvalidParameter";
-    case ErrorCode::InvalidState:
-        return L"InvalidState";
-    case ErrorCode::PermissionDenied:
-        return L"PermissionDenied";
-    case ErrorCode::InsufficientPrivilegeError:
-        return L"InsufficientPrivilegeError";
-    case ErrorCode::UnexpectedType:
-        return L"UnexpectedType";
-    case ErrorCode::ArithmeticError:
-        return L"ArithmeticError";
-    case ErrorCode::OverflowError:
-        return L"OverflowError";
-    case ErrorCode::UnderflowError:
-        return L"UnderflowError";
-    case ErrorCode::IllegalValue:
-        return L"IllegalValue";
-    case ErrorCode::NotImplementedError:
-        return L"NotImplementedError";
-    case ErrorCode::PendingIoError:
-        return L"PendingIoError";
-    case ErrorCode::ConnectionError:
-        return L"ConnectionError";
-    case ErrorCode::TerminationError:
-        return L"TerminationError";
-    case ErrorCode::AllocationError:
-        return L"AllocationError";
-    case ErrorCode::ParsingError:
-        return L"ParsingError";
-    case ErrorCode::BufferTooBig:
-        return L"BufferTooBig";
-    case ErrorCode::BufferTooSmall:
-        return L"BufferTooSmall";
-    case ErrorCode::NotInitialized:
-        return L"NotInitialized";
-    case ErrorCode::InitializationFailed:
-        return L"InitializationFailed";
-    case ErrorCode::ServiceError:
-        return L"ServiceError";
-    case ErrorCode::FilesystemError:
-        return L"FilesystemError";
-    case ErrorCode::AlpcError:
-        return L"AlpcError";
-    case ErrorCode::ExternalError:
-        return L"ExternalError";
-    case ErrorCode::ExternalApiCallFailed:
-        return L"ExternalApiCallFailed";
-    case ErrorCode::NoMoreData:
-        return L"NoMoreData";
-    case ErrorCode::PartialResult:
-        return L"PartialResult";
-    case ErrorCode::BadVersion:
-        return L"BadVersion";
-    case ErrorCode::BadSignature:
-        return L"BadSignature";
-    case ErrorCode::NotFound:
-        return L"NotFound";
-    case ErrorCode::NotConnected:
-        return L"NotConnected";
+    // clang-format off
+    case ErrorCode::UnknownError:                      return L"UnknownError";
+    case ErrorCode::GenericError:                      return L"GenericError";
+    case ErrorCode::RuntimeError:                      return L"RuntimeError";
+    case ErrorCode::InvalidProcess:                    return L"InvalidProcess";
+    case ErrorCode::InvalidThread:                     return L"InvalidThread";
+    case ErrorCode::InvalidObject:                     return L"InvalidObject";
+    case ErrorCode::InvalidInput:                      return L"InvalidInput";
+    case ErrorCode::InvalidParameter:                  return L"InvalidParameter";
+    case ErrorCode::InvalidState:                      return L"InvalidState";
+    case ErrorCode::PermissionDenied:                  return L"PermissionDenied";
+    case ErrorCode::InsufficientPrivilegeError:        return L"InsufficientPrivilegeError";
+    case ErrorCode::UnexpectedType:                    return L"UnexpectedType";
+    case ErrorCode::ArithmeticError:                   return L"ArithmeticError";
+    case ErrorCode::OverflowError:                     return L"OverflowError";
+    case ErrorCode::UnderflowError:                    return L"UnderflowError";
+    case ErrorCode::IllegalValue:                      return L"IllegalValue";
+    case ErrorCode::NotImplementedError:               return L"NotImplementedError";
+    case ErrorCode::PendingIoError:                    return L"PendingIoError";
+    case ErrorCode::ConnectionError:                   return L"ConnectionError";
+    case ErrorCode::TerminationError:                  return L"TerminationError";
+    case ErrorCode::AllocationError:                   return L"AllocationError";
+    case ErrorCode::ParsingError:                      return L"ParsingError";
+    case ErrorCode::BufferTooBig:                      return L"BufferTooBig";
+    case ErrorCode::BufferTooSmall:                    return L"BufferTooSmall";
+    case ErrorCode::NotInitialized:                    return L"NotInitialized";
+    case ErrorCode::InitializationFailed:              return L"InitializationFailed";
+    case ErrorCode::ServiceError:                      return L"ServiceError";
+    case ErrorCode::FilesystemError:                   return L"FilesystemError";
+    case ErrorCode::AlpcError:                         return L"AlpcError";
+    case ErrorCode::ExternalError:                     return L"ExternalError";
+    case ErrorCode::ExternalApiCallFailed:             return L"ExternalApiCallFailed";
+    case ErrorCode::NoMoreData:                        return L"NoMoreData";
+    case ErrorCode::PartialResult:                     return L"PartialResult";
+    case ErrorCode::BadVersion:                        return L"BadVersion";
+    case ErrorCode::BadSignature:                      return L"BadSignature";
+    case ErrorCode::NotFound:                          return L"NotFound";
+    case ErrorCode::NotConnected:                      return L"NotConnected";
+        // clang-format on
     }
 
     return L"";

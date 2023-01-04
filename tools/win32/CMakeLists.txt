@@ -13,16 +13,12 @@ set(
     BasicExample
     ExploitTemplate
     HexdumpFile
+    LoadDriver
     ProcessReparent
 )
 
 if(PWN_INCLUDE_BACKDOOR)
-    set(
-        WIN32_TOOLS
-
-        ${WIN32_TOOLS}
-        Backdoor
-    )
+    set(WIN32_TOOLS ${WIN32_TOOLS} Backdoor)
 endif(PWN_INCLUDE_BACKDOOR)
 
 foreach(TOOL_DIR ${WIN32_TOOLS})
@@ -35,6 +31,7 @@ foreach(TOOL_DIR ${WIN32_TOOLS})
     target_compile_options(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_OPTIONS>)
     target_compile_definitions(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_DEFINITIONS>)
     target_include_directories(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_INCLUDE_DIRECTORIES>)
+    target_include_directories(${TOOL_DIR} PRIVATE ${PWNLIB_ROOT_DIR}/deps/argparse)
     target_link_libraries(${TOOL_DIR} PRIVATE ${CMAKE_PROJECT_NAME} $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_LINK_LIBRARIES>)
     target_link_options(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_LINK_OPTIONS> /SUBSYSTEM:Console)
 

@@ -1,6 +1,7 @@
 #include "service.hpp"
 
 #include <chrono>
+#include <ranges>
 #include <stdexcept>
 
 #include "log.hpp"
@@ -10,7 +11,7 @@ namespace pwn::windows
 {
 
 Result<DWORD>
-Service::Create(std::wstring_view const& ServiceName, std::wstring_view const& ServicePath)
+Service::Create(std::wstring_view const& ServiceName, std::wstring_view const& ServicePath, ServiceType SvcType)
 {
     auto hManager = ServiceHandle {::OpenSCManagerW(nullptr, nullptr, SC_MANAGER_ALL_ACCESS)};
     if ( !hManager )
@@ -24,7 +25,7 @@ Service::Create(std::wstring_view const& ServiceName, std::wstring_view const& S
         (LPCWSTR)ServiceName.data(),
         nullptr,
         SERVICE_ALL_ACCESS,
-        SERVICE_WIN32_OWN_PROCESS,
+        static_cast<std::underlying_type<ServiceType>::type>(SvcType),
         SERVICE_DEMAND_START,
         SERVICE_ERROR_IGNORE,
         (LPCWSTR)ServicePath.data(),
@@ -229,11 +230,11 @@ Service::List()
             break;
         }
 
-        ok(L"BufSz={},EntryCnt={},ResumeHandle={},sizeof={}",
-           dwBufferSize,
-           dwServiceEntryCount,
-           dwResumeHandle,
-           sizeof(ENUM_SERVICE_STATUS_PROCESS));
+        dbg(L"BufSz={},EntryCnt={},ResumeHandle={},sizeof={}",
+            dwBufferSize,
+            dwServiceEntryCount,
+            dwResumeHandle,
+            sizeof(ENUM_SERVICE_STATUS_PROCESS));
         auto Buffer = std::make_unique<ENUM_SERVICE_STATUS_PROCESS[]>(dwBufferSize);
 
         if ( ::EnumServicesStatusExW(
@@ -254,13 +255,13 @@ Service::List()
             break;
         }
 
-        ok(L"BufSz={}, EntryCnt={}, ResumeHandle={}, sizeof={}",
-           dwBufferSize,
-           dwServiceEntryCount,
-           dwResumeHandle,
-           sizeof(ENUM_SERVICE_STATUS_PROCESS));
+        dbg(L"BufSz={}, EntryCnt={}, ResumeHandle={}, sizeof={}",
+            dwBufferSize,
+            dwServiceEntryCount,
+            dwResumeHandle,
+            sizeof(ENUM_SERVICE_STATUS_PROCESS));
 
-        for ( u32 i = 0; i < dwServiceEntryCount; i++ )
+        for ( u32 i : std::views::iota(0u, dwServiceEntryCount) )
         {
             auto service        = ServiceInfo {};
             service.Name        = Buffer[i].lpServiceName;
@@ -268,6 +269,34 @@ Service::List()
             service.Status      = Buffer[i].ServiceStatusProcess.dwCurrentState;
             service.Type        = Buffer[i].ServiceStatusProcess.dwServiceType;
             service.ProcessId   = Buffer[i].ServiceStatusProcess.dwProcessId;
+            service.Path        = std::nullopt;
+
+            auto hService = ServiceHandle {::OpenService(hManager.get(), service.Name.data(), SERVICE_QUERY_CONFIG)};
+            if ( hService )
+            {
+                usize BufferSize = sizeof(QUERY_SERVICE_CONFIG);
+
+                while ( true )
+                {
+                    std::unique_ptr<u8[]> Buffer = std::make_unique<u8[]>(BufferSize);
+                    QUERY_SERVICE_CONFIG* cfg    = reinterpret_cast<QUERY_SERVICE_CONFIG*>(Buffer.get());
+                    u32 needed                   = 0;
+                    if ( ::QueryServiceConfigW(hService.get(), cfg, BufferSize, (LPDWORD)&needed) == TRUE )
+                    {
+
+                        service.Path = std::make_optional(std::filesystem::path {cfg->lpBinaryPathName});
+                        break;
+                    }
+
+                    if ( ::GetLastError() != ERROR_INSUFFICIENT_BUFFER )
+                    {
+                        log::perror(L"QueryServiceConfigW()");
+                        break;
+                    }
+
+                    BufferSize = needed;
+                }
+            }
             services.push_back(service);
         }
 

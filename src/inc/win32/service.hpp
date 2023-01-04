@@ -1,8 +1,9 @@
 #pragma once
 
+#include <filesystem>
+
 #include "common.hpp"
 #include "handle.hpp"
-
 
 namespace pwn::windows
 {
@@ -20,9 +21,22 @@ using ServiceInfo = struct
 {
     std::wstring Name;
     std::wstring DisplayName;
+    std::optional<std::filesystem::path> Path;
     DWORD Status;
     DWORD Type;
     DWORD ProcessId;
+};
+
+
+///
+///@brief Describe the service type
+///
+enum class ServiceType : u32
+{
+    OwnProcess       = SERVICE_WIN32_OWN_PROCESS,
+    ShareProcess     = SERVICE_WIN32_SHARE_PROCESS,
+    KernelDriver     = SERVICE_KERNEL_DRIVER,
+    FileSystemDriver = SERVICE_FILE_SYSTEM_DRIVER,
 };
 
 class Service
@@ -36,14 +50,14 @@ public:
     /// @return a Result object, with the last error code
     ///
     static Result<DWORD>
-    Create(std::wstring_view const& ServiceName, std::wstring_view const& ServiceBinaryPath);
+    Create(std::wstring_view const& ServiceName, std::wstring_view const& ServiceBinaryPath, ServiceType SvcType);
 
 
     ///
     /// @brief Start a service against the Windows Service Manager
     ///
     /// @param[in] ServiceName
-    /// @return DWORD
+    /// @return a Result object, with the last error code
     ///
     static Result<DWORD>
     Start(std::wstring_view const& ServiceName);
@@ -54,7 +68,7 @@ public:
     ///
     /// @param[in] ServiceName
     /// @param[in] Timeout
-    /// @return DWORD
+    /// @return a Result object, with the last error code
     ///
     static Result<DWORD>
     Stop(std::wstring_view const& ServiceName, const u32 Timeout = 10000);
