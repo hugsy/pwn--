@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "handle.hpp"
 #include "nt.hpp"
 
 
@@ -173,6 +174,19 @@ EXTERN_C_END
 
 namespace pwn::windows::alpc
 {
+
+///
+///@brief Managed handle for ALPC, auto-call `NtAlpcDisconnectPort` on close
+///
+///@note SC_HANDLE = struct SC_HANDLE__
+///
+using AlpcHandle = pwn::GenericHandle<
+    void,
+    [](HANDLE h)
+    {
+        NtAlpcDisconnectPort(h, 0);
+    }>;
+
 class Message
 {
 public:
@@ -199,77 +213,121 @@ private:
 };
 
 
+///
+///@brief ALPC base class definition
+///
 class Base
 {
 public:
-    PWNAPI HANDLE
-    SocketHandle();
-    PWNAPI std::wstring
-    PortName();
+    ///
+    ///@brief Check class instance validity
+    ///
+    ///@return true
+    ///@return false
+    ///
+    explicit operator bool() const
+    {
+        return m_Valid;
+    }
+
+    ///
+    ///@brief Get the socket handle
+    ///
+    ///@return HANDLE
+    ///
+    HANDLE
+    SocketHandle() const;
+
+    ///
+    ///@brief Get the port path
+    ///
+    ///@return PWNAPI
+    ///
+    std::wstring
+    PortName() const;
 
     ///
     /// @brief
     ///
     ///
-    PWNAPI auto
-    send_and_receive(const HANDLE hSocket, const std::vector<BYTE>& messageData = {}) -> Message;
-
+    auto
+    SendAndReceive(const HANDLE hSocket, const std::vector<BYTE>& messageData = {}) -> Result<Message>;
 
     ///
     /// @brief
     ///
     ///
-    PWNAPI auto
-    send_and_receive(const HANDLE hSocket, Message& message) -> Message;
+    auto
+    SendAndReceive(const HANDLE hSocket, Message& message) -> Result<Message>;
 
 protected:
-    Base(const std::wstring& PortName);
+    ///
+    ///@brief Construct a new Base object
+    ///@param PortName
+    ///
+    Base(std::wstring const& PortName);
+
+    ///
+    ///@brief Destroy the Base object
+    ///
     ~Base();
 
-    HANDLE m_AlpcSocketHandle;
+    bool m_Valid;
+    AlpcHandle m_AlpcSocketHandle;
     std::wstring m_PortName;
 
 private:
-    _Success_(return )
     BOOL
     close();
 };
 
 
+///
+///@brief ALPC server class definition
+///
 class Server : public Base
 {
 public:
-    PWNAPI
+    ///
+    ///@brief Construct a new Server object
+    ///
+    ///@param PortName  the path to the port
+    ///
     Server(const std::wstring& PortName);
-    PWNAPI ~Server();
+
+    ///
+    ///@brief Destroy the Server object
+    ///
+    ~Server();
 
     ///
     /// @brief Wait an accept a new ALPC connection.
     ///
     /// @return A client socket handle
     ///
-    PWNAPI auto
-    accept() -> Result<PHANDLE>;
+    auto
+    Accept() -> Result<HANDLE>;
 };
 
 
+///
+///@brief ALPC client class definition
+///
 class Client : public Base
 {
 public:
-    PWNAPI
+    ///
+    ///@brief Construct a new Client object
+    ///
+    ///@param PortName
+    ///
     Client(const std::wstring& PortName);
-    PWNAPI ~Client();
 
     ///
-    /// @brief
+    ///@brief Destroy the Client object
     ///
-    /// @return true
-    /// @return false
     ///
-    PWNAPI
-    auto
-    reconnect() -> bool;
-
+    ~Client();
 
     ///
     /// @brief Send and receive
@@ -277,8 +335,8 @@ public:
     /// @param messageData
     /// @return Message
     ///
-    PWNAPI auto
-    sr(const std::vector<BYTE>& messageData = {}) -> Message;
+    auto
+    sr(const std::vector<BYTE>& messageData = {}) -> Result<Message>;
 
 
     ///
@@ -287,7 +345,7 @@ public:
     /// @param messageData
     /// @return Message
     ///
-    PWNAPI auto
-    sr(Message& messageData) -> Message;
+    auto
+    sr(Message& messageData) -> Result<Message>;
 };
 } // namespace pwn::windows::alpc

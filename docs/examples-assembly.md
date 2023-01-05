@@ -3,18 +3,18 @@
 
 Namespace `pwn::Assembly`
 
-
-Powered by [Zydis](https://github.com/zyantific/zydis) for x86/x64 - [binja-arm64](https://github.com/Vector35/arch-arm64) for arm64
+Requirements:
+ - `PWN_DISASSEMBLE_X86` cmake flag to enable [Zydis](https://github.com/zyantific/zydis) for x86/x64
+ - `PWN_DISASSEMBLE_ARM64` cmake flag to enable  [binja-arm64](https://github.com/Vector35/arch-arm64) for arm64
 
 ```cpp
-#include <pwn++\pwn.h>
+#include <pwn.hpp>
 
 int wmain()
 {
     const u8* code = "\x90\x48\x31\xc0\xc3\xcc";
     auto WantedArch = Architecture::Find("x64");
     pwn::Assembly::Disassembler d{WantedArch};
-    d.SetOffset(0);
     auto res = d.DisassembleUntil(
         code,
         [](auto const& i)

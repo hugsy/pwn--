@@ -1,33 +1,29 @@
 #include "alpc.hpp"
 
 #include "log.hpp"
-using namespace pwn::log;
-
 #include "utils.hpp"
 
-/**
- * ALPC basic implementation
- *
- * Some references:
- * - https://csandker.io/2022/05/24/Offensive-Windows-IPC-3-ALPC.html
- * - https://github.com/bnagy/alpcgo
- */
+///
+/// ALPC basic implementation
+///
+/// Some references:
+/// - https://csandker.io/2022/05/24/Offensive-Windows-IPC-3-ALPC.html
+/// - https://github.com/bnagy/alpcgo
+///
+
+namespace pwn::windows::alpc
+{
+#pragma region ALPC Messages
 
 
-////////////////////////////////////////////////////////////////////
-//
-// ALPC Messages
-//
-
-
-pwn::windows::alpc::Message::Message(const std::vector<BYTE>& data) : m_Data(data), m_AlpcRawMessage(nullptr)
+Message::Message(const std::vector<BYTE>& data) : m_Data(data), m_AlpcRawMessage(nullptr)
 {
     m_PortMessage.u1.s1.DataLength  = m_Data.size() & USHRT_MAX;
     m_PortMessage.u1.s1.TotalLength = Size() & USHRT_MAX;
 }
 
 
-pwn::windows::alpc::Message::Message(const PBYTE lpRawData, DWORD dwRawDataLength) : m_AlpcRawMessage(nullptr)
+Message::Message(const PBYTE lpRawData, DWORD dwRawDataLength) : m_AlpcRawMessage(nullptr)
 {
     //
     // copy the header
@@ -43,7 +39,7 @@ pwn::windows::alpc::Message::Message(const PBYTE lpRawData, DWORD dwRawDataLengt
 }
 
 
-pwn::windows::alpc::Message::~Message()
+Message::~Message()
 {
     dbg(L"alpc::message - destroying\n");
     if ( m_AlpcRawMessage )
@@ -55,7 +51,7 @@ pwn::windows::alpc::Message::~Message()
 
 
 PPORT_MESSAGE
-pwn::windows::alpc::Message::Get()
+Message::Get()
 {
     if ( m_AlpcRawMessage )
     {
@@ -88,26 +84,27 @@ pwn::windows::alpc::Message::Get()
 
 
 SIZE_T
-pwn::windows::alpc::Message::Size() const
+Message::Size() const
 {
     return sizeof(PORT_MESSAGE) + m_Data.size();
 }
 
 PWNAPI std::vector<BYTE>
-pwn::windows::alpc::Message::Data() const
+Message::Data() const
 {
     return m_Data;
 }
 
+#pragma endregion ALPC Messages
 
-////////////////////////////////////////////////////////////////////
-//
-// ALPC Base class
-//
 
-pwn::windows::alpc::Base::Base(const std::wstring& PortName) :
+#pragma region ALPC Base class
+
+
+Base::Base(std::wstring const& PortName) :
     m_PortName(PortName),
-    m_AlpcSocketHandle(INVALID_HANDLE_VALUE)
+    m_AlpcSocketHandle(INVALID_HANDLE_VALUE),
+    m_Valid(false)
 {
     if ( PortName.starts_with(L"\\") == false )
     {
@@ -116,86 +113,70 @@ pwn::windows::alpc::Base::Base(const std::wstring& PortName) :
 }
 
 
-pwn::windows::alpc::Base::~Base()
+Base::~Base()
 {
-    if ( m_AlpcSocketHandle != INVALID_HANDLE_VALUE )
+}
+
+
+Result<Message>
+Base::SendAndReceive(HANDLE hSocket, Message& MsgIn)
+{
+    if ( !m_Valid )
     {
-        if ( !close() )
-        {
-            err(L"an error occured while closing the handle\n");
-        }
+        return Err(ErrorCode::NotInitialized);
     }
-}
 
-
-BOOL
-pwn::windows::alpc::Base::close()
-{
-    dbg(L"alpc::base - closing handle %p\n", m_AlpcSocketHandle);
-    BOOL bRes = NT_SUCCESS(::NtAlpcDisconnectPort(m_AlpcSocketHandle, 0));
-    if ( bRes )
-        m_AlpcSocketHandle = INVALID_HANDLE_VALUE;
-    return bRes;
-}
-
-
-pwn::windows::alpc::Message
-pwn::windows::alpc::Base::send_and_receive(HANDLE hSocket, pwn::windows::alpc::Message& MsgIn)
-{
-    SIZE_T dwMsgOutLen = 2048;
-    auto lpRawMsgOut   = std::make_unique<BYTE[]>(dwMsgOutLen);
+    usize dwMsgOutLen = 2048;
+    auto lpRawMsgOut  = std::make_unique<u8[]>(dwMsgOutLen);
 
     NTSTATUS Status = ::NtAlpcSendWaitReceivePort(
         hSocket,
         0,
         MsgIn.Get(),
         nullptr,
-        (PPORT_MESSAGE)lpRawMsgOut.get(),
+        reinterpret_cast<PPORT_MESSAGE>(lpRawMsgOut.get()),
         &dwMsgOutLen,
         nullptr,
         nullptr);
-    if ( NT_SUCCESS(Status) )
+    if ( !NT_SUCCESS(Status) )
     {
-        pwn::windows::alpc::Message MsgOut(lpRawMsgOut.get(), dwMsgOutLen);
-        return MsgOut;
+        log::perror("NtAlpcSendWaitReceivePort()");
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    throw std::exception("NtAlpcSendWaitReceivePort() failed");
+    Message MsgOut(lpRawMsgOut.get(), dwMsgOutLen);
+    return MsgOut;
 }
 
 
-pwn::windows::alpc::Message
-pwn::windows::alpc::Base::send_and_receive(HANDLE hSocket, const std::vector<BYTE>& messageData)
+Result<Message>
+Base::SendAndReceive(HANDLE hSocket, const std::vector<u8>& messageData)
 {
     Message MsgIn(messageData);
-    return send_and_receive(hSocket, MsgIn);
+    return SendAndReceive(hSocket, MsgIn);
 }
 
 
 HANDLE
-pwn::windows::alpc::Base::SocketHandle()
+Base::SocketHandle() const
 {
-    return m_AlpcSocketHandle;
+    return m_AlpcSocketHandle.get();
 }
 
 
 std::wstring
-pwn::windows::alpc::Base::PortName()
+Base::PortName() const
 {
     return m_PortName;
 }
 
-
-////////////////////////////////////////////////////////////////////
-//
-// ALPC server
-//
+#pragma endregion
 
 
-pwn::windows::alpc::Server::Server(const std::wstring& PortName) : Base(PortName)
+#pragma region ALPC server
+
+Server::Server(const std::wstring& PortName) : Base(PortName)
 {
-    NTSTATUS Status;
-
     UNICODE_STRING AlpcPortName;
     ::RtlInitUnicodeString(&AlpcPortName, m_PortName.c_str());
 
@@ -205,36 +186,40 @@ pwn::windows::alpc::Server::Server(const std::wstring& PortName) : Base(PortName
     ALPC_PORT_ATTRIBUTES PortAttributes = {0};
     PortAttributes.MaxMessageLength     = ALPC_PORT_MAXIMUM_MESSAGE_LENGTH;
 
-    Status = ::NtAlpcCreatePort(&m_AlpcSocketHandle, &ObjectAttributes, &PortAttributes);
+    HANDLE hPortSocket = INVALID_HANDLE_VALUE;
+
+    NTSTATUS Status = ::NtAlpcCreatePort(&hPortSocket, &ObjectAttributes, &PortAttributes);
     if ( !NT_SUCCESS(Status) )
     {
-        ntperror(L"NtAlpcCreatePort", Status);
-        throw std::exception("critical error in constructor");
+        log::ntperror(L"NtAlpcCreatePort", Status);
+        return;
     }
 
-    dbg(L"alpc::server - got handle {} for port '{}'\n", m_AlpcSocketHandle, m_PortName);
+    m_AlpcSocketHandle = AlpcHandle {hPortSocket};
+    dbg(L"alpc::server - created listening handle {:p} for port '{}'", m_AlpcSocketHandle.get(), m_PortName.c_str());
+
+    m_Valid = true;
 }
 
 
-pwn::windows::alpc::Server::~Server()
+Server::~Server()
 {
     dbg(L"alpc::server - closing server...");
 }
 
 
 auto
-pwn::windows::alpc::Server::accept() -> Result<PHANDLE>
+Server::Accept() -> Result<HANDLE>
 {
-    auto hAlpcClientSocket       = INVALID_HANDLE_VALUE;
+    HANDLE hAlpcClientSocket     = INVALID_HANDLE_VALUE;
     Message ConnectionRequestMsg = {};
-    PHANDLE NewClientHandle      = nullptr;
 
     //
     // Wait for initial request
     //
     SIZE_T OriginalMsgSize = ConnectionRequestMsg.Size();
     NTSTATUS Status        = ::NtAlpcSendWaitReceivePort(
-        m_AlpcSocketHandle,
+        m_AlpcSocketHandle.get(),
         0,
         nullptr,
         nullptr,
@@ -245,7 +230,7 @@ pwn::windows::alpc::Server::accept() -> Result<PHANDLE>
 
     if ( !NT_SUCCESS(Status) )
     {
-        ntperror(L"NtAlpcSendWaitReceivePort()", Status);
+        log::ntperror(L"NtAlpcSendWaitReceivePort()", Status);
         return Err(ErrorCode::AlpcError);
     }
 
@@ -262,51 +247,38 @@ pwn::windows::alpc::Server::accept() -> Result<PHANDLE>
 
     Status = ::NtAlpcAcceptConnectPort(
         &hAlpcClientSocket,
-        m_AlpcSocketHandle,
+        m_AlpcSocketHandle.get(),
         0,
         nullptr,
         nullptr,
         nullptr,
         ConnectionRequestMsg.Get(),
         nullptr,
-        TRUE);
+        true);
     if ( !NT_SUCCESS(Status) )
     {
-        ntperror(L"NtAlpcAcceptConnectPort()", Status);
+        log::ntperror(L"NtAlpcAcceptConnectPort()", Status);
         return Err(ErrorCode::AlpcError);
     }
 
-    *NewClientHandle = hAlpcClientSocket;
-    return Ok(NewClientHandle);
+    dbg(L"alpc::server - created client handle {:p} for port '{}'", hAlpcClientSocket, m_PortName.c_str());
+    return Ok(hAlpcClientSocket);
 }
 
-
-////////////////////////////////////////////////////////////////////
-//
-// ALPC client
-//
-
-pwn::windows::alpc::Client::Client(const std::wstring& PortName) : Base(PortName)
-{
-    if ( !reconnect() )
-        throw std::runtime_error("failed to establish connection");
-}
+#pragma endregion
 
 
-pwn::windows::alpc::Client::~Client()
-{
-    dbg(L"alpc::client - closing client");
-}
+#pragma region ALPC client
 
 
-auto
-pwn::windows::alpc::Client::reconnect() -> bool
+Client::Client(const std::wstring& PortName) : Base(PortName)
 {
     UNICODE_STRING AlpcPortName;
     ::RtlInitUnicodeString(&AlpcPortName, m_PortName.c_str());
 
-    NTSTATUS Status = ::NtAlpcConnectPort(
-        &m_AlpcSocketHandle,
+    HANDLE hPortSocket = INVALID_HANDLE_VALUE;
+    NTSTATUS Status    = ::NtAlpcConnectPort(
+        &hPortSocket,
         &AlpcPortName,
         nullptr,
         nullptr,
@@ -319,23 +291,35 @@ pwn::windows::alpc::Client::reconnect() -> bool
         nullptr);
     if ( !NT_SUCCESS(Status) )
     {
-        ntperror(L"NtAlpcConnectPort()", Status);
-        return FALSE;
+        log::ntperror(L"NtAlpcConnectPort()", Status);
+        return;
     }
 
-    dbg(L"alpc::client - port connected");
-    return true;
+    m_AlpcSocketHandle = AlpcHandle {hPortSocket};
+
+    dbg(L"alpc::client - connected to port '{}' (handle={:p}", m_PortName.c_str(), m_AlpcSocketHandle.get());
+    m_Valid = true;
 }
 
 
-pwn::windows::alpc::Message
-pwn::windows::alpc::Client::sr(const std::vector<BYTE>& messageData)
+Client::~Client()
 {
-    return send_and_receive(m_AlpcSocketHandle, messageData);
+    dbg(L"alpc::client - closing client");
 }
 
-pwn::windows::alpc::Message
-pwn::windows::alpc::Client::sr(Message& message)
+
+Result<Message>
+Client::sr(const std::vector<u8>& messageData)
 {
-    return send_and_receive(m_AlpcSocketHandle, message);
+    return SendAndReceive(m_AlpcSocketHandle.get(), messageData);
 }
+
+Result<Message>
+Client::sr(Message& message)
+{
+    return SendAndReceive(m_AlpcSocketHandle.get(), message);
+}
+
+#pragma endregion
+
+} // namespace pwn::windows::alpc
