@@ -135,3 +135,9 @@ target_link_libraries(
     Rpcrt4.lib
     BCrypt.lib
 )
+
+#
+# Installation directives
+#
+install(FILES ${COMMON_HEADER_FILES} DESTINATION include/${PROJECT_NAME})
+install(FILES ${HEADER_FILES} DESTINATION include/${PROJECT_NAME}/win32)

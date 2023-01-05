@@ -97,3 +97,9 @@ if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15)
         -fexperimental-library -stdlib=libc++
     )
 endif()
+
+#
+# Installation directives
+#
+install(FILES ${COMMON_HEADER_FILES} DESTINATION include/${PROJECT_NAME})
+install(FILES ${HEADER_FILES} DESTINATION include/${PROJECT_NAME}/linux)
