@@ -147,9 +147,9 @@ jobs:
       uses: sarisia/actions-status-discord@v1.10.0
       with:
         nodetail: true
-        title: 🚧🚧 Summary of Build `${{ env.GITHUB_SHA_SHORT }}` for `${{ env.REPO }}` 🚧🚧 
+        title: 🚧 🚧 Summary of Build `${{ env.GITHUB_SHA_SHORT }}` for `${{ env.REPO }}` 🚧 🚧 
         description: |
-          [Job #${{ github.run_number }}](${{ env.RUN_URL }}): CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by ${{ env.AUTHOR_URL }}:
+          [Job #${{ github.run_number }}](${{ env.RUN_URL }}): CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by [${{ github.actor }}](${{ env.AUTHOR_URL }}):
           ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
           ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
           ● [Detail Page](${{ env.RUN_URL }})
