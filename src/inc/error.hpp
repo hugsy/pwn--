@@ -129,6 +129,12 @@ enum class ErrorCode : uint32_t
 
     /// @brief An established connection was expected, but not found
     NotConnected,
+
+    /// @brief The requested resource already exists
+    AlreadyExists,
+
+    /// @brief Unexpected size comparison
+    SizeMismatch,
 };
 
 ///
@@ -213,9 +219,9 @@ struct Ok : SuccessType<T>
 
 template<class T>
 constexpr bool
-Success(Result<T> const& f)
+Success(Result<T> const& Result)
 {
-    if ( const SuccessType<T>* c = std::get_if<SuccessType<T>>(&f); c != nullptr )
+    if ( const SuccessType<T>* c = std::get_if<SuccessType<T>>(&Result); c != nullptr )
     {
         return true;
     }
@@ -224,14 +230,14 @@ Success(Result<T> const& f)
 
 template<class T>
 constexpr bool
-Failed(Result<T> const& f)
+Failed(Result<T> const& Result)
 {
-    if ( Success(f) )
+    if ( Success(Result) )
     {
         return false;
     }
 
-    if ( const ErrorType* c = std::get_if<ErrorType>(&f); c != nullptr )
+    if ( const ErrorType* c = std::get_if<ErrorType>(&Result); c != nullptr )
     {
         return true;
     }
@@ -241,9 +247,9 @@ Failed(Result<T> const& f)
 
 template<class T>
 constexpr T const&
-Value(Result<T> const& f)
+Value(Result<T> const& SuccessResult)
 {
-    if ( const SuccessType<T>* c = std::get_if<SuccessType<T>>(&f); c != nullptr && c->has_value() )
+    if ( const SuccessType<T>* c = std::get_if<SuccessType<T>>(&SuccessResult); c != nullptr && c->has_value() )
     {
         return c->value();
     }
@@ -252,9 +258,9 @@ Value(Result<T> const& f)
 
 template<class T>
 constexpr ErrorType const&
-Error(Result<T> const& f)
+Error(Result<T> const& ErrorResult)
 {
-    if ( const ErrorType* c = std::get_if<ErrorType>(&f); c != nullptr )
+    if ( const ErrorType* c = std::get_if<ErrorType>(&ErrorResult); c != nullptr )
     {
         return *c;
     }

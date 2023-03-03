@@ -14,31 +14,10 @@
 
 #include "handle.hpp"
 #include "log.hpp"
-#include "thread.hpp"
 #include "utils.hpp"
+#include "win32/api.hpp"
 #include "win32/system.hpp"
-
-IMPORT_EXTERNAL_FUNCTION(L"ntdll.dll", NtWow64ReadVirtualMemory64, NTSTATUS, HANDLE, PVOID64, PVOID, ULONG64, PULONG64);
-
-IMPORT_EXTERNAL_FUNCTION(
-    L"ntdll.dll",
-    NtWow64WriteVirtualMemory64,
-    NTSTATUS,
-    HANDLE,
-    PVOID64,
-    PVOID,
-    ULONG64,
-    PULONG64);
-
-IMPORT_EXTERNAL_FUNCTION(
-    L"ntdll.dll",
-    NtWow64QueryInformationProcess64,
-    NTSTATUS,
-    HANDLE,
-    PROCESSINFOCLASS,
-    PVOID,
-    ULONG,
-    PULONG);
+#include "win32/thread.hpp"
 
 
 EXTERN_C_START
@@ -1002,15 +981,18 @@ Process::QueryInternal(const PROCESSINFOCLASS ProcessInformationClass, const usi
 
     do
     {
-        Status =
-            m_IsWow64 ?
-                NtWow64QueryInformationProcess64(
-                    m_ProcessHandle->get(),
-                    ProcessInformationClass,
-                    Buffer,
-                    Size,
-                    &ReturnLength) :
-                NtQueryInformationProcess(m_ProcessHandle->get(), ProcessInformationClass, Buffer, Size, &ReturnLength);
+        Status = m_IsWow64 ? pwn::Resolver::ntdll::NtWow64QueryInformationProcess64(
+                                 m_ProcessHandle->get(),
+                                 ProcessInformationClass,
+                                 Buffer,
+                                 Size,
+                                 &ReturnLength) :
+                             pwn::Resolver::ntdll::NtQueryInformationProcess(
+                                 m_ProcessHandle->get(),
+                                 ProcessInformationClass,
+                                 Buffer,
+                                 Size,
+                                 &ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
             break;

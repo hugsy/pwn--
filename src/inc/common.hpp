@@ -56,53 +56,6 @@ using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 
-using namespace std::literals::string_view_literals;
-
-namespace
-{
-auto static inline LoadLibraryWrapper(wchar_t const* name)
-{
-#if defined(PWN_BUILD_FOR_WINDOWS)
-    return ::LoadLibraryW(name);
-#elif defined(PWN_BUILD_FOR_LINUX)
-    return dlopen(name, RTLD_LAZY);
-#else
-#error "invalid os"
-#endif
-}
-
-
-template<typename M>
-auto inline GetProcAddressWrapper(M hMod, std::string_view const& lpszProcName)
-{
-#if defined(PWN_BUILD_FOR_WINDOWS)
-    auto address = ::GetProcAddress(hMod, lpszProcName.data());
-#elif defined(PWN_BUILD_FOR_LINUX)
-    auto address = dlsym(hMod, lpszProcName.data());
-#else
-#error "invalid os"
-#endif
-    if ( !address )
-    {
-        std::stringstream ss;
-        ss << "Error importing '" << lpszProcName << "'";
-        throw std::runtime_error(ss.str());
-    }
-    return address;
-}
-} // namespace
-
-
-#define IMPORT_EXTERNAL_FUNCTION(Dll, Func, Ret, ...)                                                                  \
-    typedef Ret(NTAPI* CONCAT(pwnFn_, Func))(__VA_ARGS__);                                                             \
-                                                                                                                       \
-    template<typename... Ts>                                                                                           \
-    auto Func(Ts... ts)->Ret                                                                                           \
-    {                                                                                                                  \
-        auto __func = (pwnFn_##Func)GetProcAddressWrapper(LoadLibraryWrapper(Dll), STR(Func));                         \
-        return __func(std::forward<Ts>(ts)...);                                                                        \
-    }
-
 
 #ifndef UnreferencedParameter
 #define UnreferencedParameter(x)                                                                                       \
@@ -110,6 +63,9 @@ auto inline GetProcAddressWrapper(M hMod, std::string_view const& lpszProcName)
         (void)(x);                                                                                                     \
     }
 #endif // UnreferencedParameter
+
+using namespace std::literals::string_view_literals;
+using namespace std::literals::chrono_literals;
 
 ///
 /// @brief A constexpr map

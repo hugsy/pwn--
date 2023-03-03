@@ -24,6 +24,7 @@ set(
 
     ${HEADER_DIR}/framework.hpp
 
+    ${HEADER_DIR}/api.hpp
     ${HEADER_DIR}/alpc.hpp
     ${HEADER_DIR}/fs.hpp
     ${HEADER_DIR}/job.hpp
@@ -37,6 +38,7 @@ set(
     ${HEADER_DIR}/system.hpp
     ${HEADER_DIR}/thread.hpp
     ${HEADER_DIR}/token.hpp
+    ${HEADER_DIR}/network.hpp
 
     ${HEADER_DIR}/ctf/remote.hpp
     ${HEADER_DIR}/ctf/process.hpp
@@ -58,6 +60,7 @@ set(
     ${SOURCE_DIR}/system.cpp
     ${SOURCE_DIR}/thread.cpp
     ${SOURCE_DIR}/token.cpp
+    ${SOURCE_DIR}/network.cpp
 
     ${SOURCE_DIR}/ctf/remote.cpp
     ${SOURCE_DIR}/ctf/process.cpp
@@ -79,7 +82,6 @@ if(PWN_ENABLE_LUA_BACKDOOR)
 endif(PWN_ENABLE_LUA_BACKDOOR)
 
 target_sources(${PROJECT_NAME} PUBLIC ${HEADER_FILES} PRIVATE ${SOURCE_FILES})
-target_include_directories(${PROJECT_NAME} PUBLIC ${HEADER_DIR})
 
 #
 # Use ProcessHacker phnt headers
@@ -134,6 +136,7 @@ target_link_libraries(
     Userenv.lib
     Rpcrt4.lib
     BCrypt.lib
+    Urlmon.lib
 )
 
 #

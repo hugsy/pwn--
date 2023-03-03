@@ -1,33 +1,17 @@
-#include "fs.hpp"
+#include "win32/fs.hpp"
 
 #include <sstream>
 
 #include "handle.hpp"
 #include "log.hpp"
-#include "nt.hpp"
 #include "utils.hpp"
+#include "win32/api.hpp"
+#include "win32/nt.hpp"
 
 
 #ifndef SYMBOLIC_LINK_ALL_ACCESS
 #define SYMBOLIC_LINK_ALL_ACCESS (STANDARD_RIGHTS_REQUIRED | 0x1)
 #endif
-
-IMPORT_EXTERNAL_FUNCTION(
-    L"ntdll.dll",
-    NtCreateSymbolicLinkObject,
-    NTSTATUS,
-    PHANDLE LinkHandle,
-    ACCESS_MASK DesiredAccess,
-    POBJECT_ATTRIBUTES ObjectAttributes,
-    PUNICODE_STRING TargetName);
-
-IMPORT_EXTERNAL_FUNCTION(
-    L"ntdll.dll",
-    NtOpenSymbolicLinkObject,
-    NTSTATUS,
-    PHANDLE LinkHandle,
-    ACCESS_MASK DesiredAccess,
-    POBJECT_ATTRIBUTES ObjectAttributes);
 
 
 auto
@@ -43,7 +27,7 @@ pwn::windows::filesystem::open(std::wstring_view const& path, std::wstring_view 
         dwPerm |= GENERIC_WRITE;
     }
 
-    HANDLE hFile = ::CreateFile(path.data(), dwPerm, 0x00000000, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+    HANDLE hFile = ::CreateFileW(path.data(), dwPerm, 0x00000000, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
     if ( hFile == INVALID_HANDLE_VALUE && ::GetLastError() == ERROR_FILE_EXISTS )
     {
         hFile = ::CreateFile(

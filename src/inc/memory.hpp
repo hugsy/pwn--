@@ -2,7 +2,9 @@
 
 ///
 ///@file Create a memory view from a raw u8* and a size, allowing to iterate, fill, read/write & more
+/// TODO replace with std::span
 ///
+
 
 #include <limits>
 
@@ -396,7 +398,7 @@ public:
     ///
     ///@brief Export the memory view to the given container type.
     ///
-    ///@tparam T must be `resize()`-able (vector, list, string, wstring - but not array)
+    ///@tparam T
     ///@return T
     ///
     template<typename T>
@@ -404,8 +406,7 @@ public:
     To()
     {
         const usize sz = size();
-        T out;
-        out.resize(sz);
+        T out(sz);
         ::memcpy(out.data(), data(), sz);
         return out;
     }

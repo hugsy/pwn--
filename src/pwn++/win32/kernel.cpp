@@ -1,10 +1,10 @@
-#include "kernel.hpp"
+#include "win32/kernel.hpp"
 
 #include <stdexcept>
 
 #include "log.hpp"
-#include "system.hpp"
 #include "utils.hpp"
+#include "win32/system.hpp"
 
 
 #ifndef __KERNEL_CONSTANTS__

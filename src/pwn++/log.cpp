@@ -163,9 +163,10 @@ FormatErrorCode(ErrorCode const& code)
     case ErrorCode::BadSignature:                      return L"BadSignature";
     case ErrorCode::NotFound:                          return L"NotFound";
     case ErrorCode::NotConnected:                      return L"NotConnected";
+    case ErrorCode::AlreadyExists:                     return L"AlreadyExists";
+    case ErrorCode::SizeMismatch:                      return L"SizeMismatch";
         // clang-format on
     }
-
     return L"";
 }
 

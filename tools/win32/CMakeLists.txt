@@ -36,4 +36,5 @@ foreach(TOOL_DIR ${WIN32_TOOLS})
     target_link_options(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_LINK_OPTIONS> /SUBSYSTEM:Console)
 
     install(TARGETS ${TOOL_DIR} DESTINATION tools)
+    install(FILES $<TARGET_PDB_FILE:${TOOL_DIR}> DESTINATION tools/debug OPTIONAL)
 endforeach()

@@ -3,54 +3,12 @@
 ///
 ///
 
-#include <pwn.hpp>
+#include "pwn.hpp"
 
 
 // constexpr PROCESS_INFORMATION_CLASS ProcessDebugAuthInformation =
 //     (const PROCESS_INFORMATION_CLASS)0x5A; // 90 -  exists since REDSTONE4
 
-IMPORT_EXTERNAL_FUNCTION(
-    L"ntdll.dll",
-    NtSetInformationProcess,
-    NTSTATUS,
-    HANDLE ProcessHandle,
-    int ProcessInformationClass,
-    PVOID ProcessInformation,
-    ULONG ProcessInformationLength);
-
-
-// IMPORT_EXTERNAL_FUNCTION(
-//     L"ntdll.dll",
-//     NtQuerySystemEnvironmentValueEx,
-//     NTSTATUS,
-//     PUNICODE_STRING VariableName,
-//     PWCHAR Value,
-//     ULONG ValueBufferLength,
-//     PULONG RequiredLength);
-
-//
-// Require system environment privilege
-//
-IMPORT_EXTERNAL_FUNCTION(
-    L"ntdll.dll",
-    NtQuerySystemEnvironmentValueEx,
-    NTSTATUS,
-    PUNICODE_STRING VariableName,
-    LPGUID VendorGuid,
-    PVOID Value,
-    PULONG ValueLength,
-    PULONG Attributes);
-
-
-IMPORT_EXTERNAL_FUNCTION(
-    L"ntdll.dll",
-    NtSetSystemEnvironmentValueEx,
-    NTSTATUS,
-    PUNICODE_STRING VariableName,
-    LPGUID VendorGuid,
-    PVOID Value,
-    ULONG ValueLength,
-    ULONG Attributes);
 
 #ifndef VARIABLE_ATTRIBUTE_NON_VOLATILE
 #define VARIABLE_ATTRIBUTE_NON_VOLATILE 0x00000001

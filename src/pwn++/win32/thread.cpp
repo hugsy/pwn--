@@ -4,8 +4,8 @@
 
 #include "handle.hpp"
 #include "log.hpp"
-#include "system.hpp"
 #include "utils.hpp"
+#include "win32/system.hpp"
 
 #define WINDOWS_VERSION_1507 10240
 #define WINDOWS_VERSION_1511 10586

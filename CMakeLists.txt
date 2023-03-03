@@ -28,6 +28,7 @@ option(PWN_BUILD_DOCS "Generate the Doxygen API files" OFF)
 option(PWN_ENABLE_LUA_BACKDOOR "Enable Lua scripting for backdoor" OFF)
 
 set(PWNLIB_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
+set(PWNLIB_DEPS_DIR ${PWNLIB_ROOT_DIR}/deps)
 
 set(PWN_INCLUDE_DISASSEMBLER FALSE)
 
@@ -41,14 +42,14 @@ if(PWN_DISASSEMBLE_X86)
     option(ZYDIS_BUILD_EXAMPLES "" OFF)
     cmake_policy(PUSH)
     set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
-    add_subdirectory(${PWNLIB_ROOT_DIR}/deps/zydis)
+    add_subdirectory(${PWNLIB_DEPS_DIR}/zydis)
     cmake_policy(POP)
     set(PWN_INCLUDE_DISASSEMBLER TRUE)
 endif()
 
 if(PWN_DISASSEMBLE_ARM64)
     option(BUILD_SHARED_LIBS "" OFF)
-    add_subdirectory(${PWNLIB_ROOT_DIR}/deps/arch-arm64)
+    add_subdirectory(${PWNLIB_DEPS_DIR}/arch-arm64)
     set(PWN_INCLUDE_DISASSEMBLER TRUE)
 endif()
 
@@ -56,7 +57,7 @@ endif()
 # Use ProcessHacker headers for Windows building
 #
 if(MSVC)
-    add_subdirectory(${PWNLIB_ROOT_DIR}/deps/phnt)
+    add_subdirectory(${PWNLIB_DEPS_DIR}/phnt)
 endif(MSVC)
 
 #
@@ -64,7 +65,7 @@ endif(MSVC)
 #
 if(PWN_ENABLE_LUA_BACKDOOR)
     option(BUILD_SHARED_LIBS "" OFF)
-    add_subdirectory(${PWNLIB_ROOT_DIR}/deps/lua)
+    add_subdirectory(${PWNLIB_DEPS_DIR}/lua)
 endif()
 
 #

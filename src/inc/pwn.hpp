@@ -49,6 +49,8 @@ namespace win = windows;
 
 } // namespace pwn
 
+#include "win32/api.hpp"
+
 /// namespace pwn::windows, class System
 #include "win32/system.hpp"
 

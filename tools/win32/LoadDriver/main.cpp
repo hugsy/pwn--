@@ -1,4 +1,5 @@
 #include <argparse.hpp>
+#include <filesystem>
 #include <pwn.hpp>
 #include <ranges>
 
@@ -26,10 +27,16 @@ ListServices()
 }
 
 int
-AddService(std::string_view const& name, std::string_view const& binPath)
+AddService(std::string_view const& name, std::filesystem::path const& binPath)
 {
+    if ( !std::filesystem::exists(binPath) )
+    {
+        return -1;
+    }
+
     std::wstring wsName    = pwn::utils::StringLib::To<std::wstring>(name);
-    std::wstring wsBinPath = pwn::utils::StringLib::To<std::wstring>(binPath);
+    std::wstring wsBinPath = pwn::utils::StringLib::To<std::wstring>(std::filesystem::absolute(binPath).string());
+
     if ( Failed(pwn::win::Service::Create(wsName, wsBinPath, pwn::win::ServiceType::KernelDriver)) )
     {
         return -1;
@@ -104,15 +111,18 @@ main(const int argc, const char** argv) -> int
 
     if ( program.is_subcommand_used("add") )
     {
-        auto const& options = program.at<argparse::ArgumentParser>("add");
-        res                 = AddService(options.get<std::string>("name"), options.get<std::string>("file"));
+        auto const& options     = program.at<argparse::ArgumentParser>("add");
+        auto const& serviceName = options.get<std::string>("name");
+        auto const servicePath  = std::filesystem::path(options.get<std::string>("file"));
+        res                     = AddService(serviceName, servicePath);
         dbg("AddService() returned {}", res);
     }
 
     if ( program.is_subcommand_used("del") )
     {
-        auto const& options = program.at<argparse::ArgumentParser>("del");
-        res                 = DelService(options.get<std::string>("name"));
+        auto const& options     = program.at<argparse::ArgumentParser>("del");
+        auto const& serviceName = options.get<std::string>("name");
+        res                     = DelService(serviceName);
         dbg("DelService() returned {}", res);
     }
 

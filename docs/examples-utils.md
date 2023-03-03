@@ -87,13 +87,13 @@ int wmain()
 
 ### Simple API import
 
-using `IMPORT_EXTERNAL_FUNCTION` macro, then copy/paste the definition (from MSDN, ReactOS, Pinvoke, NirSoft, etc.)
+using `ExportImport` macro, then copy/paste the definition (from MSDN, ReactOS, Pinvoke, NirSoft, etc.)
 
 ```cpp
-#include <pwn++\pwn.h>
+#include <pwn.hpp>
 
-IMPORT_EXTERNAL_FUNCTION( \
-    L"ntdll.dll", \
+ExportImport( \
+    "ntdll.dll", \
     ZwCreateEnclave, \
     NTSTATUS, \
     HANDLE  hProcess, \

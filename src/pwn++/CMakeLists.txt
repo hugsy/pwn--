@@ -89,6 +89,7 @@ set(
     ${COMMON_HEADER_DIR}/memory.hpp
     ${COMMON_HEADER_DIR}/pwn.hpp
     ${COMMON_HEADER_DIR}/pch.hpp
+    ${COMMON_HEADER_DIR}/resolver.hpp
 )
 
 if(PWN_ENABLE_LUA_BACKDOOR)
@@ -108,7 +109,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${COMMON_HEADER_DIR})
 # Print out cmake compile info
 #
 message(STATUS "PWN_LOG_USE_COLOR                      ${PWN_LOG_USE_COLOR}")
-
 message(STATUS "PWN_BUILD_TOOLKIT                      ${PWN_BUILD_TOOLKIT}")
 message(STATUS "PWN_BUILD_TESTING                      ${PWN_BUILD_TESTING}")
 message(STATUS "PWN_BUILD_DOCS                         ${PWN_BUILD_DOCS}")
@@ -117,20 +117,22 @@ message(STATUS "PWN_ENABLE_LUA_BACKDOOR                ${PWN_ENABLE_LUA_BACKDOOR
 
 if(PWN_ENABLE_LUA_BACKDOOR)
     target_link_libraries(${PROJECT_NAME} PUBLIC lua::lib)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/lua/include)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_DEPS_DIR}/lua/include)
 endif()
 
 if(PWN_DISASSEMBLE_X86)
     message(STATUS "PWN_DISASSEMBLE_X86                    ${PWN_DISASSEMBLE_X86}")
     target_link_libraries(${PROJECT_NAME} PUBLIC Zydis)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/zydis/include)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_DEPS_DIR}/zydis/include)
 endif()
 
 if(PWN_DISASSEMBLE_ARM64)
     message(STATUS "PWN_DISASSEMBLE_ARM64                  ${PWN_DISASSEMBLE_ARM64}")
     target_link_libraries(${PROJECT_NAME} PUBLIC disass_arch_arm64)
-    target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_ROOT_DIR}/deps/arch-arm64/disassembler)
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_DEPS_DIR}/arch-arm64/disassembler)
 endif()
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${PWNLIB_DEPS_DIR}/httplib)
 
 #
 # Generate the build export header from cmake
