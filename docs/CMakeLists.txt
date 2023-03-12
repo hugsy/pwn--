@@ -2,7 +2,7 @@ find_package(Doxygen REQUIRED)
 
 set(VERSIONS Win32 Linux)
 set(PWN_DOCS_ROOT_DIR "${PWNLIB_ROOT_DIR}/Docs")
-set(PWN_SRC_ROOT_DIR "${PWNLIB_ROOT_DIR}/pwn++/Modules")
+set(PWN_SRC_ROOT_DIR "${PWNLIB_ROOT_DIR}/Modules")
 set(PWN_DOCS_CSS_ROOT_DIR "${PWN_DOCS_ROOT_DIR}/css")
 set(DOXYFILE_IN ${PWN_DOCS_ROOT_DIR}/Doxyfile.in)
 set(DOXYGEN_CSS "${PWN_DOCS_CSS_ROOT_DIR}/doxygen-awesome.css ${PWN_DOCS_CSS_ROOT_DIR}/doxygen-awesome-sidebar-only.css")
