@@ -1,0 +1,300 @@
+#include "Win32/Process.hpp"
+
+
+namespace pwn::Process
+{
+
+#pragma region Process::Memory
+
+Memory::Memory(Process* process)
+{
+    if ( !process )
+    {
+        throw std::runtime_error("Cannot create Memory of null process");
+    }
+
+    m_Process       = process;
+    m_ProcessHandle = process->Handle();
+}
+
+
+Result<std::vector<u8>>
+Memory::Read(uptr const Address, usize Length)
+{
+    if ( !m_Process || !m_ProcessHandle )
+    {
+        return Err(ErrorCode::NotInitialized);
+    }
+
+    auto out = std::vector<u8>(Length);
+    usize dwNbRead;
+    if ( ::ReadProcessMemory(
+             m_ProcessHandle->get(),
+             reinterpret_cast<LPVOID>(Address),
+             out.data(),
+             Length,
+             &dwNbRead) == false )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    return Ok(out);
+}
+
+Result<usize>
+Memory::Memset(uptr const address, const size_t size, const u8 val)
+{
+    auto data = std::vector<u8>(size);
+    std::fill(data.begin(), data.end(), val);
+    return Write(address, data);
+}
+
+Result<usize>
+Memory::Write(uptr const Address, std::vector<u8> data)
+{
+    if ( !m_Process || !m_ProcessHandle )
+    {
+        return Err(ErrorCode::NotInitialized);
+    }
+
+    usize dwNbWritten;
+    if ( ::WriteProcessMemory(
+             m_ProcessHandle->get(),
+             reinterpret_cast<LPVOID>(Address),
+             data.data(),
+             data.size(),
+             &dwNbWritten) != false )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    return Ok(dwNbWritten);
+}
+
+Result<uptr>
+Memory::Allocate(const size_t Size, const wchar_t Permission[3], const uptr ForcedMappingAddress, bool wipe)
+{
+    if ( !m_Process || !m_ProcessHandle )
+    {
+        return Err(ErrorCode::NotInitialized);
+    }
+
+    u32 flProtect = 0;
+    if ( wcscmp(Permission, L"r") == 0 )
+    {
+        flProtect |= PAGE_READONLY;
+    }
+    if ( wcscmp(Permission, L"rx") == 0 )
+    {
+        flProtect |= PAGE_EXECUTE_READ;
+    }
+    if ( wcscmp(Permission, L"rw") == 0 )
+    {
+        flProtect |= PAGE_READWRITE;
+    }
+    if ( wcscmp(Permission, L"rwx") == 0 )
+    {
+        flProtect |= PAGE_EXECUTE_READWRITE;
+    }
+
+    auto buffer = (uptr)::VirtualAllocEx(
+        m_ProcessHandle->get(),
+        nullptr,
+        Size,
+        MEM_COMMIT | MEM_RESERVE,
+        flProtect ? flProtect : PAGE_GUARD);
+    if ( buffer == 0u )
+    {
+        return Err(ErrorCode::AllocationError);
+    }
+
+    if ( wipe )
+    {
+        Memset(buffer, Size, 0x00);
+    }
+
+    return Ok(buffer);
+}
+
+bool
+Memory::Free(const uptr Address)
+{
+    return ::VirtualFreeEx(m_ProcessHandle->get(), reinterpret_cast<LPVOID>(Address), 0, MEM_RELEASE) == 0;
+}
+
+Result<PVOID>
+Memory::QueryInternal(
+    const MEMORY_INFORMATION_CLASS MemoryInformationClass,
+    const uptr BaseAddress,
+    const usize InitialSize)
+{
+    ErrorCode ec = ErrorCode::UnknownError;
+    usize Size   = InitialSize;
+    auto Buffer  = ::LocalAlloc(LPTR, Size);
+    if ( !Buffer )
+    {
+        return Err(ErrorCode::AllocationError);
+    }
+
+    do
+    {
+        usize ReturnLength = 0;
+        NTSTATUS Status    = ::NtQueryVirtualMemory(
+            m_ProcessHandle->get(),
+            (PVOID)BaseAddress,
+            MemoryInformationClass,
+            Buffer,
+            Size,
+            &ReturnLength);
+        if ( NT_SUCCESS(Status) )
+        {
+            return Ok(Buffer);
+        }
+
+        if ( Status == STATUS_INFO_LENGTH_MISMATCH )
+        {
+            Size   = ReturnLength;
+            Buffer = ::LocalReAlloc(Buffer, Size, LMEM_MOVEABLE | LMEM_ZEROINIT);
+            continue;
+        }
+
+        Log::ntperror(L"NtQueryVirtualMemory()", Status);
+
+        //
+        // If doing an iteration, the last address will be invalid
+        // resulting in having STATUS_INVALID_PARAMETER. We just exit.
+        //
+        ec = (Status == STATUS_INVALID_PARAMETER) ? ErrorCode::InvalidParameter : ErrorCode::PermissionDenied;
+
+        break;
+
+    } while ( true );
+
+    ::LocalFree(Buffer);
+    return Err(ec);
+}
+
+
+Result<std::vector<std::shared_ptr<MEMORY_BASIC_INFORMATION>>>
+Memory::Regions()
+{
+    uptr CurrentAddress = 0;
+    std::vector<std::shared_ptr<MEMORY_BASIC_INFORMATION>> MemoryRegions;
+
+    while ( true )
+    {
+        //
+        // Query the location
+        //
+        auto res = Query<MEMORY_BASIC_INFORMATION>(MemoryBasicInformation, CurrentAddress);
+        if ( Failed(res) )
+        {
+            auto e = Error(res);
+            if ( e.code == ErrorCode::InvalidParameter )
+            {
+                break;
+            }
+
+            return Err(e.code);
+        }
+
+        //
+        // Save the region information
+        //
+        auto CurrentMemoryRegion = Value(res);
+        if ( CurrentMemoryRegion->BaseAddress != nullptr )
+        {
+            MemoryRegions.push_back(CurrentMemoryRegion);
+        }
+
+        //
+        // Move to the next one
+        //
+        CurrentAddress += CurrentMemoryRegion->RegionSize;
+    }
+
+    return Ok(MemoryRegions);
+}
+
+Result<std::vector<uptr>>
+Memory::Search(std::vector<u8> const& Pattern)
+{
+    if ( Pattern.empty() )
+    {
+        return Err(ErrorCode::BufferTooSmall);
+    }
+
+    auto res = Regions();
+    if ( Failed(res) )
+    {
+        return Err(Error(res).code);
+    }
+
+    std::vector<uptr> Matches;
+
+    for ( auto const& Region : Value(res) )
+    {
+        if ( Region->State != MEM_COMMIT )
+        {
+            continue;
+        }
+
+        if ( (Region->Protect != PAGE_READONLY) && (Region->Protect != PAGE_READWRITE) &&
+             (Region->Protect != PAGE_EXECUTE_READWRITE) )
+        {
+            continue;
+        }
+
+        const uptr StartAddress = (uptr)Region->BaseAddress;
+        const usize Size        = Region->RegionSize;
+
+        if ( Size < Pattern.size() )
+        {
+            continue;
+        }
+
+        auto res = Read(StartAddress, Size);
+        if ( Failed(res) )
+        {
+            continue;
+        }
+
+        auto const& RemoteMemoryRegion = Value(res);
+        usize CurrentIndex             = 0;
+        const usize MaxSize            = RemoteMemoryRegion.size() - Pattern.size();
+
+        while ( CurrentIndex < MaxSize )
+        {
+            usize Offset = 0;
+
+            for ( auto const& c : Pattern )
+            {
+                if ( c != RemoteMemoryRegion[CurrentIndex + Offset] )
+                {
+                    break;
+                }
+
+                Offset++;
+            }
+
+            if ( Offset == 0 )
+            {
+                CurrentIndex++;
+                continue;
+            }
+
+            if ( Offset == Pattern.size() )
+            {
+                const uptr MatchingAddress = (uptr)(StartAddress + CurrentIndex);
+                Matches.push_back(MatchingAddress);
+            }
+
+            CurrentIndex += Offset;
+        }
+    }
+    return Ok(Matches);
+}
+
+#pragma endregion Process::Memory
+
+} // namespace Process

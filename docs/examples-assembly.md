@@ -9,12 +9,13 @@ Requirements:
 
 ```cpp
 #include <pwn.hpp>
+using namespace pwn;
 
 int wmain()
 {
     const u8* code = "\x90\x48\x31\xc0\xc3\xcc";
     auto WantedArch = Architecture::Find("x64");
-    pwn::Assembly::Disassembler d{WantedArch};
+    Assembly::Disassembler d{WantedArch};
     auto res = d.DisassembleUntil(
         code,
         [](auto const& i)
@@ -23,7 +24,7 @@ int wmain()
         }
     );
 
-    auto insn_str_vec = pwn::Assembly::Disassembler::Format(Value(res), 0x00040000);
+    auto insn_str_vec = Assembly::Disassembler::Format(Value(res), 0x00040000);
     for (auto const& insn_str : Value(insn_str_vec))
     {
         ok("{}", insn_str);

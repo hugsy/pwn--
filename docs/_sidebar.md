@@ -6,6 +6,7 @@
 
 - Examples
     - Common
+        - [`Basic`](examples-basic.md)
         - [`Assembly`](examples-assembly.md)
         - [`Context`](examples-context.md)
         - [`Crypto`](examples-crypto.md)

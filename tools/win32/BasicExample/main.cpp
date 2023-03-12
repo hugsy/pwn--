@@ -1,10 +1,10 @@
 ///
-/// @file Example using the Process class
+/// @file Sandbox example file
 ///
 ///
 
 #include "pwn.hpp"
-
+using namespace pwn;
 
 // constexpr PROCESS_INFORMATION_CLASS ProcessDebugAuthInformation =
 //     (const PROCESS_INFORMATION_CLASS)0x5A; // 90 -  exists since REDSTONE4
@@ -20,12 +20,12 @@ wmain(const int argc, const wchar_t** argv) -> int
 {
     NTSTATUS Status;
 
-    pwn::Context.set(pwn::log::LogLevel::Debug);
+    Context.Set(Log::LogLevel::Debug);
 
     //
     // Get the current process
     //
-    pwn::windows::Process P {};
+    Process::Process P {};
     if ( Failed(P.Token.AddPrivilege(L"SeSystemEnvironmentPrivilege")) )
     {
         err(L"failed to acquire `SeSystemEnvironmentPrivilege` ");
@@ -34,15 +34,12 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     ok(L"Successfully acquired `SeSystemEnvironmentPrivilege` ");
 
-    // pwn::globals.set("x64");
-
-
     const std::array<u8, 0x20> GuidUnlockId =
         {0x6F, 0x22, 0xEC, 0xEA, 0xA3, 0xC9, 0x7A, 0x47, 0xA8, 0x26, 0xDD, 0xC7, 0x16, 0xCD, 0xC0, 0xE3};
     std::vector<u8> value(0x20);
     ULONG ReturnLength = 0x20;
 
-    auto self = pwn::windows::Process();
+    auto self = Process::Process();
     // ok(L"using handle={:x}", self.handle());
     // info(
     //     L"pid={}, ppid={}, cmdline='{}' integrity={} is_elevated={}",
@@ -66,15 +63,15 @@ wmain(const int argc, const wchar_t** argv) -> int
         nullptr);
     if ( Status != 0 )
     {
-        pwn::log::ntperror(L"NtQuerySystemEnvironmentValueEx()", Status);
+        Log::ntperror(L"NtQuerySystemEnvironmentValueEx()", Status);
         return -1;
     }
 
     info(L"Current UnlockId:");
-    pwn::utils::hexdump(value);
+    Utils::hexdump(value);
 
     /*
-    if ( false == pwn::windows::process::add_privilege(L"SeSystemEnvironmentPrivilege") )
+    if ( false == windows::process::add_privilege(L"SeSystemEnvironmentPrivilege") )
     {
         err(L"failed to acquire `SeSystemEnvironmentPrivilege` ");
         return -1;
@@ -92,7 +89,7 @@ wmain(const int argc, const wchar_t** argv) -> int
         VARIABLE_ATTRIBUTE_NON_VOLATILE);
     if ( Status != 0 )
     {
-        pwn::log::ntperror(L"NtSetSystemEnvironmentValueEx()", Status);
+        Log::ntperror(L"NtSetSystemEnvironmentValueEx()", Status);
         return -1;
     }
 
@@ -106,12 +103,12 @@ wmain(const int argc, const wchar_t** argv) -> int
         nullptr);
     if ( Status != 0 )
     {
-        pwn::log::ntperror(L"NtQuerySystemEnvironmentValueEx()", Status);
+        Log::ntperror(L"NtQuerySystemEnvironmentValueEx()", Status);
         return -1;
     }
 
     info(L"New UnlockId:\n");
-    pwn::utils::hexdump(value);
+    Utils::hexdump(value);
 
     return 0;
 
@@ -120,12 +117,12 @@ wmain(const int argc, const wchar_t** argv) -> int
     if ( argc >= 2 )
     {
         std::wstring arg {argv[1]};
-        auto decoded_string = Value(pwn::utils::Base64::Decode(pwn::utils::StringLib::To<std::string>(arg)));
+        auto decoded_string = Value(Utils::Base64::Decode(Utils::StringLib::To<std::string>(arg)));
         encoded_buffer      = decoded_string;
-        pwn::utils::hexdump(encoded_buffer);
+        Utils::hexdump(encoded_buffer);
     }
 
-    // pwn::utils::DebugBreak();
+    // Utils::DebugBreak();
 
     info(L"sending syscall...");
     Status = NtSetInformationProcess(
@@ -134,14 +131,14 @@ wmain(const int argc, const wchar_t** argv) -> int
         encoded_buffer.data(),
         encoded_buffer.size());
 
-    pwn::log::ntperror(L"NtSetInformationProcess()", Status);
+    Log::ntperror(L"NtSetInformationProcess()", Status);
 
 
     /*
 
     // dbg(L"started self");
     // {
-    //     auto p = pwn::windows::process::Process();
+    //     auto p = windows::process::Process();
     //     info(L"pid={}, ppid={}, cmdline='{}' integrity={}", p.pid(), p.ppid(), p.Path().c_str(), p.integrity());
 
     //     auto res = p.memory().allocate(0x1000);
@@ -159,13 +156,13 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     // dbg(L"started notepad");
     // {
-    //     auto res = pwn::windows::system::PidOf(L"Notepad.exe");
+    //     auto res = windows::system::PidOf(L"Notepad.exe");
     //     if ( Success(res) )
     //     {
     //         auto pids = Value(res);
     //         if ( pids.size() > 0 )
     //         {
-    //             auto p = pwn::windows::process::Process(pids.front());
+    //             auto p = windows::process::Process(pids.front());
     //             info(L"pid={}, ppid={}, cmdline='{}' integrity={}", p.pid(), p.ppid(), p.Path().c_str(),
     //             p.integrity()); info(L"TEB={:#x}, PEB={:#x}", (PVOID)p.teb(), (PVOID)p.peb());
     //         }
@@ -179,7 +176,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     // dbg(L"ended notepad");
 
 
-    // pwn::utils::Pause();
+    // Utils::Pause();
     return EXIT_SUCCESS;
     */
 }

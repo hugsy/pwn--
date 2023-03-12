@@ -28,7 +28,7 @@ option(PWN_BUILD_DOCS "Generate the Doxygen API files" OFF)
 option(PWN_ENABLE_LUA_BACKDOOR "Enable Lua scripting for backdoor" OFF)
 
 set(PWNLIB_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
-set(PWNLIB_DEPS_DIR ${PWNLIB_ROOT_DIR}/deps)
+set(PWNLIB_DEPS_DIR ${PWNLIB_ROOT_DIR}/Deps)
 
 set(PWN_INCLUDE_DISASSEMBLER FALSE)
 
@@ -42,55 +42,104 @@ if(PWN_DISASSEMBLE_X86)
     option(ZYDIS_BUILD_EXAMPLES "" OFF)
     cmake_policy(PUSH)
     set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
-    add_subdirectory(${PWNLIB_DEPS_DIR}/zydis)
+    add_subdirectory(${PWNLIB_DEPS_DIR}/zydis EXCLUDE_FROM_ALL)
     cmake_policy(POP)
     set(PWN_INCLUDE_DISASSEMBLER TRUE)
+    add_library(PWN::Deps::Zydis ALIAS Zydis)
+
+    install(TARGETS Zydis DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Library)
+    install(DIRECTORY $<TARGET_PROPERTY:Zydis,INTERFACE_DIRECTORIES> DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Include)
 endif()
 
 if(PWN_DISASSEMBLE_ARM64)
     option(BUILD_SHARED_LIBS "" OFF)
-    add_subdirectory(${PWNLIB_DEPS_DIR}/arch-arm64)
+    add_subdirectory(${PWNLIB_DEPS_DIR}/arch-arm64 EXCLUDE_FROM_ALL)
     set(PWN_INCLUDE_DISASSEMBLER TRUE)
+    add_library(PWN::Deps::BinjaArm64 ALIAS disass_arch_arm64)
+
+    install(TARGETS disass_arch_arm64 DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Library)
+    install(DIRECTORY $<TARGET_PROPERTY:disass_arch_arm64,INTERFACE_DIRECTORIES> DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Include)
+
+    # TODO replace with mainstream
 endif()
 
-#
-# Use ProcessHacker headers for Windows building
-#
-if(MSVC)
-    add_subdirectory(${PWNLIB_DEPS_DIR}/phnt)
-endif(MSVC)
+if(WIN32)
+    add_subdirectory(${PWNLIB_DEPS_DIR}/phnt EXCLUDE_FROM_ALL)
+    add_library(PWN::Deps::PHNT ALIAS phnt)
+    install(DIRECTORY $<TARGET_PROPERTY:phnt,INTERFACE_DIRECTORIES> DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Include)
+endif(WIN32)
 
-#
-# Build and link the LUA VM for the process backdoor
-#
 if(PWN_ENABLE_LUA_BACKDOOR)
     option(BUILD_SHARED_LIBS "" OFF)
-    add_subdirectory(${PWNLIB_DEPS_DIR}/lua)
+    add_subdirectory(${PWNLIB_DEPS_DIR}/lua EXCLUDE_FROM_ALL)
+
+    # install(TARGETS lua DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Library)
+    install(TARGETS lua-header DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Include)
 endif()
 
 #
-# Build library
+# Build the modules
 #
-add_subdirectory(src)
+list(APPEND PWN_MODULES
+    Common
 
-#
-# Build unit tests
-#
+    Assembly
+    Backdoor
+    Binary
+    Crypto
+    CTF
+    FileSystem
+    Network
+    Process
+    Registry
+    Remote
+    Security
+    Service
+    Shellcode
+    Symbols
+    System
+
+    # TODO : ideas for future modules
+    # - Win32/WTS
+)
+
+add_subdirectory(Modules)
+
+add_subdirectory(pwn++)
+
 if(PWN_BUILD_TESTING)
     include(CTest)
-    add_subdirectory(tests)
+
+    add_library(Deps_Catch2 INTERFACE)
+    target_include_directories(Deps_Catch2 INTERFACE ${PWNLIB_DEPS_DIR}/Catch2)
+
+    if(MSVC)
+        target_compile_definitions(Deps_Catch2 INTERFACE CATCH_CONFIG_NO_WINDOWS_SEH)
+    else()
+        target_compile_definitions(Deps_Catch2 INTERFACE _GNU_SOURCE=1)
+    endif(MSVC)
+
+    add_library(PWN::Deps::Catch2 ALIAS Deps_Catch2)
+
+    enable_testing()
 endif()
 
-#
-# Build toolkit
-#
 if(PWN_BUILD_TOOLKIT)
-    add_subdirectory(tools)
+    add_library(Deps_ArgParse INTERFACE EXCLUDE_FROM_ALL)
+    add_library(PWN::Deps::ArgParse ALIAS Deps_ArgParse)
+    target_compile_features(Deps_ArgParse INTERFACE cxx_std_17)
+    target_include_directories(Deps_ArgParse INTERFACE $<BUILD_INTERFACE:${PWNLIB_DEPS_DIR}/argparse>)
+
+    if(WIN32)
+        add_subdirectory(Tools/Win32)
+    else()
+        add_subdirectory(Tools/Linux)
+    endif(WIN32)
 endif()
 
 #
-# Build dics
+# Build docs
 #
 if(PWN_BUILD_DOCS)
-    add_subdirectory(docs)
+    add_subdirectory(Docs)
 endif()
