@@ -4,6 +4,10 @@ endif()
 
 project(Backdoor CXX)
 message(STATUS "Configuring module '${PROJECT_NAME}'")
+set(DEPS
+    PWN::Common
+    PWN::Deps::Lua
+)
 
 set(PROJECT_DIR ${PWNLIB_MODULE_DIR}/${PROJECT_NAME})
 set(INTERFACE_DIR ${PROJECT_DIR}/Include)
@@ -13,13 +17,14 @@ set(TEST_DIR ${PROJECT_DIR}/Tests)
 
 list(APPEND SOURCE_FILES
 
-    ${SOURCE_DIR}/Backdoor.cpp)
+    ${SOURCE_DIR}/Backdoor.cpp
+)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
-add_dependencies(${PROJECT_NAME} PWN::Common PWN::Deps::Lua)
+add_dependencies(${PROJECT_NAME} ${DEPS})
 add_library(PWN::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
-target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common PWN::Deps::Lua)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${DEPS})
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 

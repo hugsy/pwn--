@@ -1,11 +1,11 @@
 #include <catch.hpp>
 
+#if defined(PWN_INCLUDE_DISASSEMBLER)
 #include "Context.hpp"
 #include "Disassembler.hpp"
 
 using namespace pwn;
 
-#if defined(PWN_INCLUDE_DISASSEMBLER)
 TEST_CASE("Disassemble", "[Assembly]")
 {
 #ifdef PWN_DISASSEMBLE_X86

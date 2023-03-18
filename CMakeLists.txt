@@ -38,8 +38,6 @@ set(CMAKE_INSTALL_INCLUDEDIR Include)
 list(APPEND PWN_MODULES
     Common
 
-    # Assembly
-    # Backdoor
     Binary
     Crypto
     CTF
@@ -144,9 +142,6 @@ if(PWN_BUILD_TOOLKIT)
     endif(WIN32)
 endif()
 
-#
-# Build docs
-#
 if(PWN_BUILD_DOCS)
     add_subdirectory(Docs)
 endif()
