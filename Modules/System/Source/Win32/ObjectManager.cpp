@@ -1,8 +1,8 @@
 #include "Win32/ObjectManager.hpp"
 
-#include "API.hpp"
 #include "Handle.hpp"
 #include "Log.hpp"
+#include "Win32/API.hpp"
 #include "Win32/System.hpp"
 
 using namespace pwn;

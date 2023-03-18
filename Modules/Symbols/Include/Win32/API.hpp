@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Resolver.hpp"
+#include "Win32/Resolver.hpp"
 
 namespace pwn::Resolver::ntdll
 {

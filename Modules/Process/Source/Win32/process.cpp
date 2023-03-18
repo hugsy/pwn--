@@ -8,10 +8,10 @@
 #include <tlhelp32.h>
 #include <userenv.h>
 
-#include "Api.hpp"
 #include "Handle.hpp"
 #include "Log.hpp"
 #include "Utils.hpp"
+#include "Win32/API.hpp"
 #include "Win32/System.hpp"
 #include "Win32/Thread.hpp"
 

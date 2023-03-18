@@ -2,8 +2,8 @@
 
 #include <Rpc.h>
 
-#include "API.hpp"
 #include "Common.hpp"
+#include "Win32/API.hpp"
 
 ///
 ///

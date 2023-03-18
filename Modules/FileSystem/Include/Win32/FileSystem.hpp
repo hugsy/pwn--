@@ -6,8 +6,8 @@
 
 #include "Common.hpp"
 #include "Handle.hpp"
-#include "Resolver.hpp"
 #include "Utils.hpp"
+#include "Win32/Resolver.hpp"
 
 /*
 

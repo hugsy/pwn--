@@ -1,6 +1,6 @@
 #include <catch.hpp>
 
-#include "Symbols.hpp"
+#include "Win32/Symbols.hpp"
 
 #define NS "pwn::windows::Symbols"
 

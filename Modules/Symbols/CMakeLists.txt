@@ -12,7 +12,7 @@ set(HEADER_DIR ${SOURCE_DIR}/Include)
 set(TEST_DIR ${PROJECT_DIR}/Tests)
 list(APPEND SOURCE_FILES
 
-    ${SOURCE_DIR}/Symbols.cpp
+    ${SOURCE_DIR}/Win32/Symbols.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
