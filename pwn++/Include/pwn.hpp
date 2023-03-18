@@ -95,7 +95,7 @@ constexpr struct
 ///
 ///@brief
 ///
-constexpr std::array<std::wstring_view, 16> Modules;
+constexpr std::array<std::wstring_view, 15> Modules;
 // clang-format on
 
 

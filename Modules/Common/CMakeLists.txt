@@ -1,5 +1,4 @@
 project(Common CXX)
-
 message(STATUS "Configuring module '${PROJECT_NAME}'")
 
 set(PROJECT_DIR ${PWNLIB_MODULE_DIR}/${PROJECT_NAME})
@@ -18,8 +17,6 @@ if(WIN32)
         ${SOURCE_DIR}/Utils.cpp
     )
 else()
-    list(APPEND SOURCE_FILES
-    )
 endif()
 
 #
@@ -55,7 +52,6 @@ target_compile_options(${PROJECT_NAME}
     $<$<NOT:$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>>:$<$<CONFIG:Debug>:/fsanitize=address>>
     /diagnostics:caret /ZH:SHA_256
 
-    # /Zl
     PRIVATE
 )
 

@@ -1,13 +1,8 @@
-.vs
 .vscode
-build
-Build-Linux
-Build-Win32
+Build*
 pwn++/Include/pwn_export.hpp
 pwn++/Include/constants.hpp
-pwn++/_build
-pwn++/_build
-untracked/
+pwn++/Include/pwn.hpp
 Docs/Doxyfile
 Docs/Doxyfile.*
 Docs/api/

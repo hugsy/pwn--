@@ -6,14 +6,31 @@ set(INTERFACE_DIR ${PROJECT_DIR}/Include)
 set(SOURCE_DIR ${PROJECT_DIR}/Source)
 set(HEADER_DIR ${SOURCE_DIR}/Include)
 set(TEST_DIR ${PROJECT_DIR}/Tests)
-list(APPEND SOURCE_FILES ${SOURCE_DIR}/Disassembler.cpp)
 
-add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
+add_library(${PROJECT_NAME} STATIC)
 add_dependencies(${PROJECT_NAME} PWN::Common)
 add_library(PWN::Assembly ALIAS ${PROJECT_NAME})
-target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE $<TARGET_PROPERTY:PWN::Deps::BinjaArm64,INCLUDE_DIRECTORIES>)
-target_compile_definitions(${PROJECT_NAME} PUBLIC PWN_INCLUDE_DISASSEMBLER PWN_DISASSEMBLE_X86 PWN_DISASSEMBLE_ARM64)
-target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common PWN::Deps::Zydis PWN::Deps::BinjaArm64)
+
+if(PWN_INCLUDE_DISASSEMBLER)
+    list(APPEND SOURCE_FILES ${SOURCE_DIR}/Disassembler.cpp)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC PWN_INCLUDE_DISASSEMBLER)
+
+    if(PWN_DISASSEMBLE_X86)
+        target_compile_definitions(${PROJECT_NAME} PUBLIC PWN_DISASSEMBLE_X86)
+        target_include_directories(${PROJECT_NAME} PRIVATE $<TARGET_PROPERTY:PWN::Deps::Zydis,INCLUDE_DIRECTORIES>)
+        target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Deps::Zydis)
+    endif(PWN_DISASSEMBLE_X86)
+
+    if(PWN_DISASSEMBLE_ARM64)
+        target_compile_definitions(${PROJECT_NAME} PUBLIC PWN_DISASSEMBLE_ARM64)
+        target_include_directories(${PROJECT_NAME} PRIVATE $<TARGET_PROPERTY:PWN::Deps::BinjaArm64,INCLUDE_DIRECTORIES>)
+        target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Deps::BinjaArm64)
+    endif(PWN_DISASSEMBLE_ARM64)
+endif(PWN_INCLUDE_DISASSEMBLER)
+
+target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_FILES})
+target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR})
+target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common)
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 

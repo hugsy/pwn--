@@ -35,59 +35,11 @@ set(CMAKE_INSTALL_LIBDIR Library)
 set(CMAKE_INSTALL_BINDIR Binary)
 set(CMAKE_INSTALL_INCLUDEDIR Include)
 
-if(PWN_DISASSEMBLE_X86)
-    option(ZYCORE_BUILD_SHARED_LIB "" OFF)
-    option(ZYDIS_BUILD_TOOLS "" OFF)
-    option(ZYDIS_BUILD_EXAMPLES "" OFF)
-    option(ZYDIS_BUILD_SHARED_LIB "" OFF)
-    option(ZYDIS_FEATURE_ENCODER "" OFF)
-    option(ZYDIS_BUILD_DOXYGEN "" OFF)
-    option(ZYDIS_BUILD_EXAMPLES "" OFF)
-    cmake_policy(PUSH)
-    set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
-    add_subdirectory(${PWNLIB_DEPS_DIR}/zydis)
-    cmake_policy(POP)
-    set(PWN_INCLUDE_DISASSEMBLER TRUE)
-    add_library(PWN::Deps::Zydis ALIAS Zydis)
-
-    install(TARGETS Zydis DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Library)
-    install(DIRECTORY $<TARGET_PROPERTY:Zydis,INTERFACE_DIRECTORIES> DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Include)
-endif()
-
-if(PWN_DISASSEMBLE_ARM64)
-    option(BUILD_SHARED_LIBS "" OFF)
-    add_subdirectory(${PWNLIB_DEPS_DIR}/arch-arm64)
-    set(PWN_INCLUDE_DISASSEMBLER TRUE)
-    add_library(PWN::Deps::BinjaArm64 ALIAS disass_arch_arm64)
-
-    install(TARGETS disass_arch_arm64 DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Library)
-    install(DIRECTORY $<TARGET_PROPERTY:disass_arch_arm64,INTERFACE_DIRECTORIES> DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Include)
-
-    # TODO replace with mainstream
-endif()
-
-if(WIN32)
-    add_subdirectory(${PWNLIB_DEPS_DIR}/phnt)
-    add_library(PWN::Deps::PHNT ALIAS phnt)
-    install(DIRECTORY $<TARGET_PROPERTY:phnt,INTERFACE_DIRECTORIES> DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Include)
-endif(WIN32)
-
-if(PWN_ENABLE_LUA_BACKDOOR)
-    option(BUILD_SHARED_LIBS "" OFF)
-    add_subdirectory(${PWNLIB_DEPS_DIR}/lua)
-
-    # install(TARGETS lua DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Library)
-    install(TARGETS lua-header DESTINATION ${CMAKE_PROJECT_NAME}/Dependencies/Include)
-endif()
-
-#
-# Build the modules
-#
 list(APPEND PWN_MODULES
     Common
 
-    Assembly
-    Backdoor
+    # Assembly
+    # Backdoor
     Binary
     Crypto
     CTF
@@ -105,6 +57,58 @@ list(APPEND PWN_MODULES
     # TODO : ideas for future modules
     # - Win32/WTS
 )
+
+if(PWN_DISASSEMBLE_X86)
+    option(ZYCORE_BUILD_SHARED_LIB "" OFF)
+    option(ZYDIS_BUILD_TOOLS "" OFF)
+    option(ZYDIS_BUILD_EXAMPLES "" OFF)
+    option(ZYDIS_BUILD_SHARED_LIB "" OFF)
+    option(ZYDIS_FEATURE_ENCODER "" OFF)
+    option(ZYDIS_BUILD_DOXYGEN "" OFF)
+    option(ZYDIS_BUILD_EXAMPLES "" OFF)
+    cmake_policy(PUSH)
+    set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+    add_subdirectory(${PWNLIB_DEPS_DIR}/zydis)
+    cmake_policy(POP)
+    set(PWN_INCLUDE_DISASSEMBLER TRUE)
+    add_library(PWN::Deps::Zydis ALIAS Zydis)
+
+    install(TARGETS Zydis DESTINATION ${PROJECT_NAME}/Dependencies/Library)
+    install(DIRECTORY $<TARGET_PROPERTY:Zydis,INTERFACE_DIRECTORIES> DESTINATION ${PROJECT_NAME}/Dependencies/Include)
+endif()
+
+if(PWN_DISASSEMBLE_ARM64)
+    option(BUILD_SHARED_LIBS "" OFF)
+    add_subdirectory(${PWNLIB_DEPS_DIR}/arch-arm64)
+    set(PWN_INCLUDE_DISASSEMBLER TRUE)
+    add_library(PWN::Deps::BinjaArm64 ALIAS disass_arch_arm64)
+
+    install(TARGETS disass_arch_arm64 DESTINATION ${PROJECT_NAME}/Dependencies/Library)
+    install(DIRECTORY $<TARGET_PROPERTY:disass_arch_arm64,INTERFACE_DIRECTORIES> DESTINATION ${PROJECT_NAME}/Dependencies/Include)
+
+    # TODO replace with mainstream
+endif()
+
+if(WIN32)
+    add_subdirectory(${PWNLIB_DEPS_DIR}/phnt)
+    add_library(PWN::Deps::PHNT ALIAS phnt)
+    install(DIRECTORY $<TARGET_PROPERTY:phnt,INTERFACE_DIRECTORIES> DESTINATION ${PROJECT_NAME}/Dependencies/Include)
+endif(WIN32)
+
+if(PWN_ENABLE_LUA_BACKDOOR)
+    option(BUILD_SHARED_LIBS "" OFF)
+    add_subdirectory(${PWNLIB_DEPS_DIR}/lua)
+    add_library(PWN::Deps::Lua ALIAS lua)
+
+    install(TARGETS lua DESTINATION ${PROJECT_NAME}/Dependencies/Library)
+    install(TARGETS lua-header DESTINATION ${PROJECT_NAME}/Dependencies/Include)
+
+    list(APPEND PWN_MODULES Backdoor)
+endif()
+
+if(PWN_INCLUDE_DISASSEMBLER)
+    list(APPEND PWN_MODULES Assembly)
+endif(PWN_INCLUDE_DISASSEMBLER)
 
 add_subdirectory(Modules)
 
