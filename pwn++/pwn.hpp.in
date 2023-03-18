@@ -34,7 +34,7 @@
 
 #include "CTF/Win32/Remote.hpp"
 #include "CTF/Win32/Process.hpp"
-#elif defined(PWN_BUILD_FOR_WINDOWS)
+#elif defined(PWN_BUILD_FOR_LINUX)
 // TODO
 #endif // PWN_BUILD_FOR_WINDOWS
 // clang-format on
