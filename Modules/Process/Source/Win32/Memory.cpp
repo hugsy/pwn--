@@ -57,7 +57,7 @@ Memory::Write(uptr const Address, std::vector<u8> data)
         return Err(ErrorCode::NotInitialized);
     }
 
-    usize dwNbWritten;
+    usize dwNbWritten {};
     if ( ::WriteProcessMemory(
              m_ProcessHandle->get(),
              reinterpret_cast<LPVOID>(Address),
@@ -297,4 +297,4 @@ Memory::Search(std::vector<u8> const& Pattern)
 
 #pragma endregion Process::Memory
 
-} // namespace Process
+} // namespace pwn::Process

@@ -296,7 +296,7 @@ ExternalImport(
 } // namespace pwn::Resolver::ntdll
 
 
-namespace Resolver::kernel32
+namespace pwn::Resolver::kernel32
 {
 ExternalImport(
     "kernel32.dll",
@@ -309,6 +309,66 @@ ExternalImport(
     DWORD dwCreationDisposition,
     DWORD dwFlagsAndAttributes,
     HANDLE hTemplateFile);
+} // namespace pwn::Resolver::kernel32
 
 
-} // namespace Resolver::kernel32
+namespace pwn::Resolver::dbghelp
+{
+
+ExternalImport("dbghelp.dll", SymSetOptions, DWORD, DWORD SymOptions);
+
+
+ExternalImport("dbghelp.dll", SymInitializeW, BOOL, HANDLE hProcess, PWSTR UserSearchPath, BOOL fInvadeProcess);
+
+
+ExternalImport(
+    "dbghelp.dll",
+    SymEnumerateModulesW64,
+    BOOL,
+    HANDLE hProcess,
+    PVOID EnumModulesCallback,
+    PVOID UserContext);
+
+
+ExternalImport(
+    "dbghelp.dll",
+    SymLoadModuleExW,
+    ULONG_PTR,
+    HANDLE hProcess,
+    HANDLE hFile,
+    PCWSTR ImageName,
+    PCWSTR ModuleName,
+    DWORD64 BaseOfDll,
+    DWORD DllSize,
+    PVOID ModLoadData,
+    DWORD Flags);
+
+
+ExternalImport(
+    "dbghelp.dll",
+    SymEnumSymbolsW,
+    BOOL,
+    HANDLE hProcess,
+    ULONG64 BaseOfDll,
+    PCWSTR Mask,
+    PVOID EnumSymbolsCallback,
+    PVOID UserContext);
+
+
+ExternalImport("dbghelp.dll", SymFromNameW, BOOL, HANDLE hProcess, PCWSTR Name, PVOID /* SYMBOL_INFOW* */ Symbol);
+
+
+ExternalImport(
+    "dbghelp.dll",
+    SymFromAddrW,
+    BOOL,
+    HANDLE hProcess,
+    uptr Address,
+    uptr* Displacement,
+    PVOID /* Symbols::SYMBOL_INFOW* */ Symbol);
+
+
+ExternalImport("dbghelp.dll", SymSetSearchPathW, BOOL, HANDLE hProcess, PCTSTR SearchPath);
+
+
+} // namespace pwn::Resolver::dbghelp

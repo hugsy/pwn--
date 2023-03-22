@@ -19,11 +19,9 @@ if(WIN32)
         ${SOURCE_DIR}/Win32/Memory.cpp
         ${SOURCE_DIR}/Win32/ThreadGroup.cpp
 
-        $<$<BOOL:0>:${CMAKE_GENERATOR_PLATFORM}>
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${SOURCE_DIR}/Win32/asm/x64/get_teb.asm>
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${SOURCE_DIR}/Win32/asm/x86/get_teb.asm>
-
-        # $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>:${SOURCE_DIR}/asm/arm64/get_teb.asm>
+        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>:${SOURCE_DIR}/asm/arm64/get_teb.asm>
     )
 else()
 endif()

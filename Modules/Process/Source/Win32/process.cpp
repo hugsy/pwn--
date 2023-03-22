@@ -233,6 +233,7 @@ Process::ProcessEnvironmentBlock()
         //
         // Copy the function from the local process to the remote
         //
+        /*
         const uptr pfnGetPeb     = (uptr)&GetPeb;
         const usize pfnGetPebLen = GetPebLength();
 
@@ -241,6 +242,9 @@ Process::ProcessEnvironmentBlock()
         {
             m_Peb = reinterpret_cast<PPEB>(Value(res));
         }
+        */
+        auto res = Query<PROCESS_BASIC_INFORMATION>(PROCESSINFOCLASS::ProcessBasicInformation);
+        m_Peb    = Value(res)->PebBaseAddress;
     }
 
     //

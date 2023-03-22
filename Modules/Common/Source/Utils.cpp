@@ -421,8 +421,7 @@ PackInt(T v, Endianess e)
 {
     const Endianess endian = (e != Endianess::unknown) ? e : Context.endianess;
     const usize sz         = sizeof(v);
-    std::vector<u8> out;
-    out.resize(sz);
+    std::vector<u8> out(sz);
 
     if ( endian == Endianess::little )
     {
