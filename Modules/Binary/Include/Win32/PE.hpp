@@ -1,6 +1,15 @@
 #pragma once
 
+#include <span>
+
 #include "Common.hpp"
+
+
+template<class... Ts>
+struct overloaded : Ts...
+{
+    using Ts::operator()...;
+};
 
 
 namespace pwn::Binary
@@ -9,19 +18,18 @@ namespace pwn::Binary
 class PE
 {
 public:
-    // TODO finish 32b port
-    using DosHeader = IMAGE_DOS_HEADER;
-    // template<bool x64 = true>
-    // using PeHeader = std::conditional<x64, IMAGE_NT_HEADERS64, IMAGE_NT_HEADERS32>;
-    using PeHeader     = IMAGE_NT_HEADERS64;
-    using PeFileHeader = IMAGE_FILE_HEADER;
-    // template<bool x64 = true>
-    // using PeOptionalHeader = std::conditional<x64, IMAGE_OPTIONAL_HEADER64, IMAGE_OPTIONAL_HEADER32>;
-    using PeOptionalHeader  = IMAGE_OPTIONAL_HEADER64;
-    using PeSectionHeader   = IMAGE_SECTION_HEADER;
-    using PeDataDirectory   = IMAGE_DATA_DIRECTORY;
-    using PeExportDirectory = IMAGE_EXPORT_DIRECTORY;
-    using PeArchitecture    = IMAGE_ARCHITECTURE_ENTRY;
+    using DosHeader          = IMAGE_DOS_HEADER;
+    using PeHeader32         = IMAGE_NT_HEADERS32;
+    using PeHeader64         = IMAGE_NT_HEADERS64;
+    using PeHeader           = std::variant<PeHeader32, PeHeader64>;
+    using PeFileHeader       = IMAGE_FILE_HEADER;
+    using PeOptionalHeader32 = IMAGE_OPTIONAL_HEADER32;
+    using PeOptionalHeader64 = IMAGE_OPTIONAL_HEADER64;
+    using PeOptionalHeader   = std::variant<PeOptionalHeader32, PeOptionalHeader64>;
+    using PeSectionHeader    = IMAGE_SECTION_HEADER;
+    using PeDataDirectory    = IMAGE_DATA_DIRECTORY;
+    using PeExportDirectory  = IMAGE_EXPORT_DIRECTORY;
+    using PeArchitecture     = IMAGE_ARCHITECTURE_ENTRY;
 
     struct PeExportEntry
     {
@@ -85,14 +93,6 @@ public:
         return m_DosHeader;
     }
 
-
-    PeHeader const&
-    Header() const
-    {
-        return m_PeHeader;
-    }
-
-
     bool
     Is64b() const
     {
@@ -100,17 +100,10 @@ public:
     }
 
 
-    PeFileHeader const&
-    FileHeader() const
+    PeHeader const&
+    Header() const
     {
-        return Header().FileHeader;
-    }
-
-
-    PeOptionalHeader const&
-    OptionalHeader() const
-    {
-        return Header().OptionalHeader;
+        return m_PeHeader;
     }
 
 
@@ -137,9 +130,8 @@ public:
     std::vector<PeExportEntry> const&
     ExportTable() const
     {
-        return m_PeExportTable;
+        return m_PeExportDirectory.Entries;
     }
-
 
 private:
     bool
@@ -166,7 +158,6 @@ private:
     {
         return Offset - Base();
     }
-
 
     PE::PeSectionHeader*
     FirstSection();
@@ -239,20 +230,43 @@ private:
     FillComDescriptor();
 
 
-    std::optional<PE::PeSectionHeader>
+    ///
+    ///@brief Find a section header from a relative virtual address
+    ///
+    ///@param Rva
+    ///@return Result<PE::PeSectionHeader>
+    ///
+    Result<PE::PeSectionHeader>
     FindSectionFromRva(uptr Rva);
 
 
+    ///
+    ///@brief Given a relative virtual address and a directory index, determine the virtual address
+    ///
+    ///@param Rva
+    ///@param DirectoryIndex
+    ///@return uptr
+    ///
+    uptr
+    GetVirtualAddress(uptr Rva, u8 DirectoryIndex);
+
+
     bool m_IsValid {false};
+    uptr m_MaxPeVa {0};
     DosHeader m_DosHeader {};
     PeHeader m_PeHeader {};
-    uptr m_NtBase {0};
+    uptr m_DosBase {0}, m_NtBase {0};
     bool m_Is64b {false};
     std::vector<PeDataDirectory> m_PeDataDirectories {};
     std::vector<PeSectionHeader> m_PeSections {};
-    PeExportDirectory m_PeExportDirectory {};
-    std::vector<PeExportEntry> m_PeExportTable {};
+
+    struct
+    {
+        PeExportDirectory Header;
+        std::vector<PeExportEntry> Entries;
+    } m_PeExportDirectory {};
+
     PeArchitecture m_PeArchitecture;
 };
 
-} // namespace Binary
+} // namespace pwn::Binary

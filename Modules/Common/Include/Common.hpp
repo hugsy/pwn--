@@ -1,5 +1,14 @@
 #pragma once
 
+#include <array>
+#include <chrono>
+#include <filesystem>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <type_traits>
+
 #include "Error.hpp"
 
 #define __STR(x) #x
@@ -12,28 +21,20 @@
 
 
 #if defined(PWN_BUILD_FOR_WINDOWS)
-#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #define UMDF_USING_NTSTATUS
 
 // Windows Header Files
 #pragma warning(push)
 #pragma warning(disable : 4005) // Disable macro re-definition warnings
-
 // clang-format off
 #include <phnt_windows.h>
 #include <phnt.h>
 // clang-format on
-
 #pragma warning(pop)
-
 
 #ifndef UNREFERENCED_PARAMETER
 #define UNREFERENCED_PARAMETER(x) ((void)x)
 #endif // UNREFERENCED_PARAMETER
-
-#ifndef UnusedParameter
-#define UnusedParameter UNREFERENCED_PARAMETER
-#endif // UnusedParameter
 
 #elif defined(PWN_BUILD_FOR_LINUX)
 
@@ -60,11 +61,15 @@
 #define MAX_PATH 260
 #endif // MAX_PATH
 
-#ifndef UnusedParameter
-#define UnusedParameter(x) (void)(x)
-#endif // UnusedParameter
+#ifndef UNREFERENCED_PARAMETER
+#define UNREFERENCED_PARAMETER(x) ((void)x)
+#endif // UNREFERENCED_PARAMETER
 
-#endif
+#endif // defined(PWN_BUILD_FOR_LINUX)
+
+#ifndef UnusedParameter
+#define UnusedParameter UNREFERENCED_PARAMETER
+#endif // UnusedParameter
 
 #ifndef PWN_DEPRECATED
 #define PWN_DEPRECATED __declspec(deprecated)
@@ -84,24 +89,17 @@
 #endif
 
 
-using u8  = std::uint8_t;
-using u16 = std::uint16_t;
-using u32 = std::uint32_t;
-using u64 = std::uint64_t;
-using i8  = std::int8_t;
-using i16 = std::int16_t;
-using i32 = std::int32_t;
-using i64 = std::int64_t;
-
-#if defined(PWN_BUILD_FOR_WINDOWS)
-using uptr  = ULONG_PTR;
-using usize = SIZE_T;
-using ssize = SSIZE_T;
-#elif defined(PWN_BUILD_FOR_LINUX)
-using uptr  = uintptr_t;
-using usize = size_t;
-using ssize = ssize_t;
-#endif
+using u8    = std::uint8_t;
+using u16   = std::uint16_t;
+using u32   = std::uint32_t;
+using u64   = std::uint64_t;
+using i8    = std::int8_t;
+using i16   = std::int16_t;
+using i32   = std::int32_t;
+using i64   = std::int64_t;
+using usize = std::size_t;
+using ssize = std::intptr_t;
+using uptr  = std::uintptr_t;
 
 #ifndef UnreferencedParameter
 #define UnreferencedParameter(x) ((void)(x))

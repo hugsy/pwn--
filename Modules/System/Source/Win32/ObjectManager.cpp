@@ -1,5 +1,7 @@
 #include "Win32/ObjectManager.hpp"
 
+#include <span>
+
 #include "Handle.hpp"
 #include "Log.hpp"
 #include "Win32/API.hpp"

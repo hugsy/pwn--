@@ -1,5 +1,6 @@
 #include "Crypto.hpp"
 
+#include "Handle.hpp"
 #include "Log.hpp"
 
 using namespace pwn;
@@ -71,6 +72,7 @@ Crypto::crc64(std::vector<u8> const& data)
 #ifdef PWN_BUILD_FOR_WINDOWS
 #include <bcrypt.h>
 
+
 template<typename T>
 static T
 Hash(std::vector<u8> const& data, LPCWSTR const AlgoId)
@@ -133,6 +135,85 @@ std::array<u8, Crypto::SHA512LEN>
 Crypto::sha512(std::vector<u8> const& data)
 {
     return Hash<std::array<u8, Crypto::SHA512LEN>>(data, BCRYPT_SHA512_ALGORITHM);
+}
+
+template<typename T>
+static T
+Encrypt(std::array<u8, 32> const& Key, std::array<u8, 16> const& IV, std::vector<u8> Buffer)
+{
+    /*
+    BCRYPT_ALG_HANDLE hAlg = nullptr;
+    BCRYPT_KEY_HANDLE hKey = nullptr;
+    NTSTATUS Status        = STATUS_UNSUCCESSFUL;
+
+    if ( !NT_SUCCESS(status = ::BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_AES_ALGORITHM, NULL, 0)) )
+    {
+        std::cout << "**** Error 0x%x returned by BCryptOpenAlgorithmProvider\n" << status;
+        goto Cleanup;
+    }
+
+    // Generate a symmetric key
+    if ( !NT_SUCCESS(
+             status = BCryptGenerateSymmetricKey(hAlg, &hKey, NULL, 0, (PUCHAR) "password", sizeof("password"), 0)) )
+    {
+        std::cout << "**** Error 0x%x returned by BCryptGenerateSymmetricKey\n" << status;
+        goto Cleanup;
+    }
+
+    // Encrypt data
+    PUCHAR pbData       = (PUCHAR) "Hello World!";
+    ULONG cbData        = sizeof("Hello World!");
+    ULONG cbCipherText  = 0;
+    PUCHAR pbCipherText = NULL;
+
+    if ( !NT_SUCCESS(status = BCryptEncrypt(hKey, pbData, cbData, NULL, NULL, 0, NULL, 0, &cbCipherText, 0)) )
+    {
+        std::cout << "**** Error 0x%x returned by BCryptEncrypt\n" << status;
+        goto Cleanup;
+    }
+
+    pbCipherText = (PUCHAR)HeapAlloc(GetProcessHeap(), 0, cbCipherText);
+    if ( NULL == pbCipherText )
+    {
+        std::cout << "**** memory allocation failed\n";
+        goto Cleanup;
+    }
+
+    if ( !NT_SUCCESS(
+             status =
+                 BCryptEncrypt(hKey, pbData, cbData, NULL, NULL, 0, pbCipherText, cbCipherText, &cbCipherText, 0)) )
+    {
+        std::cout << "**** Error 0x%x returned by BCryptEncrypt\n" << status;
+        goto Cleanup;
+    }
+
+    if ( hAlg )
+    {
+        BCryptCloseAlgorithmProvider(hAlg, 0);
+    }
+
+    if ( hKey )
+    {
+        BCryptDestroyKey(hKey);
+    }
+
+    if ( pbCipherText )
+    {
+        HeapFree(GetProcessHeap(), 0, pbCipherText);
+        pbCipherText = NULL;
+        cbCipherText = 0;
+    }
+    */
+    T out;
+    return out;
+}
+
+
+Result<std::vector<u8>>
+EncryptAES256(std::array<u8, 32> const& Key, std::array<u8, 16> const& IV, std::vector<u8> Buffer)
+{
+    std::vector<u8> EncryptedBuffer;
+    return Ok(EncryptedBuffer);
 }
 
 #else

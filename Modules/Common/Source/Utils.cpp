@@ -319,7 +319,7 @@ Base64::Encode(const u8* in, const usize len) -> Result<std::string>
         out[j + 3] = (i + 2 < len) ? b64_charset[v & 0x3F] : '=';
     }
 
-    return std::string(reinterpret_cast<char*>(out), elen);
+    return Ok(std::string(reinterpret_cast<char*>(out), elen));
 }
 
 

@@ -2,14 +2,14 @@
 
 #include "Win32/FileSystem.hpp"
 
+
 namespace pwn::Binary
 {
 
 
 PE::PE(uptr Offset, usize Size)
 {
-    auto SpanView = std::span<u8> {(u8*)Offset, Size};
-    m_IsValid     = ParsePeFromMemory(SpanView);
+    m_IsValid = ParsePeFromMemory(std::span<u8> {(u8*)Offset, Size});
 }
 
 
@@ -41,11 +41,12 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
     //
     // Parse the DOS header
     //
-    if ( View[0] != 'M' || View[1] != 'Z' )
+    if ( View[0] != 'M' || View[1] != 'Z' || View.size() < sizeof(DosHeader) )
     {
         return false;
     }
 
+    m_DosBase = (uptr)View.data();
     ::memcpy(&m_DosHeader, View.data(), sizeof(DosHeader));
 
     //
@@ -56,26 +57,59 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
     //
     // Parse the PE header
     //
-    auto PeView = View.subspan(m_DosHeader.e_lfanew);
-    if ( PeView[0] != 'P' || PeView[1] != 'E' )
+    auto PeView     = View.subspan(m_DosHeader.e_lfanew);
+    const u32 Magic = *((u32*)&PeView[0]);
+    if ( Magic != IMAGE_NT_SIGNATURE )
     {
         return false;
     }
 
-    const u16 MachineCode = *((u16*)&PeView[2]);
-    m_Is64b               = [&MachineCode]()
+    const u16 MachineCode         = *((u16*)&PeView[4]);
+    const bool IsMachineSupported = [&MachineCode, this]()
     {
         switch ( MachineCode )
         {
+        case IMAGE_FILE_MACHINE_ARM:
+        case IMAGE_FILE_MACHINE_I386:
+            this->m_Is64b = false;
+            return true;
+
         case IMAGE_FILE_MACHINE_AMD64:
         case IMAGE_FILE_MACHINE_ARM64:
+            this->m_Is64b = true;
             return true;
         };
         return false;
     }();
+    if ( !IsMachineSupported )
+    {
+        return false;
+    }
 
-    m_NtBase = (uptr)PeView.data();
-    ::memcpy(&m_PeHeader, PeView.data(), sizeof(PeHeader));
+    // Copy the PE header, specialize the variant `m_PeHeader`
+    {
+        m_NtBase = (uptr)PeView.data();
+        if ( !m_Is64b )
+        {
+            PeHeader32 pe {};
+            if ( PeView.size() < sizeof(pe) )
+                return false;
+
+            ::memcpy(&pe, PeView.data(), sizeof(pe));
+            m_PeHeader = std::move(pe);
+        }
+        else
+        {
+            PeHeader64 pe {};
+            if ( PeView.size() < sizeof(pe) )
+                return false;
+
+            ::memcpy(&pe, PeView.data(), sizeof(pe));
+            m_PeHeader = std::move(pe);
+        }
+    }
+
+    m_MaxPeVa = (uptr)View.data() + View.size();
 
     //
     // Fill up sections and data directories
@@ -119,19 +153,36 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
 PE::PeSectionHeader*
 PE::FirstSection()
 {
-    return (PE::PeSectionHeader*)IMAGE_FIRST_SECTION((PE::PeHeader*)Base());
+    return m_Is64b ? (PE::PeSectionHeader*)IMAGE_FIRST_SECTION((PeHeader64*)Base()) :
+                     (PE::PeSectionHeader*)IMAGE_FIRST_SECTION((PeHeader32*)Base());
 }
+
+#define GetPeField(F)                                                                                                  \
+    [this]()                                                                                                           \
+    {                                                                                                                  \
+        return std::visit(                                                                                             \
+            overloaded {                                                                                               \
+                [](PeHeader32 const& p)                                                                                \
+                {                                                                                                      \
+                    return p.F;                                                                                        \
+                },                                                                                                     \
+                [](PeHeader64 const& p)                                                                                \
+                {                                                                                                      \
+                    return p.F;                                                                                        \
+                }},                                                                                                    \
+            Header());                                                                                                 \
+    }()
 
 
 bool
 PE::FillSections()
 {
-    const u16 NumberOfSections = FileHeader().NumberOfSections;
-    const u32 SymbolTable      = FileHeader().PointerToSymbolTable;
-    const u32 NumberOfSymbols  = FileHeader().NumberOfSymbols;
-    auto SectionSpan           = std::span<PE::PeSectionHeader>(FirstSection(), (usize)NumberOfSections);
+    const u16 NumberOfSections = GetPeField(FileHeader.NumberOfSections);
+    const u32 SymbolTable      = GetPeField(FileHeader.PointerToSymbolTable);
+    const u32 NumberOfSymbols  = GetPeField(FileHeader.NumberOfSymbols);
+    auto SectionView           = std::span<PE::PeSectionHeader>(FirstSection(), (usize)NumberOfSections);
 
-    for ( auto const& Section : SectionSpan )
+    for ( auto const& Section : SectionView )
     {
         m_PeSections.push_back(Section);
     }
@@ -143,20 +194,22 @@ PE::FillSections()
 bool
 PE::FillDataDirectories()
 {
-    auto DataDirectoryBase         = std::addressof(OptionalHeader().DataDirectory);
-    const auto NumberOfRvaAndSizes = MIN(OptionalHeader().NumberOfRvaAndSizes, 16);
+    const IMAGE_DATA_DIRECTORY* const DataDirectory = GetPeField(OptionalHeader.DataDirectory);
+    auto const NumberOfRvaAndSizes =
+        MIN(GetPeField(OptionalHeader.NumberOfRvaAndSizes), IMAGE_NUMBEROF_DIRECTORY_ENTRIES);
 
-    for ( usize i = 1; i < NumberOfRvaAndSizes; i++ )
+    for ( usize i = 0; i < NumberOfRvaAndSizes; i++ )
     {
-        auto DataDirectory = DataDirectoryBase[i];
-        m_PeDataDirectories.push_back(DataDirectory[i]);
+        const IMAGE_DATA_DIRECTORY DataDirectoryEntry = DataDirectory[i];
+        // TODO: add boundary check
+        m_PeDataDirectories.push_back(std::move(DataDirectoryEntry));
     }
 
     return true;
 }
 
 
-std::optional<PE::PeSectionHeader>
+Result<PE::PeSectionHeader>
 PE::FindSectionFromRva(uptr Rva)
 {
     auto const& it = std::find_if(
@@ -164,38 +217,61 @@ PE::FindSectionFromRva(uptr Rva)
         m_PeSections.cend(),
         [&Rva](PE::PeSectionHeader const& s)
         {
-            return Rva <= s.VirtualAddress && s.VirtualAddress < s.Misc.VirtualSize;
+            return (s.VirtualAddress <= Rva && Rva < s.VirtualAddress + s.Misc.VirtualSize);
         });
 
     if ( it == m_PeSections.cend() )
     {
-        return std::nullopt;
+        return Err(ErrorCode::NotFound);
     }
 
     return *it;
 }
 
 
+uptr
+PE::GetVirtualAddress(uptr Rva, u8 DirectoryIndex)
+{
+    if ( DirectoryIndex >= IMAGE_NUMBEROF_DIRECTORY_ENTRIES )
+        return 0;
+    auto res = FindSectionFromRva(m_PeDataDirectories[DirectoryIndex].VirtualAddress);
+    if ( Failed(res) )
+        return 0;
+    auto const& Section = Value(res);
+    return m_DosBase + Rva - static_cast<uptr>(Section.VirtualAddress - Section.PointerToRawData);
+}
+
+
 bool
 PE::FillExportTable()
 {
-    const auto ExportDirectory =
-        VA<IMAGE_EXPORT_DIRECTORY*>(m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress);
+    auto GetExportVa = [this](uptr Rva)
+    {
+        return GetVirtualAddress(Rva, IMAGE_DIRECTORY_ENTRY_EXPORT);
+    };
+
+    const auto& DirectoryExportEntry         = m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_EXPORT];
+    const PeExportDirectory* ExportDirectory = (PeExportDirectory*)GetExportVa(DirectoryExportEntry.VirtualAddress);
+    if ( !ExportDirectory )
+        return false;
+
     ::memcpy(&m_PeExportDirectory, ExportDirectory, sizeof(PeExportDirectory));
-    const auto ExportNameOrdinalTable = VA<u32*>(m_PeExportDirectory.AddressOfNameOrdinals);
-    const auto ExportFunctionTable    = VA<u32*>(m_PeExportDirectory.AddressOfFunctions);
-    const auto ExportNameTable        = VA<u16*>(m_PeExportDirectory.AddressOfNames);
+    const auto ExportNameOrdinalTable = (u16*)GetExportVa(m_PeExportDirectory.Header.AddressOfNameOrdinals);
+    const auto ExportFunctionTable    = (u32*)GetExportVa(m_PeExportDirectory.Header.AddressOfFunctions);
+    const auto ExportNameTable        = (u32*)GetExportVa(m_PeExportDirectory.Header.AddressOfNames);
 
     for ( usize i = 0; i < ExportDirectory->NumberOfFunctions; i++ )
     {
-        PeExportEntry entry {};
-        entry.Ordinal    = *(ExportNameOrdinalTable + i);
-        entry.NameOffset = *(ExportNameTable + i);
-        entry.Rva        = *(ExportFunctionTable + i);
-
-        const char* Name = VA<char*>(entry.NameOffset);
-        entry.Name       = std::string {Name, ::strlen(Name)};
-        m_PeExportTable.push_back(std::move(entry));
+        PeExportEntry entry {
+            .Ordinal    = ExportNameOrdinalTable[i],
+            .Rva        = ExportFunctionTable[i],
+            .NameOffset = ExportNameTable[i],
+        };
+        const char* Name = (char*)GetExportVa(entry.NameOffset);
+        if ( !Name )
+            return false;
+        entry.Name = std::string {Name, MIN(MAX_PATH, ::strlen(Name))};
+        m_PeExportDirectory.Entries.push_back(std::move(entry));
     }
 
     return true;
@@ -319,4 +395,4 @@ PE::FillComDescriptor()
 }
 
 
-} // namespace Binary
+} // namespace pwn::Binary

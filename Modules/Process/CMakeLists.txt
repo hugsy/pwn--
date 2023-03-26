@@ -1,7 +1,7 @@
 project(Process CXX)
 message(STATUS "Configuring module '${PROJECT_NAME}'")
 
-enable_language(C ASM_MASM)
+enable_language(CXX ASM_MASM)
 
 set(PROJECT_DIR ${PWNLIB_MODULE_DIR}/${PROJECT_NAME})
 set(INTERFACE_DIR ${PROJECT_DIR}/Include)
@@ -9,10 +9,8 @@ set(SOURCE_DIR ${PROJECT_DIR}/Source)
 set(HEADER_DIR ${SOURCE_DIR}/Include)
 set(TEST_DIR ${PROJECT_DIR}/Tests)
 
-list(APPEND SOURCE_FILES)
-
 if(WIN32)
-    list(APPEND SOURCE_FILES
+    set(SOURCE_FILES
         ${SOURCE_DIR}/Win32/Process.cpp
         ${SOURCE_DIR}/Win32/Thread.cpp
         ${SOURCE_DIR}/Win32/Job.cpp
@@ -21,10 +19,10 @@ if(WIN32)
 
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${SOURCE_DIR}/Win32/asm/x64/get_teb.asm>
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${SOURCE_DIR}/Win32/asm/x86/get_teb.asm>
-        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>:${SOURCE_DIR}/asm/arm64/get_teb.asm>
+        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>:${SOURCE_DIR}/Win32/asm/arm64/get_teb.asm>
     )
 else()
-endif()
+endif(WIN32)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 add_dependencies(${PROJECT_NAME} PWN::Common PWN::Security PWN::Symbols PWN::System)

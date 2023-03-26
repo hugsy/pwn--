@@ -143,7 +143,8 @@ wmain(const int argc, const wchar_t** argv) -> int
     auto PebRaw = Value(GhostedProcess.Memory.Read((uptr)GhostedProcess.ProcessEnvironmentBlock(), sizeof(PEB)));
     auto Peb    = reinterpret_cast<PEB*>(PebRaw.data());
     Binary::PE PeTarget {GhostProcessPath};
-    Peb->ImageBaseAddress = (PVOID)((uptr)(PeTarget.Header().OptionalHeader.AddressOfEntryPoint));
+    Peb->ImageBaseAddress =
+        (PVOID)((uptr)(std::get<Binary::PE::PeHeader64>(PeTarget.Header()).OptionalHeader.AddressOfEntryPoint));
     GhostedProcess.Memory.Write((uptr)GhostedProcess.ProcessEnvironmentBlock(), PebRaw);
     dbg("Overwriting PEB in process PID={}", GhostedProcess.ProcessId());
 

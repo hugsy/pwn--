@@ -1,12 +1,10 @@
 #pragma once
 
 // clang-format off
-#include "pch.hpp"
-#include "Formatters.hpp"
-
 #include "Common.hpp"
 #include "Architecture.hpp"
 #include "Log.hpp"
+#include "Formatters.hpp"
 #include "Utils.hpp"
 #include "Handle.hpp"
 #include "Context.hpp"

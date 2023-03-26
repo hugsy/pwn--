@@ -8,6 +8,11 @@
 ///
 #pragma once
 
+#include <format>
+#include <source_location>
+#include <sstream>
+#include <string_view>
+
 #include "Common.hpp"
 
 // clang-format off
@@ -180,7 +185,7 @@ void PWNAPI
 ntperror(const std::string_view& prefix, NTSTATUS Status);
 #endif
 
-} // namespace Log
+} // namespace pwn::Log
 
 
 ///
