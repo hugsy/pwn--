@@ -481,10 +481,7 @@ PE::FillImportAddressTable()
 
 template<typename T1, typename T2>
 PE::PeDelayLoadDescriptor
-PE::BuildDelayImportEntry(
-    const char* DllName,
-    const char* NameTable,
-    const IMAGE_DELAYLOAD_DESCRIPTOR* DelayImportDescriptor)
+PE::BuildDelayImportEntry(const char* DllName, const IMAGE_DELAYLOAD_DESCRIPTOR* DelayImportDescriptor)
 {
     auto GetDelayImportVa = [this](uptr Rva)
     {
@@ -495,7 +492,7 @@ PE::BuildDelayImportEntry(
     ::memcpy(&Entry, DelayImportDescriptor, sizeof(DelayImportDescriptor));
     Entry.DllName = std::string {DllName, MIN(MAX_PATH, ::strlen(DllName))};
 
-    const T1* CurrentThunk = (T1*)GetDelayImportVa(Entry.OriginalFirstThunk);
+    const T1* CurrentThunk = (T1*)GetDelayImportVa(Entry.ImportNameTableRVA);
 
     while ( CurrentThunk->u1.AddressOfData )
     {
@@ -540,14 +537,9 @@ PE::FillDelayImport()
         if ( !DllName )
             return false;
 
-        const char* NameTable = (char*)GetDelayImportVa(DelayLoadDescriptor->ImportNameTableRVA);
-        if ( !NameTable )
-            return false;
-
         PeDelayLoadDescriptor CurrentEntry =
-            m_Is64b ?
-                BuildDelayImportEntry<IMAGE_THUNK_DATA64, PeThunkData64>(DllName, NameTable, DelayLoadDescriptor) :
-                BuildDelayImportEntry<IMAGE_THUNK_DATA32, PeThunkData32>(DllName, NameTable, DelayLoadDescriptor);
+            m_Is64b ? BuildDelayImportEntry<IMAGE_THUNK_DATA64, PeThunkData64>(DllName, DelayLoadDescriptor) :
+                      BuildDelayImportEntry<IMAGE_THUNK_DATA32, PeThunkData32>(DllName, DelayLoadDescriptor);
 
         m_PeDelayImportTable.Entries.push_back(std::move(CurrentEntry));
         DelayLoadDescriptor++;
