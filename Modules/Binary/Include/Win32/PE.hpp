@@ -18,18 +18,48 @@ namespace pwn::Binary
 class PE
 {
 public:
-    using DosHeader          = IMAGE_DOS_HEADER;
-    using PeHeader32         = IMAGE_NT_HEADERS32;
-    using PeHeader64         = IMAGE_NT_HEADERS64;
-    using PeHeader           = std::variant<PeHeader32, PeHeader64>;
-    using PeFileHeader       = IMAGE_FILE_HEADER;
-    using PeOptionalHeader32 = IMAGE_OPTIONAL_HEADER32;
-    using PeOptionalHeader64 = IMAGE_OPTIONAL_HEADER64;
-    using PeOptionalHeader   = std::variant<PeOptionalHeader32, PeOptionalHeader64>;
-    using PeSectionHeader    = IMAGE_SECTION_HEADER;
-    using PeDataDirectory    = IMAGE_DATA_DIRECTORY;
-    using PeExportDirectory  = IMAGE_EXPORT_DIRECTORY;
-    using PeArchitecture     = IMAGE_ARCHITECTURE_ENTRY;
+    using DosHeader           = IMAGE_DOS_HEADER;
+    using PeHeader32          = IMAGE_NT_HEADERS32;
+    using PeHeader64          = IMAGE_NT_HEADERS64;
+    using PeHeader            = std::variant<PeHeader32, PeHeader64>;
+    using PeFileHeader        = IMAGE_FILE_HEADER;
+    using PeOptionalHeader32  = IMAGE_OPTIONAL_HEADER32;
+    using PeOptionalHeader64  = IMAGE_OPTIONAL_HEADER64;
+    using PeOptionalHeader    = std::variant<PeOptionalHeader32, PeOptionalHeader64>;
+    using PeSectionHeader     = IMAGE_SECTION_HEADER;
+    using PeDataDirectory     = IMAGE_DATA_DIRECTORY;
+    using PeExportDirectory   = IMAGE_EXPORT_DIRECTORY;
+    using PeResourceDirectory = IMAGE_RESOURCE_DIRECTORY;
+    using PeArchitecture      = IMAGE_ARCHITECTURE_ENTRY;
+
+
+#pragma pack(push, 1)
+    struct PeThunkData32 : IMAGE_THUNK_DATA32
+    {
+        u16 Hint;
+        std::string Name;
+    };
+
+    struct PeThunkData64 : IMAGE_THUNK_DATA64
+    {
+        u16 Hint;
+        std::string Name;
+    };
+
+    using PeThunkData = std::variant<PeThunkData32, PeThunkData64>;
+
+    struct PeImportDescriptor : IMAGE_IMPORT_DESCRIPTOR
+    {
+        std::string Name2;
+        std::vector<PeThunkData> Functions;
+        // TODO: (Imp)Hash
+    };
+
+    struct PeDelayLoadDescriptor : IMAGE_DELAYLOAD_DESCRIPTOR
+    {
+        std::string DllName;
+        u32 ModuleHandle;
+    };
 
     struct PeExportEntry
     {
@@ -38,6 +68,7 @@ public:
         u32 NameOffset;
         std::string Name;
     };
+#pragma pack(pop)
 
 
     ///
@@ -171,61 +202,152 @@ private:
     FillDataDirectories();
 
 
+    ///
+    /// @brief Fill the ExportTable section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillExportTable();
 
 
+    ///
+    /// @brief Fill the ImportTable section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillImportTable();
 
 
+    ///
+    /// @brief Fill the Resources section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillResources();
 
 
+    ///
+    /// @brief Fill the Exception section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillException();
 
 
+    ///
+    /// @brief Fill the Security section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillSecurity();
 
 
+    ///
+    /// @brief Fill the Relocations section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillRelocations();
 
 
+    ///
+    /// @brief Fill the Architecture section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillArchitecture();
 
 
+    ///
+    /// @brief Fill the ThreadLocalStorage section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillThreadLocalStorage();
 
 
+    ///
+    /// @brief Fill the LoadConfiguration section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillLoadConfiguration();
 
 
+    ///
+    /// @brief Fill the Debug section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillDebug();
 
 
+    ///
+    /// @brief Fill the GlobalPointer section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillGlobalPointer();
 
+
+    ///
+    /// @brief Fill the Bound Import section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillBoundImport();
 
 
+    ///
+    /// @brief Fill the Import Address Table section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillImportAddressTable();
 
 
+    ///
+    /// @brief Fill the Delay Load section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillDelayImport();
 
 
+    ///
+    /// @brief Fill the COM Descriptor section of the PE
+    ///
+    /// @return true
+    /// @return false
+    ///
     bool
     FillComDescriptor();
 
@@ -251,6 +373,34 @@ private:
     GetVirtualAddress(uptr Rva, u8 DirectoryIndex);
 
 
+    ///
+    ///@brief
+    ///
+    ///@tparam T1
+    ///@tparam T2
+    ///@param Name
+    ///@param Descriptor
+    ///@return PeImportDescriptor
+    ///
+    template<typename T1, typename T2>
+    PeImportDescriptor
+    BuildImportEntry(const char* Name, const IMAGE_IMPORT_DESCRIPTOR* Descriptor);
+
+
+    ///
+    ///@brief
+    ///
+    ///@tparam T1
+    ///@tparam T2
+    ///@param Name
+    ///@param Descriptor
+    ///@return PeDelayLoadDescriptor
+    ///
+    template<typename T1, typename T2>
+    PeDelayLoadDescriptor
+    BuildDelayImportEntry(const char* DllName, const char* Name, const IMAGE_DELAYLOAD_DESCRIPTOR* Descriptor);
+
+
     bool m_IsValid {false};
     uptr m_MaxPeVa {0};
     DosHeader m_DosHeader {};
@@ -265,6 +415,16 @@ private:
         PeExportDirectory Header;
         std::vector<PeExportEntry> Entries;
     } m_PeExportDirectory {};
+
+    struct
+    {
+        std::vector<PeImportDescriptor> Entries;
+    } m_PeImportTable {};
+
+    struct
+    {
+        std::vector<PeDelayLoadDescriptor> Entries;
+    } m_PeDelayImportTable {};
 
     PeArchitecture m_PeArchitecture;
 };
