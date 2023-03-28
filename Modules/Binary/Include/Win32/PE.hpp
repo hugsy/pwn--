@@ -59,6 +59,7 @@ public:
     {
         std::string DllName;
         u32 ModuleHandle;
+        std::vector<PeThunkData> Functions;
     };
 
     struct PeExportEntry
@@ -398,7 +399,7 @@ private:
     ///
     template<typename T1, typename T2>
     PeDelayLoadDescriptor
-    BuildDelayImportEntry(const char* DllName, const char* Name, const IMAGE_DELAYLOAD_DESCRIPTOR* Descriptor);
+    BuildDelayImportEntry(const char* DllName, const IMAGE_DELAYLOAD_DESCRIPTOR* Descriptor);
 
 
     bool m_IsValid {false};
