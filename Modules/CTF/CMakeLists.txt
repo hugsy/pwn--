@@ -6,22 +6,19 @@ set(INTERFACE_DIR ${PROJECT_DIR}/Include)
 set(SOURCE_DIR ${PROJECT_DIR}/Source)
 set(HEADER_DIR ${SOURCE_DIR}/Include)
 set(TEST_DIR ${PROJECT_DIR}/Tests)
-list(APPEND SOURCE_FILES)
 
 if(WIN32)
-    list(APPEND SOURCE_FILES
+    set(SOURCE_FILES
         ${SOURCE_DIR}/Win32/Remote.cpp
         ${SOURCE_DIR}/Win32/Process.cpp
     )
     set(DEPS PWN::Network PWN::Process)
 else()
-    list(APPEND SOURCE_FILES
+    set(SOURCE_FILES
         ${SOURCE_DIR}/Linux/Remote.cpp
     )
     set(DEPS PWN::Network)
 endif()
-
-
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 add_dependencies(${PROJECT_NAME} PWN::Common ${DEPS})

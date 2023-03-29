@@ -29,7 +29,6 @@ public:
     using PeSectionHeader          = IMAGE_SECTION_HEADER;
     using PeDataDirectory          = IMAGE_DATA_DIRECTORY;
     using PeExportDirectory        = IMAGE_EXPORT_DIRECTORY;
-    using PeResourceDirectory      = IMAGE_RESOURCE_DIRECTORY;
     using PeArchitecture           = IMAGE_ARCHITECTURE_ENTRY;
     using PeResourceDirectoryEntry = IMAGE_RESOURCE_DIRECTORY_ENTRY;
     using PeResourceDataEntry      = IMAGE_RESOURCE_DATA_ENTRY;

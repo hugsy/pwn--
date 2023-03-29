@@ -368,7 +368,7 @@ PE::FillResources()
     const usize NumberOfEntries = ResourceDirectory->NumberOfIdEntries + ResourceDirectory->NumberOfNamedEntries;
     ::memcpy(&m_PeResourceDirectory, ResourceDirectory, sizeof(IMAGE_RESOURCE_DIRECTORY));
 
-    const auto ResourceTable = (PeResourceDirectoryEntry[])((uptr)ResourceDirectory + sizeof(IMAGE_RESOURCE_DIRECTORY));
+    const auto ResourceTable = (PeResourceDirectoryEntry*)((uptr)ResourceDirectory + sizeof(IMAGE_RESOURCE_DIRECTORY));
 
     for ( usize ResourceIndex = 0; ResourceIndex < NumberOfEntries; ResourceIndex++ )
     {
