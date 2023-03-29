@@ -193,4 +193,4 @@ ntperror(_In_ const std::string_view& prefix, _In_ NTSTATUS Status)
 #endif
 
 
-} // namespace Log
+} // namespace pwn::Log

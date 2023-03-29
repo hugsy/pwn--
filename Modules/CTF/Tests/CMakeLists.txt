@@ -1,10 +1,17 @@
 set(TEST_EXECUTABLE_NAME tests_pwn_${PROJECT_NAME})
-list(APPEND SOURCE_FILES
+set(SOURCE_FILES
 
     ${TEST_DIR}/main.cpp
-    ${TEST_DIR}/pwn_ctf_process_win.cpp
-    ${TEST_DIR}/pwn_ctf_remote_win.cpp
 )
+
+if(WIN32)
+    set(SOURCE_FILES
+        ${TEST_DIR}/pwn_ctf_process_win.cpp
+        ${TEST_DIR}/pwn_ctf_remote_win.cpp
+    )
+else()
+    return()
+endif(WIN32)
 
 add_executable(${TEST_EXECUTABLE_NAME} ${SOURCE_FILES})
 add_executable(PWN::Tests::${PROJECT_NAME} ALIAS ${TEST_EXECUTABLE_NAME})

@@ -8,6 +8,7 @@
 #include <mutex>
 #include <optional>
 #include <type_traits>
+#include <vector>
 
 #include "Error.hpp"
 
@@ -76,7 +77,11 @@
 #endif
 
 #ifndef PWNAPI
+#ifdef PWN_BUILD_FOR_WINDOWS
 #define PWNAPI __declspec(dllexport)
+#else
+#define PWNAPI
+#endif // PWN_BUILD_FOR_WINDOWS
 #endif
 
 #ifndef __countof

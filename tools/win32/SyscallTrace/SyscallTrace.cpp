@@ -19,19 +19,17 @@ void
 Trampoline();
 EXTERN_C_END
 
-static bool bKeepActive = false;
-
+static bool bKeepActive        = false;
+static bool bAlreadyInCallback = false;
 
 EXTERN_C
 void
 InstrumentationHook(PCONTEXT Context)
 {
-    static bool bAlreadyInCallback = false;
-
     if ( bAlreadyInCallback == false )
     {
         bAlreadyInCallback     = true;
-        PTEB Teb               = reinterpret_cast<PTEB>(::NtCurrentTeb());
+        const PTEB Teb         = reinterpret_cast<PTEB>(::NtCurrentTeb());
         const bool bIsDisabled = (Teb->InstrumentationCallbackDisabled == 1);
         Context->Rip           = *((uptr*)(Teb->InstrumentationCallbackPreviousPc));
         Context->Rsp           = *((uptr*)(Teb->InstrumentationCallbackPreviousSp));
@@ -44,7 +42,7 @@ InstrumentationHook(PCONTEXT Context)
             //
             Teb->InstrumentationCallbackDisabled = 1;
 
-            pwn::windows::Symbols::ResolveFromAddress(Context->Rax);
+            Symbols::ResolveFromAddress(Context->Rax);
 
 
             //
@@ -52,10 +50,10 @@ InstrumentationHook(PCONTEXT Context)
             //
             Teb->InstrumentationCallbackDisabled = 0;
         }
-
-        ::RtlRestoreContext(Context, nullptr);
-        bAlreadyInCallback = false;
     }
+
+    ::RtlRestoreContext(Context, nullptr);
+    bAlreadyInCallback = false;
 }
 
 
@@ -65,7 +63,7 @@ ConsoleCtrlHandler(DWORD signum)
     switch ( signum )
     {
     case CTRL_C_EVENT:
-        dbg(L"Stopping...\n");
+        dbg(L"Stopping...");
         bKeepActive = false;
         break;
 
@@ -133,17 +131,21 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     dbg(L"Trying to install the instrumentation callback...");
     {
-        PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION Callback {};
-        Callback.Version  = 0;
-        Callback.Reserved = 0;
-        Callback.Callback = Trampoline;
+        PROCESS_INSTRUMENTATION_CALLBACK_INFORMATION Callback {
+            .Version  = 0,
+            .Reserved = 0,
+            .Callback = Trampoline,
+        };
 
-        NTSTATUS Status =
-            ::NtSetInformationProcess(hProcess->get(), ProcessInstrumentationCallback, &Callback, sizeof(Callback));
+        NTSTATUS Status = Resolver::ntdll::NtSetInformationProcess(
+            hProcess->get(),
+            ProcessInstrumentationCallback,
+            &Callback,
+            sizeof(Callback));
 
         if ( !NT_SUCCESS(Status) )
         {
-            pwn::log::ntperror(L"NtSetInformationProcess()", Status);
+            Log::ntperror(L"NtSetInformationProcess()", Status);
             return EXIT_FAILURE;
         }
 
@@ -155,7 +157,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     if ( ::SetConsoleCtrlHandler((PHANDLER_ROUTINE)ConsoleCtrlHandler, true) == FALSE )
     {
-        pwn::log::perror(L"SetConsoleCtrlHandler()");
+        Log::perror(L"SetConsoleCtrlHandler()");
         return EXIT_FAILURE;
     }
 

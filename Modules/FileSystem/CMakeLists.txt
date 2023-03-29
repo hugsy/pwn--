@@ -7,24 +7,23 @@ set(INTERFACE_DIR ${PROJECT_DIR}/Include)
 set(SOURCE_DIR ${PROJECT_DIR}/Source)
 set(HEADER_DIR ${SOURCE_DIR}/Include)
 set(TEST_DIR ${PROJECT_DIR}/Tests)
-list(APPEND SOURCE_FILES)
 
 if(WIN32)
-    list(APPEND SOURCE_FILES
+    set(SOURCE_FILES
 
         ${SOURCE_DIR}/Win32/FileSystem.cpp
     )
+    set(DEPS PWN::Common PWN::Symbols)
 else()
-    list(APPEND SOURCE_FILES
-    )
+    return()
 endif()
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
-add_dependencies(${PROJECT_NAME} PWN::Common PWN::Symbols)
+add_dependencies(${PROJECT_NAME} ${DEPS})
 add_library(PWN::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC)
-target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common PWN::Symbols)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${DEPS})
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 

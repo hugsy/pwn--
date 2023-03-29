@@ -22,6 +22,7 @@ if(WIN32)
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>:${SOURCE_DIR}/Win32/asm/arm64/get_teb.asm>
     )
 else()
+    return()
 endif(WIN32)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})

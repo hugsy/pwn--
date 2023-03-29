@@ -7,13 +7,12 @@ set(SOURCE_DIR ${PROJECT_DIR}/Source)
 set(HEADER_DIR ${SOURCE_DIR}/Include)
 set(TEST_DIR ${PROJECT_DIR}/Tests)
 
-list(APPEND SOURCE_FILES)
-
 if(WIN32)
-    list(APPEND SOURCE_FILES
+    set(SOURCE_FILES
         ${SOURCE_DIR}/Win32/Service.cpp
     )
 else()
+    return()
 endif()
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})

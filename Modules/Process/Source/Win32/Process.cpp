@@ -53,6 +53,8 @@ ProcessAccessToString(u32 ProcessAccess)
     {                                                                                                                  \
         if ( (ProcessAccess & x) == x )                                                                                \
         {                                                                                                              \
+            if ( !str.str().empty() )                                                                                  \
+                str << ", ";                                                                                           \
             str << #x;                                                                                                 \
             found += x;                                                                                                \
         }                                                                                                              \
@@ -76,6 +78,8 @@ ProcessAccessToString(u32 ProcessAccess)
 
     if ( found != ProcessAccess )
     {
+        if ( !str.str().empty() )
+            str << ", ";
         str << std::hex << (ProcessAccess - found);
     }
 

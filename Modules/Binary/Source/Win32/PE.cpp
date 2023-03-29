@@ -109,7 +109,7 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
         }
     }
 
-    m_MaxPeVa = (uptr)View.data() + View.size();
+    m_PeMaxVa = (uptr)View.data() + View.size();
 
     //
     // Fill up sections and data directories
@@ -132,18 +132,18 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
     DoParse(ExportTable);
     DoParse(ImportTable);
     DoParse(Resources);
-    DoParse(Exception);
-    DoParse(Security);
-    DoParse(Relocations);
+    // DoParse(Exception);
+    // DoParse(Security);
+    // DoParse(Relocations);
     DoParse(Architecture);
-    DoParse(ThreadLocalStorage);
-    DoParse(LoadConfiguration);
-    DoParse(Debug);
-    DoParse(GlobalPointer);
-    DoParse(BoundImport);
+    // DoParse(ThreadLocalStorage);
+    // DoParse(LoadConfiguration);
+    // DoParse(Debug);
+    // DoParse(GlobalPointer);
+    // DoParse(BoundImport);
     DoParse(ImportAddressTable);
     DoParse(DelayImport);
-    DoParse(ComDescriptor);
+    // DoParse(ComDescriptor);
 
 #undef DoParse
 
@@ -240,7 +240,8 @@ PE::GetVirtualAddress(uptr Rva, u8 DirectoryIndex)
     if ( Failed(res) )
         return 0;
     auto const& Section = Value(res);
-    return m_DosBase + Rva - static_cast<uptr>(Section.VirtualAddress - Section.PointerToRawData);
+    const uptr ptr      = m_DosBase + Rva - static_cast<uptr>(Section.VirtualAddress - Section.PointerToRawData);
+    return (m_DosBase <= ptr && ptr < m_PeMaxVa) ? ptr : 0;
 }
 
 
@@ -360,6 +361,34 @@ PE::FillResources()
 
     const auto ResourceDirectory =
         (IMAGE_RESOURCE_DIRECTORY*)GetResourceVa(m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress);
+
+    if ( !ResourceDirectory )
+        return false;
+
+    const usize NumberOfEntries = ResourceDirectory->NumberOfIdEntries + ResourceDirectory->NumberOfNamedEntries;
+    ::memcpy(&m_PeResourceDirectory, ResourceDirectory, sizeof(IMAGE_RESOURCE_DIRECTORY));
+
+    const auto ResourceTable = (PeResourceDirectoryEntry[])((uptr)ResourceDirectory + sizeof(IMAGE_RESOURCE_DIRECTORY));
+
+    for ( usize ResourceIndex = 0; ResourceIndex < NumberOfEntries; ResourceIndex++ )
+    {
+        auto const& CurrentResource = ResourceTable[ResourceIndex];
+
+        if ( (uptr)std::addressof(CurrentResource) >= m_PeMaxVa )
+        {
+            return false;
+        }
+
+        if ( CurrentResource.DataIsDirectory )
+        {
+        }
+        else if ( CurrentResource.NameIsString )
+        {
+        }
+        else // Raw
+        {
+        }
+    }
 
     return true;
 }

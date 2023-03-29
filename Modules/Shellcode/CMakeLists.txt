@@ -9,10 +9,8 @@ set(SOURCE_DIR ${PROJECT_DIR}/Source)
 set(HEADER_DIR ${SOURCE_DIR}/Include)
 set(TEST_DIR ${PROJECT_DIR}/Tests)
 
-list(APPEND SOURCE_FILES)
-
 if(WIN32)
-    list(APPEND SOURCE_FILES
+    set(SOURCE_FILES
         ${SOURCE_DIR}/Win32/Kernel.cpp
 
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${SOURCE_DIR}/Win32/asm/x64/copy_system_token.asm>
@@ -20,6 +18,7 @@ if(WIN32)
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>:${SOURCE_DIR}/Win32/asm/arm64/copy_system_token.asm>
     )
 else()
+    return()
 endif()
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})

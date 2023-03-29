@@ -118,11 +118,11 @@ if(PWN_BUILD_TESTING)
     add_library(Deps_Catch2 INTERFACE)
     target_include_directories(Deps_Catch2 INTERFACE ${PWNLIB_DEPS_DIR}/Catch2)
 
-    if(MSVC)
+    if(WIN32)
         target_compile_definitions(Deps_Catch2 INTERFACE CATCH_CONFIG_NO_WINDOWS_SEH)
     else()
         target_compile_definitions(Deps_Catch2 INTERFACE _GNU_SOURCE=1)
-    endif(MSVC)
+    endif(WIN32)
 
     add_library(PWN::Deps::Catch2 ALIAS Deps_Catch2)
 
@@ -142,6 +142,6 @@ if(PWN_BUILD_TOOLKIT)
     endif(WIN32)
 endif()
 
-if(PWN_BUILD_DOCS)
+if(WIN32 AND PWN_BUILD_DOCS)
     add_subdirectory(Docs)
 endif()

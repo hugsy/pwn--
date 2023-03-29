@@ -18,19 +18,21 @@ namespace pwn::Binary
 class PE
 {
 public:
-    using DosHeader           = IMAGE_DOS_HEADER;
-    using PeHeader32          = IMAGE_NT_HEADERS32;
-    using PeHeader64          = IMAGE_NT_HEADERS64;
-    using PeHeader            = std::variant<PeHeader32, PeHeader64>;
-    using PeFileHeader        = IMAGE_FILE_HEADER;
-    using PeOptionalHeader32  = IMAGE_OPTIONAL_HEADER32;
-    using PeOptionalHeader64  = IMAGE_OPTIONAL_HEADER64;
-    using PeOptionalHeader    = std::variant<PeOptionalHeader32, PeOptionalHeader64>;
-    using PeSectionHeader     = IMAGE_SECTION_HEADER;
-    using PeDataDirectory     = IMAGE_DATA_DIRECTORY;
-    using PeExportDirectory   = IMAGE_EXPORT_DIRECTORY;
-    using PeResourceDirectory = IMAGE_RESOURCE_DIRECTORY;
-    using PeArchitecture      = IMAGE_ARCHITECTURE_ENTRY;
+    using DosHeader                = IMAGE_DOS_HEADER;
+    using PeHeader32               = IMAGE_NT_HEADERS32;
+    using PeHeader64               = IMAGE_NT_HEADERS64;
+    using PeHeader                 = std::variant<PeHeader32, PeHeader64>;
+    using PeFileHeader             = IMAGE_FILE_HEADER;
+    using PeOptionalHeader32       = IMAGE_OPTIONAL_HEADER32;
+    using PeOptionalHeader64       = IMAGE_OPTIONAL_HEADER64;
+    using PeOptionalHeader         = std::variant<PeOptionalHeader32, PeOptionalHeader64>;
+    using PeSectionHeader          = IMAGE_SECTION_HEADER;
+    using PeDataDirectory          = IMAGE_DATA_DIRECTORY;
+    using PeExportDirectory        = IMAGE_EXPORT_DIRECTORY;
+    using PeResourceDirectory      = IMAGE_RESOURCE_DIRECTORY;
+    using PeArchitecture           = IMAGE_ARCHITECTURE_ENTRY;
+    using PeResourceDirectoryEntry = IMAGE_RESOURCE_DIRECTORY_ENTRY;
+    using PeResourceDataEntry      = IMAGE_RESOURCE_DATA_ENTRY;
 
 
 #pragma pack(push, 1)
@@ -68,6 +70,11 @@ public:
         u32 Rva;
         u32 NameOffset;
         std::string Name;
+    };
+
+    struct PeResourceDirectory : IMAGE_RESOURCE_DIRECTORY
+    {
+        std::vector<PeResourceDataEntry> Entries;
     };
 #pragma pack(pop)
 
@@ -403,7 +410,7 @@ private:
 
 
     bool m_IsValid {false};
-    uptr m_MaxPeVa {0};
+    uptr m_PeMaxVa {0};
     DosHeader m_DosHeader {};
     PeHeader m_PeHeader {};
     uptr m_DosBase {0}, m_NtBase {0};
@@ -427,7 +434,8 @@ private:
         std::vector<PeDelayLoadDescriptor> Entries;
     } m_PeDelayImportTable {};
 
-    PeArchitecture m_PeArchitecture;
+    PeArchitecture m_PeArchitecture {};
+    PeResourceDirectory m_PeResourceDirectory {};
 };
 
 } // namespace pwn::Binary

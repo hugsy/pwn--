@@ -485,10 +485,14 @@ void
 DebugBreak()
 {
     dbg("Breakpointing...");
+#if defined(PWN_BUILD_FOR_WINDOWS)
     ::DebugBreak();
+#elif defined(PWN_BUILD_FOR_LINUX)
+    __asm__("int3");
+#endif // PWN_BUILD_FOR_WINDOWS
 }
 
-
+#ifdef PWN_BUILD_FOR_WINDOWS
 Result<std::unordered_map<u16, bool>>
 GetExecutableCharacteristics(fs::path const& FilePath)
 {
@@ -560,6 +564,7 @@ GetExecutableCharacteristics(fs::path const& FilePath)
 
     return Ok(SecProps);
 }
+#endif
 
 Result<bool>
 GetExecutableSignature(fs::path const& FilePath)

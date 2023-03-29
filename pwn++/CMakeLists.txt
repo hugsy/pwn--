@@ -16,9 +16,6 @@ set(INTERFACE_DIR ${PROJECT_SOURCE_DIR}/Include)
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
 set(HEADER_DIR ${SOURCE_DIR}/Include)
 
-list(TRANSFORM PWN_MODULES PREPEND PWN:: OUTPUT_VARIABLE MODULE_NAMESPACES)
-list(LENGTH PWN_MODULES PWN_MODULES_LENGTH)
-
 if(BUILD_SHARED_LIBS)
     add_library(${PROJECT_NAME} SHARED)
     set(PWN_BUILD_SHARED_LIB TRUE)
@@ -30,6 +27,7 @@ message(STATUS "Generating 'pwn.hpp'")
 configure_file(${PROJECT_SOURCE_DIR}/pwn.hpp.in ${INTERFACE_DIR}/pwn.hpp NEWLINE_STYLE WIN32)
 
 if(WIN32)
+    list(TRANSFORM PWN_MODULES PREPEND PWN:: OUTPUT_VARIABLE MODULE_NAMESPACES)
     target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_DIR}/Win32/dllmain.cpp)
 
     target_link_options(
@@ -42,13 +40,13 @@ if(WIN32)
     )
 
 else()
+    set(MODULE_NAMESPACES PWN::Common PWN::System)
     target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_DIR}/Linux/dllmain.cpp)
 
     target_link_libraries(
         ${PROJECT_NAME}
 
         PRIVATE
-        $<TARGET_LINKER_FILE:${PROJECT_NAME}>
         pthread
         dl
     )
