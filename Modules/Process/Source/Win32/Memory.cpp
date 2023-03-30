@@ -26,16 +26,26 @@ Memory::Read(uptr const Address, usize Length)
         return Err(ErrorCode::NotInitialized);
     }
 
-    auto out = std::vector<u8>(Length);
-    usize dwNbRead;
-    if ( ::ReadProcessMemory(
-             m_ProcessHandle->get(),
-             reinterpret_cast<LPVOID>(Address),
-             out.data(),
-             Length,
-             &dwNbRead) == false )
+    std::vector<u8> out;
+    out.resize(Length);
+    if ( m_Process->IsRemote() )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        usize dwNbRead {};
+        if ( ::ReadProcessMemory(
+                 m_ProcessHandle->get(),
+                 reinterpret_cast<LPVOID>(Address),
+                 out.data(),
+                 Length,
+                 &dwNbRead) == false )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+
+        out.resize(dwNbRead);
+    }
+    else
+    {
+        ::memcpy(out.data(), (void*)Address, Length);
     }
 
     return Ok(out);
@@ -57,18 +67,24 @@ Memory::Write(uptr const Address, std::vector<u8> data)
         return Err(ErrorCode::NotInitialized);
     }
 
-    usize dwNbWritten {};
-    if ( ::WriteProcessMemory(
-             m_ProcessHandle->get(),
-             reinterpret_cast<LPVOID>(Address),
-             data.data(),
-             data.size(),
-             &dwNbWritten) != false )
+    if ( m_Process->IsRemote() )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        usize dwNbWritten {};
+        if ( ::WriteProcessMemory(
+                 m_ProcessHandle->get(),
+                 reinterpret_cast<LPVOID>(Address),
+                 data.data(),
+                 data.size(),
+                 &dwNbWritten) != false )
+        {
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
+
+        return Ok(dwNbWritten);
     }
 
-    return Ok(dwNbWritten);
+    ::memcpy((void*)Address, data.data(), data.size());
+    return Ok(data.size());
 }
 
 Result<uptr>
