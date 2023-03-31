@@ -26,28 +26,19 @@ Memory::Read(uptr const Address, usize Length)
         return Err(ErrorCode::NotInitialized);
     }
 
-    std::vector<u8> out;
-    out.resize(Length);
-    if ( m_Process->IsRemote() )
+    std::vector<u8> out(Length);
+    usize dwNbRead {};
+    if ( ::ReadProcessMemory(
+             m_ProcessHandle->get(),
+             reinterpret_cast<LPVOID>(Address),
+             out.data(),
+             Length,
+             &dwNbRead) == false )
     {
-        usize dwNbRead {};
-        if ( ::ReadProcessMemory(
-                 m_ProcessHandle->get(),
-                 reinterpret_cast<LPVOID>(Address),
-                 out.data(),
-                 Length,
-                 &dwNbRead) == false )
-        {
-            return Err(ErrorCode::ExternalApiCallFailed);
-        }
-
-        out.resize(dwNbRead);
-    }
-    else
-    {
-        ::memcpy(out.data(), (void*)Address, Length);
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
+    out.resize(dwNbRead);
     return Ok(out);
 }
 
@@ -67,24 +58,18 @@ Memory::Write(uptr const Address, std::vector<u8> data)
         return Err(ErrorCode::NotInitialized);
     }
 
-    if ( m_Process->IsRemote() )
+    usize dwNbWritten {};
+    if ( ::WriteProcessMemory(
+             m_ProcessHandle->get(),
+             reinterpret_cast<LPVOID>(Address),
+             data.data(),
+             data.size(),
+             &dwNbWritten) != false )
     {
-        usize dwNbWritten {};
-        if ( ::WriteProcessMemory(
-                 m_ProcessHandle->get(),
-                 reinterpret_cast<LPVOID>(Address),
-                 data.data(),
-                 data.size(),
-                 &dwNbWritten) != false )
-        {
-            return Err(ErrorCode::ExternalApiCallFailed);
-        }
-
-        return Ok(dwNbWritten);
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    ::memcpy((void*)Address, data.data(), data.size());
-    return Ok(data.size());
+    return Ok(dwNbWritten);
 }
 
 Result<uptr>
@@ -218,7 +203,7 @@ Memory::Regions()
         // Save the region information
         //
         auto CurrentMemoryRegion = Value(res);
-        if ( CurrentMemoryRegion->BaseAddress != nullptr )
+        if ( CurrentMemoryRegion->AllocationBase != nullptr )
         {
             MemoryRegions.push_back(CurrentMemoryRegion);
         }
@@ -255,8 +240,12 @@ Memory::Search(std::vector<u8> const& Pattern)
             continue;
         }
 
-        if ( (Region->Protect != PAGE_READONLY) && (Region->Protect != PAGE_READWRITE) &&
-             (Region->Protect != PAGE_EXECUTE_READWRITE) )
+        if ( Region->Protect & (PAGE_READONLY | PAGE_READWRITE | PAGE_EXECUTE_READWRITE) == 0 )
+        {
+            continue;
+        }
+
+        if ( Region->Protect & (PAGE_GUARD | PAGE_EXECUTE_WRITECOPY | PAGE_WRITECOPY | PAGE_WRITECOMBINE) != 0 )
         {
             continue;
         }

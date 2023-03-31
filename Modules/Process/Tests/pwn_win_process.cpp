@@ -130,7 +130,7 @@ TEST_CASE("Process Memory", "[" NS "]")
         }
     }
 
-    SECTION("Direct memory query")
+    SECTION("Remote - Search memory")
     {
     }
 }
