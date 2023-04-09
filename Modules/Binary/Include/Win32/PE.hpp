@@ -98,6 +98,11 @@ public:
         std::vector<ResourceEntry> Entries;
     };
 
+    struct PeExceptionTableEntry : IMAGE_RUNTIME_FUNCTION_ENTRY
+    {
+        usize Size;
+        std::vector<u8> UnwindRawBytes;
+    };
 
 #pragma pack(pop)
 
@@ -201,6 +206,12 @@ public:
     ImportTable() const
     {
         return m_PeImportTable.Entries;
+    }
+
+    std::vector<PeExceptionTableEntry> const&
+    ExceptionTable() const
+    {
+        return m_PeExceptionTable.Entries;
     }
 
 private:
@@ -474,6 +485,11 @@ private:
 
     PeArchitecture m_PeArchitecture {};
     PeResourceDirectory m_PeResourceDirectory {};
+
+    struct
+    {
+        std::vector<PeExceptionTableEntry> Entries;
+    } m_PeExceptionTable {};
 };
 
 } // namespace pwn::Binary

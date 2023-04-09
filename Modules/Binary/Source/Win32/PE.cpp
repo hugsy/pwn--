@@ -141,7 +141,7 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
     DoParse(ExportTable);
     DoParse(ImportTable);
     DoParse(Resources);
-    // DoParse(Exception);
+    DoParse(Exception);
     // DoParse(Security);
     // DoParse(Relocations);
     DoParse(Architecture);
@@ -357,8 +357,10 @@ PE::FillImportTable()
 
     const IMAGE_IMPORT_DESCRIPTOR* ImportDescriptor =
         (IMAGE_IMPORT_DESCRIPTOR*)GetImportVa(m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
-    if ( !ImportDescriptor )
+    if ( !ImportDescriptor || !IsWithinBounds(ImportDescriptor) )
+    {
         return false;
+    }
 
     while ( ImportDescriptor->Characteristics )
     {
@@ -448,8 +450,60 @@ PE::FillException()
     const auto ExceptionDirectory = (IMAGE_RUNTIME_FUNCTION_ENTRY*)GetExceptionVa(
         m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress);
 
-    // TODO
-    return true;
+    const auto ExceptionDirectorySize = m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size;
+
+    if ( !IsWithinBounds(ExceptionDirectory) || !IsWithinBounds(((uptr)ExceptionDirectory) + ExceptionDirectorySize) )
+    {
+        return false;
+    }
+
+    const auto NumberOfExceptionEntries = ExceptionDirectorySize / sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY);
+    const auto ExceptionTable = std::span<IMAGE_RUNTIME_FUNCTION_ENTRY> {ExceptionDirectory, NumberOfExceptionEntries};
+
+    bool bIsMalformed {false};
+
+    std::for_each(
+        ExceptionTable.begin(),
+        ExceptionTable.end(),
+        [this, &bIsMalformed, &GetExceptionVa](const IMAGE_RUNTIME_FUNCTION_ENTRY& e)
+        {
+            if ( bIsMalformed )
+            {
+                return;
+            }
+
+            if ( e.BeginAddress > e.EndAddress )
+            {
+                bIsMalformed = true;
+                return;
+            }
+
+            PeExceptionTableEntry entry {};
+            ::memcpy(&entry, &e, sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY));
+            entry.Size = e.EndAddress - e.BeginAddress;
+            entry.UnwindRawBytes.reserve(entry.Size);
+
+
+            Result<PE::PeSectionHeader> res = PE::FindSectionFromRva(entry.BeginAddress);
+            if ( Failed(res) )
+            {
+                bIsMalformed = true;
+                return;
+            }
+
+            auto const& section = Value(res);
+            if ( section.Characteristics & IMAGE_SCN_CNT_CODE == 0 )
+            {
+                bIsMalformed = true;
+                return;
+            }
+
+            const auto UnwindCodeAddress = (uptr)RtlOffsetToPointer(m_DosBase, entry.BeginAddress);
+            entry.UnwindRawBytes.assign((u8*)UnwindCodeAddress, (u8*)UnwindCodeAddress + entry.Size);
+            m_PeExceptionTable.Entries.push_back(std::move(entry));
+        });
+
+    return bIsMalformed == false;
 }
 
 
@@ -487,6 +541,17 @@ PE::FillArchitecture()
 
     const auto Architecture = (IMAGE_ARCHITECTURE_ENTRY*)GetArchitectureVa(
         m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_ARCHITECTURE].VirtualAddress);
+    const auto ArchitectureSize = m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_ARCHITECTURE].Size;
+
+    if ( Architecture == nullptr || ArchitectureSize == 0 )
+    {
+        return true;
+    }
+
+    if ( !IsWithinBounds(Architecture) )
+    {
+        return false;
+    }
 
     ::memcpy(&m_PeArchitecture, Architecture, sizeof(PeArchitecture));
 
@@ -576,10 +641,14 @@ PE::BuildDelayImportEntry(const char* DllName, const IMAGE_DELAYLOAD_DESCRIPTOR*
         {
             const PIMAGE_IMPORT_BY_NAME pfnName =
                 (PIMAGE_IMPORT_BY_NAME)GetDelayImportVa(CurrentThunk->u1.AddressOfData);
-            NewThunk.Hint            = pfnName->Hint;
-            const char* FunctionName = pfnName->Name;
-            usize FunctionNameLength = MIN(MAX_PATH, ::strlen(FunctionName));
-            NewThunk.Name            = std::string {FunctionName, FunctionNameLength};
+
+            if ( pfnName )
+            {
+                NewThunk.Hint            = pfnName->Hint;
+                const char* FunctionName = pfnName->Name;
+                usize FunctionNameLength = MIN(MAX_PATH, ::strlen(FunctionName));
+                NewThunk.Name            = std::string {FunctionName, FunctionNameLength};
+            }
         }
 
         Entry.Functions.push_back(std::move(NewThunk));

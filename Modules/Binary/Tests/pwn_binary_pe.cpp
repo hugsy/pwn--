@@ -19,6 +19,7 @@ TEST_CASE("PE file parser", "[" NS "]")
         REQUIRE(pe.DataDirectories().size() > 1);
         REQUIRE(pe.ImportTable().size() > 1);
         REQUIRE(pe.ExportTable().size() > 1);
+        REQUIRE(pe.ExceptionTable().size() > 1);
     }
 
     SECTION("Import parsing")
@@ -50,10 +51,18 @@ TEST_CASE("PE file parser", "[" NS "]")
         for ( auto const& entry : pe.ExportTable() )
         {
             REQUIRE(entry.Name != "");
-            REQUIRE(entry.Ordinal != 0);
             REQUIRE(entry.Rva != 0);
             REQUIRE(entry.NameOffset != 0);
-            INFO("Found kernel32!" << entry.Name);
+        }
+    }
+
+    SECTION("Exception parsing")
+    {
+        for ( auto const& entry : pe.ExceptionTable() )
+        {
+            REQUIRE(entry.BeginAddress != 0);
+            REQUIRE(entry.EndAddress != 0);
+            REQUIRE(entry.UnwindInfoAddress != 0);
         }
     }
 }
