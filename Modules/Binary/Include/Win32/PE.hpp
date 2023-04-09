@@ -214,6 +214,12 @@ public:
         return m_PeExceptionTable.Entries;
     }
 
+    std::vector<PeDelayLoadDescriptor> const&
+    DelayLoadTable() const
+    {
+        return m_PeDelayImportTable.Entries;
+    }
+
 private:
     bool
     ParsePeFromMemory(std::span<u8> const& View);
@@ -454,8 +460,8 @@ private:
     ///@return PeDelayLoadDescriptor
     ///
     template<typename T1, typename T2>
-    PeDelayLoadDescriptor
-    BuildDelayImportEntry(const char* DllName, const IMAGE_DELAYLOAD_DESCRIPTOR* Descriptor);
+    Result<PeDelayLoadDescriptor>
+    BuildDelayImportEntry(const IMAGE_DELAYLOAD_DESCRIPTOR* Descriptor);
 
 
     bool m_IsValid {false};

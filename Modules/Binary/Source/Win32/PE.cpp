@@ -142,7 +142,7 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
     DoParse(ImportTable);
     DoParse(Resources);
     DoParse(Exception);
-    // DoParse(Security);
+    DoParse(Security);
     // DoParse(Relocations);
     DoParse(Architecture);
     // DoParse(ThreadLocalStorage);
@@ -617,20 +617,25 @@ PE::FillImportAddressTable()
 
 
 template<typename T1, typename T2>
-PE::PeDelayLoadDescriptor
-PE::BuildDelayImportEntry(const char* DllName, const IMAGE_DELAYLOAD_DESCRIPTOR* DelayImportDescriptor)
+Result<PE::PeDelayLoadDescriptor>
+PE::BuildDelayImportEntry(const IMAGE_DELAYLOAD_DESCRIPTOR* DelayImportDescriptor)
 {
     auto GetDelayImportVa = [this](uptr Rva)
     {
         return GetVirtualAddress(Rva, IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT);
     };
 
+    const char* DllName = (char*)GetDelayImportVa(DelayImportDescriptor->DllNameRVA);
+    if ( !DllName )
+    {
+        return Err(ErrorCode::MalformedFile);
+    }
+
     PE::PeDelayLoadDescriptor Entry {};
     ::memcpy(&Entry, DelayImportDescriptor, sizeof(DelayImportDescriptor));
     Entry.DllName = std::string {DllName, MIN(MAX_PATH, ::strlen(DllName))};
 
-    const T1* CurrentThunk = (T1*)GetDelayImportVa(Entry.ImportNameTableRVA);
-
+    T1* CurrentThunk = (T1*)GetDelayImportVa(DelayImportDescriptor->ImportNameTableRVA);
     while ( CurrentThunk->u1.AddressOfData )
     {
         T2 NewThunk {};
@@ -642,19 +647,22 @@ PE::BuildDelayImportEntry(const char* DllName, const IMAGE_DELAYLOAD_DESCRIPTOR*
             const PIMAGE_IMPORT_BY_NAME pfnName =
                 (PIMAGE_IMPORT_BY_NAME)GetDelayImportVa(CurrentThunk->u1.AddressOfData);
 
-            if ( pfnName )
+            if ( !pfnName )
             {
-                NewThunk.Hint            = pfnName->Hint;
-                const char* FunctionName = pfnName->Name;
-                usize FunctionNameLength = MIN(MAX_PATH, ::strlen(FunctionName));
-                NewThunk.Name            = std::string {FunctionName, FunctionNameLength};
+                return Err(ErrorCode::MalformedFile);
             }
+
+            NewThunk.Hint            = pfnName->Hint;
+            const char* FunctionName = pfnName->Name;
+            usize FunctionNameLength = MIN(MAX_PATH, ::strlen(FunctionName));
+            NewThunk.Name            = std::string {FunctionName, FunctionNameLength};
         }
 
         Entry.Functions.push_back(std::move(NewThunk));
         CurrentThunk++;
     }
-    return Entry;
+
+    return Ok(Entry);
 }
 
 
@@ -668,21 +676,27 @@ PE::FillDelayImport()
 
     auto DelayLoadDescriptor = (const IMAGE_DELAYLOAD_DESCRIPTOR*)GetDelayImportVa(
         m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT].VirtualAddress);
-
     if ( !DelayLoadDescriptor )
+    {
+        return true;
+    }
+
+    if ( !IsWithinBounds(DelayLoadDescriptor) )
+    {
         return false;
+    }
 
     while ( DelayLoadDescriptor->DllNameRVA )
     {
-        const char* DllName = (char*)GetDelayImportVa(DelayLoadDescriptor->DllNameRVA);
-        if ( !DllName )
+        // TODO add bound checks
+        auto res = m_Is64b ? BuildDelayImportEntry<IMAGE_THUNK_DATA64, PeThunkData64>(DelayLoadDescriptor) :
+                             BuildDelayImportEntry<IMAGE_THUNK_DATA32, PeThunkData32>(DelayLoadDescriptor);
+        if ( Failed(res) )
+        {
             return false;
+        }
 
-        PeDelayLoadDescriptor CurrentEntry =
-            m_Is64b ? BuildDelayImportEntry<IMAGE_THUNK_DATA64, PeThunkData64>(DllName, DelayLoadDescriptor) :
-                      BuildDelayImportEntry<IMAGE_THUNK_DATA32, PeThunkData32>(DllName, DelayLoadDescriptor);
-
-        m_PeDelayImportTable.Entries.push_back(std::move(CurrentEntry));
+        m_PeDelayImportTable.Entries.push_back(std::move(Value(res)));
         DelayLoadDescriptor++;
     }
     return true;

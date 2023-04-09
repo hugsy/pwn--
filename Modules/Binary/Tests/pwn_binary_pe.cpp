@@ -20,6 +20,7 @@ TEST_CASE("PE file parser", "[" NS "]")
         REQUIRE(pe.ImportTable().size() > 1);
         REQUIRE(pe.ExportTable().size() > 1);
         REQUIRE(pe.ExceptionTable().size() > 1);
+        REQUIRE(pe.DelayLoadTable().size() > 1);
     }
 
     SECTION("Import parsing")
@@ -63,6 +64,37 @@ TEST_CASE("PE file parser", "[" NS "]")
             REQUIRE(entry.BeginAddress != 0);
             REQUIRE(entry.EndAddress != 0);
             REQUIRE(entry.UnwindInfoAddress != 0);
+        }
+    }
+
+    SECTION("DelayImport parsing")
+    {
+        const bool Is64b = pe.Is64b();
+
+        for ( auto const& entry : pe.DelayLoadTable() )
+        {
+            REQUIRE(entry.Attributes.AllAttributes != 0);
+            REQUIRE(entry.DllName != "");
+            REQUIRE(entry.Functions.size() > 0);
+
+            for ( auto const& fn : entry.Functions )
+            {
+                std::visit(
+                    overloaded {
+                        [](Binary::PE::PeThunkData32 const& ThunkData)
+                        {
+                            REQUIRE(ThunkData.u1.AddressOfData != 0);
+                            REQUIRE(ThunkData.Name != "");
+                            return true;
+                        },
+                        [](Binary::PE::PeThunkData64 const& ThunkData)
+                        {
+                            REQUIRE(ThunkData.u1.AddressOfData != 0);
+                            REQUIRE(ThunkData.Name != "");
+                            return true;
+                        }},
+                    fn);
+            }
         }
     }
 }
