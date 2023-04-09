@@ -334,7 +334,8 @@ PE::BuildImportEntry(const char* Name, const IMAGE_IMPORT_DESCRIPTOR* ImportDesc
         {
             const PIMAGE_IMPORT_BY_NAME pfnName = (PIMAGE_IMPORT_BY_NAME)GetImportVa(CurrentThunk->u1.AddressOfData);
             NewThunk.Hint                       = pfnName->Hint;
-            NewThunk.Name                       = std::string {pfnName->Name, MIN(MAX_PATH, ::strlen(FunctionName))};
+            const char* FunctionName            = pfnName->Name;
+            NewThunk.Name                       = std::string {FunctionName, MIN(MAX_PATH, ::strlen(FunctionName))};
         }
 
         Entry.Functions.push_back(std::move(NewThunk));
@@ -421,9 +422,11 @@ PE::FillResources()
 
             const auto ResourceName = reinterpret_cast<PIMAGE_RESOURCE_DIR_STRING_U>(ResourceNameLocation);
 
-            m_PeResourceDirectory.Entries.emplace_back(ResourceEntry {
-                .Type = PE::ResourceType::String,
-                .Data = ResourceEntryWideString {ResourceName->NameString, MIN(MAX_PATH, ResourceName->Length)}});
+            ResourceEntry Entry {
+                .Type = PE::ResourceType::WideString,
+                .Data = ResourceEntryWideString {ResourceName->NameString, MIN((usize)MAX_PATH, ResourceName->Length)}};
+
+            m_PeResourceDirectory.Entries.push_back(std::move(Entry));
         }
         else // Raw
         {
