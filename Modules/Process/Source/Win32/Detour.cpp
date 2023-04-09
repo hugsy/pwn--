@@ -1,11 +1,26 @@
 #include "Win32/Process.hpp"
 
 EXTERN_C_START
+
+///
+///@brief
+///
 uptr HookCallbackLocation {0};
 
+///
+///@brief
+///
+///@return true
+///@return false
+///
 bool
 GoToTrampoline();
 
+///
+///@brief
+///
+///@return usize
+///
 usize
 GoToTrampolineLength();
 EXTERN_C_END

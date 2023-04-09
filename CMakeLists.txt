@@ -54,7 +54,6 @@ list(APPEND PWN_MODULES
 
     # TODO : ideas for future modules
     # - Win32/WTS
-    # - function hook
 )
 
 if(PWN_DISASSEMBLE_X86)

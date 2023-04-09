@@ -18,6 +18,18 @@ namespace pwn::Binary
 class PE
 {
 public:
+    enum class ResourceType
+    {
+        WideString,
+        String,
+        Bitmap,
+        Icon,
+        Menu,
+        Raw
+    };
+
+#pragma region PE Classes Redefinition
+#pragma pack(push, 1)
     using DosHeader                = IMAGE_DOS_HEADER;
     using PeHeader32               = IMAGE_NT_HEADERS32;
     using PeHeader64               = IMAGE_NT_HEADERS64;
@@ -33,8 +45,6 @@ public:
     using PeResourceDirectoryEntry = IMAGE_RESOURCE_DIRECTORY_ENTRY;
     using PeResourceDataEntry      = IMAGE_RESOURCE_DATA_ENTRY;
 
-
-#pragma pack(push, 1)
     struct PeThunkData32 : IMAGE_THUNK_DATA32
     {
         u16 Hint;
@@ -53,7 +63,7 @@ public:
     {
         std::string Name2;
         std::vector<PeThunkData> Functions;
-        // TODO: (Imp)Hash
+        // TODO: ImpHash, ExpHash, IatHash
     };
 
     struct PeDelayLoadDescriptor : IMAGE_DELAYLOAD_DESCRIPTOR
@@ -71,15 +81,30 @@ public:
         std::string Name;
     };
 
+    using ResourceEntryString     = std::string;
+    using ResourceEntryWideString = std::wstring;
+    struct ResourceEntryRaw : PeResourceDataEntry
+    {
+    };
+
+    struct ResourceEntry : PeResourceDataEntry
+    {
+        PE::ResourceType Type;
+        std::variant<ResourceEntryRaw, ResourceEntryString, ResourceEntryWideString> Data;
+    };
+
     struct PeResourceDirectory : IMAGE_RESOURCE_DIRECTORY
     {
-        std::vector<PeResourceDataEntry> Entries;
+        std::vector<ResourceEntry> Entries;
     };
+
+
 #pragma pack(pop)
 
+#pragma endregion
 
     ///
-    ///@brief
+    ///@brief Very simple static wrapper around the `PE(Path)` constructor
     ///
     ///@param Path
     ///@return Result<bool>
@@ -96,6 +121,7 @@ public:
         return Ok(pe);
     }
 
+    PE() = delete;
 
     ///
     ///@brief Construct a new PE object from a path
@@ -182,29 +208,36 @@ private:
         return m_NtBase;
     }
 
-
-    template<class T = void*>
-    T const
-    VA(uptr Offset) const
-    {
-        return reinterpret_cast<T>(Base() + Offset);
-    }
+    template<typename T>
+    bool
+    IsWithinBounds(const T& Address);
 
 
-    uptr
-    RVA(uptr Offset) const
-    {
-        return Offset - Base();
-    }
-
+    ///
+    ///@brief Get a raw pointer to the first section
+    ///
+    ///@return PE::PeSectionHeader*
+    ///
     PE::PeSectionHeader*
     FirstSection();
 
 
+    ///
+    ///@brief Populate the PE section entries
+    ///
+    ///@return true
+    ///@return false if any error occured
+    ///
     bool
     FillSections();
 
 
+    ///
+    ///@brief Fill the ExportTable table
+    ///
+    ///@return true
+    ///@return false if any error occured
+    ///
     bool
     FillDataDirectories();
 
