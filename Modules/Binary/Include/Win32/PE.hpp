@@ -18,6 +18,7 @@ namespace pwn::Binary
 class PE
 {
 public:
+#pragma region PE Classes Redefinition
     enum class ResourceType
     {
         WideString,
@@ -28,7 +29,6 @@ public:
         Raw
     };
 
-#pragma region PE Classes Redefinition
 #pragma pack(push, 1)
     using DosHeader                = IMAGE_DOS_HEADER;
     using PeHeader32               = IMAGE_NT_HEADERS32;
@@ -195,6 +195,12 @@ public:
     ExportTable() const
     {
         return m_PeExportDirectory.Entries;
+    }
+
+    std::vector<PeImportDescriptor> const&
+    ImportTable() const
+    {
+        return m_PeImportTable.Entries;
     }
 
 private:
