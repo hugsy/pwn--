@@ -143,5 +143,6 @@ if(PWN_BUILD_TOOLKIT)
 endif()
 
 if(WIN32 AND PWN_BUILD_DOCS)
+    find_package(Doxygen REQUIRED)
     add_subdirectory(Docs)
 endif()
