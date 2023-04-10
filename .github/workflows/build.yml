@@ -15,7 +15,7 @@ jobs:
     name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}"
     env:
       CMAKE_CONFIGURATION: ${{ github.ref_name == 'main' && 'RelWithDebInfo' || 'Debug' }}
-      CMAKE_FLAGS: "${{ matrix.build == 'full' && '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=ON' || '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=OFF -DPWN_DISASSEMBLE_ARM64=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF' }}"
+      CMAKE_FLAGS: "${{ matrix.build == 'full' && '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=OFF' || '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=OFF -DPWN_DISASSEMBLE_ARM64=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF' }}"
 
     strategy:
       fail-fast: false
@@ -147,7 +147,7 @@ jobs:
       uses: sarisia/actions-status-discord@v1.10.0
       with:
         nodetail: true
-        title: 🚧 🚧 Summary of Build `${{ env.GITHUB_SHA_SHORT }}` for `${{ env.REPO }}` 🚧 🚧 
+        title: 🚧 🚧 Summary of Build `${{ env.GITHUB_SHA_SHORT }}` for `${{ env.REPO }}` 🚧 🚧
         description: |
           [Job #${{ github.run_number }}](${{ env.RUN_URL }}): CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by [${{ github.actor }}](${{ env.AUTHOR_URL }}):
           ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
