@@ -1,12 +1,12 @@
-[submodule "deps/zydis"]
-	path = deps/zydis
+[submodule "Deps/zydis"]
+	path = Deps/zydis
 	url = https://github.com/zyantific/zydis.git
-[submodule "deps/lua/src"]
-	path = deps/lua/src
+[submodule "Deps/lua/src"]
+	path = Deps/lua/src
 	url = https://github.com/lua/lua
-[submodule "deps/phnt"]
+[submodule "Deps/phnt"]
 	path = deps/phnt
 	url = https://github.com/hugsy/phnt
-[submodule "deps/arch-arm64"]
+[submodule "Deps/arch-arm64"]
 	path = deps/arch-arm64
 	url = https://github.com/hugsy/arch-arm64
