@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['windows-latest'] # 'ubuntu-latest' removed since gcc-12 nor clang-16 supports std::format
-        platform: ['x64', 'x86']
+        platform: ['x64', 'x86', 'arm64']
         build: ['lite', 'full']
         include:
           - runs-on: ubuntu-latest
