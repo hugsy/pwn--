@@ -5,8 +5,8 @@
 	path = Deps/lua/src
 	url = https://github.com/lua/lua
 [submodule "Deps/phnt"]
-	path = deps/phnt
+	path = Deps/phnt
 	url = https://github.com/hugsy/phnt
 [submodule "Deps/arch-arm64"]
-	path = deps/arch-arm64
+	path = Deps/arch-arm64
 	url = https://github.com/hugsy/arch-arm64
