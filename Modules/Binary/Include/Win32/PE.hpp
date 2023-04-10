@@ -45,6 +45,7 @@ public:
     using PeResourceDirectoryEntry = IMAGE_RESOURCE_DIRECTORY_ENTRY;
     using PeResourceDataEntry      = IMAGE_RESOURCE_DATA_ENTRY;
 
+
     struct PeThunkData32 : IMAGE_THUNK_DATA32
     {
         u16 Hint;
@@ -102,6 +103,19 @@ public:
     {
         usize Size;
         std::vector<u8> UnwindRawBytes;
+    };
+
+    struct PeImageBaseRelocation : IMAGE_BASE_RELOCATION
+    {
+        struct RelocationEntry
+        {
+            u16 Type {};
+            u32 Address {};
+            std::string_view TypeName {};
+        };
+
+        usize NumberOfEntries;
+        std::vector<RelocationEntry> Entries;
     };
 
 #pragma pack(pop)
@@ -496,6 +510,8 @@ private:
     {
         std::vector<PeExceptionTableEntry> Entries;
     } m_PeExceptionTable {};
+
+    std::vector<PeImageBaseRelocation> m_PeRelocations {};
 };
 
 } // namespace pwn::Binary

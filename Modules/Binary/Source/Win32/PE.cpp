@@ -143,7 +143,7 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
     DoParse(Resources);
     DoParse(Exception);
     DoParse(Security);
-    // DoParse(Relocations);
+    DoParse(Relocations);
     DoParse(Architecture);
     // DoParse(ThreadLocalStorage);
     // DoParse(LoadConfiguration);
@@ -152,7 +152,7 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
     // DoParse(BoundImport);
     DoParse(ImportAddressTable);
     DoParse(DelayImport);
-    // DoParse(ComDescriptor);
+    DoParse(ComDescriptor);
 
 #undef DoParse
 
@@ -526,7 +526,81 @@ PE::FillRelocations()
     const auto RelocationBase =
         (IMAGE_BASE_RELOCATION*)GetRelocationVa(m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
 
-    // TODO
+    auto CurrentRelocation = RelocationBase;
+    while ( true )
+    {
+        if ( !CurrentRelocation || !CurrentRelocation->VirtualAddress || !CurrentRelocation->SizeOfBlock )
+        {
+            break;
+        }
+
+        if ( !IsWithinBounds(CurrentRelocation) || CurrentRelocation->SizeOfBlock < sizeof(IMAGE_BASE_RELOCATION) )
+        {
+            return false;
+        }
+
+        PeImageBaseRelocation Entry {};
+        Entry.VirtualAddress  = CurrentRelocation->VirtualAddress;
+        Entry.SizeOfBlock     = CurrentRelocation->SizeOfBlock;
+        Entry.NumberOfEntries = (CurrentRelocation->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(u16);
+
+        auto res = FindSectionFromRva(Entry.VirtualAddress);
+        if ( Failed(res) )
+        {
+            return false;
+        }
+
+        auto const& Section = Value(res);
+        u16* RelocEntryAddr = (u16*)(m_DosBase + Entry.VirtualAddress);
+
+        for ( usize i = 0; i < Entry.NumberOfEntries; i++, RelocEntryAddr++ )
+        {
+            const u16 Type                  = (*RelocEntryAddr & 0xf000) >> 12;
+            const u16 Offset                = (*RelocEntryAddr & 0x0fff);
+            const std::string_view TypeName = [&Type]()
+            {
+                switch ( Type )
+                {
+                case IMAGE_REL_BASED_ABSOLUTE:
+                    return "IMAGE_REL_BASED_ABSOLUTE";
+                case IMAGE_REL_BASED_HIGH:
+                    return "IMAGE_REL_BASED_HIGH";
+                case IMAGE_REL_BASED_LOW:
+                    return "IMAGE_REL_BASED_LOW";
+                case IMAGE_REL_BASED_HIGHLOW:
+                    return "IMAGE_REL_BASED_HIGHLOW";
+                case IMAGE_REL_BASED_HIGHADJ:
+                    return "IMAGE_REL_BASED_HIGHADJ";
+                case IMAGE_REL_BASED_MACHINE_SPECIFIC_5:
+                    return "IMAGE_REL_BASED_MACHINE_SPECIFIC_5";
+                case IMAGE_REL_BASED_RESERVED:
+                    return "IMAGE_REL_BASED_RESERVED";
+                case IMAGE_REL_BASED_MACHINE_SPECIFIC_7:
+                    return "IMAGE_REL_BASED_MACHINE_SPECIFIC_7";
+                case IMAGE_REL_BASED_MACHINE_SPECIFIC_8:
+                    return "IMAGE_REL_BASED_MACHINE_SPECIFIC_8";
+                case IMAGE_REL_BASED_MACHINE_SPECIFIC_9:
+                    return "IMAGE_REL_BASED_MACHINE_SPECIFIC_9";
+                case IMAGE_REL_BASED_DIR64:
+                    return "IMAGE_REL_BASED_DIR64";
+                default:
+                    return "";
+                }
+            }();
+            if ( TypeName.empty() )
+            {
+                return false;
+            }
+
+            Entry.Entries.emplace_back(
+                PeImageBaseRelocation::RelocationEntry {Type, Entry.VirtualAddress + Offset, TypeName});
+        }
+
+        m_PeRelocations.push_back(std::move(Entry));
+
+        CurrentRelocation = (IMAGE_BASE_RELOCATION*)((uptr)CurrentRelocation + CurrentRelocation->SizeOfBlock);
+    }
+
     return true;
 }
 
