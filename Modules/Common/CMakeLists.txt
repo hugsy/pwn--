@@ -8,13 +8,12 @@ set(HEADER_DIR ${SOURCE_DIR}/Include)
 
 set(SOURCE_FILES
 
-   ${SOURCE_DIR}/Architecture.cpp
-   ${SOURCE_DIR}/Context.cpp
-   ${SOURCE_DIR}/Error.cpp
-   ${SOURCE_DIR}/Log.cpp
-   ${SOURCE_DIR}/Utils.cpp
+    ${SOURCE_DIR}/Architecture.cpp
+    ${SOURCE_DIR}/Context.cpp
+    ${SOURCE_DIR}/Error.cpp
+    ${SOURCE_DIR}/Log.cpp
+    ${SOURCE_DIR}/Utils.cpp
 )
-
 
 #
 # Create and build the target static library
@@ -24,6 +23,10 @@ add_library(PWN::Common ALIAS ${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_FILES})
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
+
+if(PWN_LOG_USE_COLOR)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE PWN_LOG_USE_COLOR=1)
+endif(PWN_LOG_USE_COLOR)
 
 # target_precompile_headers(${PROJECT_NAME} INTERFACE ${INTERFACE_DIR}/pch.hpp)
 if(WIN32)
@@ -64,12 +67,11 @@ if(WIN32)
     target_link_libraries(${PROJECT_NAME}
         PUBLIC
         ntdll.lib
-)
+    )
 
 else()
     target_compile_definitions(${PROJECT_NAME} PUBLIC PWN_BUILD_FOR_LINUX)
 endif(WIN32)
-
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 
