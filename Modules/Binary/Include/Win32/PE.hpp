@@ -44,6 +44,7 @@ public:
     using PeArchitecture           = IMAGE_ARCHITECTURE_ENTRY;
     using PeResourceDirectoryEntry = IMAGE_RESOURCE_DIRECTORY_ENTRY;
     using PeResourceDataEntry      = IMAGE_RESOURCE_DATA_ENTRY;
+    using PeComDescriptorHeader          = IMAGE_COR20_HEADER;
 
 
     struct PeThunkData32 : IMAGE_THUNK_DATA32
@@ -515,6 +516,8 @@ private:
     } m_PeExceptionTable {};
 
     std::vector<PeImageBaseRelocation> m_PeRelocations {};
+
+    PeComDescriptorHeader m_PeComDescriptorHeader {};
 };
 
 } // namespace pwn::Binary

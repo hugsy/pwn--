@@ -147,7 +147,7 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
     DoParse(Architecture);
     // DoParse(ThreadLocalStorage);
     // DoParse(LoadConfiguration);
-    // DoParse(Debug);
+    DoParse(Debug);
     // DoParse(GlobalPointer);
     // DoParse(BoundImport);
     DoParse(ImportAddressTable);
@@ -787,7 +787,18 @@ PE::FillDelayImport()
 bool
 PE::FillComDescriptor()
 {
-    // TODO
+    auto GetComDescriptorVa = [this](uptr Rva)
+    {
+        return GetVirtualAddress(Rva, IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR);
+    };
+
+    const PeComDescriptorHeader* hdr = reinterpret_cast<PeComDescriptorHeader*>(
+        GetComDescriptorVa(m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress));
+    if ( hdr == nullptr )
+        return false;
+
+    ::memcpy(&m_PeComDescriptorHeader, hdr, sizeof(PeComDescriptorHeader));
+
     return true;
 }
 
