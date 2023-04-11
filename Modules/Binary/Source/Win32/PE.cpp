@@ -472,7 +472,14 @@ PE::FillException()
                 return;
             }
 
-            if ( e.BeginAddress > e.EndAddress )
+#if defined(_ARM64_)
+            // TODO adjust from `Flags` field value, based on `ARM64_FNPDATA_FLAGS`
+            DWORD EndAddress {e.BeginAddress + e.FunctionLength};
+#else
+            DWORD EndAddress {e.EndAddress};
+#endif
+
+            if ( e.BeginAddress > EndAddress )
             {
                 bIsMalformed = true;
                 return;
@@ -480,9 +487,9 @@ PE::FillException()
 
             PeExceptionTableEntry entry {};
             ::memcpy(&entry, &e, sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY));
-            entry.Size = e.EndAddress - e.BeginAddress;
+            entry.EndAddress = EndAddress;
+            entry.Size       = EndAddress - e.BeginAddress;
             entry.UnwindRawBytes.reserve(entry.Size);
-
 
             Result<PE::PeSectionHeader> res = PE::FindSectionFromRva(entry.BeginAddress);
             if ( Failed(res) )

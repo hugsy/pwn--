@@ -1,37 +1,27 @@
-_DATA SEGMENT
-_DATA ENDS
+    GLOBAL CopySystemToken
+    GLOBAL CopySystemTokenLength
 
-_TEXT    SEGMENT
+CODE
 
-;;;
-;;; Copy the system token to the current process
-;;;
-
-PUBLIC CopySystemToken
-CopySystemToken PROC
+CopySystemToken PROC PUBLIC
     ret
 CopySystemToken ENDP
 
-PUBLIC CopySystemTokenLength
-CopySystemTokenLength PROC
+
+CopySystemTokenLength PROC PUBLIC
     ret
 CopySystemTokenLength ENDP
 
 
-;;;
-;;; OS specific shellcodes
-;;;
-
-PUBLIC CopySystemToken_Win10
-CopySystemToken_Win10 PROC
+CopySystemToken_Win10 PROC PUBLIC
     ret
 CopySystemToken_Win10 ENDP
 CopySystemToken_Win10_end::
 
-PUBLIC CopySystemTokenLength_Win10
-CopySystemTokenLength_Win10 PROC
+
+CopySystemTokenLength_Win10 PROC PUBLIC
     ret
 CopySystemTokenLength_Win10 ENDP
 
-_TEXT    ENDS
-END
+ENDS
+    END

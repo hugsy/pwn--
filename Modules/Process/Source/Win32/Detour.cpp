@@ -23,6 +23,7 @@ GoToTrampoline();
 ///
 usize
 GoToTrampolineLength();
+
 EXTERN_C_END
 
 namespace pwn::Process

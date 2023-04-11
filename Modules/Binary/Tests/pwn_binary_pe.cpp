@@ -63,7 +63,9 @@ TEST_CASE("PE file parser", "[" NS "]")
         {
             REQUIRE(entry.BeginAddress != 0);
             REQUIRE(entry.EndAddress != 0);
+#ifndef _ARM64_
             REQUIRE(entry.UnwindInfoAddress != 0);
+#endif // _ARM64_
         }
     }
 

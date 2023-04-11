@@ -16,13 +16,9 @@ if(WIN32)
         ${SOURCE_DIR}/Win32/ThreadGroup.cpp
         ${SOURCE_DIR}/Win32/Detour.cpp
 
-        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:
-        ${SOURCE_DIR}/Win32/asm/x64/get_teb.asm
-        ${SOURCE_DIR}/Win32/asm/x64/trampoline.asm
-        >
-
+        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${SOURCE_DIR}/Win32/asm/x64/get_teb.asm ${SOURCE_DIR}/Win32/asm/x64/trampoline.asm>
+        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>:${SOURCE_DIR}/Win32/asm/arm64/get_teb.asm ${SOURCE_DIR}/Win32/asm/arm64/trampoline.asm>
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${SOURCE_DIR}/Win32/asm/x86/get_teb.asm>
-        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>:${SOURCE_DIR}/Win32/asm/arm64/get_teb.asm>
     )
 else()
     return()

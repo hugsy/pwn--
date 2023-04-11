@@ -101,6 +101,9 @@ public:
 
     struct PeExceptionTableEntry : IMAGE_RUNTIME_FUNCTION_ENTRY
     {
+#if defined(_ARM64_)
+        DWORD EndAddress {};
+#endif
         usize Size;
         std::vector<u8> UnwindRawBytes;
     };
