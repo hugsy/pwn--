@@ -2,8 +2,6 @@
 # Build Windows test tools
 #
 
-enable_language(ASM_MASM)
-
 set(PWNLIB_TOOLS_WIN32_DIR ${PWNLIB_ROOT_DIR}/Tools/Win32 CACHE INTERNAL "PWNLIB_TOOLS_WIN32_DIR")
 
 set(

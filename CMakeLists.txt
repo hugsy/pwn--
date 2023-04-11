@@ -108,6 +108,16 @@ if(PWN_INCLUDE_DISASSEMBLER)
     list(APPEND PWN_MODULES Assembly)
 endif(PWN_INCLUDE_DISASSEMBLER)
 
+if("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "arm64")
+    enable_language(CXX ASM_MARMASM)
+elseif("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "x64")
+    enable_language(CXX ASM_MASM)
+elseif("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "x86")
+    enable_language(CXX ASM_MASM)
+else()
+    message(FATAL_ERROR "No ASSEMBLY mode available")
+endif()
+
 add_subdirectory(Modules)
 
 add_subdirectory(pwn++)

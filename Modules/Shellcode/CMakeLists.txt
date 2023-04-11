@@ -1,8 +1,6 @@
 project(Shellcode CXX)
 message(STATUS "Configuring module '${PROJECT_NAME}'")
 
-enable_language(C ASM_MASM)
-
 set(PROJECT_DIR ${PWNLIB_MODULE_DIR}/${PROJECT_NAME})
 set(INTERFACE_DIR ${PROJECT_DIR}/Include)
 set(SOURCE_DIR ${PROJECT_DIR}/Source)
