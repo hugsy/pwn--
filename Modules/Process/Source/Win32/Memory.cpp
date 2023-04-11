@@ -27,18 +27,18 @@ Memory::Read(uptr const Address, usize Length)
     }
 
     std::vector<u8> out(Length);
-    usize dwNbRead {};
+    SIZE_T NbByteRead {};
     if ( ::ReadProcessMemory(
              m_ProcessHandle->get(),
              reinterpret_cast<LPVOID>(Address),
              out.data(),
              Length,
-             &dwNbRead) == false )
+             &NbByteRead) == false )
     {
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    out.resize(dwNbRead);
+    out.resize(NbByteRead);
     return Ok(out);
 }
 
@@ -58,18 +58,18 @@ Memory::Write(uptr const Address, std::vector<u8> data)
         return Err(ErrorCode::NotInitialized);
     }
 
-    usize dwNbWritten {};
+    SIZE_T NbByteWritten {};
     if ( ::WriteProcessMemory(
              m_ProcessHandle->get(),
              reinterpret_cast<LPVOID>(Address),
              data.data(),
              data.size(),
-             &dwNbWritten) != false )
+             &NbByteWritten) != false )
     {
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    return Ok(dwNbWritten);
+    return Ok(static_cast<usize>(NbByteWritten));
 }
 
 Result<uptr>

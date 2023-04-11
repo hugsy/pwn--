@@ -389,10 +389,13 @@ Base64::Decode(std::string_view const& in) -> Result<std::vector<u8>>
     return Ok(out);
 }
 
+
 uptr
-align(uptr a, usize sz)
+align(uptr a, u32 sz)
 {
-    return (a + sz - 1) & (~(sz - 1));
+    if ( !sz )
+        sz = sizeof(uptr);
+    return (a + sz - 1) & static_cast<u32>(~(sz - 1));
 }
 
 

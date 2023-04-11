@@ -351,7 +351,7 @@ public:
 ///@return PWNAPI
 ///
 PWNAPI uptr
-align(uptr a, usize sz);
+align(uptr a, u32 sz);
 
 ///
 /// @brief
