@@ -71,7 +71,7 @@ public:
     Write(uptr const Address, std::vector<u8> data) -> Result<usize>;
 
     auto
-    Memset(uptr const address, const size_t size, const u8 val = 0x00) -> Result<uptr>;
+    Memset(uptr const address, const usize size, const u8 val = 0x00) -> Result<usize>;
 
     auto
     Allocate(

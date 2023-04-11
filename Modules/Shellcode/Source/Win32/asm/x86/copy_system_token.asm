@@ -7,36 +7,36 @@ _TEXT    SEGMENT
 ;;; Copy the system token to the current process
 ;;;
 
-PUBLIC CopySystemToken
-CopySystemToken PROC
-    jmp CopySystemToken_Win10
-CopySystemToken ENDP
+PUBLIC _CopySystemToken
+_CopySystemToken PROC
+    jmp _CopySystemToken_Win10
+_CopySystemToken ENDP
 
-PUBLIC CopySystemTokenLength
-CopySystemTokenLength PROC
-    jmp CopySystemTokenLength_Win10
-CopySystemTokenLength ENDP
+PUBLIC _CopySystemTokenLength
+_CopySystemTokenLength PROC
+    jmp _CopySystemTokenLength_Win10
+_CopySystemTokenLength ENDP
 
 
 ;;;
 ;;; OS specific shellcodes
 ;;;
 
-PUBLIC CopySystemToken_Win10
-CopySystemToken_Win10 PROC
+PUBLIC _CopySystemToken_Win10
+_CopySystemToken_Win10 PROC
     ;;; TODO
     xor eax,eax
     ret
-CopySystemToken_Win10 ENDP
-CopySystemToken_Win10_end::
+_CopySystemToken_Win10 ENDP
+_CopySystemToken_Win10_end::
 
-PUBLIC CopySystemTokenLength_Win10
-CopySystemTokenLength_Win10 PROC
-  mov eax, OFFSET CopySystemToken_Win10_end
-  mov ecx, OFFSET CopySystemToken_Win10
+PUBLIC _CopySystemTokenLength_Win10
+_CopySystemTokenLength_Win10 PROC
+  mov eax, OFFSET _CopySystemToken_Win10_end
+  mov ecx, OFFSET _CopySystemToken_Win10
   sub eax, ecx
   ret
-CopySystemTokenLength_Win10 ENDP
+_CopySystemTokenLength_Win10 ENDP
 
 _TEXT    ENDS
 END

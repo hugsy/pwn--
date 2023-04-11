@@ -43,7 +43,7 @@ Memory::Read(uptr const Address, usize Length)
 }
 
 Result<usize>
-Memory::Memset(uptr const address, const size_t size, const u8 val)
+Memory::Memset(uptr const address, const usize size, const u8 val)
 {
     auto data = std::vector<u8>(size);
     std::fill(data.begin(), data.end(), val);
