@@ -231,23 +231,28 @@ PE::FillDataDirectories()
 }
 
 
+template<typename Pred>
 Result<PE::PeSectionHeader>
-PE::FindSectionFromRva(uptr Rva)
+PE::FindSection(Pred Condition)
 {
-    auto const& it = std::find_if(
-        m_PeSections.cbegin(),
-        m_PeSections.cend(),
-        [&Rva](PE::PeSectionHeader const& s)
-        {
-            return (s.VirtualAddress <= Rva && Rva < s.VirtualAddress + s.Misc.VirtualSize);
-        });
-
+    auto const& it = std::find_if(m_PeSections.cbegin(), m_PeSections.cend(), Condition);
     if ( it == m_PeSections.cend() )
     {
         return Err(ErrorCode::NotFound);
     }
+    return Ok(*it);
+}
 
-    return *it;
+
+Result<PE::PeSectionHeader>
+PE::FindSectionFromRva(uptr Rva)
+{
+    auto Predicate = [&Rva](PE::PeSectionHeader const& s)
+    {
+        return (s.VirtualAddress <= Rva && Rva < s.VirtualAddress + s.Misc.VirtualSize);
+    };
+
+    return FindSection(Predicate);
 }
 
 
@@ -281,7 +286,7 @@ PE::FillExportTable()
     const PeExportDirectory* ExportDirectory = (PeExportDirectory*)GetExportVa(DirectoryExportEntry.VirtualAddress);
     if ( !ExportDirectory )
     {
-        return false;
+        return true;
     }
 
     ::memcpy(&m_PeExportDirectory, ExportDirectory, sizeof(PeExportDirectory));
@@ -357,7 +362,12 @@ PE::FillImportTable()
 
     const IMAGE_IMPORT_DESCRIPTOR* ImportDescriptor =
         (IMAGE_IMPORT_DESCRIPTOR*)GetImportVa(m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
-    if ( !ImportDescriptor || !IsWithinBounds(ImportDescriptor) )
+    if ( !ImportDescriptor )
+    {
+        return true;
+    }
+
+    if ( !IsWithinBounds(ImportDescriptor) )
     {
         return false;
     }
@@ -393,6 +403,11 @@ PE::FillResources()
     const auto ResourceDirectory =
         (IMAGE_RESOURCE_DIRECTORY*)GetResourceVa(m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress);
     if ( !ResourceDirectory )
+    {
+        return true;
+    }
+
+    if ( !IsWithinBounds(ResourceDirectory) )
     {
         return false;
     }
@@ -449,6 +464,11 @@ PE::FillException()
 
     const auto ExceptionDirectory = (IMAGE_RUNTIME_FUNCTION_ENTRY*)GetExceptionVa(
         m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_EXCEPTION].VirtualAddress);
+
+    if ( !ExceptionDirectory )
+    {
+        return true;
+    }
 
     const auto ExceptionDirectorySize = m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size;
 
@@ -530,40 +550,56 @@ PE::FillRelocations()
         return GetVirtualAddress(Rva, IMAGE_DIRECTORY_ENTRY_BASERELOC);
     };
 
-    const auto RelocationBase =
+    const auto RelocationDescriptorBase =
         (IMAGE_BASE_RELOCATION*)GetRelocationVa(m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress);
+    if ( !RelocationDescriptorBase )
+    {
+        return true;
+    }
 
-    auto CurrentRelocation = RelocationBase;
+    if ( !IsWithinBounds(RelocationDescriptorBase) )
+    {
+        return false;
+    }
+
+    auto CurrentRelocationDescriptor = RelocationDescriptorBase;
     while ( true )
     {
-        if ( !CurrentRelocation || !CurrentRelocation->VirtualAddress || !CurrentRelocation->SizeOfBlock )
+        if ( !CurrentRelocationDescriptor || !CurrentRelocationDescriptor->VirtualAddress ||
+             !CurrentRelocationDescriptor->SizeOfBlock )
         {
             break;
         }
 
-        if ( !IsWithinBounds(CurrentRelocation) || CurrentRelocation->SizeOfBlock < sizeof(IMAGE_BASE_RELOCATION) )
+        if ( !IsWithinBounds(CurrentRelocationDescriptor) ||
+             CurrentRelocationDescriptor->SizeOfBlock < sizeof(IMAGE_BASE_RELOCATION) )
         {
             return false;
         }
 
         PeImageBaseRelocation Entry {};
-        Entry.VirtualAddress  = CurrentRelocation->VirtualAddress;
-        Entry.SizeOfBlock     = CurrentRelocation->SizeOfBlock;
-        Entry.NumberOfEntries = (CurrentRelocation->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(u16);
+        Entry.VirtualAddress = CurrentRelocationDescriptor->VirtualAddress;
+        Entry.SizeOfBlock    = CurrentRelocationDescriptor->SizeOfBlock;
+        Entry.NumberOfEntries =
+            (CurrentRelocationDescriptor->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(u16);
 
-        auto res = FindSectionFromRva(Entry.VirtualAddress);
-        if ( Failed(res) )
+        const auto RelocEntryView = std::span<u16>(
+            (u16*)((uptr)CurrentRelocationDescriptor + sizeof(IMAGE_BASE_RELOCATION)),
+            Entry.NumberOfEntries);
+        if ( !IsWithinBounds(RelocEntryView.end()) )
         {
             return false;
         }
 
-        auto const& Section = Value(res);
-        u16* RelocEntryAddr = (u16*)(m_DosBase + Entry.VirtualAddress);
-
-        for ( usize i = 0; i < Entry.NumberOfEntries; i++, RelocEntryAddr++ )
+        for ( const u16 TypeOffset : RelocEntryView )
         {
-            const u16 Type                  = (*RelocEntryAddr & 0xf000) >> 12;
-            const u16 Offset                = (*RelocEntryAddr & 0x0fff);
+            if ( Entry.Entries.size() > Entry.NumberOfEntries )
+            {
+                return false;
+            }
+
+            const u16 Type                  = (TypeOffset & 0xf000) >> 12;
+            const u16 Offset                = (TypeOffset & 0x0fff);
             const std::string_view TypeName = [&Type]()
             {
                 switch ( Type )
@@ -603,9 +639,15 @@ PE::FillRelocations()
                 PeImageBaseRelocation::RelocationEntry {Type, Entry.VirtualAddress + Offset, TypeName});
         }
 
+        if ( Entry.Entries.size() > Entry.NumberOfEntries )
+        {
+            return false;
+        }
+
         m_PeRelocations.push_back(std::move(Entry));
 
-        CurrentRelocation = (IMAGE_BASE_RELOCATION*)((uptr)CurrentRelocation + CurrentRelocation->SizeOfBlock);
+        CurrentRelocationDescriptor =
+            (IMAGE_BASE_RELOCATION*)((uptr)CurrentRelocationDescriptor + CurrentRelocationDescriptor->SizeOfBlock);
     }
 
     return true;
@@ -659,7 +701,106 @@ PE::FillLoadConfiguration()
 bool
 PE::FillDebug()
 {
-    // TODO
+    auto GetDebugVa = [this](uptr Rva)
+    {
+        return GetVirtualAddress(Rva, IMAGE_DIRECTORY_ENTRY_DEBUG);
+    };
+
+    const std::string_view TargetName = ".debug";
+    auto DebugSectionRes              = FindSection(
+        [&TargetName](PE::PeSectionHeader const& s)
+        {
+            const auto CurrentName = std::string_view((char*)s.Name, 8);
+            return (CurrentName == TargetName);
+        });
+
+    const PIMAGE_DEBUG_DIRECTORY DebugDirectory = reinterpret_cast<PIMAGE_DEBUG_DIRECTORY>(
+        GetDebugVa(m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress));
+    if ( !DebugDirectory )
+    {
+        return true;
+    }
+
+    if ( !IsWithinBounds(DebugDirectory) )
+    {
+        return false;
+    }
+
+    const usize NumberOfEntries =
+        m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_DEBUG].Size / static_cast<DWORD>(sizeof(IMAGE_DEBUG_DIRECTORY));
+
+    const auto DebugDirectoryEntryView = std::span<IMAGE_DEBUG_DIRECTORY>(DebugDirectory, NumberOfEntries);
+
+    for ( auto const& DebugEntry : DebugDirectoryEntryView )
+    {
+        PeDebugEntry e {};
+        ::memcpy(&e, &DebugEntry, sizeof(PeDebugEntry));
+        e.TypeName = [&e]()
+        {
+            switch ( e.Type )
+            {
+            case IMAGE_DEBUG_TYPE_UNKNOWN:
+                return "IMAGE_DEBUG_TYPE_UNKNOWN"sv;
+            case IMAGE_DEBUG_TYPE_COFF:
+                return "IMAGE_DEBUG_TYPE_COFF"sv;
+            case IMAGE_DEBUG_TYPE_CODEVIEW:
+                return "IMAGE_DEBUG_TYPE_CODEVIEW"sv;
+            case IMAGE_DEBUG_TYPE_FPO:
+                return "IMAGE_DEBUG_TYPE_FPO"sv;
+            case IMAGE_DEBUG_TYPE_MISC:
+                return "IMAGE_DEBUG_TYPE_MISC"sv;
+            case IMAGE_DEBUG_TYPE_EXCEPTION:
+                return "IMAGE_DEBUG_TYPE_EXCEPTION"sv;
+            case IMAGE_DEBUG_TYPE_FIXUP:
+                return "IMAGE_DEBUG_TYPE_FIXUP"sv;
+            case IMAGE_DEBUG_TYPE_OMAP_TO_SRC:
+                return "IMAGE_DEBUG_TYPE_OMAP_TO_SRC"sv;
+            case IMAGE_DEBUG_TYPE_OMAP_FROM_SRC:
+                return "IMAGE_DEBUG_TYPE_OMAP_FROM_SRC"sv;
+            case IMAGE_DEBUG_TYPE_BORLAND:
+                return "IMAGE_DEBUG_TYPE_BORLAND"sv;
+            case IMAGE_DEBUG_TYPE_RESERVED10:
+                return "IMAGE_DEBUG_TYPE_BBT"sv;
+            case IMAGE_DEBUG_TYPE_CLSID:
+                return "IMAGE_DEBUG_TYPE_CLSID"sv;
+            case IMAGE_DEBUG_TYPE_VC_FEATURE:
+                return "IMAGE_DEBUG_TYPE_VC_FEATURE"sv;
+            case IMAGE_DEBUG_TYPE_POGO:
+                return "IMAGE_DEBUG_TYPE_POGO"sv;
+            case IMAGE_DEBUG_TYPE_ILTCG:
+                return "IMAGE_DEBUG_TYPE_ILTCG"sv;
+            case IMAGE_DEBUG_TYPE_MPX:
+                return "IMAGE_DEBUG_TYPE_MPX"sv;
+            case IMAGE_DEBUG_TYPE_REPRO:
+                return "IMAGE_DEBUG_TYPE_REPRO"sv;
+            case 18:
+                return "IMAGE_DEBUG_TYPE_SPGO"sv;
+            case 19:
+                return "IMAGE_DEBUG_TYPE_SHA256"sv;
+            case IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS:
+                return "IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS"sv;
+            default:
+                return ""sv;
+            }
+        }();
+
+        if ( e.TypeName.empty() )
+        {
+            return false;
+        }
+
+        //
+        // Collect data
+        //
+
+        // TODO
+
+        //
+        // Append entry
+        //
+        m_PeDebugTable.push_back(std::move(e));
+    }
+
     return true;
 }
 
@@ -792,12 +933,65 @@ PE::FillComDescriptor()
         return GetVirtualAddress(Rva, IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR);
     };
 
-    const PeComDescriptorHeader* hdr = reinterpret_cast<PeComDescriptorHeader*>(
+    const PeComDescriptor* ComHeader = reinterpret_cast<PeComDescriptor*>(
         GetComDescriptorVa(m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress));
-    if ( hdr == nullptr )
-        return false;
+    if ( !ComHeader )
+    {
+        return true;
+    }
 
-    ::memcpy(&m_PeComDescriptorHeader, hdr, sizeof(PeComDescriptorHeader));
+    if ( ComHeader->cb != sizeof(IMAGE_COR20_HEADER) )
+    {
+        return false;
+    }
+
+    ::memcpy(&m_PeComDescriptor, ComHeader, sizeof(IMAGE_COR20_HEADER));
+
+    //
+    // Handle .NET metadata (super basic)
+    //
+    if ( m_PeComDescriptor.MetaData.VirtualAddress && m_PeComDescriptor.MetaData.Size )
+    {
+        const uptr MetadataBase = GetComDescriptorVa(m_PeComDescriptor.MetaData.VirtualAddress);
+        if ( !MetadataBase )
+            return false;
+
+        auto& MetaData      = m_PeComDescriptor;
+        uptr MetadataCursor = MetadataBase;
+
+        ///
+        ///@brief Read an arbitrary native type from the cursor and update it
+        ///
+        auto GetNext = [this, &MetaData, &MetadataCursor]<std::integral T>(T& out) -> bool
+        {
+            T* ptr = (T*)MetadataCursor;
+            MetadataCursor += sizeof(T);
+            if ( !IsWithinBounds(ptr) )
+                return false;
+            out = *ptr;
+            return true;
+        };
+
+        ///
+        ///@brief Read a null-terminated string
+        ///
+        auto GetNextString = [this, &MetaData, &MetadataCursor](std::string& out) -> bool
+        {
+            char* StartPointer {(char*)MetadataCursor};
+            auto sz = ::strlen((char*)MetadataCursor);
+            MetadataCursor += sz;
+            if ( !IsWithinBounds(MetadataCursor) )
+                return false;
+
+            out.assign(StartPointer, sz);
+            return true;
+        };
+
+        if ( !GetNext(MetaData.Signature) || !GetNext(MetaData.MajorVersion) || !GetNext(MetaData.MinorVersion) ||
+             !GetNext(MetaData.Reserved) || !GetNext(MetaData.Length) || !GetNextString(MetaData.VersionString) ||
+             !GetNext(MetaData.Flags) || !GetNext(MetaData.Streams) )
+            return false;
+    }
 
     return true;
 }

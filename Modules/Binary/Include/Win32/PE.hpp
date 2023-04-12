@@ -29,6 +29,7 @@ public:
         Raw
     };
 
+
 #pragma pack(push, 1)
     using DosHeader                = IMAGE_DOS_HEADER;
     using PeHeader32               = IMAGE_NT_HEADERS32;
@@ -44,8 +45,6 @@ public:
     using PeArchitecture           = IMAGE_ARCHITECTURE_ENTRY;
     using PeResourceDirectoryEntry = IMAGE_RESOURCE_DIRECTORY_ENTRY;
     using PeResourceDataEntry      = IMAGE_RESOURCE_DATA_ENTRY;
-    using PeComDescriptorHeader          = IMAGE_COR20_HEADER;
-
 
     struct PeThunkData32 : IMAGE_THUNK_DATA32
     {
@@ -120,6 +119,38 @@ public:
 
         usize NumberOfEntries;
         std::vector<RelocationEntry> Entries;
+    };
+
+    struct PeDebugEntry : IMAGE_DEBUG_DIRECTORY
+    {
+        std::string_view TypeName;
+    };
+
+    struct PeDotNetMetadataStreamHeader
+    {
+        u32 Offset {};
+        u32 Size {};
+        std::string Name {};
+    };
+
+    struct PeComDescriptor : IMAGE_COR20_HEADER
+    {
+        //
+        // Metadata
+        //
+        u32 Signature {};
+        u16 MajorVersion {};
+        u16 MinorVersion {};
+        u32 Reserved {};
+        u32 Length {};
+        std::string VersionString {};
+        u16 Flags {};
+        u16 Streams {};
+
+        //
+        // Streams
+        //
+        std::vector<PeDotNetMetadataStreamHeader> StreamHeaders {};
     };
 
 #pragma pack(pop)
@@ -236,6 +267,12 @@ public:
     DelayLoadTable() const
     {
         return m_PeDelayImportTable.Entries;
+    }
+
+    std::vector<PeDebugEntry> const&
+    DebugTable() const
+    {
+        return m_PeDebugTable;
     }
 
 private:
@@ -432,6 +469,17 @@ private:
     bool
     FillComDescriptor();
 
+    ///
+    ///@brief Generic templated function to find a Section Header from a predicate
+    ///
+    ///@tparam Pred
+    ///@param Condition
+    ///@return Result<PE::PeSectionHeader>
+    ///
+    template<typename Pred>
+    Result<PE::PeSectionHeader>
+    FindSection(Pred Condition);
+
 
     ///
     ///@brief Find a section header from a relative virtual address
@@ -517,7 +565,9 @@ private:
 
     std::vector<PeImageBaseRelocation> m_PeRelocations {};
 
-    PeComDescriptorHeader m_PeComDescriptorHeader {};
+    PeComDescriptor m_PeComDescriptor {};
+
+    std::vector<PeDebugEntry> m_PeDebugTable {};
 };
 
 } // namespace pwn::Binary

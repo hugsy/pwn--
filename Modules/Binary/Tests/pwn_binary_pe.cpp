@@ -6,7 +6,7 @@ using namespace pwn;
 
 #define NS "Binary::PE"
 
-TEST_CASE("PE file parser", "[" NS "]")
+TEST_CASE("Native PE file parser", "[" NS "]")
 {
     auto res = Binary::PE::Parse(L"c:\\windows\\system32\\kernel32.dll");
     REQUIRE(Success(res));
@@ -98,5 +98,28 @@ TEST_CASE("PE file parser", "[" NS "]")
                     fn);
             }
         }
+    }
+
+    SECTION("Debug parsing")
+    {
+        for ( auto const& DebugEntry : pe.DebugTable() )
+        {
+            REQUIRE(DebugEntry.AddressOfRawData != 0);
+            REQUIRE(DebugEntry.Type != 0);
+            REQUIRE(DebugEntry.SizeOfData != 0);
+            REQUIRE(DebugEntry.PointerToRawData != 0);
+        }
+    }
+}
+
+TEST_CASE(".NET PE parse", "[" NS "]")
+{
+    auto res = Binary::PE::Parse(L"C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App\\7.0.5\\mscorlib.dll");
+    REQUIRE(Success(res));
+    const auto pe = Value(res);
+    REQUIRE(pe.IsValid());
+
+    SECTION("COM parsing")
+    {
     }
 }
