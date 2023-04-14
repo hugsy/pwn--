@@ -145,11 +145,11 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
     DoParse(Security);
     DoParse(Relocations);
     DoParse(Architecture);
-    // DoParse(ThreadLocalStorage);
-    // DoParse(LoadConfiguration);
+    DoParse(ThreadLocalStorage);
+    DoParse(LoadConfiguration);
     DoParse(Debug);
-    // DoParse(GlobalPointer);
-    // DoParse(BoundImport);
+    DoParse(GlobalPointer);
+    DoParse(BoundImport);
     DoParse(ImportAddressTable);
     DoParse(DelayImport);
     DoParse(ComDescriptor);
@@ -731,13 +731,13 @@ PE::FillDebug()
 
     const auto DebugDirectoryEntryView = std::span<IMAGE_DEBUG_DIRECTORY>(DebugDirectory, NumberOfEntries);
 
-    for ( auto const& DebugEntry : DebugDirectoryEntryView )
+    for ( auto const& DebugEntryView : DebugDirectoryEntryView )
     {
-        PeDebugEntry e {};
-        ::memcpy(&e, &DebugEntry, sizeof(PeDebugEntry));
-        e.TypeName = [&e]()
+        PeDebugEntry DebugEntry {};
+        ::memcpy(&DebugEntry, &DebugEntryView, sizeof(IMAGE_DEBUG_DIRECTORY));
+        DebugEntry.TypeName = [&DebugEntry]()
         {
-            switch ( e.Type )
+            switch ( DebugEntry.Type )
             {
             case IMAGE_DEBUG_TYPE_UNKNOWN:
                 return "IMAGE_DEBUG_TYPE_UNKNOWN"sv;
@@ -787,21 +787,30 @@ PE::FillDebug()
                 return ""sv;
             }
         }();
-        if ( e.TypeName.empty() )
+        if ( DebugEntry.TypeName.empty() )
         {
-            err("[pe::debug] Invalid reported type {}", e.TypeName);
+            err("[pe::debug] Invalid reported type {}", DebugEntry.TypeName);
             return false;
         }
 
         //
         // Collect data
         //
+        const u8* RawDataPtr  = (u8*)GetDebugVa(DebugEntry.AddressOfRawData);
+        const u32 RawDataSize = DebugEntry.SizeOfData;
+        if ( RawDataSize && (!RawDataPtr || !IsWithinBounds(RawDataPtr) || !IsWithinBounds(RawDataPtr + RawDataSize)) )
+        {
+            return false;
+        }
 
+        DebugEntry.RawData.resize(RawDataSize);
+        const auto RawData = std::span<u8>((u8*)RawDataPtr, (usize)RawDataSize);
+        DebugEntry.RawData.assign(RawData.begin(), RawData.end());
 
         //
         // Append entry
         //
-        m_PeDebugTable.push_back(std::move(e));
+        m_PeDebugTable.push_back(std::move(DebugEntry));
     }
 
     return true;

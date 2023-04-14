@@ -117,13 +117,14 @@ public:
             std::string_view TypeName {};
         };
 
-        usize NumberOfEntries;
-        std::vector<RelocationEntry> Entries;
+        usize NumberOfEntries {};
+        std::vector<RelocationEntry> Entries {};
     };
 
     struct PeDebugEntry : IMAGE_DEBUG_DIRECTORY
     {
-        std::string_view TypeName;
+        std::string_view TypeName {};
+        std::vector<u8> RawData {};
     };
 
     struct PeDotNetMetadataStreamHeader
