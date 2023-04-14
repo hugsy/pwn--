@@ -773,19 +773,23 @@ PE::FillDebug()
                 return "IMAGE_DEBUG_TYPE_MPX"sv;
             case IMAGE_DEBUG_TYPE_REPRO:
                 return "IMAGE_DEBUG_TYPE_REPRO"sv;
+            case 17:
+                return "IMAGE_DEBUG_TYPE_EMBEDDEDPORTABLEPDB"sv;
             case 18:
                 return "IMAGE_DEBUG_TYPE_SPGO"sv;
             case 19:
                 return "IMAGE_DEBUG_TYPE_SHA256"sv;
             case IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS:
                 return "IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS"sv;
+            case 21:
+                return "IMAGE_DEBUG_TYPE_EMBEDDEDPORTABLEPDB"sv;
             default:
                 return ""sv;
             }
         }();
-
         if ( e.TypeName.empty() )
         {
+            err("[pe::debug] Invalid reported type {}", e.TypeName);
             return false;
         }
 
@@ -793,7 +797,6 @@ PE::FillDebug()
         // Collect data
         //
 
-        // TODO
 
         //
         // Append entry

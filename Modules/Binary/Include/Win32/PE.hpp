@@ -199,18 +199,35 @@ public:
         return IsValid();
     }
 
+    ///
+    ///@brief
+    ///
+    ///@return true
+    ///@return false
+    ///
     bool
     IsValid() const
     {
         return m_IsValid;
     }
 
+    ///
+    ///@brief
+    ///
+    ///@return DosHeader const&
+    ///
     DosHeader const&
     Dos() const
     {
         return m_DosHeader;
     }
 
+    ///
+    ///@brief
+    ///
+    ///@return true
+    ///@return false
+    ///
     bool
     Is64b() const
     {
