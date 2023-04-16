@@ -38,7 +38,7 @@ public:
     using PeFileHeader             = IMAGE_FILE_HEADER;
     using PeOptionalHeader32       = IMAGE_OPTIONAL_HEADER32;
     using PeOptionalHeader64       = IMAGE_OPTIONAL_HEADER64;
-    using PeOptionalHeader         = std::variant<PeOptionalHeader32, PeOptionalHeader64>;
+    using PeOptionalHeader         = std::variant<IMAGE_OPTIONAL_HEADER32, IMAGE_OPTIONAL_HEADER64>;
     using PeSectionHeader          = IMAGE_SECTION_HEADER;
     using PeDataDirectory          = IMAGE_DATA_DIRECTORY;
     using PeExportDirectory        = IMAGE_EXPORT_DIRECTORY;
@@ -154,6 +154,11 @@ public:
         std::vector<PeDotNetMetadataStreamHeader> StreamHeaders {};
     };
 
+    struct PeLoadConfigDirectory
+    {
+        std::variant<IMAGE_LOAD_CONFIG_DIRECTORY32, IMAGE_LOAD_CONFIG_DIRECTORY64> Header;
+    };
+
 #pragma pack(pop)
 
 #pragma endregion
@@ -161,7 +166,7 @@ public:
     ///
     ///@brief Very simple static wrapper around the `PE(Path)` constructor
     ///
-    ///@param Path
+    ///@param Path the path to the file on disk to be parsed
     ///@return Result<bool>
     ///
     static Result<PE>
@@ -181,7 +186,7 @@ public:
     ///
     ///@brief Construct a new PE object from a path
     ///
-    ///@param Path
+    ///@param Path the path to the file on disk to be parsed
     ///
     PE(std::filesystem::path const& Path);
 
@@ -213,7 +218,7 @@ public:
     }
 
     ///
-    ///@brief
+    ///@brief The DOS header address *when* the image was parsed, the address is not guaranteed to be still mapped later
     ///
     ///@return DosHeader const&
     ///
@@ -306,7 +311,7 @@ private:
 
     template<typename T>
     bool
-    IsWithinBounds(const T& Address);
+    IsWithinBounds(const T& Address) const;
 
 
     ///
@@ -315,7 +320,7 @@ private:
     ///@return PE::PeSectionHeader*
     ///
     PE::PeSectionHeader*
-    FirstSection();
+    FirstSection() const;
 
 
     ///
@@ -586,6 +591,8 @@ private:
     PeComDescriptor m_PeComDescriptor {};
 
     std::vector<PeDebugEntry> m_PeDebugTable {};
+
+    PeLoadConfigDirectory m_PeLoadConfigDirectory {};
 };
 
 } // namespace pwn::Binary

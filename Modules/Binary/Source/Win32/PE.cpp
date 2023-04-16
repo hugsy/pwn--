@@ -38,18 +38,18 @@ PE::PE(std::filesystem::path const& Path)
 
 
 bool
-PE::ParsePeFromMemory(std::span<u8> const& View)
+PE::ParsePeFromMemory(std::span<u8> const& MzView)
 {
     //
     // Parse the DOS header
     //
-    if ( View.size() < sizeof(DosHeader) || View[0] != 'M' || View[1] != 'Z' )
+    if ( MzView.size() < sizeof(IMAGE_DOS_HEADER) || *((u16*)&MzView[0]) != IMAGE_DOS_SIGNATURE )
     {
         return false;
     }
 
-    m_DosBase = (uptr)View.data();
-    ::memcpy(&m_DosHeader, View.data(), sizeof(DosHeader));
+    m_DosBase = (uptr)MzView.data();
+    ::memcpy(&m_DosHeader, MzView.data(), sizeof(IMAGE_DOS_HEADER));
 
     //
     // Parse the Rich headers
@@ -59,9 +59,9 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
     //
     // Parse the PE header
     //
-    auto PeView     = View.subspan(m_DosHeader.e_lfanew);
-    const u32 Magic = *((u32*)&PeView[0]);
-    if ( Magic != IMAGE_NT_SIGNATURE )
+    auto PeView = MzView.subspan(m_DosHeader.e_lfanew);
+    if ( PeView.size() < MIN(sizeof(IMAGE_NT_HEADERS32), sizeof(IMAGE_NT_HEADERS64)) ||
+         (*((u32*)&PeView[0]) != IMAGE_NT_SIGNATURE) )
     {
         return false;
     }
@@ -69,7 +69,7 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
     try
     {
         const u16 MachineCode = *((u16*)&PeView[4]);
-        this->m_Is64b         = [&MachineCode]()
+        m_Is64b               = [&MachineCode]()
         {
             switch ( MachineCode )
             {
@@ -115,7 +115,7 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
         }
     }
 
-    m_PeMaxVa = (uptr)View.data() + View.size();
+    m_PeMaxVa = (uptr)MzView.data() + MzView.size();
 
     //
     // Fill up sections and data directories
@@ -162,37 +162,39 @@ PE::ParsePeFromMemory(std::span<u8> const& View)
 
 template<typename T>
 bool
-PE::IsWithinBounds(const T& Address)
+PE::IsWithinBounds(const T& Address) const
 {
-    auto ptr  = (uptr*)(&Address);
-    auto addr = *ptr;
+    const auto ptr  = (uptr*)(&Address);
+    const auto addr = *ptr;
     return m_DosBase <= addr && addr < m_PeMaxVa;
 }
 
 
 PE::PeSectionHeader*
-PE::FirstSection()
+PE::FirstSection() const
 {
     return m_Is64b ? (PE::PeSectionHeader*)IMAGE_FIRST_SECTION((PeHeader64*)Base()) :
                      (PE::PeSectionHeader*)IMAGE_FIRST_SECTION((PeHeader32*)Base());
 }
 
 
-#define GetPeField(Field)                                                                                              \
+#define GetField(Type, Field, Variant)                                                                                 \
     [this]()                                                                                                           \
     {                                                                                                                  \
         return std::visit(                                                                                             \
             overloaded {                                                                                               \
-                [](PeHeader32 const& p)                                                                                \
+                [](Type##32 const& p)                                                                                  \
                 {                                                                                                      \
                     return p.Field;                                                                                    \
                 },                                                                                                     \
-                [](PeHeader64 const& p)                                                                                \
+                [](Type##64 const& p)                                                                                  \
                 {                                                                                                      \
                     return p.Field;                                                                                    \
                 }},                                                                                                    \
-            Header());                                                                                                 \
+            Variant);                                                                                                  \
     }()
+
+#define GetPeField(Field) GetField(PeHeader, Field, Header())
 
 
 bool
@@ -201,7 +203,7 @@ PE::FillSections()
     const u16 NumberOfSections = GetPeField(FileHeader.NumberOfSections);
     const u32 SymbolTable      = GetPeField(FileHeader.PointerToSymbolTable);
     const u32 NumberOfSymbols  = GetPeField(FileHeader.NumberOfSymbols);
-    auto SectionView           = std::span<PE::PeSectionHeader>(FirstSection(), (usize)NumberOfSections);
+    const auto SectionView     = std::span<PE::PeSectionHeader>(FirstSection(), (usize)NumberOfSections);
 
     std::for_each(
         SectionView.begin(),
@@ -562,8 +564,11 @@ PE::FillRelocations()
         return false;
     }
 
+    const usize RelocationDescriptorSize = m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size;
+    usize RelocationCurrentSize          = 0;
+
     auto CurrentRelocationDescriptor = RelocationDescriptorBase;
-    while ( true )
+    while ( RelocationCurrentSize < RelocationDescriptorSize )
     {
         if ( !CurrentRelocationDescriptor || !CurrentRelocationDescriptor->VirtualAddress ||
              !CurrentRelocationDescriptor->SizeOfBlock )
@@ -646,8 +651,15 @@ PE::FillRelocations()
 
         m_PeRelocations.push_back(std::move(Entry));
 
+        RelocationCurrentSize += CurrentRelocationDescriptor->SizeOfBlock;
+
         CurrentRelocationDescriptor =
             (IMAGE_BASE_RELOCATION*)((uptr)CurrentRelocationDescriptor + CurrentRelocationDescriptor->SizeOfBlock);
+    }
+
+    if ( RelocationCurrentSize != RelocationDescriptorSize )
+    {
+        return false;
     }
 
     return true;
@@ -676,7 +688,7 @@ PE::FillArchitecture()
         return false;
     }
 
-    ::memcpy(&m_PeArchitecture, Architecture, sizeof(PeArchitecture));
+    ::memcpy(&m_PeArchitecture, Architecture, sizeof(IMAGE_ARCHITECTURE_ENTRY));
 
     return true;
 }
@@ -693,7 +705,37 @@ PE::FillThreadLocalStorage()
 bool
 PE::FillLoadConfiguration()
 {
-    // TODO
+    auto GetDebugVa = [this](uptr Rva)
+    {
+        return GetVirtualAddress(Rva, IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG);
+    };
+
+    const auto LoadConfigDirectory = GetDebugVa(m_PeDataDirectories[IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG].VirtualAddress);
+
+    if ( !LoadConfigDirectory )
+    {
+        return true;
+    }
+
+    if ( !IsWithinBounds(LoadConfigDirectory) )
+    {
+        return false;
+    }
+
+    // Header
+    {
+        if ( m_Is64b )
+            ::memcpy(
+                &m_PeLoadConfigDirectory.Header,
+                reinterpret_cast<PIMAGE_LOAD_CONFIG_DIRECTORY64>(LoadConfigDirectory),
+                sizeof(IMAGE_LOAD_CONFIG_DIRECTORY64));
+        else
+            ::memcpy(
+                &m_PeLoadConfigDirectory.Header,
+                reinterpret_cast<PIMAGE_LOAD_CONFIG_DIRECTORY32>(LoadConfigDirectory),
+                sizeof(IMAGE_LOAD_CONFIG_DIRECTORY32));
+    }
+
     return true;
 }
 
