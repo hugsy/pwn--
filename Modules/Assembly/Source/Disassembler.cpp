@@ -22,8 +22,10 @@ Disassembler::Disassembler(Architecture const& arch) :
     {
     case ArchitectureType::x86:
 #ifdef PWN_DISASSEMBLE_X86
-        m_Valid =
-            ZYAN_SUCCESS(::ZydisDecoderInit(&m_Decoder, ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_ADDRESS_WIDTH_32));
+        m_Valid = ZYAN_SUCCESS(::ZydisDecoderInit(
+            &m_Decoder,
+            ZydisMachineMode::ZYDIS_MACHINE_MODE_LONG_COMPAT_32,
+            ZydisStackWidth::ZYDIS_STACK_WIDTH_32));
         m_Valid &= ZYAN_SUCCESS(::ZydisFormatterInit(&m_Formatter, ZYDIS_FORMATTER_STYLE_INTEL));
 #else
         err(L"Not compiled with X86 support");
@@ -32,7 +34,10 @@ Disassembler::Disassembler(Architecture const& arch) :
 
     case ArchitectureType::x64:
 #ifdef PWN_DISASSEMBLE_X86
-        m_Valid = ZYAN_SUCCESS(::ZydisDecoderInit(&m_Decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64));
+        m_Valid = ZYAN_SUCCESS(::ZydisDecoderInit(
+            &m_Decoder,
+            ZydisMachineMode::ZYDIS_MACHINE_MODE_LONG_64,
+            ZydisStackWidth::ZYDIS_STACK_WIDTH_64));
         m_Valid &= ZYAN_SUCCESS(::ZydisFormatterInit(&m_Formatter, ZYDIS_FORMATTER_STYLE_INTEL));
 #else
         err(L"Not compiled with X64 support");
@@ -120,14 +125,21 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
     case ArchitectureType::x86:
     case ArchitectureType::x64:
     {
-        if ( !ZYAN_SUCCESS(::ZydisDecoderDecodeBuffer(&m_Decoder, &bytes[m_BufferOffset], Left, &insn.o.x86)) )
+        // ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT] {};
+
+        if ( !ZYAN_SUCCESS(::ZydisDecoderDecodeFull(
+                 &m_Decoder,
+                 &bytes[m_BufferOffset],
+                 Left,
+                 &insn.o.x86.insn,
+                 insn.o.x86.operands)) )
         {
             return Err(ErrorCode::ExternalApiCallFailed);
         }
 
-        assert(insn.o.x86.length < sizeof(insn.bytes));
-        insn.length = insn.o.x86.length;
-        ::memcpy(&insn.bytes, &insn.o.x86.raw, insn.length);
+        assert(insn.o.x86.insn.length < sizeof(insn.bytes));
+        insn.length = insn.o.x86.insn.length;
+        ::memcpy(&insn.bytes, &insn.o.x86.insn.raw, insn.length);
         break;
     }
 #endif // PWN_DISASSEMBLE_X86
@@ -198,8 +210,16 @@ Disassembler::Format(Instruction& insn, uptr Address)
     case ArchitectureType::x86:
     case ArchitectureType::x64:
     {
-        if ( !ZYAN_SUCCESS(
-                 ::ZydisFormatterFormatInstruction(&m_Formatter, &insn.o.x86, buffer, sizeof(buffer), Address)) )
+        // ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT] {};
+        if ( !ZYAN_SUCCESS(ZydisFormatterFormatInstruction(
+                 &m_Formatter,
+                 &insn.o.x86.insn,
+                 insn.o.x86.operands,
+                 insn.o.x86.insn.operand_count_visible,
+                 buffer,
+                 sizeof(buffer),
+                 Address,
+                 ZYAN_NULL)) )
         {
             return Err(ErrorCode::ExternalApiCallFailed);
         }
@@ -296,6 +316,6 @@ Disassembler::ARM64(std::vector<u8> const& bytes)
 }
 #endif
 
-} // namespace Assembly
+} // namespace pwn::Assembly
 
 #endif // PWN_INCLUDE_DISASSEMBLER

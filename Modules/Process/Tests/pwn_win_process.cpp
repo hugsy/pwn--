@@ -80,15 +80,17 @@ TEST_CASE("Process Memory", "[" NS "]")
     {
     }
 
-    SECTION("Enumerate regions")
+    SECTION("Local - Enumerate regions")
     {
-        Process::Process CurrentProcess;
+        Process::Process CurrentProcess = []()
         {
             auto res = Process::Process::Current();
             REQUIRE(Success(res));
-            CurrentProcess = Value(res);
-            REQUIRE(CurrentProcess.IsValid() == true);
-        }
+            return Value(res);
+        }();
+
+        REQUIRE(CurrentProcess.IsValid() == true);
+        REQUIRE(CurrentProcess.IsRemote() == false);
 
         auto& CurrentProcessMemory = CurrentProcess.Memory;
         {
@@ -100,15 +102,14 @@ TEST_CASE("Process Memory", "[" NS "]")
         }
     }
 
-    SECTION("Search memory")
+    SECTION("Local - Search memory")
     {
-        Process::Process CurrentProcess;
+        Process::Process CurrentProcess = []()
         {
             auto res = Process::Process::Current();
             REQUIRE(Success(res));
-            CurrentProcess = Value(res);
-            REQUIRE(CurrentProcess.IsValid() == true);
-        }
+            return Value(res);
+        }();
 
         auto& CurrentProcessMemory = CurrentProcess.Memory;
         {
@@ -129,7 +130,33 @@ TEST_CASE("Process Memory", "[" NS "]")
         }
     }
 
-    SECTION("Direct memory query")
+    SECTION("Remote - Search memory")
+    {
+    }
+}
+
+
+TEST_CASE("Process Hooking", "[" NS "]")
+{
+    SECTION("Local")
+    {
+        Process::Process CurrentProcess = []()
+        {
+            auto res = Process::Process::Current();
+            REQUIRE(Success(res));
+            return Value(res);
+        }();
+
+        REQUIRE(CurrentProcess.IsValid() == true);
+        REQUIRE(CurrentProcess.IsRemote() == false);
+
+        const uptr TargetFunction = (uptr)::GetProcAddress(::LoadLibraryA("kernel32.dll"), "GetCurrentProcessorNumber");
+        REQUIRE(TargetFunction != 0);
+
+        INFO("Found TargetFunction at " << std::hex << TargetFunction);
+    }
+
+    SECTION("Remote")
     {
     }
 }

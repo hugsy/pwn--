@@ -2,6 +2,8 @@
 
 #include <tlhelp32.h>
 
+#include <bitset>
+
 #include "Handle.hpp"
 #include "Log.hpp"
 
@@ -322,4 +324,4 @@ System::Handles()
     return SystemHandles;
 }
 
-} // namespace System
+} // namespace pwn::System

@@ -1,6 +1,3 @@
-#pragma once
-
-
 ///
 /// @file Provide an easier way to report errors without resorting to exceptions
 ///
@@ -10,6 +7,14 @@
 ///   if( $bad_case ){ return Err(ErrorCode::RuntimeError); }
 ///   return Ok(1)
 /// }
+///
+#pragma once
+
+#include <cstdint>
+#include <iomanip>
+#include <iostream>
+#include <string_view>
+#include <variant>
 
 ///
 ///@brief Custom error codes
@@ -205,11 +210,11 @@ struct Err : ErrorType
 template<class T>
 struct Ok
 {
-    Ok(T const& value) : Value(value)
+    Ok(T const& value) : Value {value}
     {
     }
 
-    Ok(T&& value) : Value(std::move(value))
+    Ok(T&& value) : Value {std::move(value)}
     {
     }
 

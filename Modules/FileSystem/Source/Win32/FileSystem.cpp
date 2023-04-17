@@ -1,9 +1,9 @@
 #include "Win32/FileSystem.hpp"
 
-#include "API.hpp"
 #include "Handle.hpp"
 #include "Log.hpp"
 #include "Utils.hpp"
+#include "Win32/API.hpp"
 
 
 #ifndef SYMBOLIC_LINK_ALL_ACCESS
@@ -40,6 +40,20 @@ HANDLE
 File::Handle() const
 {
     return m_hFile.get();
+}
+
+
+bool
+File::IsValid() const
+{
+    return Handle() != nullptr && Handle() != INVALID_HANDLE_VALUE;
+}
+
+
+bool
+File::IsTemporary() const
+{
+    return IsValid() && m_IsTemporary;
 }
 
 
@@ -138,6 +152,37 @@ File::SetInternal(
 }
 
 
+Result<bool>
+File::ReOpenFileWith(const DWORD DesiredAccess, const DWORD DesiredShareMode, const DWORD DesiredAttributes)
+{
+    if ( !IsValid() )
+    {
+        return Err(ErrorCode::InvalidState);
+    }
+
+    if ( (m_Access & DesiredAccess) == DesiredAccess )
+    {
+        return Ok(true);
+    }
+
+    const DWORD NewAccessMask = m_Access | DesiredAccess;
+    const DWORD NewShareMode  = m_ShareMode | DesiredShareMode;
+    const DWORD NewAttributes = m_Attributes | DesiredAttributes;
+    const HANDLE hFile        = ::ReOpenFile(m_hFile.get(), NewAccessMask, NewShareMode, DesiredAttributes);
+    if ( hFile == INVALID_HANDLE_VALUE )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    m_hFile      = UniqueHandle(hFile); // this will close the initial handle
+    m_Access     = NewAccessMask;
+    m_ShareMode  = NewShareMode;
+    m_Attributes = NewAttributes;
+
+    return Ok(true);
+}
+
+
 Result<HANDLE>
 File::Map(DWORD Protect, std::optional<std::wstring_view> Name)
 {
@@ -158,12 +203,12 @@ File::View(HANDLE hMap, DWORD Protect, uptr Offset, usize Size)
     LPVOID map = ::MapViewOfFile(
         hMap,
         Protect,
-#ifndef _WIN64
-        0,
-#else
+#ifdef _WIN64
         Offset >> 32,
+#else
+        0,
 #endif
-        Offset & 0xffffffff,
+        Offset & 0xffff'ffff,
         Size);
     if ( !map )
     {

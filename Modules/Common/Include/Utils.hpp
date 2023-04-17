@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <optional>
 #include <span>
+#include <thread>
 #include <type_traits>
 #include <unordered_map>
 #include <variant>
@@ -166,6 +167,9 @@ public:
     static std::string
     To(std::wstring const& src)
     {
+#ifdef PWN_BUILD_FOR_LINUX
+        std::string dst;
+#else
         const DWORD nb =
             ::WideCharToMultiByte(CP_UTF8, 0, src.c_str(), static_cast<int>(src.size()), nullptr, 0, nullptr, nullptr);
 
@@ -179,7 +183,7 @@ public:
             static_cast<int>(dst.size() * sizeof(char)),
             nullptr,
             nullptr);
-
+#endif
         return dst;
     }
 
@@ -347,7 +351,7 @@ public:
 ///@return PWNAPI
 ///
 PWNAPI uptr
-align(uptr a, usize sz);
+align(uptr a, u32 sz);
 
 ///
 /// @brief

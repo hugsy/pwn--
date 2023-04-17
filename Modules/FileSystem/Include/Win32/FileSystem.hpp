@@ -6,8 +6,8 @@
 
 #include "Common.hpp"
 #include "Handle.hpp"
-#include "Resolver.hpp"
 #include "Utils.hpp"
+#include "Win32/Resolver.hpp"
 
 /*
 
@@ -32,18 +32,38 @@ public:
     ///
     ///@param FilePath
     ///
-    File(std::filesystem::path const& FilePath)
+    File(std::filesystem::path const& FilePath, bool IsTemporary = false) :
+        m_Access {GENERIC_READ | SYNCHRONIZE},
+        m_ShareMode {FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE},
+        m_Attributes {FILE_ATTRIBUTE_NORMAL},
+        m_IsTemporary {IsTemporary},
+        m_Path {FilePath}
     {
-        if ( !std::filesystem::exists(FilePath) )
+
+        if ( m_IsTemporary )
         {
-            return;
+            m_Attributes |= FILE_FLAG_DELETE_ON_CLOSE;
         }
 
-        auto hFile = Open(FilePath.wstring(), L"rw");
-        if ( Success(hFile) )
+        HANDLE hFile =
+            ::CreateFileW(m_Path.wstring().c_str(), m_Access, m_ShareMode, nullptr, OPEN_ALWAYS, m_Attributes, nullptr);
+        if ( hFile == INVALID_HANDLE_VALUE )
         {
-            m_hFile = UniqueHandle {Value(hFile)};
+            hFile = ::CreateFileW(
+                m_Path.wstring().c_str(),
+                m_Access,
+                m_ShareMode,
+                nullptr,
+                CREATE_ALWAYS,
+                m_Attributes,
+                nullptr);
+            if ( hFile == INVALID_HANDLE_VALUE )
+            {
+                return;
+            }
         }
+
+        m_hFile = UniqueHandle(hFile);
     }
 
 
@@ -86,6 +106,20 @@ public:
     ///
     HANDLE
     Handle() const;
+
+
+    ///
+    ///@brief Determines whether the object points to a valid file
+    ///
+    ///@return true
+    ///@return false
+    ///
+    bool
+    IsValid() const;
+
+
+    bool
+    IsTemporary() const;
 
 
     ///
@@ -176,8 +210,30 @@ public:
     Result<bool>
     Set(FILE_INFORMATION_CLASS FileInformationClass, T& FileInformationData)
     {
+        switch ( FileInformationClass )
+        {
+        case FILE_INFORMATION_CLASS::FileDispositionInformation:
+        {
+            auto res = ReOpenFileWith(DELETE);
+            if ( Failed(res) )
+            {
+                return Err(Error(res).code);
+            }
+        }
+        }
+
         return SetInternal(FileInformationClass, reinterpret_cast<PVOID>(&FileInformationData), sizeof(T));
     }
+
+
+    ///
+    ///@brief Check for required access, if not present, try to access
+    ///
+    ///@param DesiredAccess
+    ///@return Result<bool>
+    ///
+    Result<bool>
+    ReOpenFileWith(const DWORD DesiredAccess, const DWORD DesiredShareMode = 0, const DWORD DesiredAttributes = 0);
 
 
     ///
@@ -193,37 +249,41 @@ public:
         -> Result<HANDLE>
     {
         DWORD Access {}, ShareMode {}, Disposition {}, Attrs {FILE_ATTRIBUTE_NORMAL};
-        std::wstring path = std::wstring(Prefix);
+        std::wstring Path(Prefix);
 
         if ( Permission.find(L"r") != std::wstring::npos )
         {
             Access |= GENERIC_READ;
             ShareMode |= FILE_SHARE_READ;
-            Disposition = CREATE_NEW | OPEN_EXISTING;
+            Disposition = OPEN_ALWAYS;
         }
 
         if ( Permission.find(L"w") != std::wstring::npos )
         {
             Access |= GENERIC_WRITE;
             ShareMode |= FILE_SHARE_WRITE;
-            Disposition = CREATE_NEW | OPEN_EXISTING;
+            Disposition = OPEN_ALWAYS;
         }
 
         if ( Permission == L"a" )
         {
             Access |= GENERIC_READ | GENERIC_WRITE;
             ShareMode |= FILE_SHARE_READ | FILE_SHARE_WRITE;
-            Disposition = OPEN_EXISTING | TRUNCATE_EXISTING;
+            Disposition = TRUNCATE_EXISTING;
         }
 
         if ( IsTemporary )
         {
+            Disposition = CREATE_NEW;
+            Access |= GENERIC_READ | GENERIC_WRITE;
             Attrs |= FILE_FLAG_DELETE_ON_CLOSE;
-            path += L"-" + Utils::Random::string(10);
+            ShareMode = 0;
+            Path += L"-" + Utils::Random::string(10);
         }
 
-        HANDLE hFile = ::CreateFileW(path.data(), Access, ShareMode, nullptr, Disposition, Attrs, nullptr);
-        if ( hFile == INVALID_HANDLE_VALUE )
+        HANDLE hFile = ::CreateFileW(Path.c_str(), Access, ShareMode, nullptr, Disposition, Attrs, nullptr);
+        if ( (hFile == INVALID_HANDLE_VALUE) ||
+             (Disposition == OPEN_ALWAYS && ::GetLastError() != ERROR_ALREADY_EXISTS) )
         {
             return Err(ErrorCode::FilesystemError);
         }
@@ -257,7 +317,13 @@ private:
         const PVOID FileInformationData,
         const usize FileInformationDataSize);
 
+
+    const std::filesystem::path m_Path;
     UniqueHandle m_hFile {};
+    bool m_IsTemporary {false};
+    DWORD m_Access {};
+    DWORD m_ShareMode {};
+    DWORD m_Attributes {};
 };
 
 

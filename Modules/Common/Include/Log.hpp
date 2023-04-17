@@ -8,6 +8,31 @@
 ///
 #pragma once
 
+//
+// Abstraction for {std,fmt}::format
+//
+#ifdef PWN_BUILD_FOR_WINDOWS
+#include <format>
+#define PwnFormatter std::formatter
+#define PwnVFormat std::vformat
+#define PwnFormat std::format
+#define PwnMakeFormatArgs std::make_format_args
+#define PwnFormatContext std::format_context
+#elif defined(PWN_BUILD_FOR_LINUX)
+#include <fmt/core.h>
+#include <fmt/format.h>
+#define PwnFormatter fmt::formatter
+#define PwnFormat fmt::format
+#define PwnVFormat fmt::vformat
+#define PwnMakeFormatArgs fmt::make_format_args
+#define PwnFormatContext fmt::format_context
+#endif // PWN_BUILD_FOR_WINDOWS
+
+
+#include <source_location>
+#include <sstream>
+#include <string_view>
+
 #include "Common.hpp"
 
 // clang-format off
@@ -98,7 +123,7 @@ void
 Log(const LogLevel level, std::source_location const& location, std::string_view const& fmt, Args&&... args)
 {
     std::ostringstream msg;
-    msg << std::vformat(fmt, std::make_format_args(args...)) << std::endl;
+    msg << PwnVFormat(fmt, PwnMakeFormatArgs(args...)) << '\n';
     Log(level, location, msg);
 }
 
@@ -180,7 +205,7 @@ void PWNAPI
 ntperror(const std::string_view& prefix, NTSTATUS Status);
 #endif
 
-} // namespace Log
+} // namespace pwn::Log
 
 
 ///

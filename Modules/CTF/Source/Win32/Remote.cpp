@@ -82,7 +82,7 @@ CTF::Remote::send_internal(_In_ std::vector<u8> const& out)
         Utils::hexdump(out);
     }
 
-    return Ok(out.size());
+    return Ok((usize)out.size());
 }
 
 

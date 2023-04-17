@@ -2,7 +2,7 @@
 
 
 #include "Common.hpp"
-
+#include "Log.hpp"
 
 ///
 /// @brief Endianess class definition, with its wstring representation
@@ -115,13 +115,13 @@ static constexpr CMap<std::string_view, Architecture, 3> Architectures {
 ///@tparam
 ///
 template<>
-struct std::formatter<Endianess, char> : std::formatter<std::string, char>
+struct PwnFormatter<Endianess, char> : PwnFormatter<std::string, char>
 {
     auto
-    format(Endianess a, format_context& ctx)
+    format(Endianess a, PwnFormatContext& ctx)
     {
         const char* e = (a == Endianess::little) ? "LITTLE" : (a == Endianess::big) ? "BIG" : "UNKNOWN";
-        return std::formatter<string, char>::format(std::format("{}", e), ctx);
+        return PwnFormatter<std::string, char>::format(PwnFormat("{}", e), ctx);
     }
 };
 
@@ -132,10 +132,10 @@ struct std::formatter<Endianess, char> : std::formatter<std::string, char>
 ///@tparam
 ///
 template<>
-struct std::formatter<Architecture, char> : std::formatter<std::string, char>
+struct PwnFormatter<Architecture, char> : PwnFormatter<std::string, char>
 {
     auto
-    format(Architecture a, std::format_context& ctx)
+    format(Architecture a, PwnFormatContext& ctx)
     {
         std::string arch_name;
         arch_name.resize(a.name.size());
@@ -147,6 +147,6 @@ struct std::formatter<Architecture, char> : std::formatter<std::string, char>
             {
                 return std::toupper(c);
             });
-        return std::formatter<string, char>::format(std::format("{}_{}_ENDIAN", arch_name, a.endian), ctx);
+        return PwnFormatter<std::string, char>::format(PwnFormat("{}_{}_ENDIAN", arch_name, a.endian), ctx);
     }
 };

@@ -1,9 +1,8 @@
 #pragma once
 
-
-#include <format>
 #include <string>
 
+#include "Log.hpp"
 #include "Utils.hpp"
 
 using namespace pwn;
@@ -14,37 +13,37 @@ using namespace pwn;
 ///@tparam
 ///
 template<>
-struct std::formatter<std::wstring> : std::formatter<std::string>
+struct PwnFormatter<std::wstring> : PwnFormatter<std::string>
 {
     auto
-    format(std::wstring wstr, format_context& ctx)
+    format(std::wstring wstr, PwnFormatContext& ctx)
     {
-        return formatter<std::string>::format(std::format("{}", Utils::StringLib::To<std::string>(wstr)), ctx);
+        return PwnFormatter<std::string>::format(PwnFormat("{}", Utils::StringLib::To<std::string>(wstr)), ctx);
     }
 };
 
 
 template<>
-struct std::formatter<Err, char> : std::formatter<std::string, char>
+struct PwnFormatter<Err, char> : PwnFormatter<std::string, char>
 {
     auto
-    format(Err const a, format_context& ctx)
+    format(Err const a, PwnFormatContext& ctx)
     {
         std::ostringstream os;
         os << a;
-        return std::formatter<string, char>::format(os.str().c_str(), ctx);
+        return PwnFormatter<std::string, char>::format(os.str().c_str(), ctx);
     }
 };
 
 
 template<>
-struct std::formatter<ErrorType, char> : std::formatter<std::string, char>
+struct PwnFormatter<ErrorType, char> : PwnFormatter<std::string, char>
 {
     auto
-    format(ErrorType const a, format_context& ctx)
+    format(ErrorType const a, PwnFormatContext& ctx)
     {
         std::ostringstream os;
         os << a;
-        return std::formatter<string, char>::format(os.str().c_str(), ctx);
+        return PwnFormatter<std::string, char>::format(os.str().c_str(), ctx);
     }
 };

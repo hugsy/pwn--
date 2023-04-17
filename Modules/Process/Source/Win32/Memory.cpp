@@ -26,23 +26,24 @@ Memory::Read(uptr const Address, usize Length)
         return Err(ErrorCode::NotInitialized);
     }
 
-    auto out = std::vector<u8>(Length);
-    usize dwNbRead;
+    std::vector<u8> out(Length);
+    SIZE_T NbByteRead {};
     if ( ::ReadProcessMemory(
              m_ProcessHandle->get(),
              reinterpret_cast<LPVOID>(Address),
              out.data(),
              Length,
-             &dwNbRead) == false )
+             &NbByteRead) == false )
     {
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
+    out.resize(NbByteRead);
     return Ok(out);
 }
 
 Result<usize>
-Memory::Memset(uptr const address, const size_t size, const u8 val)
+Memory::Memset(uptr const address, const usize size, const u8 val)
 {
     auto data = std::vector<u8>(size);
     std::fill(data.begin(), data.end(), val);
@@ -57,18 +58,18 @@ Memory::Write(uptr const Address, std::vector<u8> data)
         return Err(ErrorCode::NotInitialized);
     }
 
-    usize dwNbWritten;
+    SIZE_T NbByteWritten {};
     if ( ::WriteProcessMemory(
              m_ProcessHandle->get(),
              reinterpret_cast<LPVOID>(Address),
              data.data(),
              data.size(),
-             &dwNbWritten) != false )
+             &NbByteWritten) != false )
     {
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    return Ok(dwNbWritten);
+    return Ok(static_cast<usize>(NbByteWritten));
 }
 
 Result<uptr>
@@ -202,7 +203,7 @@ Memory::Regions()
         // Save the region information
         //
         auto CurrentMemoryRegion = Value(res);
-        if ( CurrentMemoryRegion->BaseAddress != nullptr )
+        if ( CurrentMemoryRegion->AllocationBase != nullptr )
         {
             MemoryRegions.push_back(CurrentMemoryRegion);
         }
@@ -239,8 +240,12 @@ Memory::Search(std::vector<u8> const& Pattern)
             continue;
         }
 
-        if ( (Region->Protect != PAGE_READONLY) && (Region->Protect != PAGE_READWRITE) &&
-             (Region->Protect != PAGE_EXECUTE_READWRITE) )
+        if ( Region->Protect & (PAGE_READONLY | PAGE_READWRITE | PAGE_EXECUTE_READWRITE) == 0 )
+        {
+            continue;
+        }
+
+        if ( Region->Protect & (PAGE_GUARD | PAGE_EXECUTE_WRITECOPY | PAGE_WRITECOPY | PAGE_WRITECOMBINE) != 0 )
         {
             continue;
         }
@@ -297,4 +302,4 @@ Memory::Search(std::vector<u8> const& Pattern)
 
 #pragma endregion Process::Memory
 
-} // namespace Process
+} // namespace pwn::Process

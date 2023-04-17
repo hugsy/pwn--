@@ -319,7 +319,7 @@ Base64::Encode(const u8* in, const usize len) -> Result<std::string>
         out[j + 3] = (i + 2 < len) ? b64_charset[v & 0x3F] : '=';
     }
 
-    return std::string(reinterpret_cast<char*>(out), elen);
+    return Ok(std::string(reinterpret_cast<char*>(out), elen));
 }
 
 
@@ -389,10 +389,13 @@ Base64::Decode(std::string_view const& in) -> Result<std::vector<u8>>
     return Ok(out);
 }
 
+
 uptr
-align(uptr a, usize sz)
+align(uptr a, u32 sz)
 {
-    return (a + sz - 1) & (~(sz - 1));
+    if ( !sz )
+        sz = sizeof(uptr);
+    return (a + sz - 1) & static_cast<u32>(~(sz - 1));
 }
 
 
@@ -421,8 +424,7 @@ PackInt(T v, Endianess e)
 {
     const Endianess endian = (e != Endianess::unknown) ? e : Context.endianess;
     const usize sz         = sizeof(v);
-    std::vector<u8> out;
-    out.resize(sz);
+    std::vector<u8> out(sz);
 
     if ( endian == Endianess::little )
     {
@@ -486,10 +488,14 @@ void
 DebugBreak()
 {
     dbg("Breakpointing...");
+#if defined(PWN_BUILD_FOR_WINDOWS)
     ::DebugBreak();
+#elif defined(PWN_BUILD_FOR_LINUX)
+    __asm__("int3");
+#endif // PWN_BUILD_FOR_WINDOWS
 }
 
-
+#ifdef PWN_BUILD_FOR_WINDOWS
 Result<std::unordered_map<u16, bool>>
 GetExecutableCharacteristics(fs::path const& FilePath)
 {
@@ -561,6 +567,7 @@ GetExecutableCharacteristics(fs::path const& FilePath)
 
     return Ok(SecProps);
 }
+#endif
 
 Result<bool>
 GetExecutableSignature(fs::path const& FilePath)

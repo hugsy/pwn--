@@ -71,7 +71,7 @@ public:
     Write(uptr const Address, std::vector<u8> data) -> Result<usize>;
 
     auto
-    Memset(uptr const address, const size_t size, const u8 val = 0x00) -> Result<uptr>;
+    Memset(uptr const address, const usize size, const u8 val = 0x00) -> Result<usize>;
 
     auto
     Allocate(
@@ -158,6 +158,13 @@ enum class Integrity : int
 };
 
 
+struct HookedLocation
+{
+    uptr Location {0};
+    std::vector<u8> OriginalBytes {};
+};
+
+
 ///
 ///@brief Describes a Windows Process
 ///
@@ -205,6 +212,18 @@ public:
     u32 const
     ProcessId() const;
 
+    ///
+    ///@brief
+    ///
+    ///@return true
+    ///@return false
+    ///
+    bool
+    IsRemote() const
+    {
+        return !m_IsSelf;
+    }
+
 
     ///
     /// @brief Calculate and store the address of the ProcessEnvironmentBlock
@@ -225,12 +244,24 @@ public:
         return ProcessEnvironmentBlock();
     };
 
+    ///
+    ///@brief
+    ///
+    ///@return SharedHandle const&
+    ///
     SharedHandle const&
     Handle() const
     {
         return m_ProcessHandle;
     }
 
+    ///
+    ///@brief
+    ///
+    ///@param os
+    ///@param p
+    ///@return std::wostream&
+    ///
     friend std::wostream&
     operator<<(std::wostream& os, const Process& p)
     {
@@ -309,6 +340,23 @@ public:
     Security::Token Token;
     ThreadGroup& Threads = m_Threads;
 
+    Result<bool>
+    Hook(uptr Location);
+
+    Result<bool>
+    Unhook(uptr Location);
+
+    Result<bool>
+    InsertCallback(std::function<void(PCONTEXT)> pFunction);
+
+    Result<bool>
+    RemoveCallback(std::function<void(PCONTEXT)> pFunction);
+
+
+    bool
+    ExecuteCallbacks();
+
+
     // TODO:
     // - modules
     // - inject
@@ -358,19 +406,20 @@ private:
     Result<PVOID>
     QueryInternal(const PROCESSINFOCLASS, const usize);
 
-    u32 m_Pid    = 0;
-    u32 m_Ppid   = 0;
-    bool m_Valid = false;
-    fs::path m_Path;
-    Integrity m_IntegrityLevel      = Integrity::Unknown;
-    SharedHandle m_ProcessHandle    = nullptr;
-    DWORD m_ProcessHandleAccessMask = 0;
-    bool m_KillOnClose              = false;
-    bool m_IsSelf                   = false;
-    bool m_IsWow64                  = false;
-    PPEB m_Peb                      = nullptr;
-
-    ThreadGroup m_Threads;
+    u32 m_Pid {0};
+    u32 m_Ppid {0};
+    bool m_Valid {false};
+    fs::path m_Path {};
+    Integrity m_IntegrityLevel {Integrity::Unknown};
+    SharedHandle m_ProcessHandle {nullptr};
+    DWORD m_ProcessHandleAccessMask {0};
+    bool m_KillOnClose {false};
+    bool m_IsSelf {false};
+    bool m_IsWow64 {false};
+    PPEB m_Peb {nullptr};
+    ThreadGroup m_Threads {};
+    std::vector<HookedLocation> m_Hooks {};
+    std::vector<std::function<void(PCONTEXT)>> m_HookCallbacks {};
 };
 
 

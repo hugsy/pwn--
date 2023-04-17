@@ -26,7 +26,11 @@ struct Instruction
     union
     {
 #ifdef PWN_DISASSEMBLE_X86
-        ::ZydisDecodedInstruction x86;
+        struct
+        {
+            ::ZydisDecodedInstruction insn;
+            ::ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT] {};
+        } x86;
 #endif // PWN_DISASSEMBLE_X86
 
 #ifdef PWN_DISASSEMBLE_ARM64
