@@ -158,7 +158,7 @@ if(PWN_BUILD_TOOLKIT)
     endif(WIN32)
 endif()
 
-if(WIN32 AND PWN_BUILD_DOCS)
+if(PWN_BUILD_DOCS)
     find_package(Doxygen REQUIRED)
     add_subdirectory(Docs)
 endif()
