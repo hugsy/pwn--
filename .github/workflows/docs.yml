@@ -46,7 +46,7 @@ jobs:
         if: ${{ github.ref_name }} == "dev"
         uses: actions/upload-pages-artifact@v1
         with:
-          path: 'docs'
+          path: 'Docs'
 
       - name: Deploy to GitHub Pages
         if: ${{ github.ref_name }} == "dev"
