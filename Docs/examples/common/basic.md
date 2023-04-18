@@ -1,11 +1,10 @@
-
 ## Basic
 
 Namespace `pwn::Assembly`
 
 The most basic example for using `pwn++`.
 
-```cpp
+```c++
 // 1. include the header
 #include <pwn.hpp>
 // 2. invoke the namespace
@@ -20,7 +19,7 @@ int wmain()
 ```
 
 Outputs
-```
+```text
 [+]  0x00040000:        nop
 [+]  0x00040001:        xor             rax, rax
 [+]  0x00040004:        ret

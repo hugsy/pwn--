@@ -10,6 +10,7 @@ project(
     pwn++
     DESCRIPTION "A (toy) Windows & Linux pwn library to play with modern C++."
     HOMEPAGE_URL https://github.com/hugsy/pwn--
+    VERSION 0.1.3
 )
 
 set(PROJECT_AUTHOR hugsy)
@@ -115,7 +116,12 @@ elseif("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "x64")
 elseif("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "win32")
     enable_language(CXX ASM_MASM)
 else()
-    message(FATAL_ERROR "No ASSEMBLY mode available")
+    if(NOT ${PWN_BUILD_DOCS})
+        #
+        # Unless we're generating docs, we need to make sure there's an assembler available
+        #
+        message(FATAL_ERROR "No ASSEMBLY mode available")
+    endif(NOT ${PWN_BUILD_DOCS})
 endif()
 
 add_subdirectory(Modules)
