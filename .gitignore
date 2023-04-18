@@ -3,6 +3,5 @@ Build*
 pwn++/Include/pwn_export.hpp
 pwn++/Include/constants.hpp
 pwn++/Include/pwn.hpp
-Docs/Doxyfile
-Docs/Doxyfile.*
+Docs/conf/Doxyfile
 Docs/api/

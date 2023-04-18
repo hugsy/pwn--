@@ -6,26 +6,24 @@
 
 - Examples
     - Common
-        - [`Basic`](examples-basic.md)
-        - [`Assembly`](examples-assembly.md)
-        - [`Context`](examples-context.md)
-        - [`Crypto`](examples-crypto.md)
-        - [`CTF`](examples-ctf.md)
-        - [`Errors`](examples-errors.md)
-        - [`Utils`](examples-utils.md)
+        - [`Basic`](examples/common/basic.md)
+        - [`Assembly`](examples/common/assembly.md)
+        - [`Context`](examples/common/context.md)
+        - [`Crypto`](examples/common/crypto.md)
+        - [`CTF`](examples/common/ctf.md)
+        - [`Errors`](examples/common/errors.md)
+        - [`Utils`](examples/common/utils.md)
 
-    - Windows only
-        - [`ALPC`](examples-alpc.md)
-        - [`File System`](examples-fs.md)
-        - [`Jobs`](examples-jobs.md)
-        - [`Kernel`](examples-kernel.md)
-        - [`Process`](examples-process.md)
-        - [`Registry`](examples-registry.md)
-        - [`Service`](examples-service.md)
-        - [`System`](examples-system.md)
+    - Windows
+        - [`ALPC`](examples/win32/alpc.md)
+        - [`File System`](examples/win32/fs.md)
+        - [`Jobs`](examples/win32/jobs.md)
+        - [`Kernel`](examples/win32/kernel.md)
+        - [`Process`](examples/win32/process.md)
+        - [`Registry`](examples/win32/registry.md)
+        - [`Service`](examples/win32/service.md)
+        - [`System`](examples/win32/system.md)
 
-    - Linux only
+    - Linux
 
-- API
-    - [Windows](/api/win32/index.html)
-    - [Linux](/api/linux/index.html)
+- <a href="/api">API</a>
