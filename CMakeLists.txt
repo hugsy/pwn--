@@ -117,6 +117,9 @@ elseif("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "win32")
     enable_language(CXX ASM_MASM)
 else()
     if(NOT ${PWN_BUILD_DOCS})
+        #
+        # Unless we're generating docs, we need to make sure there's an assembler available
+        #
         message(FATAL_ERROR "No ASSEMBLY mode available")
     endif(NOT ${PWN_BUILD_DOCS})
 endif()
