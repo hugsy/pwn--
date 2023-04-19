@@ -26,4 +26,4 @@
 
     - Linux
 
-- <a href="/api">API</a>
+- <a href="/pwn--/api/html">API</a>
