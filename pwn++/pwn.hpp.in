@@ -1,0 +1,102 @@
+#pragma once
+
+// clang-format off
+#include "Common.hpp"
+#include "Architecture.hpp"
+#include "Log.hpp"
+#include "Formatters.hpp"
+#include "Utils.hpp"
+#include "Handle.hpp"
+#include "Context.hpp"
+#include "Crypto.hpp"
+
+#ifdef PWN_INCLUDE_DISASSEMBLER
+#include "Disassembler.hpp"
+#endif // PWN_INCLUDE_DISASSEMBLER
+
+#if defined( PWN_BUILD_FOR_WINDOWS)
+#include "Win32/Network.hpp"
+#include "Win32/FileSystem.hpp"
+#include "Win32/System.hpp"
+#include "Win32/PE.hpp"
+#include "Win32/Network.hpp"
+#include "Win32/Job.hpp"
+#include "Win32/Process.hpp"
+#include "Win32/Thread.hpp"
+#include "Win32/Token.hpp"
+#include "Win32/ObjectManager.hpp"
+#include "Win32/System.hpp"
+#include "Win32/Service.hpp"
+#include "Win32/ALPC.hpp"
+#include "Win32/RPC.hpp"
+#include "Win32/API.hpp"
+#include "Win32/Symbols.hpp"
+
+#include "CTF/Win32/Remote.hpp"
+#include "CTF/Win32/Process.hpp"
+#elif defined(PWN_BUILD_FOR_LINUX)
+// TODO
+#endif // PWN_BUILD_FOR_WINDOWS
+// clang-format on
+
+namespace pwn
+{
+// clang-format off
+///
+///@brief
+///
+constexpr std::wstring_view LibraryName    = L"@PWN_LIBRARY_NAME@";
+
+///
+///@brief
+///
+constexpr std::wstring_view LibraryAuthor  = L"@PWN_LIBRARY_AUTHOR@";
+
+///
+///@brief
+///
+constexpr std::wstring_view LibraryLicense = L"@PWN_LIBRARY_LICENSE@";
+
+///
+///@brief
+///
+constexpr std::wstring_view LibraryBanner = L"@PWN_LIBRARY_NAME@" L" v" L"@PWN_LIBRARY_VERSION@" L" - " L"@PWN_LIBRARY_VERSION_RELEASE@";
+// clang-format on
+
+constexpr struct
+{
+    u8 Major;
+    u8 Minor;
+    u16 Patch;
+    std::wstring_view Release;
+    std::wstring_view VersionString;
+} Version = {
+    // clang-format off
+    @PWN_LIBRARY_VERSION_MAJOR@,
+    @PWN_LIBRARY_VERSION_MINOR@,
+    @PWN_LIBRARY_VERSION_PATCH@,
+    L"@PWN_LIBRARY_VERSION_RELEASE@",
+    L"@PWN_LIBRARY_VERSION@",
+    // clang-format on
+};
+
+constexpr struct
+{
+    std::wstring_view Architecture;
+    std::wstring_view System;
+} Target {
+    // clang-format off
+    L"@PWN_BUILD_ARCHITECTURE@",
+    L"@PWN_BUILD_OS@"
+    // clang-format on
+};
+
+// clang-format off
+///
+///@brief
+///
+constexpr std::array<std::wstring_view, @PWN_MODULES_LENGTH@> Modules;
+// clang-format on
+
+
+} // namespace pwn

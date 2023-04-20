@@ -1,0 +1,9 @@
+[submodule "Deps/phnt"]
+	path = Deps/phnt
+	url = https://github.com/hugsy/phnt
+[submodule "Deps/arch-arm64"]
+	path = Deps/arch-arm64
+	url = https://github.com/hugsy/arch-arm64
+[submodule "Deps/Zydis"]
+	path = Deps/Zydis
+	url = https://github.com/zyantific/zydis.git

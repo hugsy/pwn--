@@ -1,0 +1,71 @@
+#
+# Variable definitions
+#
+set(PWN_DOCS_OUT_ROOT_DIR "${PWNLIB_ROOT_DIR}/Docs")
+set(PWN_DOCS_SRC_ROOT_DIR "${PWNLIB_ROOT_DIR}/Modules")
+set(PWN_DOCS_CSS_ROOT_DIR "${PWN_DOCS_OUT_ROOT_DIR}/css")
+set(PWN_DOCS_IMG_ROOT_DIR "${PWN_DOCS_OUT_ROOT_DIR}/img")
+set(PWN_DOCS_API_ROOT_DIR "${PWN_DOCS_OUT_ROOT_DIR}/api")
+set(PWN_DOCS_EXAMPLES_ROOT_DIR "${PWN_DOCS_OUT_ROOT_DIR}/examples")
+
+set(DOXYGEN_CSS "${PWN_DOCS_CSS_ROOT_DIR}/doxygen-awesome.css ${PWN_DOCS_CSS_ROOT_DIR}/doxygen-awesome-sidebar-only.css")
+
+set(PWN_DOCS_PROJECT_NAME ${PROJECT_NAME})
+set(PWN_DOCS_DESCRIPTION ${PROJECT_DESCRIPTION})
+set(PWN_DOCS_LOGO_PATH ${PWN_DOCS_IMG_ROOT_DIR}/logo.png)
+set(PWN_DOCS_VERSION ${PROJECT_VERSION})
+
+#
+# Convert `PWN_MODULES` into input path for doxy
+#
+list(TRANSFORM PWN_MODULES PREPEND "${PWNLIB_ROOT_DIR}/Modules/" OUTPUT_VARIABLE MODULES_TEMP)
+list(TRANSFORM MODULES_TEMP APPEND "/Include" OUTPUT_VARIABLE MODULES_COMMON)
+list(TRANSFORM MODULES_TEMP APPEND "/Include/Win32" OUTPUT_VARIABLE MODULES_WIN32)
+list(TRANSFORM MODULES_TEMP APPEND "/Include/Linux" OUTPUT_VARIABLE MODULES_LINUX)
+list(APPEND MODULES ${MODULES_COMMON} ${MODULES_WIN32} ${MODULES_LINUX})
+list(JOIN MODULES " " DOXYGEN_INPUT_DIR)
+list(SORT MODULES)
+set(DOXYGEN_OUTPUT_DIR ${PWN_DOCS_API_ROOT_DIR})
+set(DOXYGEN_INDEX_FILE ${PWN_DOCS_API_ROOT_DIR}/html/index.html)
+
+#
+# Generate the Doxyfile configuration file
+#
+set(DOXYFILE_IN ${PWN_DOCS_OUT_ROOT_DIR}/conf/Doxyfile.in)
+set(DOXYFILE_OUT ${PWN_DOCS_OUT_ROOT_DIR}/conf/Doxyfile)
+configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
+
+add_custom_command(
+    OUTPUT ${DOXYGEN_INDEX_FILE}
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${PWN_DOCS_API_ROOT_DIR}
+    COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
+    MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
+    WORKING_DIRECTORY ${PWN_DOCS_API_ROOT_DIR}
+    COMMENT "Generating API Docs")
+
+#
+# Synthetic target for generating the docs only
+#
+add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
+
+file(
+    GENERATE
+    OUTPUT ${PWN_DOCS_API_ROOT_DIR}/index.html
+    CONTENT "<script>window.location.href=\"html\";</script>"
+    TARGET Doxygen
+)
+
+#
+# Install directive for all the docs
+#
+install(DIRECTORY ${PWN_DOCS_CSS_ROOT_DIR} DESTINATION Docs)
+install(DIRECTORY ${PWN_DOCS_IMG_ROOT_DIR} DESTINATION Docs)
+install(DIRECTORY ${PWN_DOCS_API_ROOT_DIR} DESTINATION Docs)
+install(DIRECTORY ${PWN_DOCS_EXAMPLES_ROOT_DIR} DESTINATION Docs)
+
+install(
+    FILES
+    index.html _sidebar.md
+    README.md build.md setup.md
+    DESTINATION Docs
+)

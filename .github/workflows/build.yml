@@ -1,0 +1,168 @@
+name: CI Build for MSVC
+
+env:
+  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+  PROJECT_NAME: "pwn++"
+  REPO: hugsy/pwn--
+  VERBOSE: "1"
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}"
+    env:
+      CMAKE_CONFIGURATION: ${{ github.ref_name == 'main' && 'RelWithDebInfo' || 'Debug' }}
+      CMAKE_FLAGS: "${{ matrix.build == 'full' && '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=OFF' || '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=OFF -DPWN_DISASSEMBLE_ARM64=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF' }}"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['windows-latest'] # 'ubuntu-latest' removed since gcc-12 nor clang-16 supports std::format
+        platform: ['x64', 'x86', 'arm64']
+        build: ['lite', 'full']
+        include:
+          - runs-on: ubuntu-latest
+            c_compiler: clang-16
+            cpp_compiler: clang++-16
+
+    runs-on: ${{ matrix.os }}
+    outputs:
+      windows-latest-x64-lite: ${{ join(steps.*.outputs.windows-latest-x64-lite,'') }}
+      windows-latest-x64-full: ${{ join(steps.*.outputs.windows-latest-x64-full,'') }}
+      windows-latest-x86-lite: ${{ join(steps.*.outputs.windows-latest-x86-lite,'') }}
+      windows-latest-x86-full: ${{ join(steps.*.outputs.windows-latest-x86-full,'') }}
+      windows-latest-arm64-lite: ${{ join(steps.*.outputs.windows-latest-arm64-lite,'') }}
+      windows-latest-arm64-full: ${{ join(steps.*.outputs.windows-latest-arm64-full,'') }}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+
+    - name: Set Windows specific environment variables
+      if: matrix.os == 'windows-latest'
+      shell: powershell
+      run: |
+        echo "NB_CPU=$env:NUMBER_OF_PROCESSORS" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: Set Linux specific environment variables
+      if: matrix.os == 'ubuntu-latest'
+      env:
+        CC:  ${{ matrix.c_compiler}}
+        CXX: ${{ matrix.cpp_compiler}}
+      run: |
+        echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
+        sudo apt update && sudo apt install -y ${CC} ${CXX}
+        echo "CC=${CC}" >> $GITHUB_ENV
+        echo "CXX=${CXX}" >> $GITHUB_ENV
+
+    - name: Inject slug/short variables
+      uses: rlespinasse/github-slug-action@v4
+
+    - name: Add msbuild to PATH
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        Import-Module .\.github\Invoke-VisualStudio.ps1
+        Invoke-VisualStudio2022${{ matrix.platform }}
+
+    - name: Prepare common environment
+      run: |
+        mkdir build
+        mkdir artifact
+
+    - name: Prepare Windows environment
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
+
+    - name: Prepare Linux environment
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: |
+        ln -s ../pwn++ ../pwn--
+
+    - name: Build environment information
+      run: env
+
+    - name: Initialize cmake (win32)
+      if: matrix.os == 'windows-latest' && matrix.platform == 'x86'
+      run: |
+        cmake -S . -B ./build -A win32 ${{ env.CMAKE_FLAGS }}
+
+    - name: Initialize cmake (generic)
+      if: matrix.os != 'windows-latest' || matrix.platform != 'x86'
+      run: |
+        cmake -S . -B ./build -A ${{ matrix.platform }} ${{ env.CMAKE_FLAGS }}
+
+    - name: Build pwn++ library
+      run: |
+        cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ env.CMAKE_CONFIGURATION }}
+
+    - name: Run tests
+      if: matrix.build == 'full'
+      continue-on-error: true
+      run: |
+        cd build
+        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ env.CMAKE_CONFIGURATION }} -T test
+        cd ..
+
+    - name: Prepare artifact
+      run: |
+        cmake --install ./build --config ${{ env.CMAKE_CONFIGURATION }} --prefix ./artifact --verbose
+
+    - name: Publish artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ env.PROJECT_NAME }}_${{ matrix.platform }}_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_${{ env.CMAKE_CONFIGURATION }}_${{ env.GITHUB_SHA_SHORT }}_${{ matrix.build }}
+        path: artifact/
+
+    - name: Populate the successful output
+      id: output_success
+      if: ${{ success() }}
+      run: |
+        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=✅ ${{ matrix.os }} ➤ ${{ matrix.platform }} ➤ ${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+    - name: Populate the failure output
+      id: output_failure
+      if: ${{ failure() }}
+      run: |
+        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=❌ ${{ matrix.os }} ➤ ${{ matrix.platform }} ➤ ${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+  notify:
+    runs-on: 'ubuntu-22.04'
+    needs: build
+    steps:
+    - name: Inject slug/short variables
+      uses: rlespinasse/github-slug-action@v4
+
+    - name: Send Discord notification
+      env:
+        COMMIT_URL: "https://github.com/${{ env.REPO }}/commit/${{ env.GITHUB_SHA_SHORT }}"
+        RUN_URL: "https://github.com/${{ env.REPO }}/actions/runs/${{ github.run_id }}"
+        BRANCH_URL: "https://github.com/${{ env.REPO }}/tree/${{ env.GITHUB_REF_SLUG }}"
+        AUTHOR_URL: "https://github.com/${{ github.actor }}"
+      uses: sarisia/actions-status-discord@v1.10.0
+      with:
+        nodetail: true
+        title: 🚧 🚧 Summary of Build `${{ env.GITHUB_SHA_SHORT }}` for `${{ env.REPO }}` 🚧 🚧
+        description: |
+          [Job #${{ github.run_number }}](${{ env.RUN_URL }}): CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by [${{ github.actor }}](${{ env.AUTHOR_URL }}):
+          ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
+          ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
+          ● [Detail Page](${{ env.RUN_URL }})
+
+          ${{ needs.build.outputs.windows-latest-x64-lite }}
+          ${{ needs.build.outputs.windows-latest-x64-full }}
+          ${{ needs.build.outputs.windows-latest-x86-lite }}
+          ${{ needs.build.outputs.windows-latest-x86-full }}
+          ${{ needs.build.outputs.windows-latest-arm64-lite }}
+          ${{ needs.build.outputs.windows-latest-arm64-full }}
+
+        color: 0x0000ff
+        username: ${{ github.actor }} via GithubBot
+        avatar_url: ${{ github.actor.avatar_url }}
