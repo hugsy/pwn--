@@ -19,13 +19,14 @@ TEST_CASE("Symbols lookup", "[" NS "]")
 
     SECTION("Resolve symbols")
     {
-        auto res = Symbols::Symbols::EnumerateFromModule(L"kernel32", L"GetProc*");
+        auto res = Symbols::Symbols::EnumerateFromModule(L"C:\\Windows\\System32\\kernel32.dll", L"GetProcA*ess");
         REQUIRE(Success(res));
-        auto const& Symbols = Value(res);
+        auto Symbols = Value(std::move(res));
         REQUIRE(Symbols.size() == 1);
-        const uptr ExpectedAddresss = (uptr)::GetProcAddress(::LoadLibraryA("kernel32"), "GetProcAddress");
+        const uptr ModuleBaseAddress = (uptr)::LoadLibraryA("kernel32");
+        const uptr ExpectedAddresss  = (uptr)::GetProcAddress((HMODULE)ModuleBaseAddress, "GetProcAddress");
         REQUIRE(ExpectedAddresss > 0);
-        REQUIRE(Symbols[0].Address == ExpectedAddresss);
+        REQUIRE((Symbols[0].Address - Symbols[0].ModBase) == (ExpectedAddresss - ModuleBaseAddress));
     }
 
 
@@ -34,7 +35,7 @@ TEST_CASE("Symbols lookup", "[" NS "]")
         auto res = Symbols::Symbols::DownloadModulePdbToMemory("kernel32.dll");
         REQUIRE(Success(res));
 
-        auto pdbData = Value(res);
+        auto pdbData = Value(std::move(res));
         REQUIRE(pdbData.size() > 0);
     }
 

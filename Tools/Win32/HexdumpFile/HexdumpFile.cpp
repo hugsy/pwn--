@@ -16,7 +16,7 @@ wmain(int argc, const wchar_t** argv) -> int
     auto const bytes = TargetFile.ToBytes(0, sz);
     if ( Success(bytes) )
     {
-        Utils::hexdump((Value(bytes)));
+        Utils::Hexdump((Value(bytes)));
     }
 
     return EXIT_SUCCESS;

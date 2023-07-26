@@ -144,99 +144,72 @@ enum class ErrorCode : uint32_t
 
 
 ///
-/// @brief Rust-like type of error handling
+///@brief Templated return value for success cases
 ///
-struct ErrorType
+///@tparam T
+///
+template<typename T>
+constexpr auto
+Ok(T&& arg)
 {
-    ErrorCode code  = ErrorCode::UnknownError;
-    uint32_t number = 0;
+    return std::forward<T>(arg);
+}
+
+///
+/// @brief Templated return value for failure cases
+///
+struct Err
+{
+    ErrorCode Code {ErrorCode::UnknownError};
+    uint32_t LastError {0};
 
     bool
-    operator==(const ErrorType& rhs) const;
+    operator==(const Err& rhs) const
+    {
+        return rhs.Code == this->Code && rhs.LastError == this->LastError;
+    }
 
     bool
-    operator==(ErrorCode code) const;
-
-    friend std::wostream&
-    operator<<(std::wostream& wos, ErrorType const& e)
+    operator==(ErrorCode Code) const
     {
-        wos << L"ErrorType(Code=" << (uint32_t)e.code << L", GLE=" << (uint32_t)e.number << L")";
-        return wos;
+        return Code == this->Code;
     }
-
-    friend std::ostream&
-    operator<<(std::ostream& os, ErrorType const& e)
-    {
-        os << "ErrorType(Code=" << (uint32_t)e.code << ", GLE=" << (uint32_t)e.number << ")";
-        return os;
-    }
-
-    std::wstring
-    Code();
 };
 
 
-struct Err : ErrorType
-{
-    Err(ErrorCode ErrCode = ErrorCode::GenericError, uint32_t ErrNumber = 0);
+///
+///@brief A Result is nothing more than a std::variant between some return value and an error object
+///
+///@tparam T
+///
+template<typename T>
+using Result = std::variant<T, Err>;
 
-    Err(Err const& e);
 
-    Err(ErrorType const& e);
-
-    bool
-    operator==(const Err& rhs) const;
-
-    bool
-    operator==(ErrorCode code) const;
-
-    friend std::wostream&
-    operator<<(std::wostream& wos, Err const& e)
-    {
-        wos << L"Err(Code=" << (uint32_t)e.code << L", GLE=0x" << std::hex << std::setfill(L'0') << std::setw(8)
-            << (uint32_t)e.number << L")";
-        return wos;
-    }
-
-    friend std::ostream&
-    operator<<(std::ostream& os, Err const& e)
-    {
-        os << "Err(Code=" << (uint32_t)e.code << ", GLE=0x" << std::hex << std::setfill('0') << std::setw(8)
-           << (uint32_t)e.number << ")";
-        return os;
-    }
-};
-
-template<class T>
-struct Ok
-{
-    Ok(T const& value) : Value {value}
-    {
-    }
-
-    Ok(T&& value) : Value {std::move(value)}
-    {
-    }
-
-    T Value;
-};
-
-template<class T = void>
-using Result = std::variant<Ok<T>, ErrorType>;
-
-template<class T>
+///
+///@brief Determines whether the result is a failure. Opposite is `Success()`
+///
+///@tparam T
+///@param Res
+///@return true
+///@return false
+///
+template<typename T>
 constexpr bool
-Failed(Result<T> const& Result) noexcept
+Failed(Result<T> const& Res) noexcept
 {
-    if ( const ErrorType* c = std::get_if<ErrorType>(&Result); c != nullptr )
-    {
-        return true;
-    }
-
-    return false;
+    return std::get_if<Err>(&Res) != nullptr;
 }
 
 
+///
+///@brief Determines whether the result is a success. Opposite is `Failed()`
+///
+///@tparam T
+///@param Res
+///@return true
+///@return false
+///
 template<class T>
 constexpr bool
 Success(Result<T> const& Result) noexcept
@@ -245,33 +218,62 @@ Success(Result<T> const& Result) noexcept
 }
 
 
-template<class T>
+///
+///@brief Get the return value. This function will throw `std::bad_variant_access` if the parameter is not a success
+/// value
+///
+///@tparam T
+///@param SuccessResult
+///@return auto
+///
+template<typename T>
 T
-Value(Result<T> const& SuccessResult)
+Value(Result<T>&& SuccessResult)
 {
-    //
-    // if `SuccessResult` has failed the following line will throw `std::bad_variant_access` anyway, which is consistent
-    // with what we'd expect
-    //
-    return std::move(std::get<Ok<T>>(SuccessResult).Value);
+    return std::move(std::get<T>(SuccessResult));
 }
 
+template<typename T>
+T
+Value(Result<T>& SuccessResult)
+{
+    T copy = std::get<T>(SuccessResult);
+    return copy;
+}
 
-template<class T>
-constexpr ErrorType const&
+///
+///@brief Get the error object
+///
+///@tparam T
+///@param ErrorResult
+///@return auto
+///
+template<typename T>
+const Err&
 Error(Result<T> const& ErrorResult)
 {
-    if ( const ErrorType* c = std::get_if<ErrorType>(&ErrorResult); c != nullptr )
-    {
-        return *c;
-    }
-    throw std::bad_variant_access();
+    return std::get<Err>(ErrorResult);
 }
 
 
-template<class T>
-constexpr T const
-ValueOr(Result<T> const& res, T AlternativeValue)
+///
+///@brief
+///
+///@tparam T
+///@param Result
+///@param AlternativeValue
+///@return T
+///
+template<typename T>
+T
+ValueOr(Result<T>&& Result, T AlternativeValue)
 {
-    return Success(res) ? Value(res) : AlternativeValue;
+    return Success(Result) ? std::move(Value(Result)) : AlternativeValue;
+}
+
+template<typename T>
+T
+ValueOr(Result<T>& Result, T AlternativeValue)
+{
+    return Success(Result) ? Value(Result) : AlternativeValue;
 }

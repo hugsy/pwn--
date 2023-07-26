@@ -4,53 +4,44 @@
 
 #define NS "pwn::Thread"
 
+constexpr std::wstring_view TestThreadName = L"TestThreadName";
 
 TEST_CASE("set/get thread names", "[" NS "]")
 {
     SECTION("Get the current thread")
     {
-        Process::Thread CurrentThread;
-        auto res = Process::Thread::Current();
-        REQUIRE(Success(res));
-        CurrentThread = Value(res);
-        REQUIRE(CurrentThread.IsValid());
+        auto CurrentThread = Process::Thread::Current();
         REQUIRE(CurrentThread.ThreadId() == ::GetCurrentThreadId());
+        REQUIRE(CurrentThread.IsRemote() == false);
     }
 
     SECTION("Get the initial name of thread (expecting none)")
     {
-        auto CurrentThread = Value(Process::Thread::Current());
-        REQUIRE(CurrentThread.IsValid());
-
-        auto res = CurrentThread.Name();
+        auto CurrentThread = Process::Thread::Current();
+        auto res           = CurrentThread.Name();
         REQUIRE(Success(res));
         CHECK(Value(res).empty());
     }
 
     SECTION("Set a name of thread and check it")
     {
-        std::wstring const expected_name = L"TestThreadName";
-        auto CurrentThread               = Value(Process::Thread::Current());
-        REQUIRE(CurrentThread.IsValid());
+        auto CurrentThread = Process::Thread::Current();
 
-        auto res = CurrentThread.Name(expected_name);
-        REQUIRE(Success(res));
-        CHECK(Value(res) == true);
+        auto res3 = CurrentThread.Name(TestThreadName);
+        REQUIRE(Success(res3));
+        CHECK(Value(res3) == true);
         auto res2 = CurrentThread.Name();
-        REQUIRE(Success(res));
+        REQUIRE(Success(res3));
         auto const thread_name = Value(res2);
         CHECK(!thread_name.empty());
-        CHECK(thread_name == expected_name);
-        CHECK(thread_name.length() == expected_name.length());
+        CHECK(thread_name == TestThreadName);
+        CHECK(thread_name.length() == TestThreadName.length());
     }
 
     SECTION("Test queries")
     {
-        std::wstring const expected_name = L"TestThreadName";
-        auto CurrentThread               = Value(Process::Thread::Current());
-        REQUIRE(CurrentThread.IsValid());
-
-        auto res = CurrentThread.Query<THREAD_BASIC_INFORMATION>(ThreadBasicInformation);
+        auto CurrentThread = Process::Thread::Current();
+        auto res           = CurrentThread.Query<THREAD_BASIC_INFORMATION>(ThreadBasicInformation);
         REQUIRE(Success(res));
         const auto pInfo = Value(res);
         CHECK(pInfo->ClientId.UniqueProcess == ULongToHandle(::GetCurrentProcessId()));

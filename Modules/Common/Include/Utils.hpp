@@ -18,12 +18,149 @@ namespace pwn::Utils
 
 using MemoryView = std::span<u8*>;
 
+namespace StringLib
+{
+
+namespace Charset
+{
+constexpr std::string_view Lower        = "abcdefghijklmnopqrstuvwxyz";
+constexpr std::string_view Upper        = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+constexpr std::string_view UpperLower   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+constexpr std::string_view Digits       = "0123456789";
+constexpr std::string_view Alphanumeric = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+constexpr std::string_view AllPrintable =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ ";
+constexpr std::string_view Basic64Characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/+";
+
+constexpr std::wstring_view WideLower        = L"abcdefghijklmnopqrstuvwxyz";
+constexpr std::wstring_view WideUpper        = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+constexpr std::wstring_view WideUpperLower   = L"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+constexpr std::wstring_view WideDigits       = L"0123456789";
+constexpr std::wstring_view WideAlphanumeric = L"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+constexpr std::wstring_view WideAllPrintable =
+    L"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ ";
+} // namespace Charset
+
+///
+///@brief Inefficient but generic templated string conversion function
+///
+///@tparam ToType
+///@tparam FromType
+///@tparam T
+///@param src
+///@return ToType
+///
+template<typename ToType, typename FromType, typename T = char>
+static ToType
+To(FromType const& src)
+{
+    ToType dst;
+    std::transform(
+        src.cbegin(),
+        src.cend(),
+        std::back_inserter(dst),
+        [](auto const c)
+        {
+            return static_cast<T>(c);
+        });
+    return dst;
+}
+
+static std::string
+To(std::wstring const& src)
+{
+#ifdef PWN_BUILD_FOR_LINUX
+    std::string dst;
+#else
+    const DWORD nb =
+        ::WideCharToMultiByte(CP_UTF8, 0, src.c_str(), static_cast<int>(src.size()), nullptr, 0, nullptr, nullptr);
+
+    std::string dst(nb / sizeof(char), '\0');
+    ::WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        src.c_str(),
+        static_cast<int>(src.size()),
+        &dst[0],
+        static_cast<int>(dst.size() * sizeof(char)),
+        nullptr,
+        nullptr);
+#endif
+    return dst;
+}
+
+template<typename T, typename L>
+static std::vector<T>
+Split(T const& src, const L delim)
+{
+    T cur;
+    std::vector<T> dst;
+    std::for_each(
+        src.cbegin(),
+        src.cend(),
+        [&dst, &cur, &delim](const L& x)
+        {
+            if ( x == delim )
+            {
+                dst.push_back(cur);
+                cur.clear();
+            }
+            else
+            {
+                cur += x;
+            }
+        });
+    if ( !cur.empty() )
+    {
+        dst.push_back(cur);
+    }
+    return dst;
+}
+
+///
+/// @brief
+///
+template<typename T, typename L>
+static T
+Join(const std::vector<T>& Src, const L delim)
+{
+    T Dst;
+    std::for_each(
+        Src.cbegin(),
+        Src.cend() - 1,
+        [&Dst, &delim](const T& x)
+        {
+            Dst += x + T {delim};
+        });
+    Dst += Src.back();
+    return Dst;
+}
+
+///
+/// @brief
+///
+template<typename T, typename L>
+static T
+Strip(T const& Src, const L c)
+{
+    T Dst {Src};
+    std::erase_if(
+        Dst,
+        [&c](auto const& x)
+        {
+            return x == c;
+        });
+    return Dst;
+}
+}; // namespace StringLib
+
+
 namespace Random
 {
 ///
 /// @brief (Re-)Seed the internal PRNG
 ///
-PWNAPI void
+void
 Seed(std::optional<u64> seed = std::nullopt);
 
 
@@ -32,8 +169,8 @@ Seed(std::optional<u64> seed = std::nullopt);
 ///
 /// @return a pseudo random number
 ///
-PWNAPI auto
-rand() -> u64;
+auto
+Next() -> u64;
 
 
 ///
@@ -43,57 +180,76 @@ rand() -> u64;
 /// @param min a u64 value, the minimum interval value. If not provided, `0`
 /// @return u64
 ///
-PWNAPI auto
-rand(u64 const max, u64 const min) noexcept -> u64;
+auto
+Next(u64 const max, u64 const min) noexcept -> u64;
+
+
+///
+///@brief Returns a random BYTE
+///
+///@return u8
+///
+auto
+Byte() -> u8;
+
+
+///
+///@brief Returns a random WORD
+///
+///@return u16
+///
+auto
+Word() -> u16;
+
+
+///
+///@brief Returns a random DWORD
+///
+///@return u32
+///
+auto
+Dword() -> u32;
+
+
+///
+///@brief Returns a random QWORD
+///
+///@return u64
+///
+auto
+Qword() -> u64;
+
+
+///
+///@brief
+///
+///@param length
+///@param charset
+///@return std::string
+///
+auto
+String(u32 length, std::string_view const& charset = Utils::StringLib::Charset::AllPrintable) -> std::string;
 
 
 ///
 /// @brief
 ///
-PWNAPI auto
-byte() -> u8;
+auto
+WideString(u32 length, std::wstring_view const& charset = Utils::StringLib::Charset::WideAllPrintable) -> std::wstring;
 
 
 ///
 /// @brief
 ///
-PWNAPI auto
-word() -> u16;
+auto
+AlnumWideString(u32 length) -> std::wstring;
 
 
 ///
 /// @brief
 ///
-PWNAPI auto
-dword() -> u32;
-
-
-///
-/// @brief
-///
-PWNAPI auto
-qword() -> u64;
-
-
-///
-/// @brief
-///
-PWNAPI auto
-string(_In_ u32 length) -> std::wstring;
-
-
-///
-/// @brief
-///
-PWNAPI auto
-alnum(_In_ u32 length) -> std::wstring;
-
-
-///
-/// @brief
-///
-PWNAPI auto
-buffer(_In_ u32 length) -> std::vector<u8>;
+auto
+Buffer(u32 length) -> std::vector<u8>;
 } // namespace Random
 
 
@@ -133,123 +289,6 @@ public:
     ///
     static auto
     Decode(std::string_view const& encoded_string) -> Result<std::vector<u8>>;
-};
-
-
-class StringLib
-{
-public:
-    ///
-    ///@brief Inefficient but generic templated string conversion function
-    ///
-    ///@tparam ToType
-    ///@tparam FromType
-    ///@tparam T
-    ///@param src
-    ///@return ToType
-    ///
-    template<typename ToType, typename FromType, typename T = char>
-    static ToType
-    To(FromType const& src)
-    {
-        ToType dst;
-        std::transform(
-            src.cbegin(),
-            src.cend(),
-            std::back_inserter(dst),
-            [](auto const c)
-            {
-                return static_cast<T>(c);
-            });
-        return dst;
-    }
-
-    static std::string
-    To(std::wstring const& src)
-    {
-#ifdef PWN_BUILD_FOR_LINUX
-        std::string dst;
-#else
-        const DWORD nb =
-            ::WideCharToMultiByte(CP_UTF8, 0, src.c_str(), static_cast<int>(src.size()), nullptr, 0, nullptr, nullptr);
-
-        std::string dst(nb / sizeof(char), '\0');
-        ::WideCharToMultiByte(
-            CP_UTF8,
-            0,
-            src.c_str(),
-            static_cast<int>(src.size()),
-            &dst[0],
-            static_cast<int>(dst.size() * sizeof(char)),
-            nullptr,
-            nullptr);
-#endif
-        return dst;
-    }
-
-    template<typename T, typename L>
-    static std::vector<T>
-    Split(T const& src, const L delim)
-    {
-        T cur;
-        std::vector<T> dst;
-        std::for_each(
-            src.cbegin(),
-            src.cend(),
-            [&dst, &cur, &delim](const L& x)
-            {
-                if ( x == delim )
-                {
-                    dst.push_back(cur);
-                    cur.clear();
-                }
-                else
-                {
-                    cur += x;
-                }
-            });
-        if ( !cur.empty() )
-        {
-            dst.push_back(cur);
-        }
-        return dst;
-    }
-
-    ///
-    /// @brief
-    ///
-    template<typename T, typename L>
-    static T
-    Join(const std::vector<T>& Src, const L delim)
-    {
-        T Dst;
-        std::for_each(
-            Src.cbegin(),
-            Src.cend() - 1,
-            [&Dst, &delim](const T& x)
-            {
-                Dst += x + T {delim};
-            });
-        Dst += Src.back();
-        return Dst;
-    }
-
-    ///
-    /// @brief
-    ///
-    template<typename T, typename L>
-    static T
-    Strip(T const& Src, const L c)
-    {
-        T Dst {Src};
-        std::erase_if(
-            Dst,
-            [&c](auto const& x)
-            {
-                return x == c;
-            });
-        return Dst;
-    }
 };
 
 
@@ -371,21 +410,21 @@ cyclic(_In_ u32 Size, _In_ u32 Period = 0) -> Result<std::vector<u8>>;
 /// @param BufferSize
 ///
 PWNAPI void
-hexdump(const u8* Buffer, const usize BufferSize);
+Hexdump(const u8* Buffer, const usize BufferSize);
 
 
 ///
 /// @brief
 ///
 PWNAPI void
-hexdump(std::vector<u8> const& bytes);
+Hexdump(std::vector<u8> const& bytes);
 
 
 ///
 /// @brief
 ///
 PWNAPI void
-hexdump(Utils::MemoryView const& view);
+Hexdump(Utils::MemoryView const& view);
 
 
 ///

@@ -14,59 +14,6 @@ static SharedHandle __spProcess                 = nullptr;
 
 
 #pragma region Declaration
-/*
-struct SYMBOL_INFOW
-{
-    ULONG SizeOfStruct;
-    ULONG TypeIndex; // Type Index of symbol
-    ULONG64 Reserved[2];
-    ULONG Index;
-    ULONG Size;
-    ULONG64 ModBase; // Base Address of module comtaining this symbol
-    ULONG Flags;
-    ULONG64 Value;   // Value of symbol, ValuePresent should be 1
-    ULONG64 Address; // Address of symbol including base address of module
-    ULONG Register;  // register holding value or pointer to value
-    ULONG Scope;     // scope of the symbol
-    ULONG Tag;       // pdb classification
-    ULONG NameLen;   // Actual length of name
-    ULONG MaxNameLen;
-    WCHAR Name[1]; // Name of symbol
-};
-
-typedef DWORD (*SymSetOptions_t)(DWORD SymOptions);
-static SymSetOptions_t SymSetOptions = nullptr;
-
-typedef BOOL (*SymInitializeW_t)(HANDLE hProcess, PWSTR UserSearchPath, BOOL fInvadeProcess);
-static SymInitializeW_t SymInitializeW = nullptr;
-
-typedef BOOL (*SymEnumerateModulesW64_t)(HANDLE hProcess, PVOID EnumModulesCallback, PVOID UserContext);
-static SymEnumerateModulesW64_t SymEnumerateModulesW64 = nullptr;
-
-typedef ULONG_PTR (*SymLoadModuleExW_t)(
-    HANDLE hProcess,
-    HANDLE hFile,
-    PCWSTR ImageName,
-    PCWSTR ModuleName,
-    DWORD64 BaseOfDll,
-    DWORD DllSize,
-    PVOID ModLoadData,
-    DWORD Flags);
-static SymLoadModuleExW_t SymLoadModuleExW = nullptr;
-
-typedef BOOL (
-    *SymEnumSymbolsW_t)(HANDLE hProcess, ULONG64 BaseOfDll, PCWSTR Mask, PVOID EnumSymbolsCallback, PVOID UserContext);
-static SymEnumSymbolsW_t SymEnumSymbolsW = nullptr;
-
-typedef BOOL (*SymFromNameW_t)(HANDLE hProcess, PCWSTR Name, SYMBOL_INFOW* Symbol);
-static SymFromNameW_t SymFromNameW = nullptr;
-
-typedef BOOL (*SymFromAddrW_t)(HANDLE hProcess, uptr Address, uptr* Displacement, SYMBOL_INFOW* Symbol);
-static SymFromAddrW_t SymFromAddrW = nullptr;
-
-typedef BOOL (*SymSetSearchPathW_t)(HANDLE hProcess, PCTSTR SearchPath);
-static SymSetSearchPathW_t SymSetSearchPathW = nullptr;
-*/
 
 #ifndef SYMOPT_CASE_INSENSITIVE
 #define SYMOPT_CASE_INSENSITIVE 0x00000001
@@ -108,7 +55,7 @@ CreateSymbolInfo(SYMBOL_INFOW const* _si)
     return si;
 }
 
-inline HANDLE
+static HANDLE
 GetHandle()
 {
 
@@ -175,7 +122,8 @@ GetModuleDebugInfo(uptr const ModuleImageBase)
     }
 
     const auto pDebugDirectory =
-        (PIMAGE_DEBUG_DIRECTORY)(pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress + ModuleImageBase);
+        (PIMAGE_DEBUG_DIRECTORY)(pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG].VirtualAddress +
+                                 ModuleImageBase);
     if ( pDebugDirectory->Type != IMAGE_DEBUG_TYPE_CODEVIEW )
     {
         return nullptr;
@@ -223,7 +171,7 @@ EnumSymProcCb(SYMBOL_INFOW* pSymInfo, ULONG SymbolSize, std::vector<SymbolInfo>*
 
 
 Result<std::vector<SymbolInfo>>
-Symbols::EnumerateFromModule(std::wstring_view const& ModuleName, std::wstring_view const& Mask)
+Symbols::EnumerateFromModule(std::wstring_view const ModulePath, std::wstring_view const& Mask)
 {
     HANDLE hProcess = GetHandle();
     if ( !hProcess )
@@ -232,7 +180,7 @@ Symbols::EnumerateFromModule(std::wstring_view const& ModuleName, std::wstring_v
     }
 
     u64 BaseOfDll =
-        pwn::Resolver::dbghelp::SymLoadModuleExW(hProcess, nullptr, ModuleName.data(), nullptr, 0, 0, nullptr, 0);
+        pwn::Resolver::dbghelp::SymLoadModuleExW(hProcess, nullptr, ModulePath.data(), nullptr, 0, 0, nullptr, 0);
     if ( !BaseOfDll )
     {
         Log::perror(L"SymLoadModuleExW()");
@@ -252,7 +200,7 @@ Symbols::EnumerateFromModule(std::wstring_view const& ModuleName, std::wstring_v
 
 
 Result<uptr>
-Symbols::ResolveFromName(std::wstring_view const& SymbolName)
+Symbols::ResolveFromName(std::wstring_view const SymbolName)
 {
     HANDLE hProcess = GetHandle();
     if ( !hProcess )
@@ -295,11 +243,11 @@ Symbols::ResolveFromAddress(const uptr TargetAddress)
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    return Ok(std::wstring {pSymbol->Name});
+    return Ok(pSymbol->Name);
 }
 
 Result<bool>
-Symbols::SetSymbolPath(std::wstring_view const& NewSymbolPath)
+Symbols::SetSymbolPath(std::wstring_view const NewSymbolPath)
 {
     __SymbolPath = NewSymbolPath;
     if ( !__hProcess )
@@ -324,7 +272,7 @@ Symbols::SetSymbolPath(std::wstring_view const& NewSymbolPath)
 
 
 Result<std::filesystem::path>
-Symbols::DownloadModulePdbToDisk(std::string_view const& ModuleNameWithExt)
+Symbols::DownloadModulePdbToDisk(std::string_view const ModuleNameWithExt)
 {
     //
     // Load the module as data
@@ -366,7 +314,7 @@ Symbols::DownloadModulePdbToDisk(std::string_view const& ModuleNameWithExt)
     auto dlRes = Net::HTTP::DownloadFile(url.str(), ModulePathWithPdb);
     if ( Failed(dlRes) )
     {
-        return Err(Error(dlRes).code);
+        return Error(dlRes);
     }
 
     return Ok(ModulePathWithPdb);
@@ -374,7 +322,7 @@ Symbols::DownloadModulePdbToDisk(std::string_view const& ModuleNameWithExt)
 
 
 Result<std::vector<u8>>
-Symbols::DownloadModulePdbToMemory(std::string_view const& ModuleNameWithExt)
+Symbols::DownloadModulePdbToMemory(std::string_view const ModuleNameWithExt)
 {
     //
     // Download PDB
@@ -382,7 +330,7 @@ Symbols::DownloadModulePdbToMemory(std::string_view const& ModuleNameWithExt)
     auto dlRes = Symbols::DownloadModulePdbToDisk(ModuleNameWithExt);
     if ( Failed(dlRes) )
     {
-        return Err(Error(dlRes).code);
+        return Error(dlRes);
     }
 
     std::filesystem::path const& ModulePathWithPdb = Value(dlRes);

@@ -28,7 +28,7 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
     Context.Set("x64");
     Context.LogLevel = Log::LogLevel::Debug;
 
-    const std::wstring containerName {L"appcontainer-" + Utils::Random::alnum(10)};
+    const std::wstring containerName {L"appcontainer-" + Utils::Random::AlnumWideString(10)};
     const std::wstring processName {argv[1]};
     const std::vector<std::tuple<std::wstring, WELL_KNOWN_SID_TYPE> > AvailableCapabilities = {
         {L"InetClient", WinCapabilityInternetClientSid},

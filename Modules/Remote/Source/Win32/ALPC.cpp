@@ -237,7 +237,7 @@ Server::Accept() -> Result<HANDLE>
         return Err(ErrorCode::AlpcError);
     }
 
-    Utils::hexdump((PBYTE)&ConnectionRequestMsg.m_PortMessage, OriginalMsgSize);
+    Utils::Hexdump((PBYTE)&ConnectionRequestMsg.m_PortMessage, OriginalMsgSize);
 
     //
     // If the message was of valid type (i.e. request), we can accept the connection

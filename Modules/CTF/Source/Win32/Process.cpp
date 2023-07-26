@@ -93,11 +93,23 @@ CTF::Process::CreateInOutPipes()
     bSuccess = (::CreatePipe(&m_ChildPipeStdin, &m_ParentPipeStdin, &sa, 1) == TRUE) &&
                (::CreatePipe(&m_ParentPipeStdout, &m_ChildPipeStdout, &sa, 1) == TRUE);
 
+    if ( !bSuccess )
+    {
+        err("CreatePipe() failed()");
+        return Err(ErrorCode::InitializationFailed);
+    }
+
     //
     // Mark the child handles as inheritable
     //
     bSuccess &= (::SetHandleInformation(m_ChildPipeStdout, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT) == TRUE) &&
                 (::SetHandleInformation(m_ChildPipeStdin, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT) == TRUE);
+
+    if ( !bSuccess )
+    {
+        err("SetHandleInformation(Child) failed");
+        return Err(ErrorCode::InitializationFailed);
+    }
 
     //
     // Unmark the parent handles as inheritable
@@ -107,6 +119,7 @@ CTF::Process::CreateInOutPipes()
 
     if ( !bSuccess )
     {
+        err("SetHandleInformation(Parent) failed");
         return Err(ErrorCode::InitializationFailed);
     }
 
@@ -155,12 +168,13 @@ CTF::Process::Spawn(bool StartSuspended)
     m_ChildPipeStdin  = INVALID_HANDLE_VALUE;
     m_ChildPipeStdout = INVALID_HANDLE_VALUE;
 
-    m_Process = ::Process::Process(pi.dwProcessId, pi.hProcess, false);
+    auto p    = pwn::Process::Process((u32)pi.dwProcessId);
+    m_Process = std::move(p);
     return Ok(m_Process.IsValid());
 }
 
 
-::Process::Process&
+pwn::Process::Process&
 CTF::Process::Object()
 {
     return m_Process;

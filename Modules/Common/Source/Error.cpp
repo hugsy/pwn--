@@ -15,7 +15,7 @@
 
 using namespace pwn;
 
-std::wstring PWNAPI
+std::wstring_view PWNAPI
 FormatErrorCode(ErrorCode const& code)
 {
     switch ( code )
@@ -67,6 +67,7 @@ FormatErrorCode(ErrorCode const& code)
 }
 
 
+/*
 Err::Err(ErrorCode ec, uint32_t en) :
 #if defined(PWN_BUILD_FOR_WINDOWS)
     ErrorType(ec, en ? en : ::GetLastError())
@@ -102,7 +103,6 @@ Err::Err(ErrorType const& e) : Err(e.code, e.number)
 {
 }
 
-
 std::wstring
 ErrorType::Code()
 {
@@ -136,3 +136,4 @@ Err::operator==(ErrorCode code) const
 {
     return this->code == code;
 }
+*/

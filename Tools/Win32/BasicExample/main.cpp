@@ -68,7 +68,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     }
 
     info(L"Current UnlockId:");
-    Utils::hexdump(value);
+    Utils::Hexdump(value);
 
     /*
     if ( false == windows::process::add_privilege(L"SeSystemEnvironmentPrivilege") )
@@ -108,7 +108,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     }
 
     info(L"New UnlockId:\n");
-    Utils::hexdump(value);
+    Utils::Hexdump(value);
 
     return 0;
 
@@ -119,7 +119,7 @@ wmain(const int argc, const wchar_t** argv) -> int
         std::wstring arg {argv[1]};
         auto decoded_string = Value(Utils::Base64::Decode(Utils::StringLib::To<std::string>(arg)));
         encoded_buffer      = decoded_string;
-        Utils::hexdump(encoded_buffer);
+        Utils::Hexdump(encoded_buffer);
     }
 
     // Utils::DebugBreak();

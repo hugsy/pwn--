@@ -25,14 +25,14 @@ PE::PE(std::filesystem::path const& Path)
 
     auto PeFile     = FileSystem::File(std::move(hFile));
     const auto Size = ValueOr(PeFile.Size(), (usize)0);
-    const auto hMap = FileSystem::FileMapViewHandle {Value(PeFile.Map(PAGE_READONLY))};
+    const auto hMap = Value(PeFile.Map(PAGE_READONLY));
     auto View       = PeFile.View(hMap.get(), FILE_MAP_READ, 0, Size);
     if ( Failed(View) )
     {
         return;
     }
 
-    auto SpanView = std::span<u8> {(u8*)Value(View), Size};
+    auto SpanView = std::span<u8> {(u8*)Value(std::move(View)).get(), Size};
     m_IsValid     = ParsePeFromMemory(SpanView);
 }
 

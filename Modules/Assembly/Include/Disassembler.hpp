@@ -101,13 +101,13 @@ public:
             auto res = Disassemble(Bytes);
             if ( Failed(res) )
             {
-                auto e = Error(res);
-                if ( e.code == ErrorCode::NoMoreData )
+                auto err = Error(res);
+                if ( err.Code == ErrorCode::NoMoreData )
                 {
                     break;
                 }
 
-                return Err(e.code);
+                return err;
             }
 
             auto insn = Value(res);

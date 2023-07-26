@@ -169,19 +169,21 @@ public:
     ///@param Path the path to the file on disk to be parsed
     ///@return Result<bool>
     ///
-    static Result<PE>
-    Parse(std::filesystem::path const& Path)
-    {
-        PE pe {Path};
-        if ( !(bool)pe )
-        {
-            return Err(ErrorCode::MalformedFile);
-        }
+    // static Result<PE>
+    // Parse(std::filesystem::path const& Path)
+    // {
+    //     PE pe {Path};
+    //     if ( !pe )
+    //     {
+    //         return Err(ErrorCode::MalformedFile);
+    //     }
 
-        return Ok(pe);
-    }
+    //     return Ok(pe);
+    // }
 
-    PE() = delete;
+    PE()          = delete;
+    PE(PE const&) = delete;
+    PE(PE&&)      = default;
 
     ///
     ///@brief Construct a new PE object from a path

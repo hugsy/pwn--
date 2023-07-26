@@ -69,7 +69,7 @@ Tube::recvuntil(_In_ std::vector<u8> const& pattern)
                 return Err(Error(res));
             }
 
-            std::vector<u8> const& chunk = Value(res);
+            std::vector<u8> const chunk = Value(res);
             if ( chunk.empty() )
             {
                 continue;
@@ -252,4 +252,4 @@ Tube::interactive()
 
     ok("Leaving interactive mode...");
 }
-} // namespace Net
+} // namespace pwn::Net

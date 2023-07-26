@@ -27,16 +27,17 @@ if(WIN32)
         ${ASM_DIR}/get_teb.asm
         ${ASM_DIR}/trampoline.asm
     )
+    set(DEPS PWN::Common PWN::Security PWN::Symbols PWN::System)
 else()
     return()
 endif(WIN32)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
-add_dependencies(${PROJECT_NAME} PWN::Common PWN::Security PWN::Symbols PWN::System)
+add_dependencies(${PROJECT_NAME} ${DEPS})
 add_library(PWN::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC)
-target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common PWN::Security PWN::Symbols PWN::System Userenv.lib)
+target_link_libraries(${PROJECT_NAME} PUBLIC ${DEPS} Userenv.lib)
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 

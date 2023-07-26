@@ -5,13 +5,18 @@
 #include "Handle.hpp"
 #include "Log.hpp"
 
+
 namespace pwn::Security
 {
+
+template<typename T>
+concept TokenizableObject = requires(T t) { t.Handle(); };
+
 
 class Token
 {
 public:
-    enum class TokenType : u8
+    enum class Granularity : u8
     {
         Unknown,
         Process,
@@ -19,50 +24,37 @@ public:
     };
 
 
+    ///
+    ///@brief Construct a new Token object
+    ///
+    ///@param hObject A handle to the type of object the token is attached to
+    ///@param Type Indicate the object type
+    ///
+    Token(HANDLE hObject, Granularity Type);
+
+
+    ///
+    ///@brief Construct a new Token object
+    ///
+    ///
     Token() = default;
 
-    Token(SharedHandle ProcessOrThreadHandle, TokenType Type) :
-        m_ProcessOrThreadHandle {ProcessOrThreadHandle},
-        m_TokenHandle {nullptr},
-        m_TokenAccessMask {0},
-        m_Type {Type}
-    {
-        ReOpenTokenWith(TOKEN_READ | TOKEN_QUERY_SOURCE | TOKEN_DUPLICATE);
-    }
 
-    Token&
-    operator=(Token const& OldCopy)
-    {
-        m_ProcessOrThreadHandle = OldCopy.m_ProcessOrThreadHandle;
-        m_TokenAccessMask       = 0;
-
-        HANDLE hDuplicated;
-        if ( FALSE == ::DuplicateHandle(
-                          m_ProcessOrThreadHandle->get(),
-                          OldCopy.m_TokenHandle.get(),
-                          m_ProcessOrThreadHandle->get(),
-                          &hDuplicated,
-                          0,
-                          false,
-                          DUPLICATE_SAME_ACCESS) )
-        {
-            Log::perror(L"Token::operator=::DuplicateHandle()");
-        }
-        else
-        {
-            m_TokenAccessMask = OldCopy.m_TokenAccessMask;
-            m_TokenHandle     = UniqueHandle {hDuplicated};
-        }
-
-        return *this;
-    }
-
-    Token&
-    operator=(Token&&) = default;
-
+    ///
+    ///@brief
+    ///
+    ///@return true
+    ///@return false
+    ///
     bool
     IsValid() const;
 
+
+    ///
+    ///@brief
+    ///
+    ///@return Result<bool>
+    ///
     Result<bool>
     IsElevated();
 
@@ -84,7 +76,7 @@ public:
     AddPrivilege(std::wstring_view const& PrivilegeName);
 
     ///
-    /// @brief  a privilege to the process (if possible)
+    /// @brief Check if a process has a privilege
     ///
     /// @param PrivilegeName
     /// @return Result<bool> true if the privilege is acquired (false if not).  ErrorCode otherwise
@@ -93,56 +85,56 @@ public:
     HasPrivilege(std::wstring_view const& PrivilegeName);
 
     ///
-    /// @brief Query token information
+    /// @brief Query token information.
+    ///
+    /// @link
+    /// https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/ne-ntifs-_token_information_class#constants
     ///
     /// @tparam T
     /// @param TokenInformationClass
-    /// @return Result<std::shared_ptr<T>>
+    /// @return Result<std::unique_ptr<T>>
     ///
     template<class T>
-    Result<std::shared_ptr<T>>
+    Result<std::unique_ptr<T>>
     Query(TOKEN_INFORMATION_CLASS TokenInformationClass)
     {
         auto res = QueryInternal(TokenInformationClass, sizeof(T));
         if ( Failed(res) )
         {
-            return Err(Error(res).code);
+            return Error(res);
         }
 
-        const auto p = reinterpret_cast<T*>(Value(res));
-        auto deleter = [](T* x)
-        {
-            ::LocalFree(x);
-        };
-        return Ok(std::shared_ptr<T>(p, deleter));
+        auto RawResult = Value(std::move(res));
+        std::unique_ptr<T> TypedResult {(T*)RawResult.release()};
+        return Ok(std::move(TypedResult));
     }
 
     ///
     ///@brief
     ///
-    ///@tparam T
+    ///@tparam TokenInfoClass
     ///@param TokenInformation
     ///@return Result<usize>
     ///
-    template<class T>
+    template<class TokenInfoClass>
     Result<usize>
-    Update(T const& TokenInformation)
+    Update(TokenInfoClass const& TokenInformation)
     {
         TOKEN_INFORMATION_CLASS TokenInformationClass = 0;
         const DWORD NewDesiredAccess                  = TOKEN_ADJUST_DEFAULT;
-        const ULONG TokenInformationLength            = sizeof(T);
+        const ULONG TokenInformationLength            = sizeof(TokenInfoClass);
 
-        if constexpr ( std::is_same_v<T, TOKEN_DEFAULT_DACL> )
+        if constexpr ( std::is_same_v<TokenInfoClass, TOKEN_DEFAULT_DACL> )
         {
             TokenInformationClass = TokenDefaultDacl;
         }
 
-        if constexpr ( std::is_same_v<T, TOKEN_PRIMARY_GROUP> )
+        if constexpr ( std::is_same_v<TokenInfoClass, TOKEN_PRIMARY_GROUP> )
         {
             TokenInformationClass = TokenPrimaryGroup;
         }
 
-        if constexpr ( std::is_same_v<T, TOKEN_OWNER> )
+        if constexpr ( std::is_same_v<TokenInfoClass, TOKEN_OWNER> )
         {
             TokenInformationClass = TokenOwner;
         }
@@ -157,16 +149,14 @@ public:
             TokenInformationClass,
             (PVOID)TokenInformation,
             TokenInformationLength);
-        if ( NT_SUCCESS(Status) )
+        if ( !NT_SUCCESS(Status) )
         {
-            return Ok(Status);
+            Log::ntperror(L"NtSetInformationToken()", Status);
+            return Err(ErrorCode::ExternalApiCallFailed);
         }
-
-        Log::ntperror(L"NtSetInformationToken()", Status);
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Ok(Status);
     }
 
-protected:
     ///
     /// @brief
     ///
@@ -176,21 +166,30 @@ protected:
     Result<bool>
     ReOpenTokenWith(const DWORD DesiredAccess);
 
+private:
     ///
-    /// @brief Should not be called directly
+    ///@brief Should not be called directly
     ///
-    /// @param ThreadInformationClass
+    ///@param TokenInformationClass
+    ///@param InitialSize
+    ///@return Result<std::unique_ptr<u8[]>>
     ///
-    /// @return Result<PVOID>
-    ///
-    Result<PVOID>
-    QueryInternal(const TOKEN_INFORMATION_CLASS, const usize);
+    Result<std::unique_ptr<u8[]>>
+    QueryInternal(const TOKEN_INFORMATION_CLASS TokenInformationClass, const usize InitialSize);
 
-    SharedHandle m_ProcessOrThreadHandle = nullptr;
-    UniqueHandle m_TokenHandle           = nullptr;
-    DWORD m_TokenAccessMask              = 0;
-    TokenType m_Type                     = TokenType::Unknown;
+
+    ///@brief A handle to the object to which the token is binded
+    HANDLE m_hObject {INVALID_HANDLE_VALUE};
+
+    ///@brief The granularity of the token
+    Granularity m_Type {Granularity::Unknown};
+
+    ///@brief Unique pointer to the token handle itself
+    UniqueHandle m_TokenHandle {nullptr};
+
+    ///@brief The current access mask of the token
+    DWORD m_TokenAccessMask {0};
 };
 
 
-} // namespace Security
+} // namespace pwn::Security

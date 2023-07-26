@@ -14,20 +14,20 @@
 #include "Handle.hpp"
 #include "Log.hpp"
 
-// clang-format off
-#define PWN_UTILS_LOWER_CHARSET           "abcdefghijklmnopqrstuvwxyz"
-#define PWN_UTILS_UPPER_CHARSET           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-#define PWN_UTILS_DIGITS_CHARSET          "0123456789"
-#define PWN_UTILS_UPPER_LOWER_CHARSET     PWN_UTILS_LOWER_CHARSET PWN_UTILS_UPPER_CHARSET
-#define PWN_UTILS_ALNUM_CHARSET           PWN_UTILS_UPPER_LOWER_CHARSET PWN_UTILS_DIGITS_CHARSET
-#define PWN_UTILS_PRINTABLE_CHARSET       PWN_UTILS_ALNUM_CHARSET "!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ "
-// clang-format on
+// // clang-format off
+// #define PWN_UTILS_LOWER_CHARSET           "abcdefghijklmnopqrstuvwxyz"
+// #define PWN_UTILS_UPPER_CHARSET           "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+// #define PWN_UTILS_DIGITS_CHARSET          "0123456789"
+// #define PWN_UTILS_UPPER_LOWER_CHARSET     PWN_UTILS_LOWER_CHARSET PWN_UTILS_UPPER_CHARSET
+// #define PWN_UTILS_ALNUM_CHARSET           PWN_UTILS_UPPER_LOWER_CHARSET PWN_UTILS_DIGITS_CHARSET
+// #define PWN_UTILS_PRINTABLE_CHARSET       PWN_UTILS_ALNUM_CHARSET "!\"#$ % &'()*+,-./:;<=>?@[\\]^_`{|}~ "
+// // clang-format on
 
 using namespace pwn;
 
 namespace fs = std::filesystem;
 
-// home-made ugly hexdump
+// home-made ugly Hexdump
 // TODO: improve at some point
 std::wostringstream
 do_hexdump(const u8* data, const usize sz)
@@ -76,20 +76,18 @@ do_hexdump(const u8* data, const usize sz)
     return wos;
 }
 
-constexpr std::string_view b64_charset = PWN_UTILS_LOWER_CHARSET PWN_UTILS_UPPER_CHARSET PWN_UTILS_DIGITS_CHARSET "+/";
-
 
 ///
 /// better rand() using xorshift, stolen from gamozo
 ///
 auto
-xorshift64() -> u64
+XorShift64() -> u64
 {
-    auto seed = Context.m_seed;
+    auto seed = Context.CryptoSeed;
     seed ^= seed << 13;
     seed ^= seed >> 17;
     seed ^= seed << 43;
-    Context.m_seed = seed;
+    Context.CryptoSeed = seed;
     return seed;
 }
 
@@ -106,7 +104,7 @@ xorshift64() -> u64
 ///@param lpResult
 ///
 void
-create_cyclic_buffer(
+CreateCyclicBuffer(
     const u32 t,
     const u32 p,
     const usize DesiredBufferSize,
@@ -138,11 +136,11 @@ create_cyclic_buffer(
     else
     {
         aIndex[t] = aIndex[t - p];
-        create_cyclic_buffer(t + 1, p, DesiredBufferSize, Alphabet, Period, aIndex, Result);
+        CreateCyclicBuffer(t + 1, p, DesiredBufferSize, Alphabet, Period, aIndex, Result);
         for ( u32 j = aIndex[t - p] + 1; j < Alphabet.size(); j++ )
         {
             aIndex[t] = j;
-            create_cyclic_buffer(t + 1, t, DesiredBufferSize, Alphabet, Period, aIndex, Result);
+            CreateCyclicBuffer(t + 1, t, DesiredBufferSize, Alphabet, Period, aIndex, Result);
         }
     }
 
@@ -161,61 +159,61 @@ Random::Seed(std::optional<u64> seed)
 
     if ( seed )
     {
-        Context.m_seed = seed.value();
+        Context.CryptoSeed = seed.value();
     }
     else
     {
-        Context.m_seed = time(nullptr);
+        Context.CryptoSeed = time(nullptr);
     }
 
-    std::srand(Context.m_seed);
+    std::srand(Context.CryptoSeed);
 }
 
 
 auto
-Random::rand() -> u64
+Random::Next() -> u64
 {
-    return xorshift64();
+    return XorShift64();
 }
 
 
 auto
-Random::rand(u64 const max, u64 const min) noexcept -> u64
+Random::Next(u64 const max, u64 const min) noexcept -> u64
 {
-    return (xorshift64() + min) % max;
+    return (XorShift64() + min) % max;
 }
 
 
 auto
-Random::byte() -> u8
+Random::Byte() -> u8
 {
-    return Random::rand() & 0xff;
+    return Random::Next() & 0xff;
 }
 
 
 auto
-Random::word() -> u16
+Random::Word() -> u16
 {
-    return Random::rand() & 0xffff;
+    return Random::Next() & 0xffff;
 }
 
 
 auto
-Random::dword() -> u32
+Random::Dword() -> u32
 {
-    return Random::rand() & 0xffffffff;
+    return Random::Next() & 0xffffffff;
 }
 
 
 auto
-Random::qword() -> u64
+Random::Qword() -> u64
 {
-    return Random::rand();
+    return Random::Next();
 }
 
 
 auto
-Random::buffer(_In_ u32 length) -> std::vector<u8>
+Random::Buffer(_In_ u32 length) -> std::vector<u8>
 {
     std::vector<u8> buffer;
     buffer.resize(length);
@@ -224,40 +222,53 @@ Random::buffer(_In_ u32 length) -> std::vector<u8>
         buffer.end(),
         [](u8& x)
         {
-            x = Random::byte();
+            x = Random::Byte();
         });
     return buffer;
 }
 
 
 auto
-Random::string(_In_ u32 length) -> std::wstring
+Random::String(u32 length, std::string_view const& charset) -> std::string
 {
-    const std::wstring printable(L"" PWN_UTILS_PRINTABLE_CHARSET);
-    std::wstring string;
-    for ( u32 i = 0; i < length; i++ )
-    {
-        string += printable.at(Random::rand(0, (u32)printable.length()));
-    }
-    return string;
+    std::string str;
+    str.resize(length);
+    std::for_each(
+        str.begin(),
+        str.end(),
+        [&charset](auto& c)
+        {
+            c = charset.at(Random::Next(0, (u32)charset.length()));
+        });
+    return str;
 }
 
 
 auto
-Random::alnum(_In_ u32 length) -> std::wstring
+Random::WideString(u32 length, std::wstring_view const& charset) -> std::wstring
 {
-    const std::wstring printable(L"" PWN_UTILS_ALNUM_CHARSET);
-    std::wstring string;
-    for ( u32 i = 0; i < length; i++ )
-    {
-        string += printable.at(Random::rand(0, (u32)printable.length()));
-    }
-    return string;
+    std::wstring str;
+    str.resize(length);
+    std::for_each(
+        str.begin(),
+        str.end(),
+        [&charset](auto& c)
+        {
+            c = charset.at(Random::Next(0, (u32)charset.length()));
+        });
+    return str;
+}
+
+
+auto
+Random::AlnumWideString(_In_ u32 length) -> std::wstring
+{
+    return Random::WideString(length, Utils::StringLib::Charset::WideAlphanumeric);
 }
 
 
 void
-hexdump(const u8* Buffer, const usize BufferSize)
+Hexdump(const u8* Buffer, const usize BufferSize)
 {
     auto hexstr = do_hexdump(Buffer, BufferSize);
     std::lock_guard<std::mutex> guard(Context.m_ConsoleMutex);
@@ -266,16 +277,16 @@ hexdump(const u8* Buffer, const usize BufferSize)
 
 
 void
-hexdump(std::vector<u8> const& bytes)
+Hexdump(std::vector<u8> const& bytes)
 {
-    hexdump((const u8*)bytes.data(), (usize)bytes.size());
+    Hexdump((const u8*)bytes.data(), (usize)bytes.size());
 }
 
 
 void
-hexdump(MemoryView const& view)
+Hexdump(MemoryView const& view)
 {
-    hexdump((const u8*)view.data(), (usize)view.size());
+    Hexdump((const u8*)view.data(), (usize)view.size());
 }
 
 
@@ -313,10 +324,10 @@ Base64::Encode(const u8* in, const usize len) -> Result<std::string>
         v     = i + 1 < len ? v << 8 | in[i + 1] : v << 8;
         v     = i + 2 < len ? v << 8 | in[i + 2] : v << 8;
 
-        out[j]     = b64_charset[(v >> 18) & 0x3F];
-        out[j + 1] = b64_charset[(v >> 12) & 0x3F];
-        out[j + 2] = (i + 1 < len) ? b64_charset[(v >> 6) & 0x3F] : '=';
-        out[j + 3] = (i + 2 < len) ? b64_charset[v & 0x3F] : '=';
+        out[j]     = Utils::StringLib::Charset::Basic64Characters[(v >> 18) & 0x3F];
+        out[j + 1] = Utils::StringLib::Charset::Basic64Characters[(v >> 12) & 0x3F];
+        out[j + 2] = (i + 1 < len) ? Utils::StringLib::Charset::Basic64Characters[(v >> 6) & 0x3F] : '=';
+        out[j + 3] = (i + 2 < len) ? Utils::StringLib::Charset::Basic64Characters[v & 0x3F] : '=';
     }
 
     return Ok(std::string(reinterpret_cast<char*>(out), elen));
@@ -386,7 +397,7 @@ Base64::Decode(std::string_view const& in) -> Result<std::vector<u8>>
             out[j + 2] = v & 0xFF;
     }
 
-    return Ok(out);
+    return Ok(std::move(out));
 }
 
 
@@ -407,7 +418,7 @@ cyclic(_In_ u32 Size, _In_ u32 Period)
     Buffer.clear();
     u32 _Period = Period ? Period : Context.ptrsize;
     auto aIndex = std::make_unique<u32[]>(Alphabet.size() * _Period);
-    create_cyclic_buffer(1, 1, Size, Alphabet, _Period, aIndex.get(), Buffer);
+    CreateCyclicBuffer(1, 1, Size, Alphabet, _Period, aIndex.get(), Buffer);
     return Ok(Buffer);
 }
 

@@ -15,149 +15,156 @@
 
 namespace pwn::System
 {
-class System
+
+namespace details
 {
-public:
-    ///
-    ///@brief
-    ///
-    ///@return u32
-    ///
-    static auto
-    PageSize() -> u32;
+///
+/// @brief Should not be called directly
+///
+/// @param SystemInformationClass
+///
+/// @return Result<PVOID>
+///
+Result<PVOID>
+QueryInternal(const SYSTEM_INFORMATION_CLASS, const usize);
+} // namespace details
 
-    ///
-    ///@brief
-    ///
-    ///@param hProcess
-    ///@return u32
-    ///
-    static u32
-    ProcessId(const HANDLE hProcess);
+///
+///@brief Get the page size of the targeted system
+///
+///@return u32
+///
+auto
+PageSize() -> u32;
 
-    ///
-    ///@brief
-    ///
-    ///@param dwProcessId
-    ///@return std::optional<u32>
-    ///
-    static std::optional<u32>
-    ParentProcessId(const u32 dwProcessId);
+///
+///@brief
+///
+///@param hProcess
+///@return u32
+///
+u32
+ProcessId(const HANDLE hProcess);
 
-    ///
-    ///@brief
-    ///
-    ///@param targetProcessName
-    ///@return Result<std::vector<u32>>
-    ///
-    static auto
-    PidOf(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>;
+///
+///@brief
+///
+///@param dwProcessId
+///@return std::optional<u32>
+///
+auto
+ParentProcessId(const u32 dwProcessId) -> Result<u32>;
 
-    ///
-    ///@brief
-    ///
-    ///@return const std::wstring
-    ///
-    static const std::wstring
-    ComputerName();
+///
+///@brief
+///
+///@param targetProcessName
+///@return Result<std::vector<u32>>
+///
+auto
+PidOf(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>;
 
-    ///
-    ///@brief
-    ///
-    ///@return Result<std::wstring>
-    ///
-    static Result<std::wstring>
-    UserName();
+///
+///@brief
+///
+///@return const std::wstring
+///
+const std::wstring
+ComputerName();
 
-    ///
-    ///@brief
-    ///
-    ///@param hModule
-    ///@return Result<std::wstring>
-    ///
-    static Result<std::wstring>
-    ModuleName(HMODULE hModule);
+///
+///@brief
+///
+///@return Result<std::wstring>
+///
+Result<std::wstring>
+UserName();
 
-    ///
-    ///@brief
-    ///
-    ///@return Result<std::wstring>
-    ///
-    static Result<std::wstring>
-    FileName();
+///
+///@brief
+///
+///@param hModule
+///@return Result<std::wstring>
+///
+Result<std::wstring>
+ModuleName(HMODULE hModule);
 
-    ///
-    /// @brief Get the Windows version as a tuple of int, or raise an exception.
-    ///
-    /// @return PWNAPI
-    ///
-    static std::tuple<u32, u32, u32>
-    WindowsVersion();
+///
+///@brief
+///
+///@return Result<std::wstring>
+///
+Result<std::wstring>
+FileName();
 
-    ///
-    /// @brief Query system information
-    ///
-    /// @tparam T
-    /// @param SystemInformationClass
-    /// @return Result<std::shared_ptr<T>>
-    ///
-    template<class T>
-    static Result<std::shared_ptr<T>>
-    Query(SYSTEM_INFORMATION_CLASS SystemInformationClass)
+///
+/// @brief Get the Windows version as a tuple of int, or raise an exception.
+///
+/// @return PWNAPI
+///
+std::tuple<u32, u32, u32>
+WindowsVersion();
+
+///
+/// @brief Query system information
+///
+/// @tparam T
+/// @param SystemInformationClass
+/// @return Result<std::shared_ptr<T>>
+///
+template<class T>
+Result<std::shared_ptr<T>>
+Query(SYSTEM_INFORMATION_CLASS SystemInformationClass)
+{
+    auto res = details::QueryInternal(SystemInformationClass, sizeof(T));
+    if ( Failed(res) )
     {
-        auto res = QueryInternal(SystemInformationClass, sizeof(T));
-        if ( Failed(res) )
-        {
-            return Err(Error(res).code);
-        }
-
-        const auto p = reinterpret_cast<T*>(Value(res));
-        auto deleter = [](T* x)
-        {
-            ::LocalFree(x);
-        };
-        return Ok(std::shared_ptr<T>(p, deleter));
+        return Error(res);
     }
 
-
-    ///
-    /// @brief Retrieves the system number of processors and their cache
-    ///
-    /// @return If successful, the tuple returns a tuple of (in that order):
-    /// processor count, logical processor count, number of L1 caches, number
-    /// of L2 caches and number of L3 caches
-    ///
-    static Result<std::tuple<u8, u8, u8, u8, u8>>
-    ProcessorCount();
+    const auto p = reinterpret_cast<T*>(Value(res));
+    auto deleter = [](T* x)
+    {
+        ::LocalFree(x);
+    };
+    return Ok(std::shared_ptr<T>(p, deleter));
+}
 
 
-    ///
-    /// @brief Get the kernel modules
-    ///
-    /// @return Result<std::vector<RTL_PROCESS_MODULE_INFORMATION>>
-    ///
-    static Result<std::vector<RTL_PROCESS_MODULE_INFORMATION>>
-    Modules();
+///
+/// @brief Retrieves the system number of processors and their cache
+///
+/// @return If successful, the tuple returns a tuple of (in that order):
+/// processor count, logical processor count, number of L1 caches, number
+/// of L2 caches and number of L3 caches
+///
+Result<std::tuple<u8, u8, u8, u8, u8>>
+ProcessorCount();
 
 
-    ///
-    /// @brief Enumerate all the system handles
-    ///
-    /// @return Result<std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO>>
-    ///
-    static Result<std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO>>
-    Handles();
+///
+/// @brief Get the kernel modules
+///
+/// @return Result<std::vector<RTL_PROCESS_MODULE_INFORMATION>>
+///
+Result<std::vector<RTL_PROCESS_MODULE_INFORMATION>>
+Modules();
 
-private:
-    ///
-    /// @brief Should not be called directly
-    ///
-    /// @param SystemInformationClass
-    ///
-    /// @return Result<PVOID>
-    ///
-    static Result<PVOID>
-    QueryInternal(const SYSTEM_INFORMATION_CLASS, const usize);
-};
 
-} // namespace System
+///
+/// @brief Enumerate all the system handles
+///
+/// @return Result<std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO>>
+///
+Result<std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO>>
+Handles();
+
+
+///
+///@brief Enumerate all {ProcessId, ThreadId} currently running
+///
+///@return Result<std::vector<std::tuple<u32, u32>>>
+///
+Result<std::vector<std::tuple<u32, u32>>>
+Threads();
+} // namespace pwn::System

@@ -6,34 +6,24 @@ namespace pwn::Process
 
 #pragma region Process::Memory
 
-Memory::Memory(Process* process)
-{
-    if ( !process )
-    {
-        throw std::runtime_error("Cannot create Memory of null process");
-    }
-
-    m_Process       = process;
-    m_ProcessHandle = process->Handle();
-}
+// Memory::Memory(Process const& Process) : m_Process {Process}
+// {
+//     m_IsValid = true;
+// }
 
 
 Result<std::vector<u8>>
 Memory::Read(uptr const Address, usize Length)
 {
-    if ( !m_Process || !m_ProcessHandle )
+    if ( !m_IsValid )
     {
         return Err(ErrorCode::NotInitialized);
     }
 
     std::vector<u8> out(Length);
     SIZE_T NbByteRead {};
-    if ( ::ReadProcessMemory(
-             m_ProcessHandle->get(),
-             reinterpret_cast<LPVOID>(Address),
-             out.data(),
-             Length,
-             &NbByteRead) == false )
+    if ( ::ReadProcessMemory(m_Process.Handle(), reinterpret_cast<LPVOID>(Address), out.data(), Length, &NbByteRead) ==
+         false )
     {
         return Err(ErrorCode::ExternalApiCallFailed);
     }
@@ -53,14 +43,14 @@ Memory::Memset(uptr const address, const usize size, const u8 val)
 Result<usize>
 Memory::Write(uptr const Address, std::vector<u8> data)
 {
-    if ( !m_Process || !m_ProcessHandle )
+    if ( !m_IsValid )
     {
         return Err(ErrorCode::NotInitialized);
     }
 
     SIZE_T NbByteWritten {};
     if ( ::WriteProcessMemory(
-             m_ProcessHandle->get(),
+             m_Process.Handle(),
              reinterpret_cast<LPVOID>(Address),
              data.data(),
              data.size(),
@@ -75,7 +65,7 @@ Memory::Write(uptr const Address, std::vector<u8> data)
 Result<uptr>
 Memory::Allocate(const size_t Size, const wchar_t Permission[3], const uptr ForcedMappingAddress, bool wipe)
 {
-    if ( !m_Process || !m_ProcessHandle )
+    if ( !m_IsValid )
     {
         return Err(ErrorCode::NotInitialized);
     }
@@ -99,7 +89,7 @@ Memory::Allocate(const size_t Size, const wchar_t Permission[3], const uptr Forc
     }
 
     auto buffer = (uptr)::VirtualAllocEx(
-        m_ProcessHandle->get(),
+        m_Process.Handle(),
         nullptr,
         Size,
         MEM_COMMIT | MEM_RESERVE,
@@ -120,7 +110,7 @@ Memory::Allocate(const size_t Size, const wchar_t Permission[3], const uptr Forc
 bool
 Memory::Free(const uptr Address)
 {
-    return ::VirtualFreeEx(m_ProcessHandle->get(), reinterpret_cast<LPVOID>(Address), 0, MEM_RELEASE) == 0;
+    return ::VirtualFreeEx(m_Process.Handle(), reinterpret_cast<LPVOID>(Address), 0, MEM_RELEASE) == 0;
 }
 
 Result<PVOID>
@@ -141,7 +131,7 @@ Memory::QueryInternal(
     {
         usize ReturnLength = 0;
         NTSTATUS Status    = ::NtQueryVirtualMemory(
-            m_ProcessHandle->get(),
+            m_Process.Handle(),
             (PVOID)BaseAddress,
             MemoryInformationClass,
             Buffer,
@@ -190,13 +180,13 @@ Memory::Regions()
         auto res = Query<MEMORY_BASIC_INFORMATION>(MemoryBasicInformation, CurrentAddress);
         if ( Failed(res) )
         {
-            auto e = Error(res);
-            if ( e.code == ErrorCode::InvalidParameter )
+            auto err = Error(res);
+            if ( err == ErrorCode::InvalidParameter )
             {
                 break;
             }
 
-            return Err(e.code);
+            return err;
         }
 
         //
@@ -228,7 +218,7 @@ Memory::Search(std::vector<u8> const& Pattern)
     auto res = Regions();
     if ( Failed(res) )
     {
-        return Err(Error(res).code);
+        return Error(res);
     }
 
     std::vector<uptr> Matches;

@@ -22,6 +22,7 @@ interesting locations from link target
 
 namespace pwn::FileSystem
 {
+
 using FileMapViewHandle = GenericHandle<void, ::UnmapViewOfFile>;
 
 class File
@@ -117,7 +118,12 @@ public:
     bool
     IsValid() const;
 
-
+    ///
+    ///@brief
+    ///
+    ///@return true
+    ///@return false
+    ///
     bool
     IsTemporary() const;
 
@@ -143,9 +149,9 @@ public:
     ///
     ///@param Protect
     ///@param Name (opt.)
-    ///@return Result<HANDLE>
+    ///@return Result<UniqueHandle>
     ///
-    Result<HANDLE>
+    Result<UniqueHandle>
     Map(DWORD Protect, std::optional<std::wstring_view> Name = std::nullopt);
 
 
@@ -156,9 +162,9 @@ public:
     ///@param Protect
     ///@param Offset
     ///@param Size
-    ///@return Result<PVOID>
+    ///@return Result<FileMapViewHandle>
     ///
-    Result<PVOID>
+    Result<FileMapViewHandle>
     View(HANDLE hMap, DWORD Protect, uptr Offset = 0, usize Size = -1);
 
 
@@ -278,7 +284,7 @@ public:
             Access |= GENERIC_READ | GENERIC_WRITE;
             Attrs |= FILE_FLAG_DELETE_ON_CLOSE;
             ShareMode = 0;
-            Path += L"-" + Utils::Random::string(10);
+            Path += L"-" + Utils::Random::WideString(10);
         }
 
         HANDLE hFile = ::CreateFileW(Path.c_str(), Access, ShareMode, nullptr, Disposition, Attrs, nullptr);

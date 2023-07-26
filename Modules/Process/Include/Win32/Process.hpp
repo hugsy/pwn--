@@ -4,54 +4,23 @@
 #include <securitybaseapi.h>
 #include <tlhelp32.h>
 
+#include <ranges>
+
 #include "Common.hpp"
 #include "Handle.hpp"
+#include "Win32/System.hpp"
+#include "Win32/Thread.hpp"
 #include "Win32/Token.hpp"
 
 using namespace pwn;
 
-namespace fs = std::filesystem;
-
 namespace pwn::Process
 {
 
+// class Memory;
 class Process;
-
-
 class Thread;
-
-
-///
-///@brief Describes a set of threads belonging to a process
-///
-class ThreadGroup
-{
-public:
-    ThreadGroup()
-    {
-    }
-
-    ThreadGroup(std::shared_ptr<Process> const& _Process) : m_Process {_Process}
-    {
-    }
-
-    ThreadGroup(ThreadGroup const& Copy)
-    {
-        m_Process = Copy.m_Process;
-    }
-
-    Result<std::vector<u32>>
-    List();
-
-    Thread
-    at(u32 Tid);
-
-    Thread
-    operator[](u32 Tid);
-
-private:
-    std::shared_ptr<Process> m_Process = nullptr;
-};
+// class ThreadGroup;
 
 
 ///
@@ -62,13 +31,42 @@ class Memory
 public:
     Memory() = default;
 
-    Memory(Process* process);
+
+    Memory(Memory const&) = default;
+
+
+    Memory(Memory&&) = default;
+
+
+    Memory&
+    operator=(Memory const&) = default;
+
+
+    Memory&
+    operator=(Memory&&) = default;
+
+
+    Memory(Process const& Process) : m_Process {Process}
+    {
+        m_IsValid = true;
+    }
+
+
+    Memory
+    operator=(Process const& p)
+    {
+        Memory New(p);
+        return New;
+    }
+
 
     auto
     Read(uptr const Address, usize Length) -> Result<std::vector<u8>>;
 
+
     auto
     Write(uptr const Address, std::vector<u8> data) -> Result<usize>;
+
 
     auto
     Memset(uptr const address, const usize size, const u8 val = 0x00) -> Result<usize>;
@@ -98,7 +96,7 @@ public:
         auto res = QueryInternal(MemoryInformationClass, BaseAddress, sizeof(T));
         if ( Failed(res) )
         {
-            return Err(Error(res).code);
+            return Error(res);
         }
 
         const auto p = reinterpret_cast<T*>(Value(res));
@@ -139,9 +137,8 @@ private:
     Result<PVOID>
     QueryInternal(const MEMORY_INFORMATION_CLASS, const uptr BaseAddress, const usize);
 
-    SharedHandle m_ProcessHandle {nullptr};
-
-    Process* m_Process {nullptr};
+    bool m_IsValid {false};
+    Process const& m_Process;
 };
 
 
@@ -158,8 +155,12 @@ enum class Integrity : int
 };
 
 
-struct HookedLocation
+///
+///@brief
+///
+class HookedLocation
 {
+public:
     uptr Location {0};
     std::vector<u8> OriginalBytes {};
 };
@@ -171,37 +172,40 @@ struct HookedLocation
 class Process
 {
 public:
+    ///
+    ///@brief Construct a new default Process object
+    ///
     Process() = default;
 
-    Process(u32, HANDLE = nullptr, bool = false);
 
-    Process(Process const&);
+    ///
+    ///@brief Construct a Process object from its PID. Collects a minimum amount of info about the process itself to
+    /// speed things up, the other information will be collected lazily.
+    ///
+    ///@param Pid
+    ///
+    ///@throws std::runtime_error on initialization failure
+    ///
+    Process(u32 Pid);
 
-    ~Process();
 
-    Process&
-    operator=(Process const& Copy);
-
+    ///
+    ///@brief Define "Spaceship operator" when sorting processes
+    ///
     auto
     operator<=>(Process const&) const = default;
 
-    bool
-    IsValid();
 
     ///
-    ///@brief Get the process path
+    ///@brief `Process` is `Indexable`
     ///
-    ///@return fs::path const&
+    ///@return u32
     ///
-    fs::path const&
-    Path() const;
-
-
-    ///
-    ///@brief Get the process parent id
-    ///
-    u32 const
-    ParentProcessId() const;
+    u32
+    Id() const
+    {
+        return m_ProcessId;
+    }
 
 
     ///
@@ -210,7 +214,43 @@ public:
     ///@return u32 const
     ///
     u32 const
-    ProcessId() const;
+    ProcessId() const
+    {
+        return Id();
+    }
+
+
+    ///
+    ///@brief Get the process parent id
+    ///
+    u32 const
+    ParentProcessId() const
+    {
+        return m_ParentProcessId;
+    }
+
+    Result<pwn::Process::Process>
+    Parent()
+    {
+        if ( m_ParentProcessId < 0 )
+        {
+            return Err(ErrorCode::InvalidProcess);
+        }
+
+        return Ok(std::move(Process(m_ParentProcessId)));
+    }
+
+    ///
+    ///@brief Get the process path
+    ///
+    ///@return fs::path const&
+    ///
+    std::filesystem::path const&
+    Path() const
+    {
+        return m_Path;
+    }
+
 
     ///
     ///@brief
@@ -221,7 +261,7 @@ public:
     bool
     IsRemote() const
     {
-        return !m_IsSelf;
+        return ::GetCurrentProcessId() != ProcessId();
     }
 
 
@@ -232,6 +272,7 @@ public:
     ///
     PPEB
     ProcessEnvironmentBlock();
+
 
     ///
     ///@brief Shortcut to `ProcessEnvironmentBlock()`
@@ -245,14 +286,14 @@ public:
     };
 
     ///
-    ///@brief
+    ///@brief Access to the process handle
     ///
-    ///@return SharedHandle const&
+    ///@return
     ///
-    SharedHandle const&
+    auto const
     Handle() const
     {
-        return m_ProcessHandle;
+        return m_ProcessHandle.get();
     }
 
     ///
@@ -277,6 +318,7 @@ public:
     Result<bool>
     Kill();
 
+
     ///
     /// @brief Retrieve the process integrity level
     ///
@@ -285,6 +327,7 @@ public:
     Result<Integrity>
     IntegrityLevel();
 
+
     ///
     /// @brief Query process information
     ///
@@ -292,21 +335,18 @@ public:
     /// @return Result<std::shared_ptr<T>>
     ///
     template<class T>
-    Result<std::shared_ptr<T>>
+    Result<std::unique_ptr<T>>
     Query(PROCESSINFOCLASS ProcessInformationClass)
     {
         auto res = QueryInternal(ProcessInformationClass, sizeof(T));
         if ( Failed(res) )
         {
-            return Err(Error(res).code);
+            return Error(res);
         }
 
-        const auto p = reinterpret_cast<T*>(Value(res));
-        auto deleter = [](T* x)
-        {
-            ::LocalFree(x);
-        };
-        return Ok(std::shared_ptr<T>(p, deleter));
+        auto RawResult = Value(std::move(res));
+        std::unique_ptr<T> TypedResult {(T*)RawResult.release()};
+        return Ok(std::move(TypedResult));
     }
 
 
@@ -332,13 +372,6 @@ public:
     Result<bool>
     ReOpenProcessWith(const DWORD DesiredAccess);
 
-
-    //
-    // Submodules
-    //
-    Memory Memory;
-    Security::Token Token;
-    ThreadGroup& Threads = m_Threads;
 
     Result<bool>
     Hook(uptr Location);
@@ -366,13 +399,6 @@ public:
     // Static class methods
     //
 
-    ///
-    /// @brief Return a Process object of the current process
-    ///
-    /// @return Result<Process>
-    ///
-    static Result<Process>
-    Current();
 
     ///
     /// @brief Create a new process
@@ -381,8 +407,8 @@ public:
     /// @param ParentPid
     /// @return Result<Process>
     ///
-    static Result<Process>
-    New(std::wstring_view const& CommandLine, const u32 ParentPid);
+    // static Result<Process>
+    // New(std::wstring_view const& CommandLine, const u32 ParentPid);
 
     ///
     /// @brief Invoke `ShellExecute` to create a process
@@ -392,44 +418,76 @@ public:
     ///
     /// @return Result<bool>
     ///
-    static Result<bool>
-    System(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operation = L"open");
+    // static Result<bool>
+    // System(_In_ const std::wstring& lpCommandLine, _In_ const std::wstring& operation = L"open");
 
-private:
+    // Memory& Memory = m_Memory;
+
+    // ProcessToken& Token = m_Token;
+
     ///
-    /// @brief Should not be called directly
+    ///@brief
+    ///
+    ///@return std::vector<u32>
+    ///
+    std::vector<u32>
+    Threads() const;
+
+    ///
+    ///@brief
+    ///
+    ///@param tid
+    ///@return Result<pwn::Process::Thread>
+    ///
+    Result<pwn::Process::Thread>
+    Thread(usize tid) const;
+
+
+private: // Methods
+    ///
+    /// @brief Wrapper for NtQueryInformationProcess()
+    /// Should not be called directly
     ///
     /// @param ProcessInformationClass
     ///
-    /// @return Result<PVOID>
+    /// @return Result<std::unique_ptr<u8[]>>
     ///
-    Result<PVOID>
+    Result<std::unique_ptr<u8[]>>
     QueryInternal(const PROCESSINFOCLASS, const usize);
 
-    u32 m_Pid {0};
-    u32 m_Ppid {0};
-    bool m_Valid {false};
-    fs::path m_Path {};
+
+private: // Members
+    const u32 m_ProcessId {0};
+    u32 m_ParentProcessId {0};
+    std::filesystem::path m_Path {};
     Integrity m_IntegrityLevel {Integrity::Unknown};
-    SharedHandle m_ProcessHandle {nullptr};
+    UniqueHandle m_ProcessHandle {nullptr};
     DWORD m_ProcessHandleAccessMask {0};
-    bool m_KillOnClose {false};
-    bool m_IsSelf {false};
-    bool m_IsWow64 {false};
     PPEB m_Peb {nullptr};
-    ThreadGroup m_Threads {};
+    bool m_IsWow64 {false};
     std::vector<HookedLocation> m_Hooks {};
     std::vector<std::function<void(PCONTEXT)>> m_HookCallbacks {};
 };
 
+///
+/// @brief Return a Process object of the current process
+///
+/// @return Result<Process>
+///
+/// @throws on failure
+///
+pwn::Process::Process
+Current();
+
+using ProcessGroup = IndexedVector<Process>;
 
 ///
 /// @brief Returns a basic list of processes, in a vector of tuple <Process>
 /// TODO: switch to return Result<ProcessGroup> + allow Predicate as argument to filter out stuff
 ///
-/// @return std::vector<Process>
+/// @return Result<std::vector<u32>>
 ///
-PWNAPI Result<std::vector<Process>>
+Result<std::vector<u32>>
 Processes();
 
 

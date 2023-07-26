@@ -25,7 +25,7 @@ struct SYMBOL_INFOW
     ULONG Tag;       // pdb classification
     ULONG NameLen;   // Actual length of name
     ULONG MaxNameLen;
-    WCHAR Name[1]; // Name of symbol
+    WCHAR Name[1];   // Name of symbol
 };
 
 struct SymbolInfo
@@ -59,7 +59,7 @@ public:
     ///@return `Result<std::vector<SymbolInfo>>`
     ///
     static Result<std::vector<SymbolInfo>>
-    EnumerateFromModule(std::wstring_view const& ModuleName, std::wstring_view const& Mask = L"*");
+    EnumerateFromModule(std::wstring_view const ModuleName, std::wstring_view const& Mask = L"*");
 
     ///
     ///@brief
@@ -68,7 +68,7 @@ public:
     ///@return `Result<std::wstring>`
     ///
     static Result<uptr>
-    ResolveFromName(std::wstring_view const& SymbolName);
+    ResolveFromName(std::wstring_view const SymbolName);
 
     ///
     ///@brief
@@ -87,7 +87,7 @@ public:
     ///@return `Result<bool>` true if a custom path was set, false if using the default; or Error object on error
     ///
     static Result<bool>
-    SetSymbolPath(std::wstring_view const& NewSymbolPath);
+    SetSymbolPath(std::wstring_view const NewSymbolPath);
 
     ///
     ///@brief Download a PDB to memory
@@ -96,7 +96,7 @@ public:
     ///@return Result<std::vector<u8>>
     ///
     static Result<std::vector<u8>>
-    DownloadModulePdbToMemory(std::string_view const& ModuleName);
+    DownloadModulePdbToMemory(std::string_view const ModuleName);
 
     ///
     ///@brief
@@ -105,7 +105,7 @@ public:
     ///@return Result<std::filesystem::path>
     ///
     static Result<std::filesystem::path>
-    DownloadModulePdbToDisk(std::string_view const& ModuleName);
+    DownloadModulePdbToDisk(std::string_view const ModuleName);
 };
 
 

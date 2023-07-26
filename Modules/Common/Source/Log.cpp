@@ -121,24 +121,6 @@ Log(const LogLevel level, std::source_location const& location, std::wostringstr
 }
 
 
-std::wstring
-FormatLastError(const u32 gle)
-{
-    wchar_t msg[1024] = {0};
-
-    ::FormatMessageW(
-        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
-        nullptr,
-        gle,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        msg,
-        __countof(msg),
-        nullptr);
-
-    return std::wstring(msg);
-}
-
-
 void PWNAPI
 perror(const std::wstring_view& prefix)
 {

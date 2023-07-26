@@ -6,12 +6,9 @@
 namespace pwn::Security
 {
 
-bool
-Token::IsValid() const
+Token::Token(HANDLE hObject, Granularity Type) : m_hObject {hObject}, m_Type {Type}
 {
-    return m_ProcessOrThreadHandle != nullptr;
 }
-
 
 Result<bool>
 Token::ReOpenTokenWith(const DWORD DesiredAccess)
@@ -27,12 +24,12 @@ Token::ReOpenTokenWith(const DWORD DesiredAccess)
     BOOL bRes = FALSE;
     switch ( m_Type )
     {
-    case TokenType::Process:
-        bRes = ::OpenProcessToken(m_ProcessOrThreadHandle->get(), NewDesiredAccess, &hToken);
+    case Granularity::Process:
+        bRes = ::OpenProcessToken(m_hObject, NewDesiredAccess, &hToken);
         break;
 
-    case TokenType::Thread:
-        bRes = ::OpenThreadToken(m_ProcessOrThreadHandle->get(), NewDesiredAccess, false, &hToken);
+    case Granularity::Thread:
+        bRes = ::OpenThreadToken(m_hObject, NewDesiredAccess, false, &hToken);
         break;
 
     default:
@@ -40,18 +37,19 @@ Token::ReOpenTokenWith(const DWORD DesiredAccess)
         break;
     }
 
-    if ( bRes == FALSE || !hToken )
+    if ( !bRes || !hToken )
     {
         return Err(ErrorCode::PermissionDenied);
     }
 
     m_TokenHandle     = UniqueHandle {hToken};
     m_TokenAccessMask = NewDesiredAccess;
+
     return Ok(true);
 }
 
 
-Result<PVOID>
+Result<std::unique_ptr<u8[]>>
 Token::QueryInternal(const TOKEN_INFORMATION_CLASS TokenInformationClass, const usize InitialSize)
 {
     usize Size             = InitialSize;
@@ -64,7 +62,7 @@ Token::QueryInternal(const TOKEN_INFORMATION_CLASS TokenInformationClass, const 
         return Err(ErrorCode::PermissionDenied);
     }
 
-    auto Buffer = ::LocalAlloc(LPTR, Size);
+    auto Buffer = std::make_unique<u8[]>(Size);
     if ( !Buffer )
     {
         return Err(ErrorCode::AllocationError);
@@ -72,26 +70,40 @@ Token::QueryInternal(const TOKEN_INFORMATION_CLASS TokenInformationClass, const 
 
     do
     {
-        Status = ::NtQueryInformationToken(m_TokenHandle.get(), TokenInformationClass, Buffer, Size, &ReturnLength);
+        ::memset(Buffer.get(), 0, Size);
+        Status =
+            ::NtQueryInformationToken(m_TokenHandle.get(), TokenInformationClass, Buffer.get(), Size, &ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
             break;
         }
 
-        if ( Status == STATUS_INFO_LENGTH_MISMATCH )
+        switch ( Status )
+        {
+        case STATUS_INFO_LENGTH_MISMATCH:
+        case STATUS_BUFFER_TOO_SMALL:
         {
             Size   = ReturnLength;
-            Buffer = ::LocalReAlloc(Buffer, Size, LMEM_ZEROINIT);
+            Buffer = std::make_unique<u8[]>(Size);
             continue;
         }
+        default:
+            break;
+        }
 
-        ::LocalFree(Buffer);
         Log::ntperror(L"NtQueryInformationToken()", Status);
         return Err(ErrorCode::PermissionDenied);
 
     } while ( true );
 
-    return Ok(Buffer);
+    return Ok(std::move(Buffer));
+}
+
+
+bool
+Token::IsValid() const
+{
+    return m_Type != Granularity::Unknown && m_TokenHandle != nullptr;
 }
 
 
@@ -101,14 +113,16 @@ Token::IsElevated()
     auto res = Query<TOKEN_ELEVATION>(TokenElevation);
     if ( Failed(res) )
     {
-        return Err(Error(res).code);
+        return Error(res);
     }
 
-    return Ok(Value(res)->TokenIsElevated == 1);
+    const auto info = Value(std::move(res));
+    return Ok(info->TokenIsElevated == 1);
 }
 
 
 #pragma region Token::Privilege
+
 
 Result<bool>
 Token::EnumeratePrivileges()
@@ -116,10 +130,10 @@ Token::EnumeratePrivileges()
     auto res = Query<TOKEN_PRIVILEGES>(TokenPrivileges);
     if ( Failed(res) )
     {
-        return Err(Error(res).code);
+        return Error(res);
     }
 
-    const auto Privs           = Value(res);
+    const auto Privs           = Value(std::move(res));
     const DWORD PrivilegeCount = Privs->PrivilegeCount;
     dbg(L"{} privileges", PrivilegeCount);
     for ( u32 i = 0; i < PrivilegeCount; i++ )
@@ -206,4 +220,4 @@ Token::HasPrivilege(std::wstring_view const& PrivilegeName)
 
 #pragma endregion Token::Privilege
 
-} // namespace Security
+} // namespace pwn::Security

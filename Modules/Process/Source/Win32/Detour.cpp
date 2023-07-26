@@ -125,7 +125,7 @@ Result<bool>
 Process::Hook(uptr Location)
 {
     std::lock_guard<std::mutex> ScopedLock(HookLock);
-
+    /*
     //
     // Check if trampoline has already been setup
     //
@@ -168,7 +168,7 @@ Process::Hook(uptr Location)
     // Insert the new HookedLocation
     //
     m_Hooks.push_back(std::move(NewLoc));
-
+    */
     return Ok(true);
 }
 
@@ -177,7 +177,7 @@ Result<bool>
 Process::Unhook(uptr Location)
 {
     std::lock_guard<std::mutex> ScopedLock(HookLock);
-
+    /*
     //
     // Find a HookedLocation from the argument in m_Hooks
     //
@@ -211,6 +211,7 @@ Process::Unhook(uptr Location)
     //
     // Pop the vector entry
     //
+    */
     return Ok(true);
 }
 } // namespace pwn::Process

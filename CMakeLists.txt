@@ -37,21 +37,25 @@ set(CMAKE_INSTALL_BINDIR Binary)
 set(CMAKE_INSTALL_INCLUDEDIR Include)
 
 list(APPEND PWN_MODULES
+
+    # Listed by dependency order
     Common
 
-    Binary
-    Crypto
-    CTF
-    FileSystem
     Network
-    Process
-    Registry
-    Remote
-    Security
-    Service
-    Shellcode
     Symbols
     System
+    Security
+
+    FileSystem
+    Process
+
+    # Binary
+    # Crypto
+    # CTF
+    # Registry
+    # Remote
+    # Service
+    # Shellcode
 
     # TODO : ideas for future modules
     # - Win32/WTS
