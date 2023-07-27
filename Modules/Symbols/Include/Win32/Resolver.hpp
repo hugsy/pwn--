@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Common.hpp"
+#include <unordered_map>
 
+#include "Common.hpp"
 namespace pwn::Resolver
 {
 
@@ -25,6 +26,7 @@ static std::unordered_map<std::string_view, HMODULE> pwn_Modules {};
 
 #if defined(PWN_BUILD_FOR_LINUX)
 static std::unordered_map<std::string_view, int> pwn_Modules {};
+
 #define ExternalImport(Dll, Func, Ret, ...)                                                                            \
     typedef Ret(NTAPI* CONCAT(pwnFn_, Func))(__VA_ARGS__);                                                             \
     template<typename... Ts>                                                                                           \
@@ -36,6 +38,7 @@ static std::unordered_map<std::string_view, int> pwn_Modules {};
         return fnPtr(std::forward<Ts>(Args)...);                                                                       \
     }
 #endif // PWN_BUILD_FOR_LINUX
+
 };     // namespace pwn::Resolver
 
 

@@ -40,24 +40,25 @@ list(APPEND PWN_MODULES
 
     # Listed by dependency order
     Common
-    Crypto
 
+    Crypto
     Network
     Symbols
     System
     Security
     Registry
     Service
+    Shellcode
 
     FileSystem
     Process
+    Remote
 
     Binary
 
     # CTF
-    # Remote
 
-    # Shellcode
+    #
 
     # TODO : ideas for future modules
     # - Win32/WTS
