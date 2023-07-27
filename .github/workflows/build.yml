@@ -16,6 +16,7 @@ jobs:
     env:
       CMAKE_CONFIGURATION: ${{ github.ref_name == 'main' && 'RelWithDebInfo' || 'Debug' }}
       CMAKE_FLAGS: "${{ matrix.build == 'full' && '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=OFF' || '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=OFF -DPWN_DISASSEMBLE_ARM64=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF' }}"
+      NB_CPU: 1
 
     strategy:
       fail-fast: false
@@ -58,9 +59,6 @@ jobs:
         sudo apt update && sudo apt install -y ${CC} ${CXX}
         echo "CC=${CC}" >> $GITHUB_ENV
         echo "CXX=${CXX}" >> $GITHUB_ENV
-
-    - name: Inject slug/short variables
-      uses: rlespinasse/github-slug-action@v4
 
     - name: Add msbuild to PATH
       if: matrix.os == 'windows-latest'
@@ -122,7 +120,7 @@ jobs:
     - name: Publish artifact
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ env.PROJECT_NAME }}_${{ matrix.platform }}_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_${{ env.CMAKE_CONFIGURATION }}_${{ env.GITHUB_SHA_SHORT }}_${{ matrix.build }}
+        name: ${{ env.PROJECT_NAME }}_${{ matrix.platform }}_${{ github.ref_name }}_${{ matrix.os }}_${{ env.CMAKE_CONFIGURATION }}_${{ github.sha }}_${{ matrix.build }}
         path: artifact/
 
     - name: Populate the successful output
@@ -146,18 +144,18 @@ jobs:
 
     - name: Send Discord notification
       env:
-        COMMIT_URL: "https://github.com/${{ env.REPO }}/commit/${{ env.GITHUB_SHA_SHORT }}"
+        COMMIT_URL: "https://github.com/${{ env.REPO }}/commit/${{ github.sha }}"
         RUN_URL: "https://github.com/${{ env.REPO }}/actions/runs/${{ github.run_id }}"
-        BRANCH_URL: "https://github.com/${{ env.REPO }}/tree/${{ env.GITHUB_REF_SLUG }}"
+        BRANCH_URL: "https://github.com/${{ env.REPO }}/tree/${{ github.ref_name }}"
         AUTHOR_URL: "https://github.com/${{ github.actor }}"
       uses: sarisia/actions-status-discord@v1.10.0
       with:
         nodetail: true
-        title: 🚧 🚧 Summary of Build `${{ env.GITHUB_SHA_SHORT }}` for `${{ env.REPO }}` 🚧 🚧
+        title: 🚧 🚧 Summary of Build `${{ github.sha }}` for `${{ env.REPO }}` 🚧 🚧
         description: |
-          [Job #${{ github.run_number }}](${{ env.RUN_URL }}): CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by [${{ github.actor }}](${{ env.AUTHOR_URL }}):
-          ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
-          ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
+          [Job #${{ github.run_number }}](${{ env.RUN_URL }}): CI build `${{ github.sha }}` initiated by [${{ github.actor }}](${{ env.AUTHOR_URL }}):
+          ● Commit [${{ github.sha }}](${{ env.COMMIT_URL }})
+          ● Branch [`${{ github.ref_name }}`](${{ env.BRANCH_URL }})
           ● [Detail Page](${{ env.RUN_URL }})
 
           ${{ needs.build.outputs.windows-latest-x64-lite }}
