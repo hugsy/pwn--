@@ -23,10 +23,11 @@ wmain(const int argc, const wchar_t** argv) -> int
     Context.Set(Log::LogLevel::Debug);
 
     //
-    // Get the current process
+    // Get the current process and its token
     //
-    Process::Process P {};
-    if ( Failed(P.Token.AddPrivilege(L"SeSystemEnvironmentPrivilege")) )
+    auto self = Process::Current();
+    Security::Token ProcessToken(self.Handle(), Security::Token::Granularity::Process);
+    if ( Failed(ProcessToken.AddPrivilege(L"SeSystemEnvironmentPrivilege")) )
     {
         err(L"failed to acquire `SeSystemEnvironmentPrivilege` ");
         return -1;
@@ -39,7 +40,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     std::vector<u8> value(0x20);
     ULONG ReturnLength = 0x20;
 
-    auto self = Process::Process();
+
     // ok(L"using handle={:x}", self.handle());
     // info(
     //     L"pid={}, ppid={}, cmdline='{}' integrity={} is_elevated={}",
@@ -126,7 +127,7 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     info(L"sending syscall...");
     Status = NtSetInformationProcess(
-        self.Handle()->get(),
+        self.Handle(),
         ProcessDebugAuthInformation,
         encoded_buffer.data(),
         encoded_buffer.size());

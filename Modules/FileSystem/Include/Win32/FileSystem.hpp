@@ -178,7 +178,8 @@ public:
             auto res = ReOpenFileWith(DELETE);
             if ( Failed(res) )
             {
-                return Err(Error(res).code);
+                auto const& err = Error(res);
+                return Err(err.Code);
             }
         }
         }
