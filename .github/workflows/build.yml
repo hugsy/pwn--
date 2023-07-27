@@ -111,9 +111,13 @@ jobs:
         ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ env.CMAKE_CONFIGURATION }} -T test
         cd ..
 
-    - name: Prepare artifact
+    - name: Install library
       run: |
         cmake --install ./build --config ${{ env.CMAKE_CONFIGURATION }} --prefix ./artifact --verbose
+
+    - name: Run all tests
+      run: |
+        Get-ChildItem -Recurse | Where-Object { $_.Name.StartsWith("tests_pwn_") -and $_.Name.EndsWith(".exe") }  | ForEach-Object { & $_.FullName }
 
     - name: Publish artifact
       uses: actions/upload-artifact@v3
