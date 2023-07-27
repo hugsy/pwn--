@@ -47,6 +47,7 @@ list(APPEND PWN_MODULES
     System
     Security
     Registry
+    Service
 
     FileSystem
     Process
@@ -55,7 +56,7 @@ list(APPEND PWN_MODULES
 
     # CTF
     # Remote
-    # Service
+
     # Shellcode
 
     # TODO : ideas for future modules
