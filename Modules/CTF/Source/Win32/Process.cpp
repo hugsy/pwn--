@@ -168,9 +168,19 @@ CTF::Process::Spawn(bool StartSuspended)
     m_ChildPipeStdin  = INVALID_HANDLE_VALUE;
     m_ChildPipeStdout = INVALID_HANDLE_VALUE;
 
-    auto p    = pwn::Process::Process((u32)pi.dwProcessId);
-    m_Process = std::move(p);
-    return Ok(m_Process.IsValid());
+    try
+    {
+        m_Process = std::move(pwn::Process::Process(pi.dwProcessId));
+        return Ok(true);
+    }
+    catch ( const std::exception& e )
+    {
+        err("Caught exception: ", e.what());
+        return Err(ErrorCode::InitializationFailed);
+    }
+
+    // unreachable
+    std::abort();
 }
 
 

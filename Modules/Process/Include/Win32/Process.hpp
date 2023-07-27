@@ -457,7 +457,7 @@ private: // Methods
 
 
 private: // Members
-    const u32 m_ProcessId {0};
+    u32 m_ProcessId {0};
     u32 m_ParentProcessId {0};
     std::filesystem::path m_Path {};
     Integrity m_IntegrityLevel {Integrity::Unknown};

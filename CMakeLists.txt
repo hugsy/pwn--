@@ -55,10 +55,7 @@ list(APPEND PWN_MODULES
     Remote
 
     Binary
-
-    # CTF
-
-    #
+    CTF
 
     # TODO : ideas for future modules
     # - Win32/WTS
