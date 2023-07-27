@@ -6,8 +6,7 @@ namespace pwn::Resolver
 {
 
 #if defined(PWN_BUILD_FOR_WINDOWS)
-
-std::unordered_map<std::string_view, HMODULE> pwn_Modules;
+static std::unordered_map<std::string_view, HMODULE> pwn_Modules {};
 
 #define ExternalImport(Dll, Func, Ret, ...)                                                                            \
     typedef Ret(NTAPI* CONCAT(pwnFn_, Func))(__VA_ARGS__);                                                             \
@@ -16,7 +15,7 @@ std::unordered_map<std::string_view, HMODULE> pwn_Modules;
     {                                                                                                                  \
         if ( !pwn_Modules.contains(Dll) )                                                                              \
             pwn_Modules[Dll] = ::LoadLibraryA(Dll);                                                                    \
-        static auto fnPtr = (pwnFn_##Func)::GetProcAddress(pwn_Modules[Dll], #Func);                                   \
+        static auto fnPtr = reinterpret_cast<pwnFn_##Func>(::GetProcAddress(pwn_Modules[Dll], #Func));                 \
         if ( !fnPtr )                                                                                                  \
             throw std::runtime_error("Missing import " Dll "!" #Func);                                                 \
         return fnPtr(std::forward<Ts>(Args)...);                                                                       \

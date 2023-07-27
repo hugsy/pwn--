@@ -40,6 +40,7 @@ list(APPEND PWN_MODULES
 
     # Listed by dependency order
     Common
+    Crypto
 
     Network
     Symbols
@@ -49,8 +50,8 @@ list(APPEND PWN_MODULES
     FileSystem
     Process
 
-    # Binary
-    # Crypto
+    Binary
+
     # CTF
     # Registry
     # Remote

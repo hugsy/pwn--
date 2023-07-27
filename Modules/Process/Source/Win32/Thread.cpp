@@ -93,11 +93,23 @@ ThreadAccessToString(u32 ThreadAccess)
 
 #pragma region Thread
 
-Thread::Thread(u32 Tid) : m_Tid {Tid}
+Thread::Thread(u32 Tid, u32 Pid) : m_Tid {Tid}, m_Pid {Pid}
 {
     if ( Failed(ReOpenThreadWith(THREAD_QUERY_INFORMATION)) )
     {
         throw std::runtime_error("Thread initialization failed");
+    }
+
+    if ( !m_Pid )
+    {
+        auto res = Query<THREAD_BASIC_INFORMATION>(THREADINFOCLASS::ThreadBasicInformation);
+        if ( !Failed(res) )
+        {
+            throw std::runtime_error("Failed to determine the ProcessId");
+        }
+
+        auto info = Value(std::move(res));
+        m_Pid     = (u32)HandleToHandle32(info->ClientId.UniqueProcess);
     }
 }
 
@@ -247,17 +259,15 @@ Thread::Name(std::wstring_view name)
 Thread
 Thread::Current()
 {
-    return pwn::Process::Thread(::GetCurrentThreadId());
+    return pwn::Process::Thread(::GetCurrentThreadId(), ::GetCurrentProcessId());
 }
 
 
-Result<PVOID>
+Result<std::unique_ptr<u8[]>>
 Thread::QueryInternal(const THREADINFOCLASS ThreadInformationClass, const usize InitialSize)
 {
-    usize Size         = InitialSize;
-    ULONG ReturnLength = 0;
-    NTSTATUS Status    = STATUS_SUCCESS;
-    auto Buffer        = ::LocalAlloc(LPTR, Size);
+    usize Size  = InitialSize;
+    auto Buffer = std::make_unique<u8[]>(Size);
     if ( !Buffer )
     {
         return Err(ErrorCode::AllocationError);
@@ -265,30 +275,32 @@ Thread::QueryInternal(const THREADINFOCLASS ThreadInformationClass, const usize 
 
     do
     {
-        Status = ::NtQueryInformationThread(m_ThreadHandle.get(), ThreadInformationClass, Buffer, Size, &ReturnLength);
+        ULONG ReturnLength = 0;
+        NTSTATUS Status =
+            ::NtQueryInformationThread(m_ThreadHandle.get(), ThreadInformationClass, Buffer.get(), Size, &ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
-            return Ok(Buffer);
+            break;
         }
 
-        if ( Status == STATUS_INFO_LENGTH_MISMATCH )
+        switch ( Status )
         {
-            HLOCAL NewBuffer = ::LocalReAlloc(Buffer, ReturnLength, LMEM_MOVEABLE | LMEM_ZEROINIT);
-            if ( NewBuffer )
-            {
-                Buffer = NewBuffer;
-                Size   = ReturnLength;
-                continue;
-            }
+        case STATUS_INFO_LENGTH_MISMATCH:
+        case STATUS_BUFFER_TOO_SMALL:
+        {
+            Size   = ReturnLength;
+            Buffer = std::make_unique<u8[]>(Size);
+            continue;
+        }
+        default:
+            break;
         }
 
         Log::ntperror(L"NtQueryInformationThread()", Status);
-        break;
-
+        return Err(ErrorCode::ExternalApiCallFailed);
     } while ( true );
 
-    ::LocalFree(Buffer);
-    return Err(ErrorCode::ExternalApiCallFailed);
+    return Ok(std::move(Buffer));
 }
 
 PTEB

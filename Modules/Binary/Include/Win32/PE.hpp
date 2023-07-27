@@ -163,27 +163,8 @@ public:
 
 #pragma endregion
 
-    ///
-    ///@brief Very simple static wrapper around the `PE(Path)` constructor
-    ///
-    ///@param Path the path to the file on disk to be parsed
-    ///@return Result<bool>
-    ///
-    // static Result<PE>
-    // Parse(std::filesystem::path const& Path)
-    // {
-    //     PE pe {Path};
-    //     if ( !pe )
-    //     {
-    //         return Err(ErrorCode::MalformedFile);
-    //     }
+    PE() = default;
 
-    //     return Ok(pe);
-    // }
-
-    PE()          = delete;
-    PE(PE const&) = delete;
-    PE(PE&&)      = default;
 
     ///
     ///@brief Construct a new PE object from a path
@@ -201,23 +182,6 @@ public:
     ///
     PE(uptr Offset, usize Size);
 
-
-    operator bool() const
-    {
-        return IsValid();
-    }
-
-    ///
-    ///@brief
-    ///
-    ///@return true
-    ///@return false
-    ///
-    bool
-    IsValid() const
-    {
-        return m_IsValid;
-    }
 
     ///
     ///@brief The DOS header address *when* the image was parsed, the address is not guaranteed to be still mapped later
@@ -555,12 +519,12 @@ private:
     BuildDelayImportEntry(const IMAGE_DELAYLOAD_DESCRIPTOR* Descriptor);
 
 
-    bool m_IsValid {false};
+private:
     uptr m_PeMaxVa {0};
-    DosHeader m_DosHeader {};
-    PeHeader m_PeHeader {};
     uptr m_DosBase {0}, m_NtBase {0};
     bool m_Is64b {false};
+    DosHeader m_DosHeader {};
+    PeHeader m_PeHeader {};
     std::vector<PeDataDirectory> m_PeDataDirectories {};
     std::vector<PeSectionHeader> m_PeSections {};
 

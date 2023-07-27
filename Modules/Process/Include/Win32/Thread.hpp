@@ -26,7 +26,7 @@ public:
     ///
     ///@param Tid
     ///
-    Thread(u32 Tid);
+    Thread(u32 Tid, u32 Pid = 0);
 
 
     ///
@@ -110,7 +110,7 @@ public:
     /// @return Result<std::shared_ptr<T>>
     ///
     template<class T>
-    Result<std::shared_ptr<T>>
+    Result<std::unique_ptr<T>>
     Query(THREADINFOCLASS ThreadInformationClass)
     {
         auto res = QueryInternal(ThreadInformationClass, sizeof(T));
@@ -119,12 +119,9 @@ public:
             return Error(res);
         }
 
-        const auto p = reinterpret_cast<T*>(Value(res));
-        auto deleter = [](T* x)
-        {
-            ::LocalFree(x);
-        };
-        return Ok(std::shared_ptr<T>(p, deleter));
+        auto RawResult = Value(std::move(res));
+        std::unique_ptr<T> TypedResult {(T*)RawResult.release()};
+        return Ok(std::move(TypedResult));
     }
 
 
@@ -155,12 +152,12 @@ private:
     ///
     /// @return Result<PVOID>
     ///
-    Result<PVOID>
+    Result<std::unique_ptr<u8[]>>
     QueryInternal(const THREADINFOCLASS, const usize);
 
 
-    const u32 m_Tid {0};
-    const u32 m_Pid {0};
+    u32 m_Tid {0};
+    u32 m_Pid {0};
     PTEB m_Teb {nullptr};
     UniqueHandle m_ThreadHandle {nullptr};
     u32 m_ThreadHandleAccessMask {0};

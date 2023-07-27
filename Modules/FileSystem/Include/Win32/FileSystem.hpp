@@ -33,39 +33,7 @@ public:
     ///
     ///@param FilePath
     ///
-    File(std::filesystem::path const& FilePath, bool IsTemporary = false) :
-        m_Access {GENERIC_READ | SYNCHRONIZE},
-        m_ShareMode {FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE},
-        m_Attributes {FILE_ATTRIBUTE_NORMAL},
-        m_IsTemporary {IsTemporary},
-        m_Path {FilePath}
-    {
-
-        if ( m_IsTemporary )
-        {
-            m_Attributes |= FILE_FLAG_DELETE_ON_CLOSE;
-        }
-
-        HANDLE hFile =
-            ::CreateFileW(m_Path.wstring().c_str(), m_Access, m_ShareMode, nullptr, OPEN_ALWAYS, m_Attributes, nullptr);
-        if ( hFile == INVALID_HANDLE_VALUE )
-        {
-            hFile = ::CreateFileW(
-                m_Path.wstring().c_str(),
-                m_Access,
-                m_ShareMode,
-                nullptr,
-                CREATE_ALWAYS,
-                m_Attributes,
-                nullptr);
-            if ( hFile == INVALID_HANDLE_VALUE )
-            {
-                return;
-            }
-        }
-
-        m_hFile = UniqueHandle(hFile);
-    }
+    File(std::filesystem::path const& FilePath, bool IsTemporary = false);
 
 
     ///
@@ -73,9 +41,7 @@ public:
     ///
     ///@param hFile
     ///
-    File(HANDLE&& hFile) : m_hFile {UniqueHandle {hFile}}
-    {
-    }
+    File(HANDLE&& hFile);
 
 
     ///
@@ -83,21 +49,7 @@ public:
     ///
     ///@param hFile
     ///
-    File(HANDLE const& hFile)
-    {
-        HANDLE h;
-        if ( ::DuplicateHandle(
-                 ::GetCurrentProcess(),
-                 hFile,
-                 ::GetCurrentProcess(),
-                 &h,
-                 DUPLICATE_SAME_ACCESS,
-                 true,
-                 0) )
-        {
-            m_hFile = UniqueHandle {h};
-        }
-    }
+    File(HANDLE const& hFile);
 
 
     ///
@@ -117,6 +69,7 @@ public:
     ///
     bool
     IsValid() const;
+
 
     ///
     ///@brief
@@ -151,6 +104,7 @@ public:
     ///@param Name (opt.)
     ///@return Result<UniqueHandle>
     ///
+    PWNAPI
     Result<UniqueHandle>
     Map(DWORD Protect, std::optional<std::wstring_view> Name = std::nullopt);
 
@@ -164,6 +118,7 @@ public:
     ///@param Size
     ///@return Result<FileMapViewHandle>
     ///
+    PWNAPI
     Result<FileMapViewHandle>
     View(HANDLE hMap, DWORD Protect, uptr Offset = 0, usize Size = -1);
 

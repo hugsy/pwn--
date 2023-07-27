@@ -151,14 +151,14 @@ Process::ProcessEnvironmentBlock()
         // Otherwise execute the function remotely
         //
         auto res = Query<PROCESS_BASIC_INFORMATION>(PROCESSINFOCLASS::ProcessBasicInformation);
-        if(Failed(res))
+        if ( Failed(res) )
         {
             err("Failed to query process information");
             return nullptr;
         }
 
         const auto info = Value(std::move(res));
-        m_Peb    = info->PebBaseAddress;
+        m_Peb           = info->PebBaseAddress;
     }
 
     //

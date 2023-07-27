@@ -5,12 +5,13 @@ list(APPEND SOURCE_FILES
     ${TEST_DIR}/pwn_binary_pe.cpp
 )
 
+set(DEPS PWN::Common PWN::FileSystem)
 file(GLOB DLL_TEST_FILES "C:/Windows/System32/*.dll")
 
 add_executable(${TEST_BINARY_PE} ${SOURCE_FILES})
 add_executable(PWN::Tests::${PROJECT_NAME}::PE ALIAS ${TEST_BINARY_PE})
-add_dependencies(${TEST_BINARY_PE} PWN::Deps::Catch2 PWN::${PROJECT_NAME})
-target_link_libraries(${TEST_BINARY_PE} PUBLIC PWN::Deps::Catch2 PWN::${PROJECT_NAME})
+add_dependencies(${TEST_BINARY_PE} PWN::Deps::Catch2 PWN::${PROJECT_NAME} ${DEPS})
+target_link_libraries(${TEST_BINARY_PE} PUBLIC PWN::Deps::Catch2 PWN::${PROJECT_NAME} ${DEPS})
 target_link_options(${TEST_BINARY_PE} PUBLIC /SUBSYSTEM:Console)
 add_test(NAME ${TEST_BINARY_PE} COMMAND $<TARGET_FILE:${TEST_BINARY_PE}>)
 set_tests_properties(${TEST_BINARY_PE} PROPERTIES LABELS Common LABELS ${PROJECT_NAME})
