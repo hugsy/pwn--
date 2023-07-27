@@ -46,6 +46,7 @@ list(APPEND PWN_MODULES
     Symbols
     System
     Security
+    Registry
 
     FileSystem
     Process
@@ -53,7 +54,6 @@ list(APPEND PWN_MODULES
     Binary
 
     # CTF
-    # Registry
     # Remote
     # Service
     # Shellcode

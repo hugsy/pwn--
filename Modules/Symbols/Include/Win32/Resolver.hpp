@@ -24,6 +24,7 @@ static std::unordered_map<std::string_view, HMODULE> pwn_Modules {};
 
 
 #if defined(PWN_BUILD_FOR_LINUX)
+static std::unordered_map<std::string_view, int> pwn_Modules {};
 #define ExternalImport(Dll, Func, Ret, ...)                                                                            \
     typedef Ret(NTAPI* CONCAT(pwnFn_, Func))(__VA_ARGS__);                                                             \
     template<typename... Ts>                                                                                           \

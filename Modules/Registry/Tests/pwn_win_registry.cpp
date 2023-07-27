@@ -1,6 +1,6 @@
 #include <catch.hpp>
 
-#include "Registry.hpp"
+#include "Win32/Registry.hpp"
 #define NS "pwn::Registry"
 
 using namespace pwn;
