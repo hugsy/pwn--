@@ -1,3 +1,4 @@
+enable_testing()
 set(TEST_EXECUTABLE_NAME tests_pwn_${PROJECT_NAME})
 set(SOURCE_FILES
 

@@ -1,3 +1,5 @@
+enable_testing()
+
 set(TEST_EXECUTABLE_NAME tests_pwn_${PROJECT_NAME})
 list(APPEND SOURCE_FILES
 

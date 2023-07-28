@@ -128,10 +128,6 @@ else()
     endif(NOT ${PWN_BUILD_DOCS})
 endif()
 
-add_subdirectory(Modules)
-
-add_subdirectory(pwn++)
-
 if(PWN_BUILD_TESTING)
     include(CTest)
 
@@ -145,8 +141,6 @@ if(PWN_BUILD_TESTING)
     endif(WIN32)
 
     add_library(PWN::Deps::Catch2 ALIAS Deps_Catch2)
-
-    enable_testing()
 endif()
 
 if(PWN_BUILD_TOOLKIT)
@@ -166,3 +160,7 @@ if(PWN_BUILD_DOCS)
     find_package(Doxygen REQUIRED)
     add_subdirectory(Docs)
 endif()
+
+add_subdirectory(Modules)
+
+add_subdirectory(pwn++)

@@ -76,5 +76,6 @@ endif(WIN32)
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 
 if(PWN_BUILD_TESTING)
+    include(CTest)
     add_subdirectory(Tests)
 endif(PWN_BUILD_TESTING)

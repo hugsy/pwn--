@@ -1,3 +1,4 @@
+enable_testing()
 set(TEST_BINARY_PE tests_pwn_${PROJECT_NAME})
 list(APPEND SOURCE_FILES
 

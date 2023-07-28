@@ -1,3 +1,4 @@
+enable_testing()
 set(TEST_EXECUTABLE_NAME tests_pwn_${PROJECT_NAME})
 set(TEST_DIR ${CMAKE_CURRENT_LIST_DIR})
 list(APPEND SOURCE_FILES
