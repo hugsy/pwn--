@@ -123,6 +123,13 @@ Process::Process(u32 Pid) : m_ProcessId {Pid}
 }
 
 
+Process::Process(HANDLE&& hProcess) : Process(::GetProcessId(hProcess))
+{
+    m_ProcessHandle.reset(std::move(hProcess));
+    m_ProcessHandleAccessMask = PROCESS_ALL_ACCESS;
+}
+
+
 PPEB
 Process::ProcessEnvironmentBlock()
 {
@@ -181,45 +188,47 @@ Process::Execute(uptr const CodePointer, usize const CodePointerSize)
     const std::vector<u8> sc(CodePointerSize);
     RtlCopyMemory((void*)sc.data(), (void*)CodePointer, CodePointerSize);
 
-    // //
-    // // Allocate the memory and copy the code
-    // //
-    // auto res = m_Memory.Allocate(AllocationSize, L"rwx");
-    // if ( Failed(res) )
-    // {
-    //     return Err(ErrorCode::AllocationError);
-    // }
+    //
+    // Allocate the memory and copy the code
+    //
+    Memory ProcessMemory(*this);
 
-    // auto const Target = Value(res);
-    // m_Memory.Memset(Target, AllocationSize);
-    // m_Memory.Write(Target, sc);
+    auto res = ProcessMemory.Allocate(AllocationSize, L"rwx");
+    if ( Failed(res) )
+    {
+        return Err(ErrorCode::AllocationError);
+    }
 
-    // //
-    // // Execute it
-    // //
-    // {
-    //     DWORD ExitCode = 0;
-    //     auto hThread   = UniqueHandle {::CreateRemoteThreadEx(
-    //         m_ProcessHandle.get(),
-    //         nullptr,
-    //         0,
-    //         reinterpret_cast<LPTHREAD_START_ROUTINE>(Target),
-    //         (LPVOID)(Target + CodePointerSize),
-    //         0,
-    //         nullptr,
-    //         nullptr)};
+    auto const Target = Value(res);
+    ProcessMemory.Memset(Target, AllocationSize);
+    ProcessMemory.Write(Target, sc);
 
-    //     ::WaitForSingleObject(hThread.get(), INFINITE);
-    //     if ( ::GetExitCodeThread(hThread.get(), &ExitCode) && ExitCode == 1 )
-    //     {
-    //         auto res2 = m_Memory.Read(Target + CodePointerSize, sizeof(uptr));
-    //         if ( Success(res2) )
-    //         {
-    //             Result = (*(uptr*)(Value(res2).data()));
-    //         }
-    //     }
-    // }
-    // m_Memory.Free(Target);
+    //
+    // Execute it
+    //
+    {
+        DWORD ExitCode = 0;
+        auto hThread   = UniqueHandle {::CreateRemoteThreadEx(
+            m_ProcessHandle.get(),
+            nullptr,
+            0,
+            reinterpret_cast<LPTHREAD_START_ROUTINE>(Target),
+            (LPVOID)(Target + CodePointerSize),
+            0,
+            nullptr,
+            nullptr)};
+
+        ::WaitForSingleObject(hThread.get(), INFINITE);
+        if ( ::GetExitCodeThread(hThread.get(), &ExitCode) && ExitCode == 1 )
+        {
+            auto res2 = ProcessMemory.Read(Target + CodePointerSize, sizeof(uptr));
+            if ( Success(res2) )
+            {
+                Result = (*(uptr*)(Value(res2).data()));
+            }
+        }
+    }
+    ProcessMemory.Free(Target);
 
     return Ok(Result);
 }

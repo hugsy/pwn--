@@ -32,31 +32,8 @@ public:
     Memory() = default;
 
 
-    Memory(Memory const&) = default;
-
-
-    Memory(Memory&&) = default;
-
-
-    Memory&
-    operator=(Memory const&) = default;
-
-
-    Memory&
-    operator=(Memory&&) = default;
-
-
-    Memory(Process const& Process) : m_Process {Process}
+    Memory(Process const& _Process) : m_Process {_Process}
     {
-        m_IsValid = true;
-    }
-
-
-    Memory
-    operator=(Process const& p)
-    {
-        Memory New(p);
-        return New;
     }
 
 
@@ -137,7 +114,8 @@ private:
     Result<PVOID>
     QueryInternal(const MEMORY_INFORMATION_CLASS, const uptr BaseAddress, const usize);
 
-    bool m_IsValid {false};
+
+private:
     Process const& m_Process;
 };
 
@@ -187,6 +165,14 @@ public:
     ///@throws std::runtime_error on initialization failure
     ///
     Process(u32 Pid);
+
+
+    ///
+    ///@brief Same as with a pid, but with a handle
+    ///
+    ///@param hProcess
+    ///
+    Process(HANDLE&& hProcess);
 
 
     ///

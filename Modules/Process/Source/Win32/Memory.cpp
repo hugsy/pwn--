@@ -6,20 +6,9 @@ namespace pwn::Process
 
 #pragma region Process::Memory
 
-// Memory::Memory(Process const& Process) : m_Process {Process}
-// {
-//     m_IsValid = true;
-// }
-
-
 Result<std::vector<u8>>
 Memory::Read(uptr const Address, usize Length)
 {
-    if ( !m_IsValid )
-    {
-        return Err(ErrorCode::NotInitialized);
-    }
-
     std::vector<u8> out(Length);
     SIZE_T NbByteRead {};
     if ( ::ReadProcessMemory(m_Process.Handle(), reinterpret_cast<LPVOID>(Address), out.data(), Length, &NbByteRead) ==
@@ -29,7 +18,7 @@ Memory::Read(uptr const Address, usize Length)
     }
 
     out.resize(NbByteRead);
-    return Ok(out);
+    return Ok(std::move(out));
 }
 
 Result<usize>
@@ -43,19 +32,15 @@ Memory::Memset(uptr const address, const usize size, const u8 val)
 Result<usize>
 Memory::Write(uptr const Address, std::vector<u8> data)
 {
-    if ( !m_IsValid )
-    {
-        return Err(ErrorCode::NotInitialized);
-    }
-
     SIZE_T NbByteWritten {};
     if ( ::WriteProcessMemory(
              m_Process.Handle(),
              reinterpret_cast<LPVOID>(Address),
              data.data(),
              data.size(),
-             &NbByteWritten) != false )
+             &NbByteWritten) == false )
     {
+        Log::perror("WriteProcessMemory");
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
@@ -65,11 +50,6 @@ Memory::Write(uptr const Address, std::vector<u8> data)
 Result<uptr>
 Memory::Allocate(const size_t Size, const wchar_t Permission[3], const uptr ForcedMappingAddress, bool wipe)
 {
-    if ( !m_IsValid )
-    {
-        return Err(ErrorCode::NotInitialized);
-    }
-
     u32 flProtect = 0;
     if ( wcscmp(Permission, L"r") == 0 )
     {

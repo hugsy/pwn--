@@ -15,10 +15,14 @@ static std::unordered_map<std::string_view, HMODULE> pwn_Modules {};
     static auto Func(Ts... Args)->Ret                                                                                  \
     {                                                                                                                  \
         if ( !pwn_Modules.contains(Dll) )                                                                              \
+        {                                                                                                              \
             pwn_Modules[Dll] = ::LoadLibraryA(Dll);                                                                    \
+        }                                                                                                              \
         static auto fnPtr = reinterpret_cast<pwnFn_##Func>(::GetProcAddress(pwn_Modules[Dll], #Func));                 \
         if ( !fnPtr )                                                                                                  \
+        {                                                                                                              \
             throw std::runtime_error("Missing import " Dll "!" #Func);                                                 \
+        }                                                                                                              \
         return fnPtr(std::forward<Ts>(Args)...);                                                                       \
     }
 #endif // PWN_BUILD_FOR_WINDOWS
@@ -32,9 +36,15 @@ static std::unordered_map<std::string_view, int> pwn_Modules {};
     template<typename... Ts>                                                                                           \
     auto Func(Ts... Args)->Ret                                                                                         \
     {                                                                                                                  \
-        static auto fnPtr = ::dlsym(::dlopen((Dll, RTLD_LAZY), #Func));                                                \
+        if ( !pwn_Modules.contains(Dll) )                                                                              \
+        {                                                                                                              \
+            pwn_Modules[Dll] = ::::dlopen((Dll, RTLD_LAZY);                                                            \
+        }                                                                                                              \
+        static auto fnPtr = ::dlsym(pwn_Modules[Dll], #Func));                                                         \
         if ( !fnPtr )                                                                                                  \
+        {                                                                                                              \
             throw std::runtime_error("Missing import " Dll "!" #Func);                                                 \
+        }                                                                                                              \
         return fnPtr(std::forward<Ts>(Args)...);                                                                       \
     }
 #endif // PWN_BUILD_FOR_LINUX
