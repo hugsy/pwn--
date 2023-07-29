@@ -67,27 +67,7 @@ To(FromType const& src)
 }
 
 static std::string
-To(std::wstring const& src)
-{
-#ifdef PWN_BUILD_FOR_LINUX
-    std::string dst;
-#else
-    const DWORD nb =
-        ::WideCharToMultiByte(CP_UTF8, 0, src.c_str(), static_cast<int>(src.size()), nullptr, 0, nullptr, nullptr);
-
-    std::string dst(nb / sizeof(char), '\0');
-    ::WideCharToMultiByte(
-        CP_UTF8,
-        0,
-        src.c_str(),
-        static_cast<int>(src.size()),
-        &dst[0],
-        static_cast<int>(dst.size() * sizeof(char)),
-        nullptr,
-        nullptr);
-#endif
-    return dst;
-}
+To(std::wstring const& src);
 
 template<typename T, typename L>
 static std::vector<T>
@@ -383,7 +363,7 @@ public:
 
 
 ///
-///@brief
+///@brief Upper align address to the given size
 ///
 ///@param a
 ///@param sz
@@ -392,15 +372,16 @@ public:
 PWNAPI uptr
 align(uptr a, u32 sz);
 
+
 ///
-/// @brief
+/// @brief Generate a de-Bruijn sequence
 ///
 /// @param dwSize
 /// @param dwPeriod
 /// @return false
 ///
 PWNAPI auto
-cyclic(_In_ u32 Size, _In_ u32 Period = 0) -> Result<std::vector<u8>>;
+cyclic(u32 Size, u32 Period = 0) -> Result<std::vector<u8>>;
 
 
 ///

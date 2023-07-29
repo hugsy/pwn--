@@ -151,6 +151,37 @@ CreateCyclicBuffer(
 namespace pwn::Utils
 {
 
+static std::string
+StringLib::To(std::wstring const& src)
+{
+#ifdef PWN_BUILD_FOR_LINUX
+    std::string dst;
+    // TODO do better
+    std::for_each(
+        src.begin(),
+        src.end(),
+        [&dst](auto c)
+        {
+            dst += (char)c;
+        });
+
+#else
+    const DWORD nb =
+        ::WideCharToMultiByte(CP_UTF8, 0, src.c_str(), static_cast<int>(src.size()), nullptr, 0, nullptr, nullptr);
+
+    std::string dst(nb / sizeof(char), '\0');
+    ::WideCharToMultiByte(
+        CP_UTF8,
+        0,
+        src.c_str(),
+        static_cast<int>(src.size()),
+        &dst[0],
+        static_cast<int>(dst.size() * sizeof(char)),
+        nullptr,
+        nullptr);
+#endif
+    return dst;
+}
 
 void
 Random::Seed(std::optional<u64> seed)
