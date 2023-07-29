@@ -43,13 +43,15 @@ jobs:
       with:
         submodules: true
 
-    - name: Set Windows specific environment variables
+    - name: Setup environment variables (Windows)
       if: matrix.os == 'windows-latest'
       shell: powershell
       run: |
         echo "NB_CPU=$env:NUMBER_OF_PROCESSORS" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        Import-Module .\.github\Invoke-VisualStudio.ps1
+        Invoke-VisualStudio2022${{ matrix.platform }}
 
-    - name: Set Linux specific environment variables
+    - name: Setup environment variables (Linux)
       if: matrix.os == 'ubuntu-latest'
       env:
         CC:  ${{ matrix.c_compiler}}
@@ -63,13 +65,6 @@ jobs:
         echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
         echo "CC=${CC}" >> $GITHUB_ENV
         echo "CXX=${CXX}" >> $GITHUB_ENV
-
-    - name: Add msbuild to PATH
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: |
-        Import-Module .\.github\Invoke-VisualStudio.ps1
-        Invoke-VisualStudio2022${{ matrix.platform }}
 
     - name: Prepare common environment
       run: |
@@ -91,17 +86,17 @@ jobs:
     - name: Build environment information
       run: env
 
-    - name: Initialize cmake (windows/x86)
+    - name: Initialize cmake (Windows/x86)
       if: matrix.os == 'windows-latest' && matrix.platform == 'x86'
       run: |
         cmake -S . -B ./build -A win32 ${{ env.CMAKE_FLAGS }}
 
-    - name: Initialize cmake (windows)
-      if: matrix.os == 'windows-latest' || matrix.platform != 'x86'
+    - name: Initialize cmake (Windows)
+      if: matrix.os == 'windows-latest' && matrix.platform != 'x86'
       run: |
         cmake -S . -B ./build -A ${{ matrix.platform }} ${{ env.CMAKE_FLAGS }}
 
-    - name: Initialize cmake (linux)
+    - name: Initialize cmake (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
         cmake -S . -B ./build ${{ env.CMAKE_FLAGS }}
