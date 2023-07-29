@@ -59,7 +59,7 @@ jobs:
         wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
         chmod +x /tmp/llvm.sh
         sudo /tmp/llvm.sh 17
-        sudo apt update && sudo apt install -y ${CC} ${CXX}
+        sudo apt update && sudo apt install -y clang-17 libc++abi-17-dev libc++-17-dev llvm-17-dev
         echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
         echo "CC=${CC}" >> $GITHUB_ENV
         echo "CXX=${CXX}" >> $GITHUB_ENV
