@@ -1,9 +1,9 @@
 
 <p align="center">
   <img src="https://i.imgur.com/39XyWFo.png" alt="logo" title="logo pwn++" width=35% />
-  <hr>
-  <h1> pwn++ </h1>
 </p>
+
+<h2 align="center">pwn++</h2>
 
 <p align="center">
   <a href="https://hugsy.github.io/pwn--"><img alt="Docs" src="https://img.shields.io/badge/Docs-gh--pages-darkgreen"></a>
