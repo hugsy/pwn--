@@ -1,12 +1,12 @@
-#include "linux/system.hpp"
+#include "Linux/System.hpp"
 
-namespace pwn::linux::system
+namespace pwn::Linux::System
 {
 
-auto
-pagesize() -> u32
+u32
+PageSize()
 {
-    return getpagesize();
+    return ::getpagesize();
 }
 
-}
+} // namespace pwn::Linux::System
