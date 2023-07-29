@@ -55,7 +55,7 @@ jobs:
         CC:  ${{ matrix.c_compiler}}
         CXX: ${{ matrix.cpp_compiler}}
       run: |
-        sudo apt remove llvm-* clang-* python3-lldb-*
+        sudo apt remove llvm-* clang-* python3-lldb-* libunwind-* libc++abi1-* libc++1-*
         wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
         chmod +x /tmp/llvm.sh
         sudo /tmp/llvm.sh 17
