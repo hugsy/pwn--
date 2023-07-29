@@ -228,8 +228,8 @@ CTF::Remote::Connect() -> Result<bool>
     //
     sockaddr_in sin = {0};
     sin.sin_family  = AF_INET;
-    inet_pton(AF_INET, Utils::StringLib::To<std::string>(m_Host).c_str(), &sin.sin_addr.s_addr);
-    sin.sin_port = htons(m_Port);
+    ::inet_pton(AF_INET, Utils::StringLib::To<std::string>(m_Host).c_str(), &sin.sin_addr.s_addr);
+    sin.sin_port = ::htons(m_Port);
 
     if ( ::connect(m_Socket, (SOCKADDR*)&sin, sizeof(sin)) == SOCKET_ERROR )
     {

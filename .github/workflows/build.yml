@@ -21,13 +21,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ['windows-latest'] # 'ubuntu-latest' removed since gcc-12 nor clang-16 supports std::format
+        os: ['windows-latest', 'ubuntu-latest']
         platform: ['x64', 'x86', 'arm64']
         build: ['lite', 'full']
         include:
           - runs-on: ubuntu-latest
-            c_compiler: clang-16
-            cpp_compiler: clang++-16
+            c_compiler: clang-17
+            cpp_compiler: clang++-17
 
     runs-on: ${{ matrix.os }}
     outputs:
@@ -55,8 +55,8 @@ jobs:
         CC:  ${{ matrix.c_compiler}}
         CXX: ${{ matrix.cpp_compiler}}
       run: |
-        echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
         sudo apt update && sudo apt install -y ${CC} ${CXX}
+        echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
         echo "CC=${CC}" >> $GITHUB_ENV
         echo "CXX=${CXX}" >> $GITHUB_ENV
 

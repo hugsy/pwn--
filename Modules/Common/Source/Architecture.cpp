@@ -1,4 +1,4 @@
-#include "architecture.hpp"
+#include "Architecture.hpp"
 
 std::ostream&
 operator<<(std::ostream& wos, Endianess e)

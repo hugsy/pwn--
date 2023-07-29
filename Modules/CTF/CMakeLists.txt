@@ -16,6 +16,7 @@ if(WIN32)
 else()
     set(SOURCE_FILES
         ${SOURCE_DIR}/Linux/Remote.cpp
+        ${SOURCE_DIR}/Linux/Process.cpp
     )
     set(DEPS PWN::Common PWN::Network)
 endif()

@@ -349,7 +349,7 @@ public:
     ///@return constexpr std::vector<u8>
     ///
     template<Flattenable T, Flattenable... Args>
-    static constexpr std::vector<u8>
+    static std::vector<u8>
     Flatten(T arg, Args... args)
     {
         std::vector<u8> out;

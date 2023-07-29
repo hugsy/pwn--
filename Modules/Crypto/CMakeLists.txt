@@ -14,7 +14,12 @@ add_dependencies(${PROJECT_NAME} PWN::Common)
 add_library(PWN::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC)
-target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common Bcrypt.lib)
+target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common)
+
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PUBLIC Bcrypt.lib)
+else()
+endif(WIN32)
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 

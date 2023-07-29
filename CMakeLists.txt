@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.26)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION True)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
@@ -26,6 +25,7 @@ option(PWN_DISASSEMBLE_ARM64 "Compile with BinaryNinja disassembler support (ARM
 option(PWN_BUILD_TOOLKIT "Compile the executables of pwn++ toolkit" ON)
 option(PWN_BUILD_TESTING "Compile the test suite" ON)
 option(PWN_BUILD_DOCS "Generate the Doxygen API files" OFF)
+option(PWN_BUILD_SHARED_LIBS "Build as a shared library" OFF)
 option(PWN_ENABLE_LUA_BACKDOOR "Enable Lua scripting for backdoor" OFF)
 
 set(PWNLIB_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
@@ -36,30 +36,57 @@ set(CMAKE_INSTALL_LIBDIR Library)
 set(CMAKE_INSTALL_BINDIR Binary)
 set(CMAKE_INSTALL_INCLUDEDIR Include)
 
-list(APPEND PWN_MODULES
+if(WIN32)
+    list(APPEND PWN_MODULES
 
-    # Listed by dependency order
-    Common
+        # Listed by dependency order
+        Common
 
-    Crypto
-    Network
-    Symbols
-    System
-    Security
-    Registry
-    Service
-    Shellcode
+        Crypto
+        Network
+        Symbols
+        System
+        Security
+        Registry
+        Service
+        Shellcode
 
-    FileSystem
-    Process
-    Remote
+        FileSystem
+        Process
+        Remote
 
-    Binary
-    CTF
+        Binary
+        CTF
 
-    # TODO : ideas for future modules
-    # - Win32/WTS
-)
+        # TODO : ideas for future modules
+        # - WTS
+    )
+
+else()
+    list(APPEND PWN_MODULES
+
+        # Listed by dependency order
+        Common
+
+        Crypto
+        Network
+        System
+
+        # Binary # TODO: ELF
+        CTF
+    )
+endif(WIN32)
+
+message(STATUS "Using ${CMAKE_CXX_COMPILER_ID} compiler.")
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+    #
+    # `std::format` was tested to work only in clang16 + libc++
+    #
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+else()
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION True)
+endif()
 
 if(PWN_DISASSEMBLE_X86)
     option(ZYCORE_BUILD_SHARED_LIB "" OFF)
@@ -120,12 +147,7 @@ elseif("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "x64")
 elseif("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "win32")
     enable_language(CXX ASM_MASM)
 else()
-    if(NOT ${PWN_BUILD_DOCS})
-        #
-        # Unless we're generating docs, we need to make sure there's an assembler available
-        #
-        message(FATAL_ERROR "No ASSEMBLY mode available")
-    endif(NOT ${PWN_BUILD_DOCS})
+    enable_language(CXX ASM_NASM)
 endif()
 
 if(PWN_BUILD_TESTING)

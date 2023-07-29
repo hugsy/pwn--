@@ -11,31 +11,80 @@ extern struct GlobalContext Context;
 namespace pwn::Log
 {
 
-const char*
+
+template<typename T>
+constexpr T
 GetPriorityString(const LogLevel level)
 {
     switch ( level )
     {
     case LogLevel::Debug:
-        return PWN_COLOR_BOLD PWN_LOG_STRINGS_DEBUG PWN_COLOR_RESET;
+        if constexpr ( std::is_same_v<T, std::string_view> )
+        {
+            return PWN_COLOR_BOLD PWN_LOG_STRINGS_DEBUG PWN_COLOR_RESET;
+        }
+        else
+        {
+            return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_LOG_STRINGS_DEBUG) WIDECHAR2(PWN_COLOR_RESET);
+        }
 
     case LogLevel::Success:
-        return PWN_COLOR_BOLD PWN_COLOR_FG_GREEN PWN_LOG_STRINGS_SUCCESS PWN_COLOR_RESET;
+        if constexpr ( std::is_same_v<T, std::string_view> )
+        {
+            return PWN_COLOR_BOLD PWN_COLOR_FG_GREEN PWN_LOG_STRINGS_SUCCESS PWN_COLOR_RESET;
+        }
+        else
+        {
+            return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_GREEN) WIDECHAR2(PWN_LOG_STRINGS_SUCCESS)
+                WIDECHAR2(PWN_COLOR_RESET);
+        }
 
     case LogLevel::Info:
-        return PWN_COLOR_BOLD PWN_COLOR_FG_CYAN PWN_LOG_STRINGS_INFO PWN_COLOR_RESET;
+        if constexpr ( std::is_same_v<T, std::string_view> )
+        {
+            return PWN_COLOR_BOLD PWN_COLOR_FG_CYAN PWN_LOG_STRINGS_INFO PWN_COLOR_RESET;
+        }
+        else
+        {
+            return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_CYAN) WIDECHAR2(PWN_LOG_STRINGS_INFO)
+                WIDECHAR2(PWN_COLOR_RESET);
+        }
 
     case LogLevel::Warning:
-        return PWN_COLOR_BOLD PWN_COLOR_FG_YELLOW PWN_LOG_STRINGS_WARN PWN_COLOR_RESET;
+        if constexpr ( std::is_same_v<T, std::string_view> )
+        {
+            return PWN_COLOR_BOLD PWN_COLOR_FG_YELLOW PWN_LOG_STRINGS_WARN PWN_COLOR_RESET;
+        }
+        else
+        {
+            return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_YELLOW) WIDECHAR2(PWN_LOG_STRINGS_WARN)
+                WIDECHAR2(PWN_COLOR_RESET);
+        }
 
     case LogLevel::Error:
-        return PWN_COLOR_BOLD PWN_COLOR_FG_RED PWN_LOG_STRINGS_ERROR PWN_COLOR_RESET;
+        if constexpr ( std::is_same_v<T, std::string_view> )
+        {
+            return PWN_COLOR_BOLD PWN_COLOR_FG_RED PWN_LOG_STRINGS_ERROR PWN_COLOR_RESET;
+        }
+        else
+        {
+            return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_RED) WIDECHAR2(PWN_LOG_STRINGS_ERROR)
+                WIDECHAR2(PWN_COLOR_RESET);
+        }
 
     case LogLevel::Critical:
-        return PWN_COLOR_BOLD PWN_COLOR_FG_MAGENTA PWN_LOG_STRINGS_CRITICAL PWN_COLOR_RESET;
+        if constexpr ( std::is_same_v<T, std::string_view> )
+        {
+            return PWN_COLOR_BOLD PWN_COLOR_FG_MAGENTA PWN_LOG_STRINGS_CRITICAL PWN_COLOR_RESET;
+        }
+        else
+        {
+            return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_MAGENTA) WIDECHAR2(PWN_LOG_STRINGS_CRITICAL)
+                WIDECHAR2(PWN_COLOR_RESET);
+        }
 
     default:
-        return "";
+        return T {};
     }
 }
 
@@ -49,7 +98,7 @@ Log(const LogLevel CurrentLevel, std::source_location const& CurrentLocation, st
     }
 
     std::ostringstream prefix;
-    prefix << GetPriorityString(CurrentLevel);
+    prefix << GetPriorityString<std::string_view>(CurrentLevel);
 
     if ( CurrentLevel == LogLevel::Debug )
     {
@@ -63,41 +112,6 @@ Log(const LogLevel CurrentLevel, std::source_location const& CurrentLocation, st
 }
 
 
-#ifdef PWN_BUILD_FOR_WINDOWS
-const wchar_t*
-GetPriorityWideString(const LogLevel level)
-{
-    switch ( level )
-    {
-    case LogLevel::Debug:
-        return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_LOG_STRINGS_DEBUG) WIDECHAR2(PWN_COLOR_RESET);
-
-    case LogLevel::Success:
-        return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_GREEN) WIDECHAR2(PWN_LOG_STRINGS_SUCCESS)
-            WIDECHAR2(PWN_COLOR_RESET);
-
-    case LogLevel::Info:
-        return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_CYAN) WIDECHAR2(PWN_LOG_STRINGS_INFO)
-            WIDECHAR2(PWN_COLOR_RESET);
-
-    case LogLevel::Warning:
-        return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_YELLOW) WIDECHAR2(PWN_LOG_STRINGS_WARN)
-            WIDECHAR(PWN_COLOR_RESET);
-
-    case LogLevel::Error:
-        return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_RED) WIDECHAR2(PWN_LOG_STRINGS_ERROR)
-            WIDECHAR2(PWN_COLOR_RESET);
-
-    case LogLevel::Critical:
-        return WIDECHAR2(PWN_COLOR_BOLD) WIDECHAR2(PWN_COLOR_FG_MAGENTA) WIDECHAR2(PWN_LOG_STRINGS_CRITICAL)
-            WIDECHAR2(PWN_COLOR_RESET);
-
-    default:
-        return L"";
-    }
-}
-
-
 void
 Log(const LogLevel level, std::source_location const& location, std::wostringstream& msg)
 {
@@ -107,7 +121,7 @@ Log(const LogLevel level, std::source_location const& location, std::wostringstr
     }
 
     std::wostringstream prefix;
-    prefix << GetPriorityWideString(level);
+    prefix << GetPriorityString<std::wstring_view>(level);
 
     if ( level == LogLevel::Debug )
     {
@@ -121,6 +135,7 @@ Log(const LogLevel level, std::source_location const& location, std::wostringstr
 }
 
 
+#ifdef PWN_BUILD_FOR_WINDOWS
 void PWNAPI
 perror(const std::wstring_view& prefix)
 {
@@ -171,7 +186,6 @@ ntperror(_In_ const std::string_view& prefix, _In_ NTSTATUS Status)
     ::SetLastError(hResult);
     Log::perror(prefix);
 }
-
 #endif
 
 

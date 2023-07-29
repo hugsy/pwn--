@@ -121,6 +121,24 @@ using uptr  = std::uintptr_t;
 using namespace std::literals::string_view_literals;
 using namespace std::literals::chrono_literals;
 
+#ifdef PWN_BUILD_FOR_WINDOWS
+constexpr std::string
+constexpr_concat() noexcept
+{
+    return std::string("");
+}
+
+
+template<typename... Args>
+constexpr std::string
+constexpr_concat(std::string const& arg, Args... args)
+{
+    std::string rest = constexpr_concat(args...);
+    return arg + rest;
+}
+#endif // PWN_BUILT_FOR_WINDOWS
+
+
 ///
 /// @brief A constexpr map
 /// @ref https://xuhuisun.com/post/c++-weekly-2-constexpr-map/

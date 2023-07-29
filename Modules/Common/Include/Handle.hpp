@@ -2,7 +2,7 @@
 
 #include <functional>
 
-#include "common.hpp"
+#include "Common.hpp"
 
 ///
 /// Scope-managed handles
