@@ -37,6 +37,10 @@ jobs:
       windows-latest-x86-full: ${{ join(steps.*.outputs.windows-latest-x86-full,'') }}
       windows-latest-arm64-lite: ${{ join(steps.*.outputs.windows-latest-arm64-lite,'') }}
       windows-latest-arm64-full: ${{ join(steps.*.outputs.windows-latest-arm64-full,'') }}
+      ubuntu-latest-x64-lite: ${{ join(steps.*.outputs.ubuntu-latest-x64-lite,'') }}
+      ubuntu-latest-x64-full: ${{ join(steps.*.outputs.ubuntu-latest-x64-full,'') }}
+      ubuntu-latest-x86-lite: ${{ join(steps.*.outputs.ubuntu-latest-x86-lite,'') }}
+      ubuntu-latest-x86-full: ${{ join(steps.*.outputs.ubuntu-latest-x86-full,'') }}
 
     steps:
     - uses: actions/checkout@v3
@@ -148,12 +152,9 @@ jobs:
         echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=❌ ${{ matrix.os }} ➤ ${{ matrix.platform }} ➤ ${{ matrix.build }}' >> ${GITHUB_OUTPUT}
 
   notify:
-    runs-on: 'ubuntu-22.04'
+    runs-on: 'ubuntu-latest'
     needs: build
     steps:
-    - name: Inject slug/short variables
-      uses: rlespinasse/github-slug-action@v4
-
     - name: Send Discord notification
       env:
         COMMIT_URL: "https://github.com/${{ env.REPO }}/commit/${{ github.sha }}"
@@ -176,6 +177,10 @@ jobs:
           ${{ needs.build.outputs.windows-latest-x86-full }}
           ${{ needs.build.outputs.windows-latest-arm64-lite }}
           ${{ needs.build.outputs.windows-latest-arm64-full }}
+          ${{ needs.build.outputs.ubuntu-latest-x64-lite }}
+          ${{ needs.build.outputs.ubuntu-latest-x64-full }}
+          ${{ needs.build.outputs.ubuntu-latest-x86-lite }}
+          ${{ needs.build.outputs.ubuntu-latest-x86-full }}          
 
         color: 0x0000ff
         username: ${{ github.actor }} via GithubBot
