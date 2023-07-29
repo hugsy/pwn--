@@ -1,9 +1,8 @@
-<p align="center">
-  <h1> pwn++ </h1>
-</p>
 
 <p align="center">
-  <img src="https://i.imgur.com/39XyWFo.png" alt="logo" title="logo pwn++" width=20% />
+  <img src="https://i.imgur.com/39XyWFo.png" alt="logo" title="logo pwn++" width=35% />
+  <hr>
+  <h1> pwn++ </h1>
 </p>
 
 <p align="center">
