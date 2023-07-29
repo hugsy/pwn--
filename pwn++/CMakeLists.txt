@@ -45,7 +45,7 @@ else()
     target_link_libraries(
         ${PROJECT_NAME}
 
-        PRIVATE
+        LINK_PUBLIC
         pthread
         dl
     )
