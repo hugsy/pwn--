@@ -55,6 +55,9 @@ jobs:
         CC:  ${{ matrix.c_compiler}}
         CXX: ${{ matrix.cpp_compiler}}
       run: |
+        wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
+        chmod +x /tmp/llvm.sh
+        sudo /tmp/llvm.sh 17
         sudo apt update && sudo apt install -y ${CC} ${CXX}
         echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
         echo "CC=${CC}" >> $GITHUB_ENV

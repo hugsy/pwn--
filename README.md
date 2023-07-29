@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://i.imgur.com/39XyWFo.png" alt="logo" title="logo pwn++" />
+  <img src="https://i.imgur.com/39XyWFo.png" alt="logo" title="logo pwn++" width=20% />
 </p>
 
 <p align="center">
@@ -15,7 +15,7 @@
 </p>
 
 
-A rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL in modern C++, battery-included pwn kit for Windows (and a bit for Linux).
+A poor rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL in modern C++, battery-included pwn kit for Windows (and a bit for Linux).
 
 The idea is to provide in C on Windows the same kind of functionalities than [pwntools](https://github.com/Gallopsled/pwntools) does in Python on Linux.
 It's also a toy library meant for exploring Windows in a more friendly way. So if you're looking for years of poorly written C/C++ tangled with performant
