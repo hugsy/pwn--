@@ -8,13 +8,14 @@ env:
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
 
 jobs:
   build:
     name: "${{ matrix.variants.os }}/${{ matrix.variants.arch }}/${{ matrix.variants.config }}"
     env:
-      CMAKE_FLAGS: '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=OFF'
+      CMAKE_FLAGS: '-DPWN_BUILD_DOCS=ON -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=OFF'
       NB_CPU: 1
 
     strategy:
@@ -58,7 +59,7 @@ jobs:
         wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
         chmod +x /tmp/llvm.sh
         sudo /tmp/llvm.sh 17
-        sudo apt update && sudo apt install -y clang-17 libc++abi-17-dev libc++-17-dev llvm-17-dev nasm
+        sudo apt update && sudo apt install -y cmake doxygen clang-17 libc++abi-17-dev libc++-17-dev llvm-17-dev nasm
         echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
         echo "CC=clang-17" >> $GITHUB_ENV
         echo "CXX=clang++-17" >> $GITHUB_ENV
