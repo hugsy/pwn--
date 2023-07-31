@@ -15,6 +15,55 @@ using namespace pwn;
 namespace pwn::FileSystem
 {
 
+File::File(std::filesystem::path const& FilePath, bool IsTemporary) :
+    m_Access {GENERIC_READ | SYNCHRONIZE},
+    m_ShareMode {FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE},
+    m_Attributes {FILE_ATTRIBUTE_NORMAL},
+    m_IsTemporary {IsTemporary},
+    m_Path {FilePath}
+{
+
+    if ( m_IsTemporary )
+    {
+        m_Attributes |= FILE_FLAG_DELETE_ON_CLOSE;
+    }
+
+    HANDLE hFile =
+        ::CreateFileW(m_Path.wstring().c_str(), m_Access, m_ShareMode, nullptr, OPEN_ALWAYS, m_Attributes, nullptr);
+    if ( hFile == INVALID_HANDLE_VALUE )
+    {
+        hFile = ::CreateFileW(
+            m_Path.wstring().c_str(),
+            m_Access,
+            m_ShareMode,
+            nullptr,
+            CREATE_ALWAYS,
+            m_Attributes,
+            nullptr);
+        if ( hFile == INVALID_HANDLE_VALUE )
+        {
+            return;
+        }
+    }
+
+    m_hFile = UniqueHandle(hFile);
+}
+
+
+File::File(HANDLE&& hFile) : m_hFile {UniqueHandle {std::move(hFile)}}
+{
+}
+
+
+File::File(HANDLE const& hFile)
+{
+    HANDLE h;
+    if ( ::DuplicateHandle(::GetCurrentProcess(), hFile, ::GetCurrentProcess(), &h, DUPLICATE_SAME_ACCESS, true, 0) )
+    {
+        m_hFile = UniqueHandle {h};
+    }
+}
+
 Result<usize>
 File::Size()
 {
@@ -72,20 +121,20 @@ File::ToBytes(uptr Offset, usize Size)
         return Err(ErrorCode::NotInitialized);
     }
 
-    auto const map = Map(PAGE_READONLY);
+    auto map = Map(PAGE_READONLY);
     if ( Failed(map) )
     {
-        return Err(Error(map).code);
+        return Error(map);
     }
 
-    auto hMap       = UniqueHandle {Value(map)};
-    auto const view = View(hMap.get(), FILE_MAP_READ, Offset, Size);
+    auto hMap = UniqueHandle {Value(std::move(map))};
+    auto view = View(hMap.get(), FILE_MAP_READ, Offset, Size);
     if ( Failed(view) )
     {
-        return Err(Error(view).code);
+        return Error(view);
     }
 
-    auto hView = FileMapViewHandle {Value(view)};
+    auto hView = Value(std::move(view));
     std::vector<u8> bytes(Size);
     ::memcpy(bytes.data(), hView.get(), bytes.size());
 
@@ -183,7 +232,7 @@ File::ReOpenFileWith(const DWORD DesiredAccess, const DWORD DesiredShareMode, co
 }
 
 
-Result<HANDLE>
+Result<UniqueHandle>
 File::Map(DWORD Protect, std::optional<std::wstring_view> Name)
 {
     HANDLE h = {::CreateFileMappingW(m_hFile.get(), nullptr, Protect, 0, 0, Name.value_or(std::wstring {L""}).data())};
@@ -192,11 +241,11 @@ File::Map(DWORD Protect, std::optional<std::wstring_view> Name)
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    return Ok(h);
+    return Ok(UniqueHandle {h});
 }
 
 
-Result<PVOID>
+Result<FileMapViewHandle>
 File::View(HANDLE hMap, DWORD Protect, uptr Offset, usize Size)
 {
     Size       = (Size == (usize)-1) ? ValueOr(this->Size(), (usize)0) : Size;
@@ -215,7 +264,7 @@ File::View(HANDLE hMap, DWORD Protect, uptr Offset, usize Size)
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    return Ok(map);
+    return Ok(FileMapViewHandle {map});
 }
 
 
@@ -240,7 +289,7 @@ Directory::Create(std::wstring_view& DirPath, bool IsTemporary) -> Result<std::w
         return Ok(root);
     }
 
-    std::wstring TmpDir = root + L"\\" + L"Pwn" + Utils::Random::string(10);
+    std::wstring TmpDir = root + L"\\" + L"Pwn" + Utils::Random::WideString(10);
     if ( ::CreateDirectoryW(TmpDir.c_str(), nullptr) )
     {
         return Ok(TmpDir);

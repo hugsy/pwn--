@@ -22,6 +22,7 @@ interesting locations from link target
 
 namespace pwn::FileSystem
 {
+
 using FileMapViewHandle = GenericHandle<void, ::UnmapViewOfFile>;
 
 class File
@@ -32,39 +33,7 @@ public:
     ///
     ///@param FilePath
     ///
-    File(std::filesystem::path const& FilePath, bool IsTemporary = false) :
-        m_Access {GENERIC_READ | SYNCHRONIZE},
-        m_ShareMode {FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE},
-        m_Attributes {FILE_ATTRIBUTE_NORMAL},
-        m_IsTemporary {IsTemporary},
-        m_Path {FilePath}
-    {
-
-        if ( m_IsTemporary )
-        {
-            m_Attributes |= FILE_FLAG_DELETE_ON_CLOSE;
-        }
-
-        HANDLE hFile =
-            ::CreateFileW(m_Path.wstring().c_str(), m_Access, m_ShareMode, nullptr, OPEN_ALWAYS, m_Attributes, nullptr);
-        if ( hFile == INVALID_HANDLE_VALUE )
-        {
-            hFile = ::CreateFileW(
-                m_Path.wstring().c_str(),
-                m_Access,
-                m_ShareMode,
-                nullptr,
-                CREATE_ALWAYS,
-                m_Attributes,
-                nullptr);
-            if ( hFile == INVALID_HANDLE_VALUE )
-            {
-                return;
-            }
-        }
-
-        m_hFile = UniqueHandle(hFile);
-    }
+    File(std::filesystem::path const& FilePath, bool IsTemporary = false);
 
 
     ///
@@ -72,9 +41,7 @@ public:
     ///
     ///@param hFile
     ///
-    File(HANDLE&& hFile) : m_hFile {UniqueHandle {hFile}}
-    {
-    }
+    File(HANDLE&& hFile);
 
 
     ///
@@ -82,21 +49,7 @@ public:
     ///
     ///@param hFile
     ///
-    File(HANDLE const& hFile)
-    {
-        HANDLE h;
-        if ( ::DuplicateHandle(
-                 ::GetCurrentProcess(),
-                 hFile,
-                 ::GetCurrentProcess(),
-                 &h,
-                 DUPLICATE_SAME_ACCESS,
-                 true,
-                 0) )
-        {
-            m_hFile = UniqueHandle {h};
-        }
-    }
+    File(HANDLE const& hFile);
 
 
     ///
@@ -118,6 +71,12 @@ public:
     IsValid() const;
 
 
+    ///
+    ///@brief
+    ///
+    ///@return true
+    ///@return false
+    ///
     bool
     IsTemporary() const;
 
@@ -143,9 +102,10 @@ public:
     ///
     ///@param Protect
     ///@param Name (opt.)
-    ///@return Result<HANDLE>
+    ///@return Result<UniqueHandle>
     ///
-    Result<HANDLE>
+    PWNAPI
+    Result<UniqueHandle>
     Map(DWORD Protect, std::optional<std::wstring_view> Name = std::nullopt);
 
 
@@ -156,9 +116,10 @@ public:
     ///@param Protect
     ///@param Offset
     ///@param Size
-    ///@return Result<PVOID>
+    ///@return Result<FileMapViewHandle>
     ///
-    Result<PVOID>
+    PWNAPI
+    Result<FileMapViewHandle>
     View(HANDLE hMap, DWORD Protect, uptr Offset = 0, usize Size = -1);
 
 
@@ -217,7 +178,8 @@ public:
             auto res = ReOpenFileWith(DELETE);
             if ( Failed(res) )
             {
-                return Err(Error(res).code);
+                auto const& err = Error(res);
+                return Err(err.Code);
             }
         }
         }
@@ -278,7 +240,7 @@ public:
             Access |= GENERIC_READ | GENERIC_WRITE;
             Attrs |= FILE_FLAG_DELETE_ON_CLOSE;
             ShareMode = 0;
-            Path += L"-" + Utils::Random::string(10);
+            Path += L"-" + Utils::Random::WideString(10);
         }
 
         HANDLE hFile = ::CreateFileW(Path.c_str(), Access, ShareMode, nullptr, Disposition, Attrs, nullptr);

@@ -1,11 +1,15 @@
-#include "../catch.hpp"
+#include <catch.hpp>
 
-#include <pwn.hpp>
-#define NS "pwn::linux::system"
+#include "Linux/System.hpp"
+#define NS "pwn::Linux::System"
+
+using namespace pwn;
 
 
-
-TEST_CASE( "check page size", "[" NS "]" )
+TEST_CASE("System tests", "[" NS "]")
 {
-    REQUIRE( pwn::linux::system::pagesize() == 0x1000 );
+    SECTION("Page size")
+    {
+        REQUIRE(pwn::Linux::System::PageSize() == 0x1000);
+    }
 }

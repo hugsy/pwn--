@@ -8,6 +8,7 @@
 #include "Utils.hpp"
 #include "Handle.hpp"
 #include "Context.hpp"
+
 #include "Crypto.hpp"
 
 #ifdef PWN_INCLUDE_DISASSEMBLER
@@ -31,11 +32,14 @@
 #include "Win32/RPC.hpp"
 #include "Win32/API.hpp"
 #include "Win32/Symbols.hpp"
-
 #include "CTF/Win32/Remote.hpp"
 #include "CTF/Win32/Process.hpp"
+
 #elif defined(PWN_BUILD_FOR_LINUX)
-// TODO
+
+#include "CTF/Linux/Remote.hpp"
+#include "CTF/Linux/Process.hpp"
+
 #endif // PWN_BUILD_FOR_WINDOWS
 // clang-format on
 

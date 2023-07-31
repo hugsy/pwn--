@@ -28,7 +28,7 @@ namespace pwn::System
 {
 
 auto
-System::PageSize() -> u32
+PageSize() -> u32
 {
     SYSTEM_INFO siSysInfo {};
     ::GetSystemInfo(&siSysInfo);
@@ -37,20 +37,20 @@ System::PageSize() -> u32
 
 
 auto
-System::ProcessId(_In_ HANDLE hProcess) -> u32
+ProcessId(_In_ HANDLE hProcess) -> u32
 {
     return (hProcess == GetCurrentProcess()) ? ::GetCurrentProcessId() : ::GetProcessId(hProcess);
 }
 
 
-std::optional<u32>
-System::ParentProcessId(const u32 dwProcessId)
+auto
+ParentProcessId(const u32 dwProcessId) -> Result<u32>
 {
     auto hProcessSnap = UniqueHandle {::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)};
     if ( !hProcessSnap )
     {
         Log::perror(L"CreateToolhelp32Snapshot()");
-        return std::nullopt;
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
     PROCESSENTRY32 pe = {0};
@@ -62,17 +62,17 @@ System::ParentProcessId(const u32 dwProcessId)
         {
             if ( pe.th32ProcessID == dwProcessId )
             {
-                return pe.th32ParentProcessID;
+                return Ok(static_cast<u32>(pe.th32ParentProcessID));
             }
         } while ( ::Process32NextW(hProcessSnap.get(), &pe) );
     }
 
-    return std::nullopt;
+    return Err(ErrorCode::NotFound);
 }
 
 
 auto
-System::PidOf(std::wstring_view const& ProcessName) -> Result<std::vector<u32>>
+PidOf(std::wstring_view const& ProcessName) -> Result<std::vector<u32>>
 {
     auto hProcessSnap = UniqueHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
     if ( !hProcessSnap )
@@ -118,7 +118,7 @@ System::PidOf(std::wstring_view const& ProcessName) -> Result<std::vector<u32>>
 
 
 auto
-System::ComputerName() -> const std::wstring
+ComputerName() -> const std::wstring
 {
     u32 dwBufLen                                 = MAX_COMPUTERNAME_LENGTH;
     wchar_t lpszBuf[MAX_COMPUTERNAME_LENGTH + 1] = {0};
@@ -133,7 +133,7 @@ System::ComputerName() -> const std::wstring
 
 
 Result<std::wstring>
-System::UserName()
+UserName()
 {
     wchar_t lpwsBuffer[UNLEN + 1] = {0};
     u32 dwBufferSize              = UNLEN + 1;
@@ -149,7 +149,7 @@ System::UserName()
 
 
 Result<std::wstring>
-System::ModuleName(HMODULE hModule)
+ModuleName(HMODULE hModule)
 {
     wchar_t lpwsBuffer[MAX_PATH] = {0};
     if ( ::GetModuleFileName(hModule, lpwsBuffer, MAX_PATH) == 0u )
@@ -164,13 +164,13 @@ System::ModuleName(HMODULE hModule)
 
 
 Result<std::wstring>
-System::FileName()
+FileName()
 {
     return ModuleName(nullptr);
 }
 
 std::tuple<u32, u32, u32>
-System::WindowsVersion()
+WindowsVersion()
 {
     OSVERSIONINFOEXW VersionInformation;
     VersionInformation.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEXW);
@@ -185,7 +185,7 @@ System::WindowsVersion()
 }
 
 Result<PVOID>
-System::QueryInternal(const SYSTEM_INFORMATION_CLASS SystemInformationClass, const usize InitialSize)
+details::QueryInternal(const SYSTEM_INFORMATION_CLASS SystemInformationClass, const usize InitialSize)
 {
     usize Size         = InitialSize;
     ULONG ReturnLength = 0;
@@ -229,7 +229,7 @@ System::QueryInternal(const SYSTEM_INFORMATION_CLASS SystemInformationClass, con
 }
 
 Result<std::tuple<u8, u8, u8, u8, u8>>
-System::ProcessorCount()
+ProcessorCount()
 {
     DWORD size                = 0;
     u8 ProcessorCount         = 0;
@@ -278,7 +278,7 @@ System::ProcessorCount()
 
 
 Result<std::vector<RTL_PROCESS_MODULE_INFORMATION>>
-System::Modules()
+Modules()
 {
     auto res = Query<RTL_PROCESS_MODULES>(SystemModuleInformation);
     if ( Failed(res) )
@@ -302,7 +302,7 @@ System::Modules()
 
 
 Result<std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO>>
-System::Handles()
+Handles()
 {
     auto res = Query<SYSTEM_HANDLE_INFORMATION>(SystemHandleInformation);
     if ( Failed(res) )
@@ -324,4 +324,40 @@ System::Handles()
     return SystemHandles;
 }
 
+
+Result<std::vector<std::tuple<u32, u32>>>
+Threads()
+{
+    auto h = UniqueHandle {::CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0)};
+    if ( !h )
+    {
+        Log::perror(L"CreateToolhelp32Snapshot()");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    std::vector<std::tuple<u32, u32>> tids;
+    THREADENTRY32 te = {.dwSize = sizeof(te)};
+
+    if ( ::Thread32First(h.get(), &te) )
+    {
+        do
+        {
+            if ( !(te.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) + sizeof(te.th32OwnerProcessID)) )
+            {
+                continue;
+            }
+
+            if ( !te.th32ThreadID )
+            {
+                continue;
+            }
+
+            tids.emplace_back(std::make_tuple((u32)te.th32OwnerProcessID, (u32)te.th32ThreadID));
+
+            te.dwSize = sizeof(te);
+        } while ( ::Thread32Next(h.get(), &te) );
+    }
+
+    return Ok(tids);
+}
 } // namespace pwn::System

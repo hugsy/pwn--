@@ -5,6 +5,7 @@ namespace pwn::Process
 {
 #pragma region Process::ThreadGroup
 
+/*
 Result<std::vector<u32>>
 ThreadGroup::List()
 {
@@ -73,7 +74,7 @@ ThreadGroup::operator[](u32 Tid)
 {
     return at(Tid);
 }
-
+*/
 #pragma endregion Process::ThreadGroup
 
-} // namespace Process
+} // namespace pwn::Process

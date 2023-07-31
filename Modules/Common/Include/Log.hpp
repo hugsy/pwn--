@@ -8,27 +8,7 @@
 ///
 #pragma once
 
-//
-// Abstraction for {std,fmt}::format
-//
-#ifdef PWN_BUILD_FOR_WINDOWS
 #include <format>
-#define PwnFormatter std::formatter
-#define PwnVFormat std::vformat
-#define PwnFormat std::format
-#define PwnMakeFormatArgs std::make_format_args
-#define PwnFormatContext std::format_context
-#elif defined(PWN_BUILD_FOR_LINUX)
-#include <fmt/core.h>
-#include <fmt/format.h>
-#define PwnFormatter fmt::formatter
-#define PwnFormat fmt::format
-#define PwnVFormat fmt::vformat
-#define PwnMakeFormatArgs fmt::make_format_args
-#define PwnFormatContext fmt::format_context
-#endif // PWN_BUILD_FOR_WINDOWS
-
-
 #include <source_location>
 #include <sstream>
 #include <string_view>
@@ -123,12 +103,11 @@ void
 Log(const LogLevel level, std::source_location const& location, std::string_view const& fmt, Args&&... args)
 {
     std::ostringstream msg;
-    msg << PwnVFormat(fmt, PwnMakeFormatArgs(args...)) << '\n';
+    msg << std::vformat(fmt, std::make_format_args(args...)) << '\n';
     Log(level, location, msg);
 }
 
 
-#ifdef PWN_BUILD_FOR_WINDOWS
 ///
 /// @brief
 ///
@@ -158,14 +137,49 @@ Log(const LogLevel level, std::source_location const& location, std::wstring_vie
     Log::Log(level, location, msg);
 }
 
+
+#ifdef PWN_BUILD_FOR_WINDOWS
 ///
 ///@brief Format the last error (GetLastError() on Windows, errno on Linux)
 ///
+///@tparam T
 ///@param gle
-///@return std::wstring
+///@return T
 ///
-std::wstring
-FormatLastError(const u32 gle);
+template<typename T = std::wstring>
+auto
+FormatLastError(const u32 gle) -> T
+{
+    if constexpr ( std::is_same_v<T, std::wstring> )
+    {
+        wchar_t msg[1024] {0};
+        ::FormatMessageW(
+            FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
+            nullptr,
+            gle,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            msg,
+            __countof(msg),
+            nullptr);
+        return std::wstring(msg);
+    }
+
+    if constexpr ( std::is_same_v<T, std::string> )
+    {
+        char msg[1024] {0};
+        ::FormatMessageA(
+            FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,
+            nullptr,
+            gle,
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            msg,
+            __countof(msg),
+            nullptr);
+        return std::string(msg);
+    }
+
+    throw std::bad_variant_access();
+}
 
 ///
 /// @brief Basic equivalent of Linux Glibc's `perror`

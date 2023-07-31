@@ -1,5 +1,6 @@
 #include "Context.hpp"
 
+#include "Architecture.hpp"
 #include "Formatters.hpp"
 
 using namespace pwn;

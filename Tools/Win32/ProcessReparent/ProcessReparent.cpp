@@ -21,7 +21,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     // Look for the parent process
     u32 ppid = 0;
     {
-        auto res = System::System::PidOf(parent_process);
+        auto res = System::PidOf(parent_process);
         if ( !Success(res) )
         {
             err(L"failed to find PID of '{}'", parent_process);
@@ -32,6 +32,9 @@ wmain(const int argc, const wchar_t** argv) -> int
         info(L"found winlogon pid={}", ppid);
     }
 
+    // TODO restore
+
+#if 0
     // Create the new process using the parent PID
     {
         auto res = Process::Process::New(target_process, ppid);
@@ -44,6 +47,6 @@ wmain(const int argc, const wchar_t** argv) -> int
         auto Process = Value(res);
         ::WaitForSingleObject(Process.Handle()->get(), INFINITE);
     }
-
+#endif
     return EXIT_SUCCESS;
 }

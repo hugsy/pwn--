@@ -8,66 +8,61 @@ env:
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
 
 jobs:
   build:
-    name: "${{ matrix.os }}/${{ matrix.platform }}/${{ matrix.build }}"
+    name: "${{ matrix.variants.os }}/${{ matrix.variants.arch }}/${{ matrix.variants.config }}"
     env:
-      CMAKE_CONFIGURATION: ${{ github.ref_name == 'main' && 'RelWithDebInfo' || 'Debug' }}
-      CMAKE_FLAGS: "${{ matrix.build == 'full' && '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=OFF' || '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=OFF -DPWN_DISASSEMBLE_ARM64=OFF -DPWN_BUILD_TOOLKIT=OFF -DPWN_BUILD_TESTING=OFF -DPWN_ENABLE_LUA_BACKDOOR=OFF' }}"
+      CMAKE_FLAGS: '-DPWN_BUILD_DOCS=ON -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_ENABLE_LUA_BACKDOOR=OFF'
+      NB_CPU: 1
 
     strategy:
       fail-fast: false
       matrix:
-        os: ['windows-latest'] # 'ubuntu-latest' removed since gcc-12 nor clang-16 supports std::format
-        platform: ['x64', 'x86', 'arm64']
-        build: ['lite', 'full']
-        include:
-          - runs-on: ubuntu-latest
-            c_compiler: clang-16
-            cpp_compiler: clang++-16
+        variants:
+          - {os: windows-latest,   arch: x64,      config: Debug,            build: full}
+          - {os: windows-latest,   arch: x64,      config: RelWithDebInfo,   build: full}
+          - {os: windows-latest,   arch: x86,      config: Debug,            build: full}
+          - {os: windows-latest,   arch: x86,      config: RelWithDebInfo,   build: full}
+          - {os: windows-latest,   arch: arm64,    config: Debug,            build: full}
+          - {os: windows-latest,   arch: arm64,    config: RelWithDebInfo,   build: full}
+          - {os: ubuntu-latest,    arch: x64,      config: Debug,            build: full}
+          - {os: ubuntu-latest,    arch: x64,      config: RelWithDebInfo,   build: full}
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.variants.os }}
     outputs:
-      windows-latest-x64-lite: ${{ join(steps.*.outputs.windows-latest-x64-lite,'') }}
       windows-latest-x64-full: ${{ join(steps.*.outputs.windows-latest-x64-full,'') }}
-      windows-latest-x86-lite: ${{ join(steps.*.outputs.windows-latest-x86-lite,'') }}
       windows-latest-x86-full: ${{ join(steps.*.outputs.windows-latest-x86-full,'') }}
-      windows-latest-arm64-lite: ${{ join(steps.*.outputs.windows-latest-arm64-lite,'') }}
       windows-latest-arm64-full: ${{ join(steps.*.outputs.windows-latest-arm64-full,'') }}
+      ubuntu-latest-x64-full: ${{ join(steps.*.outputs.ubuntu-latest-x64-full,'') }}
+      ubuntu-latest-x86-full: ${{ join(steps.*.outputs.ubuntu-latest-x86-full,'') }}
 
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: true
 
-    - name: Set Windows specific environment variables
-      if: matrix.os == 'windows-latest'
+    - name: Setup environment variables (Windows)
+      if: matrix.variants.os == 'windows-latest'
       shell: powershell
       run: |
         echo "NB_CPU=$env:NUMBER_OF_PROCESSORS" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-    - name: Set Linux specific environment variables
-      if: matrix.os == 'ubuntu-latest'
-      env:
-        CC:  ${{ matrix.c_compiler}}
-        CXX: ${{ matrix.cpp_compiler}}
-      run: |
-        echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
-        sudo apt update && sudo apt install -y ${CC} ${CXX}
-        echo "CC=${CC}" >> $GITHUB_ENV
-        echo "CXX=${CXX}" >> $GITHUB_ENV
-
-    - name: Inject slug/short variables
-      uses: rlespinasse/github-slug-action@v4
-
-    - name: Add msbuild to PATH
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: |
         Import-Module .\.github\Invoke-VisualStudio.ps1
-        Invoke-VisualStudio2022${{ matrix.platform }}
+        Invoke-VisualStudio2022${{ matrix.variants.arch }}
+
+    - name: Setup environment variables (Linux)
+      if: matrix.variants.os == 'ubuntu-latest'
+      run: |
+        sudo apt remove llvm-* clang-* python3-lldb-* libunwind-* libc++abi1-* libc++1-*
+        wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
+        chmod +x /tmp/llvm.sh
+        sudo /tmp/llvm.sh 17
+        sudo apt update && sudo apt install -y cmake doxygen clang-17 libc++abi-17-dev libc++-17-dev llvm-17-dev nasm
+        echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
+        echo "CC=clang-17" >> $GITHUB_ENV
+        echo "CXX=clang++-17" >> $GITHUB_ENV
 
     - name: Prepare common environment
       run: |
@@ -75,93 +70,110 @@ jobs:
         mkdir artifact
 
     - name: Prepare Windows environment
-      if: matrix.os == 'windows-latest'
+      if: matrix.variants.os == 'windows-latest'
       shell: pwsh
       run: |
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
 
     - name: Prepare Linux environment
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.variants.os == 'ubuntu-latest'
       shell: bash
       run: |
-        ln -s ../pwn++ ../pwn--
+        echo ln -s ../pwn++ ../pwn--
 
     - name: Build environment information
       run: env
 
-    - name: Initialize cmake (win32)
-      if: matrix.os == 'windows-latest' && matrix.platform == 'x86'
+    - name: Initialize cmake (Windows/x86)
+      if: matrix.variants.os == 'windows-latest' && matrix.variants.arch == 'x86'
       run: |
         cmake -S . -B ./build -A win32 ${{ env.CMAKE_FLAGS }}
 
-    - name: Initialize cmake (generic)
-      if: matrix.os != 'windows-latest' || matrix.platform != 'x86'
+    - name: Initialize cmake (Windows)
+      if: matrix.variants.os == 'windows-latest' && matrix.variants.arch != 'x86'
       run: |
-        cmake -S . -B ./build -A ${{ matrix.platform }} ${{ env.CMAKE_FLAGS }}
+        cmake -S . -B ./build -A ${{ matrix.variants.arch }} ${{ env.CMAKE_FLAGS }}
+
+    - name: Initialize cmake (Linux)
+      if: matrix.variants.os == 'ubuntu-latest'
+      run: |
+        cmake -S . -B ./build ${{ env.CMAKE_FLAGS }}
 
     - name: Build pwn++ library
       run: |
-        cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ env.CMAKE_CONFIGURATION }}
+        cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.variants.config }}
 
     - name: Run tests
-      if: matrix.build == 'full'
+      if: matrix.variants.build == 'full' && matrix.variants.config == 'Debug'
       continue-on-error: true
       run: |
         cd build
-        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ env.CMAKE_CONFIGURATION }} -T test
+        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ matrix.variants.config }} -T test
         cd ..
 
-    - name: Prepare artifact
+    - name: Populate the successful output (Windows)
+      id: output_success_win
+      if: ${{ matrix.variants.os == 'windows-latest' && success() }}
       run: |
-        cmake --install ./build --config ${{ env.CMAKE_CONFIGURATION }} --prefix ./artifact --verbose
+        echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=✅ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+    - name: Populate the failure output (Windows)
+      id: output_failure_win
+      if: ${{ matrix.variants.os == 'windows-latest' && failure() }}
+      run: |
+        echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=❌ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        return -1
+
+    - name: Populate the successful output (Linux)
+      id: output_success_lin
+      if: ${{ matrix.variants.os == 'ubuntu-latest' && success() }}
+      run: |
+        echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=✅ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' >> ${GITHUB_OUTPUT}
+
+    - name: Populate the failure output (Linux)
+      id: output_failure_lin
+      if: ${{ matrix.variants.os == 'ubuntu-latest' && failure() }}
+      run: |
+        echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=❌ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' >> ${GITHUB_OUTPUT}
+        exit 1
+
+    - name: Install library
+      if: matrix.variants.config == 'RelWithDebInfo'
+      run: |
+        cmake --install ./build --config ${{ matrix.variants.config }} --prefix ./artifact --verbose
 
     - name: Publish artifact
+      if: matrix.variants.config == 'RelWithDebInfo'
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ env.PROJECT_NAME }}_${{ matrix.platform }}_${{ env.GITHUB_REF_SLUG }}_${{ matrix.os }}_${{ env.CMAKE_CONFIGURATION }}_${{ env.GITHUB_SHA_SHORT }}_${{ matrix.build }}
+        name: ${{ env.PROJECT_NAME }}_${{ matrix.variants.arch }}_${{ github.ref_name }}_${{ matrix.variants.os }}_${{ matrix.variants.config }}_${{ github.sha }}_${{ matrix.variants.build }}
         path: artifact/
 
-    - name: Populate the successful output
-      id: output_success
-      if: ${{ success() }}
-      run: |
-        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=✅ ${{ matrix.os }} ➤ ${{ matrix.platform }} ➤ ${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
-    - name: Populate the failure output
-      id: output_failure
-      if: ${{ failure() }}
-      run: |
-        echo '${{ matrix.os }}-${{ matrix.platform }}-${{ matrix.build }}=❌ ${{ matrix.os }} ➤ ${{ matrix.platform }} ➤ ${{ matrix.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
   notify:
-    runs-on: 'ubuntu-22.04'
+    runs-on: 'ubuntu-latest'
     needs: build
     steps:
-    - name: Inject slug/short variables
-      uses: rlespinasse/github-slug-action@v4
-
     - name: Send Discord notification
       env:
-        COMMIT_URL: "https://github.com/${{ env.REPO }}/commit/${{ env.GITHUB_SHA_SHORT }}"
+        COMMIT_URL: "https://github.com/${{ env.REPO }}/commit/${{ github.sha }}"
         RUN_URL: "https://github.com/${{ env.REPO }}/actions/runs/${{ github.run_id }}"
-        BRANCH_URL: "https://github.com/${{ env.REPO }}/tree/${{ env.GITHUB_REF_SLUG }}"
+        BRANCH_URL: "https://github.com/${{ env.REPO }}/tree/${{ github.ref_name }}"
         AUTHOR_URL: "https://github.com/${{ github.actor }}"
       uses: sarisia/actions-status-discord@v1.10.0
       with:
         nodetail: true
-        title: 🚧 🚧 Summary of Build `${{ env.GITHUB_SHA_SHORT }}` for `${{ env.REPO }}` 🚧 🚧
+        title: 🚧 🚧 Summary of Build `${{ github.sha }}` for `${{ env.REPO }}` 🚧 🚧
         description: |
-          [Job #${{ github.run_number }}](${{ env.RUN_URL }}): CI build `${{ env.GITHUB_SHA_SHORT }}` initiated by [${{ github.actor }}](${{ env.AUTHOR_URL }}):
-          ● Commit [${{ env.GITHUB_SHA_SHORT }}](${{ env.COMMIT_URL }})
-          ● Branch [`${{ env.GITHUB_REF_SLUG }}`](${{ env.BRANCH_URL }})
+          [Job #${{ github.run_number }}](${{ env.RUN_URL }}): CI build `${{ github.sha }}` initiated by [${{ github.actor }}](${{ env.AUTHOR_URL }}):
+          ● Commit [${{ github.sha }}](${{ env.COMMIT_URL }})
+          ● Branch [`${{ github.ref_name }}`](${{ env.BRANCH_URL }})
           ● [Detail Page](${{ env.RUN_URL }})
 
-          ${{ needs.build.outputs.windows-latest-x64-lite }}
           ${{ needs.build.outputs.windows-latest-x64-full }}
-          ${{ needs.build.outputs.windows-latest-x86-lite }}
           ${{ needs.build.outputs.windows-latest-x86-full }}
-          ${{ needs.build.outputs.windows-latest-arm64-lite }}
           ${{ needs.build.outputs.windows-latest-arm64-full }}
+          ${{ needs.build.outputs.ubuntu-latest-x64-full }}
+          ${{ needs.build.outputs.ubuntu-latest-x86-full }}
 
         color: 0x0000ff
         username: ${{ github.actor }} via GithubBot

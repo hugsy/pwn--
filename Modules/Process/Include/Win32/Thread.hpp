@@ -10,28 +10,59 @@
 namespace pwn::Process
 {
 
+class Process;
+
 class Thread
 {
 public:
+    ///
+    /// @brief
+    ///
     Thread() = default;
 
-    Thread(u32 Tid, std::shared_ptr<Process> const& Process);
 
-    Thread(Thread const& OldCopy);
+    ///
+    ///@brief Construct a new Thread object from a TID.
+    ///
+    ///@param Tid
+    ///
+    Thread(u32 Tid, u32 Pid = 0);
 
-    Thread&
-    operator=(Thread const& OldCopy);
 
-    bool
-    IsValid() const;
+    ///
+    ///@brief Get the thread ID
+    ///
+    ///@return u32
+    ///
+    u32
+    Id() const
+    {
+        return m_Tid;
+    }
+
 
     ///
     /// @brief Get the thread Id
     ///
     /// @return u32 const
     ///
-    u32 const
-    ThreadId() const;
+    u32
+    ThreadId() const
+    {
+        return Id();
+    }
+
+    ///
+    ///@brief
+    ///
+    ///@return true
+    ///@return false
+    ///
+    bool
+    IsRemote() const
+    {
+        return ::GetCurrentProcessId() != m_Pid;
+    }
 
 
     ///
@@ -42,6 +73,7 @@ public:
     Result<std::wstring>
     Name();
 
+
     ///
     /// @brief Set the thread name
     ///
@@ -50,7 +82,7 @@ public:
     /// @return false
     ///
     Result<bool>
-    Name(std::wstring const& NewName);
+    Name(std::wstring_view NewName);
 
     ///
     /// @brief Update the thread handle with new access
@@ -62,19 +94,13 @@ public:
     Result<bool>
     ReOpenThreadWith(DWORD DesiredAccess);
 
-    SharedHandle const&
+
+    HANDLE const
     Handle() const
     {
-        return m_ThreadHandle;
+        return m_ThreadHandle.get();
     }
 
-    ///
-    /// @brief
-    ///
-    /// @return Result<Thread>
-    ///
-    static Result<Thread>
-    Current();
 
     ///
     /// @brief Query thread information
@@ -84,22 +110,20 @@ public:
     /// @return Result<std::shared_ptr<T>>
     ///
     template<class T>
-    Result<std::shared_ptr<T>>
+    Result<std::unique_ptr<T>>
     Query(THREADINFOCLASS ThreadInformationClass)
     {
         auto res = QueryInternal(ThreadInformationClass, sizeof(T));
         if ( Failed(res) )
         {
-            return Err(Error(res).code);
+            return Error(res);
         }
 
-        const auto p = reinterpret_cast<T*>(Value(res));
-        auto deleter = [](T* x)
-        {
-            ::LocalFree(x);
-        };
-        return Ok(std::shared_ptr<T>(p, deleter));
+        auto RawResult = Value(std::move(res));
+        std::unique_ptr<T> TypedResult {(T*)RawResult.release()};
+        return Ok(std::move(TypedResult));
     }
+
 
     ///
     ///@brief
@@ -109,7 +133,16 @@ public:
     PTEB
     ThreadInformationBlock();
 
-    Security::Token Token;
+    // Security::Token Token;
+
+
+    ///
+    /// @brief
+    ///
+    /// @return Result<Thread>
+    ///
+    static Thread
+    Current();
 
 private:
     ///
@@ -119,19 +152,18 @@ private:
     ///
     /// @return Result<PVOID>
     ///
-    Result<PVOID>
+    Result<std::unique_ptr<u8[]>>
     QueryInternal(const THREADINFOCLASS, const usize);
 
-    u32 m_Tid                          = 0;
-    bool m_Valid                       = false;
-    bool m_IsSelf                      = false;
-    PTEB m_Teb                         = nullptr;
-    std::optional<std::wstring> m_Name = std::nullopt;
-    std::shared_ptr<Process> m_Process = nullptr;
-    SharedHandle m_ProcessHandle       = nullptr;
-    SharedHandle m_ThreadHandle        = nullptr;
-    u32 m_ThreadHandleAccessMask       = 0;
+
+    u32 m_Tid {0};
+    u32 m_Pid {0};
+    PTEB m_Teb {nullptr};
+    UniqueHandle m_ThreadHandle {nullptr};
+    u32 m_ThreadHandleAccessMask {0};
 };
 
+using ThreadGroup = IndexedVector<Thread>;
 
-} // namespace Process
+
+} // namespace pwn::Process

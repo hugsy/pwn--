@@ -12,23 +12,25 @@ if(WIN32)
         ${SOURCE_DIR}/Win32/Remote.cpp
         ${SOURCE_DIR}/Win32/Process.cpp
     )
-    set(DEPS PWN::Network PWN::Process)
+    set(DEPS PWN::Common PWN::Network PWN::Process)
 else()
     set(SOURCE_FILES
         ${SOURCE_DIR}/Linux/Remote.cpp
+        ${SOURCE_DIR}/Linux/Process.cpp
     )
-    set(DEPS PWN::Network)
+    set(DEPS PWN::Common PWN::Network)
 endif()
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
-add_dependencies(${PROJECT_NAME} PWN::Common ${DEPS})
+add_dependencies(${PROJECT_NAME} ${DEPS})
 add_library(PWN::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC)
-target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common ${DEPS})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${DEPS})
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 
 if(PWN_BUILD_TESTING)
+    include(CTest)
     add_subdirectory(Tests)
 endif(PWN_BUILD_TESTING)

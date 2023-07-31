@@ -115,13 +115,14 @@ static constexpr CMap<std::string_view, Architecture, 3> Architectures {
 ///@tparam
 ///
 template<>
-struct PwnFormatter<Endianess, char> : PwnFormatter<std::string, char>
+struct std::formatter<Endianess, char> : std::formatter<std::string, char>
 {
+    template<typename FormatContext>
     auto
-    format(Endianess a, PwnFormatContext& ctx)
+    format(Endianess a, FormatContext& ctx)
     {
         const char* e = (a == Endianess::little) ? "LITTLE" : (a == Endianess::big) ? "BIG" : "UNKNOWN";
-        return PwnFormatter<std::string, char>::format(PwnFormat("{}", e), ctx);
+        return std::formatter<std::string, char>::format(std::string(e), ctx);
     }
 };
 
@@ -132,21 +133,12 @@ struct PwnFormatter<Endianess, char> : PwnFormatter<std::string, char>
 ///@tparam
 ///
 template<>
-struct PwnFormatter<Architecture, char> : PwnFormatter<std::string, char>
+struct std::formatter<Architecture, char> : std::formatter<std::string, char>
 {
+    template<typename FormatContext>
     auto
-    format(Architecture a, PwnFormatContext& ctx)
+    format(const Architecture& a, FormatContext& ctx) const
     {
-        std::string arch_name;
-        arch_name.resize(a.name.size());
-        std::transform(
-            a.name.cbegin(),
-            a.name.cend(),
-            arch_name.begin(),
-            [](unsigned char c)
-            {
-                return std::toupper(c);
-            });
-        return PwnFormatter<std::string, char>::format(PwnFormat("{}_{}_ENDIAN", arch_name, a.endian), ctx);
+        return std::formatter<std::string, char>::format(std::string(a.name), ctx);
     }
 };

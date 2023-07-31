@@ -1,12 +1,18 @@
 #pragma once
 
-#include "common.hpp"
-
-#include <string>
 #include <optional>
+#include <string>
+
+#include "Common.hpp"
 
 
-namespace pwn::linux::system
+namespace pwn::Linux::System
 {
-	PWNAPI auto pagesize() -> u32;
-}
+///
+///@brief Return the system page size
+///
+///@return u32
+///
+PWNAPI u32
+PageSize();
+} // namespace pwn::Linux::System

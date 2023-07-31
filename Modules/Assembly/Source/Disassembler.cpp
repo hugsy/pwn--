@@ -183,12 +183,12 @@ Disassembler::DisassembleAll(std::vector<u8> const& Bytes)
         if ( Failed(res) )
         {
             auto e = Error(res);
-            if ( e.code == ErrorCode::NoMoreData )
+            if ( e.Code == ErrorCode::NoMoreData )
             {
                 break;
             }
 
-            return Err(e.code);
+            return Err(e.Code);
         }
 
         auto insn = Value(res);

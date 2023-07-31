@@ -9,10 +9,8 @@ using namespace pwn;
 
 TEST_CASE("Native PE file parser", "[" NS "]")
 {
-    auto res = Binary::PE::Parse(L"c:\\windows\\system32\\kernel32.dll");
-    REQUIRE(Success(res));
-    const auto& pe = Value(res);
-    REQUIRE(pe.IsValid());
+    auto pe = Binary::PE(L"c:\\windows\\system32\\kernel32.dll");
+
 
     SECTION("Basic checks")
     {
@@ -116,10 +114,7 @@ TEST_CASE("Native PE file parser", "[" NS "]")
 
 TEST_CASE(".NET PE parse", "[" NS "]")
 {
-    auto res = Binary::PE::Parse(L"C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App\\7.0.5\\mscorlib.dll");
-    REQUIRE(Success(res));
-    const auto& pe = Value(res);
-    REQUIRE(pe.IsValid());
+    auto pe = Binary::PE(L"C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\mscorlib.dll");
 
     SECTION("COM parsing")
     {
@@ -129,13 +124,7 @@ TEST_CASE(".NET PE parse", "[" NS "]")
 
 TEST_CASE("PE parse LCD", "[" NS "]")
 {
-    const auto pe = []()
-    {
-        auto res = Binary::PE::Parse(L"C:\\windows\\system32\\ntdll.dll");
-        REQUIRE(Success(res));
-        return std::move(Value(res));
-    }();
-    REQUIRE(pe.IsValid());
+    const auto pe = Binary::PE(L"C:\\windows\\system32\\ntdll.dll");
 
     SECTION("LCD parsing")
     {
@@ -3626,11 +3615,15 @@ TEST_CASE("PE battery test", "[" NS "]")
     for ( const auto& DllPath : NativeDlls )
     {
         if ( !std::filesystem::exists(DllPath) )
+        {
             continue;
+        }
         if ( !max-- )
+        {
             break;
+        }
+
         INFO("Testing PE " << DllPath);
-        auto res = Binary::PE::Parse(DllPath);
-        REQUIRE(Success(res));
+        REQUIRE_NOTHROW(Binary::PE(DllPath));
     }
 }

@@ -16,14 +16,15 @@ else()
 endif()
 
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
-add_dependencies(${PROJECT_NAME} PWN::Common)
+add_dependencies(${PROJECT_NAME} PWN::Common PWN::System)
 add_library(PWN::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
-target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
+target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} ../System/Include PRIVATE ${HEADER_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC)
 target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common)
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 
 if(PWN_BUILD_TESTING)
+    include(CTest)
     add_subdirectory(Tests)
 endif(PWN_BUILD_TESTING)

@@ -17,7 +17,7 @@ public:
     std::jthread m_backdoor_thread;
     std::vector<std::shared_ptr<Backdoor::ThreadConfig>> m_backdoor_clients;
 #endif
-    u64 m_seed;
+    u64 CryptoSeed;
     std::mutex m_ConsoleMutex;
     std::mutex m_ConfigMutex;
     Log::LogLevel LogLevel = Log::LogLevel::Info;

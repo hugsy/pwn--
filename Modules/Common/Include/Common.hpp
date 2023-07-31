@@ -72,6 +72,10 @@
 #define UnusedParameter UNREFERENCED_PARAMETER
 #endif // UnusedParameter
 
+#ifndef UnusedResult
+#define UnusedResult UNREFERENCED_PARAMETER
+#endif // UnusedParameter
+
 #ifndef PWN_DEPRECATED
 #define PWN_DEPRECATED __declspec(deprecated)
 #endif
@@ -116,6 +120,24 @@ using uptr  = std::uintptr_t;
 
 using namespace std::literals::string_view_literals;
 using namespace std::literals::chrono_literals;
+
+#ifdef PWN_BUILD_FOR_WINDOWS
+constexpr std::string
+constexpr_concat() noexcept
+{
+    return std::string("");
+}
+
+
+template<typename... Args>
+constexpr std::string
+constexpr_concat(std::string const& arg, Args... args)
+{
+    std::string rest = constexpr_concat(args...);
+    return arg + rest;
+}
+#endif // PWN_BUILT_FOR_WINDOWS
+
 
 ///
 /// @brief A constexpr map
@@ -242,6 +264,30 @@ public:
         return size_;
     }
 
+    constexpr T*
+    begin() const noexcept
+    {
+        return mem_;
+    }
+
+    constexpr T*
+    end() const noexcept
+    {
+        return mem_ + size_;
+    }
+
+    constexpr const T*
+    cbegin() const noexcept
+    {
+        return mem_;
+    }
+
+    constexpr const T*
+    cend() const noexcept
+    {
+        return mem_ + size_;
+    }
+
 private:
     T* mem_ {nullptr};
     size_t size_ {0};
@@ -349,4 +395,55 @@ SumSizeOfFlattenable(T arg, Args... args)
     }
 
     return sz;
+}
+
+
+///
+///@brief An `Indexable` concept indicates the type must have a u32 `Id` member function
+///
+///@tparam T
+///
+// clang-format off
+template<typename T>
+concept Indexable = requires(T t)
+{
+    // {t.Id } -> std::same_as<u32 const&>;
+    { t.Id() }-> std::same_as<u32>;
+};
+// clang-format on
+
+
+///
+///@brief An `IndexedVector` is a vector of `Indexable` types. This allows to override `[]` to the `Id` attribute of the
+/// type.
+///
+///@tparam T
+///
+template<Indexable T>
+class IndexedVector : public std::vector<T>
+{
+public:
+    T&
+    operator[](int Id);
+};
+
+
+///
+///@brief
+///
+///@tparam T
+///@param Id
+///@return T&
+///
+template<Indexable T>
+T&
+IndexedVector<T>::operator[](int Id)
+{
+    return std::find_if(
+        this->cbegin(),
+        this->cend(),
+        [&Id](T const& t)
+        {
+            return t.Id() == Id;
+        });
 }

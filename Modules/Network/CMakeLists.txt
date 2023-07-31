@@ -34,5 +34,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common ${LIBS})
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 
 if(PWN_BUILD_TESTING)
+    include(CTest)
     add_subdirectory(Tests)
 endif(PWN_BUILD_TESTING)

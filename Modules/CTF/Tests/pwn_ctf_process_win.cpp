@@ -39,5 +39,7 @@ TEST_CASE("CTF tests - Local", "[" NS "]")
             CHECK(output.size() == 11);
             CHECK(output.find("hello pwn") != std::string::npos);
         }
+
+        p.Object().Kill();
     }
 }

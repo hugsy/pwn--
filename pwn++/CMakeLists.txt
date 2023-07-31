@@ -16,9 +16,8 @@ set(INTERFACE_DIR ${PROJECT_SOURCE_DIR}/Include)
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
 set(HEADER_DIR ${SOURCE_DIR}/Include)
 
-if(BUILD_SHARED_LIBS)
+if(PWN_BUILD_SHARED_LIBS)
     add_library(${PROJECT_NAME} SHARED)
-    set(PWN_BUILD_SHARED_LIB TRUE)
 else()
     add_library(${PROJECT_NAME} STATIC)
 endif()
@@ -41,13 +40,12 @@ if(WIN32)
     )
 
 else()
-    set(MODULE_NAMESPACES PWN::Common PWN::System)
     target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_DIR}/Linux/dllmain.cpp)
 
     target_link_libraries(
         ${PROJECT_NAME}
 
-        PRIVATE
+        LINK_PUBLIC
         pthread
         dl
     )

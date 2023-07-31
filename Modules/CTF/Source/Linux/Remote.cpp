@@ -1,8 +1,6 @@
-#include "linux/ctf/remote.hpp"
+#include "CTF/Linux/Remote.hpp"
 
 #include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 
 #include <algorithm>
 #include <functional>
@@ -14,60 +12,103 @@
 #include <thread>
 #include <utility>
 
-#include "handle.hpp"
-#include "log.hpp"
-#include "tube.hpp"
-#include "utils.hpp"
+namespace pwn
+{
 
+extern struct GlobalContext Context;
 
-///
-/// Remote
-///
-pwn::linux::ctf::Remote::Remote(_In_ std::wstring const& host, _In_ u16 port) :
+CTF::Remote::Remote(std::wstring_view const& host, const u16 port) :
     m_Host(host),
     m_Port(port),
     m_Protocol(L"tcp"),
     m_Socket(-1)
 {
-    if ( !connect() )
+    if ( !InitializeSocket() || Failed(Connect()) )
     {
         throw std::runtime_error("connection to host failed");
     }
 }
 
-pwn::linux::ctf::Remote::~Remote()
+CTF::Remote::~Remote()
 {
-    disconnect();
+    Disconnect();
 }
 
 
-auto
-pwn::linux::ctf::Remote::__send_internal(_In_ std::vector<u8> const& out) -> size_t
+Result<bool>
+CTF::Remote::Connect()
 {
-    auto res = ::send(m_Socket, reinterpret_cast<const char*>(&out[0]), out.size() & 0xffff, 0);
+    sockaddr_in sin = {0};
+    sin.sin_family  = AF_INET;
+    sin.sin_port    = ::htons(m_Port);
+    auto host       = Utils::StringLib::To<std::string>(m_Host);
+
+    ::inet_pton(AF_INET, host.c_str(), &sin.sin_addr.s_addr);
+
+    if ( ::connect(m_Socket, (struct sockaddr*)&sin, sizeof(sin)) < 0 )
+    {
+        ::perror("connect()");
+        Disconnect();
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    dbg("connected to {}:{}", host, m_Port);
+    return Ok(true);
+}
+
+
+Result<bool>
+CTF::Remote::Disconnect()
+{
+    auto res = true;
+
+    if ( ::close(m_Socket) < 0 )
+    {
+        ::perror("closesocket()");
+        res = false;
+    }
+
+    dbg(L"session to {}:{} closed", m_Host.c_str(), m_Port);
+
+    return Ok(res);
+}
+
+
+Result<bool>
+CTF::Remote::Reconnect()
+{
+    return Success(Disconnect()) && Success(Connect());
+}
+
+
+Result<usize>
+CTF::Remote::send_internal(_In_ std::vector<u8> const& out)
+{
+    const bool is_debug = true; // std::get<0>(Context::get_log_level()) == Log::LogLevel::Debug
+    auto res            = ::send(m_Socket, reinterpret_cast<const char*>(&out[0]), out.size() & 0xffff, 0);
     if ( res < 0 )
     {
-        err(L"send() function: %#x\n", errno);
-        disconnect();
-        return 0;
+        ::perror("send()");
+        Disconnect();
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    dbg(L"sent %d bytes\n", out.size());
-    if ( std::get<0>(pwn::context::get_log_level()) == pwn::log::LogLevel::Debug )
+    dbg(L"sent {} bytes", out.size());
+    if ( is_debug )
     {
-        pwn::utils::hexdump(out);
+        Utils::Hexdump(out);
     }
 
-    return out.size();
+    return Ok(out.size());
 }
 
 
-auto
-pwn::linux::ctf::Remote::__recv_internal(_In_ size_t size = Tube::PIPE_DEFAULT_SIZE) -> std::vector<u8>
+Result<std::vector<u8>>
+CTF::Remote::recv_internal(_In_ usize size = Net::Tube::PIPE_DEFAULT_SIZE)
 {
     std::vector<u8> cache_data;
     size_t idx    = 0;
-    bool is_debug = (std::get<0>(pwn::context::get_log_level()) == pwn::log::LogLevel::Debug);
+    bool is_debug = true; // (std::get<0>(pwn::context::get_log_level()) == Log::LogLevel::Debug);
 
     size = MIN(size, Tube::PIPE_DEFAULT_SIZE);
 
@@ -82,12 +123,12 @@ pwn::linux::ctf::Remote::__recv_internal(_In_ size_t size = Tube::PIPE_DEFAULT_S
         // check if the buffer is already full with data from cache
         if ( cache_data.size() >= size )
         {
-            dbg(L"recv2 %d bytes\n", cache_data.size());
+            dbg("recv2 {} bytes", cache_data.size());
             if ( is_debug )
             {
-                pwn::utils::hexdump(cache_data);
+                Utils::Hexdump(cache_data);
             }
-            return cache_data;
+            return Ok(std::move(cache_data));
         }
 
         // otherwise, read from network
@@ -101,7 +142,7 @@ pwn::linux::ctf::Remote::__recv_internal(_In_ size_t size = Tube::PIPE_DEFAULT_S
     auto res = ::recv(m_Socket, reinterpret_cast<char*>(&network_data[idx]), (u32)size, 0);
     if ( res < 0 )
     {
-        err(L"recv() function: %#x\n", errno);
+        ::perror("recv()");
         throw std::runtime_error("::recv() failed");
     }
     else
@@ -110,39 +151,39 @@ pwn::linux::ctf::Remote::__recv_internal(_In_ size_t size = Tube::PIPE_DEFAULT_S
         if ( sz )
         {
             network_data.resize(sz);
-            dbg(L"recv %d bytes\n", sz);
+            dbg("recv {} bytes\n", sz);
             if ( is_debug )
             {
-                pwn::utils::hexdump(&network_data[0], sz);
+                Utils::Hexdump(&network_data[0], sz);
             }
         }
     }
-    return network_data;
+    return Ok(std::move(network_data));
 }
 
 
-auto
-pwn::linux::ctf::Remote::__peek_internal() -> size_t
+Result<usize>
+CTF::Remote::peek_internal()
 {
     auto buf = std::make_unique<u8[]>(Tube::PIPE_DEFAULT_SIZE);
-    auto res = ::recv(m_Socket, reinterpret_cast<char*>(buf.get()), Tube::PIPE_DEFAULT_SIZE, MSG_PEEK);
+    int res  = ::recv(m_Socket, reinterpret_cast<char*>(buf.get()), Tube::PIPE_DEFAULT_SIZE, MSG_PEEK);
     if ( res < 0 )
     {
-        perror("recv()");
+        ::perror("recv()");
         throw std::runtime_error("::peek() failed");
     }
 
-    return res;
+    return Ok(static_cast<usize>(res));
 }
 
 
-auto
-pwn::linux::ctf::Remote::init() -> bool
+bool
+CTF::Remote::InitializeSocket()
 {
     if ( m_Protocol == L"tcp" )
     {
         m_Socket = ::socket(AF_INET, SOCK_STREAM, 0);
-        // TODO: supporter d'autres proto
+        // TODO: add more protocols
     }
     else
     {
@@ -151,8 +192,7 @@ pwn::linux::ctf::Remote::init() -> bool
 
     if ( m_Socket < 0 )
     {
-        err(L"socket() function: %#x\n", errno);
-        cleanup();
+        ::perror("socket()");
         return false;
     }
 
@@ -160,127 +200,4 @@ pwn::linux::ctf::Remote::init() -> bool
 }
 
 
-auto
-pwn::linux::ctf::Remote::connect() -> bool
-{
-    if ( !init() )
-    {
-        return false;
-    }
-
-    sockaddr_in sin = {0};
-    sin.sin_family  = AF_INET;
-    sin.sin_port    = htons(m_Port);
-    inet_pton(AF_INET, pwn::utils::to_string(m_Host).c_str(), &sin.sin_addr.s_addr);
-
-    if ( ::connect(m_Socket, (struct sockaddr*)&sin, sizeof(sin)) < 0 )
-    {
-        err(L"connect() function failed with error: %#x\n", errno);
-        disconnect();
-        cleanup();
-        return false;
-    }
-
-    dbg(L"connected to %s:%d\n", m_Host.c_str(), m_Port);
-    return true;
-}
-
-
-auto
-pwn::linux::ctf::Remote::disconnect() -> bool
-{
-    auto res = true;
-
-    if ( ::close(m_Socket) < 0 )
-    {
-        err(L"closesocket() function failed with error: %#x\n", errno);
-        res = false;
-    }
-
-    cleanup();
-    dbg(L"session to %s:%d closed\n", m_Host.c_str(), m_Port);
-    return res;
-}
-
-
-auto
-pwn::linux::ctf::Remote::cleanup() -> bool
-{
-    return true;
-}
-
-
-auto
-pwn::linux::ctf::Remote::reconnect() -> bool
-{
-    return disconnect() && connect();
-}
-
-
-///
-/// Process
-///
-auto
-pwn::linux::ctf::Process::__send_internal(_In_ std::vector<u8> const& out) -> size_t
-{
-    auto bSuccess = false;
-    u32 dwRead    = 0;
-    // TODO
-    // bSuccess = ::WriteFile(m_ChildPipeStdin, &out[0], out.size() & 0xffffffff, &dwRead, nullptr);
-    if ( !bSuccess )
-    {
-        perror("write()");
-    }
-
-    return 0;
-}
-
-
-auto
-pwn::linux::ctf::Process::__recv_internal(_In_ size_t size) -> std::vector<u8>
-{
-    auto bSuccess = false;
-    u32 dwRead;
-    std::vector<u8> out;
-
-    size = MIN(size, Tube::PIPE_DEFAULT_SIZE) & 0xffffffff;
-    out.resize(size);
-
-    // TODO
-    // auto bSuccess = ::ReadFile(m_ChildPipeStdout, &out[0], size & 0xffffffff, &dwRead, nullptr);
-    if ( !bSuccess )
-    {
-        perror("ReadFile()");
-    }
-
-    return out;
-}
-
-
-auto
-pwn::linux::ctf::Process::__peek_internal() -> size_t
-{
-    throw std::runtime_error("not implemented");
-}
-
-
-auto
-pwn::linux::ctf::Process::create_pipes() -> bool
-{
-    return false;
-}
-
-
-auto
-pwn::linux::ctf::Process::spawn_process() -> bool
-{
-    if ( !create_pipes() )
-    {
-        err(L"failed to create pipes\n");
-        return false;
-    }
-
-    // TODO
-    throw std::runtime_error("not implemented");
-    return false;
-}
+} // namespace pwn

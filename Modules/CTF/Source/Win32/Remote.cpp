@@ -79,7 +79,7 @@ CTF::Remote::send_internal(_In_ std::vector<u8> const& out)
     dbg(L"sent {} bytes", out.size());
     if ( Context.LogLevel == Log::LogLevel::Debug )
     {
-        Utils::hexdump(out);
+        Utils::Hexdump(out);
     }
 
     return Ok((usize)out.size());
@@ -117,7 +117,7 @@ CTF::Remote::recv_internal(_In_ usize size = Net::Tube::PIPE_DEFAULT_SIZE)
             dbg(L"recv2 {} bytes\n", cache_data.size());
             if ( Context.LogLevel == Log::LogLevel::Debug )
             {
-                Utils::hexdump(cache_data);
+                Utils::Hexdump(cache_data);
             }
             return Ok(cache_data);
         }
@@ -154,7 +154,7 @@ CTF::Remote::recv_internal(_In_ usize size = Net::Tube::PIPE_DEFAULT_SIZE)
         dbg(L"recv {} bytes", sz);
         if ( Context.LogLevel == Log::LogLevel::Debug )
         {
-            Utils::hexdump(network_data);
+            Utils::Hexdump(network_data);
         }
     }
 
@@ -228,8 +228,8 @@ CTF::Remote::Connect() -> Result<bool>
     //
     sockaddr_in sin = {0};
     sin.sin_family  = AF_INET;
-    inet_pton(AF_INET, Utils::StringLib::To<std::string>(m_Host).c_str(), &sin.sin_addr.s_addr);
-    sin.sin_port = htons(m_Port);
+    ::inet_pton(AF_INET, Utils::StringLib::To<std::string>(m_Host).c_str(), &sin.sin_addr.s_addr);
+    sin.sin_port = ::htons(m_Port);
 
     if ( ::connect(m_Socket, (SOCKADDR*)&sin, sizeof(sin)) == SOCKET_ERROR )
     {

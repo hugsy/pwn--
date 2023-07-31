@@ -1,6 +1,6 @@
 #include <catch.hpp>
 
-#include "Registry.hpp"
+#include "Win32/Registry.hpp"
 #define NS "pwn::Registry"
 
 using namespace pwn;
@@ -24,7 +24,7 @@ TEST_CASE("Windows::Registry - Read Value", "[" NS "]")
                 L"RunAsPplButDontReallyExist");
 
             REQUIRE(Failed(res));
-            CHECK(Error(res).code == ErrorCode::ExternalApiCallFailed);
+            CHECK(Error(res).Code == ErrorCode::ExternalApiCallFailed);
         }
 
         // Bad value
@@ -35,7 +35,7 @@ TEST_CASE("Windows::Registry - Read Value", "[" NS "]")
                 L"RunAsPplButDontReallyExist");
 
             REQUIRE(Failed(res));
-            CHECK(Error(res).code == ErrorCode::NotFound);
+            CHECK(Error(res).Code == ErrorCode::NotFound);
         }
     }
 

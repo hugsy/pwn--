@@ -11,7 +11,11 @@ namespace pwn::Binary
 
 PE::PE(uptr Offset, usize Size)
 {
-    m_IsValid = ParsePeFromMemory(std::span<u8> {(u8*)Offset, Size});
+    auto SpanView = std::span<u8> {(u8*)Offset, Size};
+    if ( !ParsePeFromMemory(SpanView) )
+    {
+        throw std::runtime_error("PE initialization failed");
+    }
 }
 
 
@@ -20,20 +24,19 @@ PE::PE(std::filesystem::path const& Path)
     auto hFile = ValueOr(FileSystem::File::Open(Path.wstring(), L"r"), INVALID_HANDLE_VALUE);
     if ( hFile == INVALID_HANDLE_VALUE )
     {
-        return;
+        throw std::runtime_error("PE initialization failed");
     }
 
     auto PeFile     = FileSystem::File(std::move(hFile));
     const auto Size = ValueOr(PeFile.Size(), (usize)0);
-    const auto hMap = FileSystem::FileMapViewHandle {Value(PeFile.Map(PAGE_READONLY))};
-    auto View       = PeFile.View(hMap.get(), FILE_MAP_READ, 0, Size);
-    if ( Failed(View) )
-    {
-        return;
-    }
+    const auto hMap = Value(PeFile.Map(PAGE_READONLY));
+    auto View       = Value(PeFile.View(hMap.get(), FILE_MAP_READ, 0, Size));
 
-    auto SpanView = std::span<u8> {(u8*)Value(View), Size};
-    m_IsValid     = ParsePeFromMemory(SpanView);
+    auto SpanView = std::span<u8> {(u8*)View.get(), Size};
+    if ( !ParsePeFromMemory(SpanView) )
+    {
+        throw std::runtime_error("PE initialization failed");
+    }
 }
 
 
