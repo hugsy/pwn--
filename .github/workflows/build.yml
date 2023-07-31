@@ -146,7 +146,7 @@ jobs:
       if: matrix.variants.config == 'RelWithDebInfo'
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ env.PROJECT_NAME }}_${{ matrix.variants.arch }}_${{ github.ref_name }}_${{ matrix.variants.os }}_${{ matrix.variants.config }}_${{ github.sha }}_${{ matrix.variants.build }}
+        name: ${{ env.PROJECT_NAME }}_${{ matrix.variants.arch }}_${{ matrix.variants.os }}_${{ matrix.variants.config }}_${{ github.sha }}_${{ matrix.variants.build }}
         path: artifact/
 
   notify:
