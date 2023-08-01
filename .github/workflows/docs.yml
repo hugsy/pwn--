@@ -33,7 +33,7 @@ jobs:
           submodules: true
       - name: Install packages
         run: |
-          sudo apt update && sudo apt install -y doxygen cmake
+          sudo apt update && sudo apt install -y doxygen cmake nasm
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Generate API
