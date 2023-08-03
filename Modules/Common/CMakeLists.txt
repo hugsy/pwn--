@@ -71,6 +71,14 @@ if(WIN32)
 
 else()
     target_compile_definitions(${PROJECT_NAME} PUBLIC PWN_BUILD_FOR_LINUX)
+
+    target_compile_options(${PROJECT_NAME}
+        PUBLIC
+        $<$<COMPILE_LANGUAGE:CXX>:
+        $<$<CONFIG:Debug>:-fsanitize=address>
+        >
+        PRIVATE
+    )
 endif(WIN32)
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
