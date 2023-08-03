@@ -72,7 +72,7 @@ ParentProcessId(const u32 dwProcessId) -> Result<u32>
 
 
 auto
-PidOf(std::wstring_view const& ProcessName) -> Result<std::vector<u32>>
+PidOf(std::wstring_view const ProcessName) -> Result<std::vector<u32>>
 {
     auto hProcessSnap = UniqueHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
     if ( !hProcessSnap )
@@ -81,7 +81,7 @@ PidOf(std::wstring_view const& ProcessName) -> Result<std::vector<u32>>
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    std::vector<u32> pids;
+    std::vector<u32> pids {};
 
     PROCESSENTRY32W pe32 = {0};
     pe32.dwSize          = sizeof(PROCESSENTRY32W);
