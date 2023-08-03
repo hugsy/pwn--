@@ -29,6 +29,11 @@ CTF::Remote::Remote(std::wstring_view const& host, const u16 port) :
     }
 }
 
+CTF::Remote::Remote(std::string_view const& host, const u16 port) :
+    CTF::Remote::Remote(Utils::StringLib::To<std::wstring>(std::string(host)), port)
+{
+}
+
 CTF::Remote::~Remote()
 {
     Disconnect();
@@ -48,7 +53,6 @@ CTF::Remote::Connect()
     if ( ::connect(m_Socket, (struct sockaddr*)&sin, sizeof(sin)) < 0 )
     {
         ::perror("connect()");
-        Disconnect();
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
@@ -62,14 +66,16 @@ CTF::Remote::Disconnect()
 {
     auto res = true;
 
+    info(L"Closing socket {}", m_Socket);
+
     if ( ::close(m_Socket) < 0 )
     {
         ::perror("closesocket()");
-        res = false;
+        return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    dbg(L"session to {}:{} closed", m_Host.c_str(), m_Port);
-
+    m_Socket = 0;
+    info(L"Session to {}:{} closed", m_Host.c_str(), m_Port);
     return Ok(res);
 }
 
@@ -89,7 +95,6 @@ CTF::Remote::send_internal(_In_ std::vector<u8> const& out)
     if ( res < 0 )
     {
         ::perror("send()");
-        Disconnect();
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 

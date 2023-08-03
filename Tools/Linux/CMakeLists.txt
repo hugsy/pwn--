@@ -17,6 +17,12 @@ foreach(TOOL_DIR ${LINUX_TOOLS})
     target_compile_features(${TOOL_DIR} PUBLIC cxx_std_20)
     set_target_properties(${TOOL_DIR} PROPERTIES CXX_STANDARD 20)
 
+    target_compile_definitions(${TOOL_DIR} PUBLIC PWN_BUILD_FOR_LINUX)
+    target_compile_options(${TOOL_DIR}
+        PUBLIC
+        $<$<CONFIG:Debug>:-fsanitize=address>
+    )
+
     target_compile_options(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_OPTIONS>)
     target_compile_definitions(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_COMPILE_DEFINITIONS>)
     target_include_directories(${TOOL_DIR} PRIVATE $<TARGET_PROPERTY:${CMAKE_PROJECT_NAME},INTERFACE_INCLUDE_DIRECTORIES> ${PWNLIB_ROOT_DIR}/Deps/argparse)

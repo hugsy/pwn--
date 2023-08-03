@@ -21,6 +21,7 @@ class Remote : public Net::Tube
 {
 public:
     Remote(std::wstring_view const& host, const u16 port);
+    Remote(std::string_view const& host, const u16 port);
 
     ~Remote();
 
