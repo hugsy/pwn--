@@ -7,153 +7,147 @@
 
 TEST_CASE("Process Local", "[" NS "]")
 {
-    // SECTION("Local process - basic")
-    // {
-    //     auto res = Process::Process::Current();
-    //     REQUIRE(Success(res));
+    SECTION("Local process - basic")
+    {
+        REQUIRE_NOTHROW(Process::Current());
 
-    //     Process::Process Local = Value(res);
-    //     REQUIRE(Local.IsValid() == true);
-    //     REQUIRE(Local.Handle() != nullptr);
-    //     CHECK(Local.ProcessId() == ::GetCurrentProcessId());
-    //     CHECK(Local.ProcessEnvironmentBlock() == (PPEB)::NtCurrentTeb()->ProcessEnvironmentBlock);
-    //     CHECK(((uptr)Local.ProcessEnvironmentBlock() & 0xfff) == 0);
-    // }
+        Process::Process CurrentProcess = Process::Current();
+        REQUIRE(CurrentProcess.Handle() != nullptr);
+        REQUIRE(CurrentProcess.Handle() != INVALID_HANDLE_VALUE);
+        CHECK(CurrentProcess.ProcessId() == ::GetCurrentProcessId());
+        CHECK(CurrentProcess.ProcessEnvironmentBlock() == (PPEB)::NtCurrentTeb()->ProcessEnvironmentBlock);
+        CHECK(((uptr)CurrentProcess.ProcessEnvironmentBlock() & 0xfff) == 0);
+    }
 
-    // SECTION("Process threads")
-    // {
-    //     auto CurrentProcess = Value(Process::Process::Current());
-    //     REQUIRE(CurrentProcess.IsValid() == true);
+    SECTION("Process threads")
+    {
+        //
+        // Basic Windows thread test - see `pwn_win_thread.cpp` for specific testing
+        //
+        Process::Process CurrentProcess = Process::Current();
 
-    //     auto res = CurrentProcess.Threads();
-    //     REQUIRE(res.size() > 0);
+        {
+            auto threads = CurrentProcess.Threads();
+            REQUIRE(threads.size() > 0);
+        }
 
-    //     auto res2 = CurrentProcess.Thread(::GetCurrentThreadId());
-    //     REQUIRE(Success(res2));
-    //     const auto CurThread = Value(std::move(res2));
-    //     REQUIRE(CurThread.IsValid());
-    // }
+        {
+            auto res       = CurrentProcess.Thread(::GetCurrentThreadId());
+            auto CurThread = Value(std::move(res));
+            REQUIRE(CurThread.Id() == ::GetCurrentThreadId());
+            REQUIRE(CurThread.Handle() != nullptr);
+            REQUIRE(CurThread.Handle() != INVALID_HANDLE_VALUE);
+            REQUIRE(CurThread.IsRemote() == false);
 
-    // SECTION("Process queries")
-    // {
-    //     auto CurrentProcess = Value(Process::Process::Current());
-    //     REQUIRE(CurrentProcess.IsValid() == true);
+            auto teb = CurThread.ThreadInformationBlock();
+            REQUIRE(teb != nullptr);
+            REQUIRE(::HandleToULong(teb->ClientId.UniqueProcess) == ::GetCurrentProcessId());
+            REQUIRE(::HandleToULong(teb->ClientId.UniqueThread) == ::GetCurrentThreadId());
+        }
+    }
 
-    //     auto res = CurrentProcess.Query<PROCESS_BASIC_INFORMATION>(ProcessBasicInformation);
-    //     REQUIRE(Success(res));
-    //     auto const pInfo = Value(res);
-    //     CHECK(pInfo->PebBaseAddress == CurrentProcess.ProcessEnvironmentBlock());
-    //     CHECK(pInfo->UniqueProcessId == UlongToHandle(CurrentProcess.ProcessId()));
-    //     CHECK(pInfo->InheritedFromUniqueProcessId == UlongToHandle(CurrentProcess.ParentProcessId()));
-    // }
+    SECTION("Process queries")
+    {
+        auto CurrentProcess = Process::Current();
+        auto res            = CurrentProcess.Query<PROCESS_BASIC_INFORMATION>(ProcessBasicInformation);
+        REQUIRE(Success(res));
+        auto const pInfo = Value(std::move(res));
+        CHECK(pInfo->PebBaseAddress == CurrentProcess.ProcessEnvironmentBlock());
+        CHECK(pInfo->UniqueProcessId == UlongToHandle(CurrentProcess.ProcessId()));
+        CHECK(pInfo->InheritedFromUniqueProcessId == UlongToHandle(CurrentProcess.ParentProcessId()));
+    }
 }
 
 
-// TEST_CASE("Process Remote", "[" NS "]")
-// {
-//     SECTION("Remote process tests")
-//     {
-//         const std::wstring TargetProcess {L"explorer.exe"};
-//         u32 TargetPid = 0;
-//         {
-//             auto res = System::PidOf(TargetProcess);
-//             REQUIRE(Success(res));
-//             REQUIRE(Value(res).size() > 0);
-//             TargetPid = Value(res).at(0);
-//             INFO("PID Found = " << TargetPid);
-//             REQUIRE(TargetPid > 0);
-//         }
+TEST_CASE("Process Remote", "[" NS "]")
+{
+    SECTION("Remote process tests")
+    {
+        const std::wstring TargetProcess {L"explorer.exe"};
+        u32 TargetPid = 0;
+        {
+            auto res = System::PidOf(TargetProcess);
+            REQUIRE(Success(res));
+            REQUIRE(Value(res).size() > 0);
+            TargetPid = Value(res).at(0);
+            INFO("PID Found = " << TargetPid);
+            REQUIRE(TargetPid > 0);
+        }
 
-//         Process::Process Remote {TargetPid};
-//         REQUIRE(Remote.IsValid());
-//         CHECK(Remote.ProcessId() == TargetPid);
-//         PPEB RemotePeb = Remote.ProcessEnvironmentBlock();
-//         CHECK(RemotePeb != nullptr);
-//         CHECK(((uptr)RemotePeb & 0xfff) == 0);
-//     }
-// }
-
-
-// TEST_CASE("Process Memory", "[" NS "]")
-// {
-//     SECTION("Read/Write")
-//     {
-//     }
-
-//     SECTION("Local - Enumerate regions")
-//     {
-//         Process::Process CurrentProcess = []()
-//         {
-//             auto res = Process::Process::Current();
-//             REQUIRE(Success(res));
-//             return Value(res);
-//         }();
-
-//         REQUIRE(CurrentProcess.IsValid() == true);
-//         REQUIRE(CurrentProcess.IsRemote() == false);
+        Process::Process Remote(TargetPid);
+        REQUIRE(Remote.ProcessId() == TargetPid);
+        PPEB RemotePeb = Remote.ProcessEnvironmentBlock();
+        CHECK(RemotePeb != nullptr);
+        CHECK(((uptr)RemotePeb & 0xfff) == 0);
+    }
+}
 
 
-//         {
-//             auto res = Process::Memory(CurrentProcess).Regions();
-//             REQUIRE(Success(res));
+TEST_CASE("Process Memory", "[" NS "]")
+{
+    SECTION("Local - Enumerate regions")
+    {
+        auto CurrentProcess = Process::Current();
+        REQUIRE(CurrentProcess.IsRemote() == false);
 
-//             auto regions = Value(res);
-//             CHECK(regions.size() > 0);
-//         }
-//     }
+        auto res = Process::Memory(CurrentProcess).Regions();
+        REQUIRE(Success(res));
 
-//     SECTION("Local - Search memory")
-//     {
-//         Process::Process CurrentProcess = []()
-//         {
-//             auto res = Process::Process::Current();
-//             REQUIRE(Success(res));
-//             return Value(res);
-//         }();
+        auto regions = Value(std::move(res));
+        CHECK(regions.size() > 0);
+    }
 
-//         auto CurrentProcessMemory = Process::Memory(CurrentProcess);
-//         {
-//             std::vector<u8> pattern {'M', 'Z'};
-//             auto res = CurrentProcessMemory.Search(pattern);
-//             REQUIRE(Success(res));
+    SECTION("Local - Search memory")
+    {
+        auto CurrentProcess = Process::Current();
 
-//             auto addrs = Value(res);
-//             CHECK(addrs.size() > 0);
-//             for ( const auto& addr : addrs )
-//             {
-//                 auto res2 = CurrentProcessMemory.Read(addr, 2);
-//                 CHECK(Success(res2));
-//                 auto val = Value(res2);
-//                 CHECK(val[0] == 'M');
-//                 CHECK(val[1] == 'Z');
-//             }
-//         }
-//     }
+        auto CurrentProcessMemory = Process::Memory(CurrentProcess);
+        {
+            const std::vector<u8> pattern {'M', 'Z'};
+            auto res = CurrentProcessMemory.Search(pattern);
+            REQUIRE(Success(res));
 
-//     SECTION("Remote - Search memory")
-//     {
-//     }
-// }
+            auto addrs = Value(std::move(res));
+            CHECK(addrs.size() > 0);
+
+            for ( const auto& addr : addrs )
+            {
+                auto res2 = CurrentProcessMemory.Read(addr, 2);
+                CHECK(Success(res2));
+                auto val = Value(std::move(res2));
+                CHECK(val[0] == 'M');
+                CHECK(val[1] == 'Z');
+            }
+        }
+    }
+
+    SECTION("Read/Write remote")
+    {
+        auto values = Value(System::PidOf(L"explorer.exe"));
+        REQUIRE(values.size() > 0);
+
+        Process::Process TargetProcess(values.at(0));
+        Process::Memory TargetMemory(TargetProcess);
+
+        auto res = TargetMemory.Allocate(0x1000);
+        REQUIRE(Success(res));
+
+        auto mem = Value(res);
+        REQUIRE(Success(TargetMemory.Memset(mem, 0x1000, 0x41)));
+
+        auto res2 = TargetMemory.Read(mem, 0x1000);
+        REQUIRE(Success(res2));
+        auto val2 = Value(std::move(res2));
+        for ( auto byte : val2 )
+        {
+            CHECK(byte == 0x41);
+        }
+        REQUIRE(Success(TargetMemory.Free(mem)));
+    }
 
 
-// TEST_CASE("Process Hooking", "[" NS "]")
-// {
-//     SECTION("Local")
-//     {
-//         auto res = Process::Process::Current();
-//         REQUIRE(Success(res));
-//         Process::Process CurrentProcess = Value(std::move(res));
-
-//         REQUIRE(CurrentProcess.IsValid() == true);
-//         REQUIRE(CurrentProcess.IsRemote() == false);
-
-//         const uptr TargetFunction = (uptr)::GetProcAddress(::LoadLibraryA("kernel32.dll"),
-//         "GetCurrentProcessorNumber"); REQUIRE(TargetFunction != 0);
-
-//         INFO("Found TargetFunction at " << std::hex << TargetFunction);
-//     }
-
-//     SECTION("Remote")
-//     {
-//     }
-// }
+    SECTION("Remote - Search memory")
+    {
+        // TODO
+    }
+}

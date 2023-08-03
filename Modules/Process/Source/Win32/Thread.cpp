@@ -103,13 +103,13 @@ Thread::Thread(u32 Tid, u32 Pid) : m_Tid {Tid}, m_Pid {Pid}
     if ( !m_Pid )
     {
         auto res = Query<THREAD_BASIC_INFORMATION>(THREADINFOCLASS::ThreadBasicInformation);
-        if ( !Failed(res) )
+        if ( Failed(res) )
         {
             throw std::runtime_error("Failed to determine the ProcessId");
         }
 
         auto info = Value(std::move(res));
-        m_Pid     = (u32)HandleToHandle32(info->ClientId.UniqueProcess);
+        m_Pid     = ::HandleToULong(info->ClientId.UniqueProcess);
     }
 }
 
@@ -303,10 +303,11 @@ Thread::QueryInternal(const THREADINFOCLASS ThreadInformationClass, const usize 
     return Ok(std::move(Buffer));
 }
 
+
 PTEB
 Thread::ThreadInformationBlock()
 {
-    if ( m_Teb )
+    if ( m_Teb ) [[likely]]
     {
         return m_Teb;
     }
@@ -316,7 +317,7 @@ Thread::ThreadInformationBlock()
         uptr teb = 0;
         if ( GetTeb(&teb) == true )
         {
-            m_Teb = (PTEB)teb;
+            m_Teb = reinterpret_cast<PTEB>(teb);
         }
     }
     else
@@ -324,11 +325,12 @@ Thread::ThreadInformationBlock()
         const uptr pfnGetTeb     = (uptr)&GetTeb;
         const usize pfnGetTebLen = GetTebLength();
 
-        // auto res = m_Process->Execute(pfnGetTeb, pfnGetTebLen);
-        // if ( Success(res) )
-        // {
-        //     m_Teb = reinterpret_cast<PTEB>(Value(res));
-        // }
+        auto RemoteProcess = Process::Process(m_Pid);
+        auto res           = RemoteProcess.Execute(pfnGetTeb, pfnGetTebLen);
+        if ( Success(res) )
+        {
+            m_Teb = reinterpret_cast<PTEB>(Value(res));
+        }
     }
 
     if ( !m_Teb )

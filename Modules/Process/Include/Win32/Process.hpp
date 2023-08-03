@@ -29,25 +29,63 @@ class Thread;
 class Memory
 {
 public:
+    ///
+    ///@brief Default constructor
+    ///
     Memory() = default;
 
 
-    Memory(Process const& _Process) : m_Process {_Process}
-    {
-    }
+    ///
+    ///@brief Construct a new Memory object for a given process
+    ///
+    ///@param _Process
+    ///
+    Memory(Process& _Process);
 
 
+    ///
+    ///@brief Read some bytes from memory
+    ///
+    ///@param Address
+    ///@param Length
+    ///@return Result<std::vector<u8>>
+    ///
     auto
     Read(uptr const Address, usize Length) -> Result<std::vector<u8>>;
 
 
+    ///
+    ///@brief Write some bytes to memory
+    ///
+    ///@param Address
+    ///@param data
+    ///@return Result<usize>
+    ///
     auto
     Write(uptr const Address, std::vector<u8> data) -> Result<usize>;
 
 
+    ///
+    ///@brief Fill the memory with specific byte
+    ///
+    ///@param address
+    ///@param size
+    ///@param val
+    ///@return Result<usize>
+    ///
     auto
     Memset(uptr const address, const usize size, const u8 val = 0x00) -> Result<usize>;
 
+
+    ///
+    ///@brief Allocate memory in the local/remote process
+    ///
+    ///@param Size
+    ///@param Permission
+    ///@param ForcedMappingAddress
+    ///@param wipe
+    ///@return Result<uptr>
+    ///
     auto
     Allocate(
         const size_t Size,
@@ -55,8 +93,9 @@ public:
         const uptr ForcedMappingAddress = 0,
         bool wipe                       = true) -> Result<uptr>;
 
-    auto
-    Free(const uptr Address) -> bool;
+
+    Result<bool>
+    Free(const uptr Address);
 
 
     ///
@@ -67,7 +106,7 @@ public:
     ///@return Result<std::shared_ptr<T>>
     ///
     template<class T>
-    Result<std::shared_ptr<T>>
+    Result<std::unique_ptr<T>>
     Query(const MEMORY_INFORMATION_CLASS MemoryInformationClass, const uptr BaseAddress = nullptr)
     {
         auto res = QueryInternal(MemoryInformationClass, BaseAddress, sizeof(T));
@@ -76,12 +115,9 @@ public:
             return Error(res);
         }
 
-        const auto p = reinterpret_cast<T*>(Value(res));
-        auto deleter = [](T* x)
-        {
-            ::LocalFree(x);
-        };
-        return Ok(std::shared_ptr<T>(p, deleter));
+        auto RawResult = Value(std::move(res));
+        std::unique_ptr<T> TypedResult {(T*)RawResult.release()};
+        return Ok(std::move(TypedResult));
     }
 
     ///
@@ -89,7 +125,7 @@ public:
     ///
     ///@return Result < std::vector < MEMORY_BASIC_INFORMATION>>
     ///
-    Result<std::vector<std::shared_ptr<MEMORY_BASIC_INFORMATION>>>
+    Result<std::vector<std::unique_ptr<MEMORY_BASIC_INFORMATION>>>
     Regions();
 
 
@@ -109,14 +145,14 @@ private:
     ///
     /// @param ProcessInformationClass
     ///
-    /// @return Result<PVOID>
+    /// @return Result<std::unique_ptr<u8[]>>
     ///
-    Result<PVOID>
+    Result<std::unique_ptr<u8[]>>
     QueryInternal(const MEMORY_INFORMATION_CLASS, const uptr BaseAddress, const usize);
 
 
 private:
-    Process const& m_Process;
+    Process& m_Process;
 };
 
 
@@ -215,10 +251,11 @@ public:
         return m_ParentProcessId;
     }
 
+
     Result<pwn::Process::Process>
     Parent()
     {
-        if ( m_ParentProcessId < 0 )
+        if ( m_ParentProcessId <= 0 )
         {
             return Err(ErrorCode::InvalidProcess);
         }
@@ -231,10 +268,10 @@ public:
     ///
     ///@return fs::path const&
     ///
-    std::filesystem::path const&
+    std::wstring const&
     Path() const
     {
-        return m_Path;
+        return m_NativePath;
     }
 
 
@@ -318,7 +355,7 @@ public:
     /// @brief Query process information
     ///
     /// @param ProcessInformationClass
-    /// @return Result<std::shared_ptr<T>>
+    /// @return Result<std::unique_ptr<T>>
     ///
     template<class T>
     Result<std::unique_ptr<T>>
@@ -445,7 +482,7 @@ private: // Methods
 private: // Members
     u32 m_ProcessId {0};
     u32 m_ParentProcessId {0};
-    std::filesystem::path m_Path {};
+    std::wstring m_NativePath {};
     Integrity m_IntegrityLevel {Integrity::Unknown};
     UniqueHandle m_ProcessHandle {nullptr};
     DWORD m_ProcessHandleAccessMask {0};

@@ -6,6 +6,15 @@ namespace pwn::Process
 
 #pragma region Process::Memory
 
+Memory::Memory(Process& _Process) : m_Process {_Process}
+{
+    auto res = m_Process.ReOpenProcessWith(PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ);
+    if ( Failed(res) )
+    {
+        throw std::runtime_error("Failed to get read/write access to the process");
+    }
+}
+
 Result<std::vector<u8>>
 Memory::Read(uptr const Address, usize Length)
 {
@@ -51,19 +60,19 @@ Result<uptr>
 Memory::Allocate(const size_t Size, const wchar_t Permission[3], const uptr ForcedMappingAddress, bool wipe)
 {
     u32 flProtect = 0;
-    if ( wcscmp(Permission, L"r") == 0 )
+    if ( ::wcscmp(Permission, L"r") == 0 )
     {
         flProtect |= PAGE_READONLY;
     }
-    if ( wcscmp(Permission, L"rx") == 0 )
+    if ( ::wcscmp(Permission, L"rx") == 0 )
     {
         flProtect |= PAGE_EXECUTE_READ;
     }
-    if ( wcscmp(Permission, L"rw") == 0 )
+    if ( ::wcscmp(Permission, L"rw") == 0 )
     {
         flProtect |= PAGE_READWRITE;
     }
-    if ( wcscmp(Permission, L"rwx") == 0 )
+    if ( ::wcscmp(Permission, L"rwx") == 0 )
     {
         flProtect |= PAGE_EXECUTE_READWRITE;
     }
@@ -87,13 +96,19 @@ Memory::Allocate(const size_t Size, const wchar_t Permission[3], const uptr Forc
     return Ok(buffer);
 }
 
-bool
+Result<bool>
 Memory::Free(const uptr Address)
 {
-    return ::VirtualFreeEx(m_Process.Handle(), reinterpret_cast<LPVOID>(Address), 0, MEM_RELEASE) == 0;
+    if ( ::VirtualFreeEx(m_Process.Handle(), reinterpret_cast<LPVOID>(Address), 0, MEM_RELEASE) == 0 )
+    {
+        Log::perror(L"VirtualFreeEx");
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    return Ok(true);
 }
 
-Result<PVOID>
+Result<std::unique_ptr<u8[]>>
 Memory::QueryInternal(
     const MEMORY_INFORMATION_CLASS MemoryInformationClass,
     const uptr BaseAddress,
@@ -101,7 +116,8 @@ Memory::QueryInternal(
 {
     ErrorCode ec = ErrorCode::UnknownError;
     usize Size   = InitialSize;
-    auto Buffer  = ::LocalAlloc(LPTR, Size);
+
+    auto Buffer = std::make_unique<u8[]>(Size);
     if ( !Buffer )
     {
         return Err(ErrorCode::AllocationError);
@@ -114,22 +130,27 @@ Memory::QueryInternal(
             m_Process.Handle(),
             (PVOID)BaseAddress,
             MemoryInformationClass,
-            Buffer,
+            Buffer.get(),
             Size,
             &ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
-            return Ok(Buffer);
+            break;
         }
 
-        if ( Status == STATUS_INFO_LENGTH_MISMATCH )
+
+        switch ( Status )
+        {
+        case STATUS_INFO_LENGTH_MISMATCH:
+        case STATUS_BUFFER_TOO_SMALL:
         {
             Size   = ReturnLength;
-            Buffer = ::LocalReAlloc(Buffer, Size, LMEM_MOVEABLE | LMEM_ZEROINIT);
+            Buffer = std::make_unique<u8[]>(Size);
             continue;
         }
-
-        Log::ntperror(L"NtQueryVirtualMemory()", Status);
+        default:
+            break;
+        }
 
         //
         // If doing an iteration, the last address will be invalid
@@ -137,27 +158,27 @@ Memory::QueryInternal(
         //
         ec = (Status == STATUS_INVALID_PARAMETER) ? ErrorCode::InvalidParameter : ErrorCode::PermissionDenied;
 
-        break;
+        Log::ntperror(L"NtQueryVirtualMemory()", Status);
+        return Err(ec);
 
     } while ( true );
 
-    ::LocalFree(Buffer);
-    return Err(ec);
+    return Ok(std::move(Buffer));
 }
 
 
-Result<std::vector<std::shared_ptr<MEMORY_BASIC_INFORMATION>>>
+Result<std::vector<std::unique_ptr<MEMORY_BASIC_INFORMATION>>>
 Memory::Regions()
 {
     uptr CurrentAddress = 0;
-    std::vector<std::shared_ptr<MEMORY_BASIC_INFORMATION>> MemoryRegions;
+    std::vector<std::unique_ptr<MEMORY_BASIC_INFORMATION>> MemoryRegions;
 
     while ( true )
     {
         //
         // Query the location
         //
-        auto res = Query<MEMORY_BASIC_INFORMATION>(MemoryBasicInformation, CurrentAddress);
+        auto res = Query<MEMORY_BASIC_INFORMATION>(MEMORY_INFORMATION_CLASS::MemoryBasicInformation, CurrentAddress);
         if ( Failed(res) )
         {
             auto err = Error(res);
@@ -172,19 +193,20 @@ Memory::Regions()
         //
         // Save the region information
         //
-        auto CurrentMemoryRegion = Value(res);
+        auto CurrentMemoryRegion = Value(std::move(res));
+        const usize RegionSize   = CurrentMemoryRegion->RegionSize;
         if ( CurrentMemoryRegion->AllocationBase != nullptr )
         {
-            MemoryRegions.push_back(CurrentMemoryRegion);
+            MemoryRegions.push_back(std::move(CurrentMemoryRegion));
         }
 
         //
         // Move to the next one
         //
-        CurrentAddress += CurrentMemoryRegion->RegionSize;
+        CurrentAddress += RegionSize;
     }
 
-    return Ok(MemoryRegions);
+    return Ok(std::move(MemoryRegions));
 }
 
 Result<std::vector<uptr>>
@@ -192,7 +214,7 @@ Memory::Search(std::vector<u8> const& Pattern)
 {
     if ( Pattern.empty() )
     {
-        return Err(ErrorCode::BufferTooSmall);
+        return Err(ErrorCode::InvalidParameter);
     }
 
     auto res = Regions();
@@ -202,8 +224,9 @@ Memory::Search(std::vector<u8> const& Pattern)
     }
 
     std::vector<uptr> Matches;
+    auto const Regions = Value(std::move(res));
 
-    for ( auto const& Region : Value(res) )
+    for ( auto const& Region : Regions )
     {
         if ( Region->State != MEM_COMMIT )
         {
@@ -234,17 +257,17 @@ Memory::Search(std::vector<u8> const& Pattern)
             continue;
         }
 
-        auto const& RemoteMemoryRegion = Value(res);
-        usize CurrentIndex             = 0;
-        const usize MaxSize            = RemoteMemoryRegion.size() - Pattern.size();
+        auto const RemoteMemoryRegion = Value(std::move(res));
+        usize CurrentIndex            = 0;
+        const usize MaxSize           = RemoteMemoryRegion.size() - Pattern.size();
 
         while ( CurrentIndex < MaxSize )
         {
             usize Offset = 0;
 
-            for ( auto const& c : Pattern )
+            for ( auto const byte : Pattern )
             {
-                if ( c != RemoteMemoryRegion[CurrentIndex + Offset] )
+                if ( byte != RemoteMemoryRegion[CurrentIndex + Offset] )
                 {
                     break;
                 }
