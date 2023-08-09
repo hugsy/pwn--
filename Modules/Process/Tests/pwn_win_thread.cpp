@@ -44,7 +44,7 @@ TEST_CASE("set/get thread names", "[" NS "]")
         auto res           = CurrentThread.Query<THREAD_BASIC_INFORMATION>(THREADINFOCLASS::ThreadBasicInformation);
         REQUIRE(Success(res));
         const auto pInfo = Value(std::move(res));
-        CHECK(pInfo->ClientId.UniqueProcess == ::ULongToHandle(::GetCurrentProcessId()));
-        CHECK(pInfo->ClientId.UniqueThread == ::ULongToHandle(::GetCurrentThreadId()));
+        CHECK(pInfo->ClientId.UniqueProcess == ULongToHandle(::GetCurrentProcessId()));
+        CHECK(pInfo->ClientId.UniqueThread == ULongToHandle(::GetCurrentThreadId()));
     }
 }

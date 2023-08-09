@@ -108,8 +108,8 @@ Thread::Thread(u32 Tid, u32 Pid) : m_Tid {Tid}, m_Pid {Pid}
             throw std::runtime_error("Failed to determine the ProcessId");
         }
 
-        auto info = Value(std::move(res));
-        m_Pid     = ::HandleToULong(info->ClientId.UniqueProcess);
+        auto BasicInfo = Value(std::move(res));
+        m_Pid          = HandleToULong(BasicInfo->ClientId.UniqueProcess);
     }
 }
 

@@ -100,7 +100,7 @@ Process::Process(u32 Pid) : m_ProcessId {Pid}
     // Process PPID
     {
         auto BasicInfo    = Value(Query<PROCESS_BASIC_INFORMATION>(PROCESSINFOCLASS::ProcessBasicInformation));
-        m_ParentProcessId = ::HandleToULong(BasicInfo->InheritedFromUniqueProcessId);
+        m_ParentProcessId = HandleToULong(BasicInfo->InheritedFromUniqueProcessId);
     }
 
 

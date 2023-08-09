@@ -41,8 +41,8 @@ TEST_CASE("Process Local", "[" NS "]")
 
             auto teb = CurThread.ThreadInformationBlock();
             REQUIRE(teb != nullptr);
-            REQUIRE(::HandleToULong(teb->ClientId.UniqueProcess) == ::GetCurrentProcessId());
-            REQUIRE(::HandleToULong(teb->ClientId.UniqueThread) == ::GetCurrentThreadId());
+            REQUIRE(HandleToULong(teb->ClientId.UniqueProcess) == ::GetCurrentProcessId());
+            REQUIRE(HandleToULong(teb->ClientId.UniqueThread) == ::GetCurrentThreadId());
         }
     }
 
