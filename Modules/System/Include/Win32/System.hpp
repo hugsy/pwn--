@@ -62,7 +62,7 @@ ParentProcessId(const u32 dwProcessId) -> Result<u32>;
 ///@return Result<std::vector<u32>>
 ///
 auto
-PidOf(std::wstring_view const& targetProcessName) -> Result<std::vector<u32>>;
+PidOf(std::wstring_view const targetProcessName) -> Result<std::vector<u32>>;
 
 ///
 ///@brief

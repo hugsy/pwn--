@@ -2,7 +2,7 @@
 
 #include "Win32/Thread.hpp"
 
-#define NS "pwn::Thread"
+#define NS "pwn::Process::Thread"
 
 constexpr std::wstring_view TestThreadName = L"TestThreadName";
 
@@ -41,7 +41,7 @@ TEST_CASE("set/get thread names", "[" NS "]")
     SECTION("Test queries")
     {
         auto CurrentThread = Process::Thread::Current();
-        auto res           = CurrentThread.Query<THREAD_BASIC_INFORMATION>(ThreadBasicInformation);
+        auto res           = CurrentThread.Query<THREAD_BASIC_INFORMATION>(THREADINFOCLASS::ThreadBasicInformation);
         REQUIRE(Success(res));
         const auto pInfo = Value(std::move(res));
         CHECK(pInfo->ClientId.UniqueProcess == ULongToHandle(::GetCurrentProcessId()));

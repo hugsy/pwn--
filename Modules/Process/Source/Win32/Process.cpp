@@ -88,37 +88,26 @@ Process::Process(u32 Pid) : m_ProcessId {Pid}
     // Gather a minimum set of information about the process for performance. Extra information will be
     // lazily fetched
     //
+    if ( Failed(ReOpenProcessWith(PROCESS_QUERY_INFORMATION)) &&
+         Failed(ReOpenProcessWith(PROCESS_QUERY_LIMITED_INFORMATION)) )
     {
-        if ( Failed(ReOpenProcessWith(PROCESS_QUERY_INFORMATION)) &&
-             Failed(ReOpenProcessWith(PROCESS_QUERY_LIMITED_INFORMATION)) )
-        {
-            return;
-        }
-
-        xdbg("Process handle with {}", ProcessAccessToString(m_ProcessHandleAccessMask).c_str());
+        throw std::runtime_error("Process initialization error");
     }
+
+    xdbg("Process handle with {}", ProcessAccessToString(m_ProcessHandleAccessMask).c_str());
+
 
     // Process PPID
     {
-        m_ParentProcessId = ValueOr(System::ParentProcessId(Pid), (u32)-1);
-        xdbg("Process Parent PID='{}'", m_ParentProcessId);
+        auto BasicInfo    = Value(Query<PROCESS_BASIC_INFORMATION>(PROCESSINFOCLASS::ProcessBasicInformation));
+        m_ParentProcessId = HandleToULong(BasicInfo->InheritedFromUniqueProcessId);
     }
 
 
     // Full path
     {
-        // TODO replace with NtQueryInformationProcess
-        wchar_t exeName[MAX_PATH] = {0};
-        DWORD Size                = __countof(exeName);
-        const DWORD Count         = ::QueryFullProcessImageNameW(m_ProcessHandle.get(), 0, exeName, &Size);
-        m_Path                    = std::filesystem::path {exeName};
-        if ( !std::filesystem::exists(m_Path) )
-        {
-            err("Process path '{}' doesn't exist", m_Path.string());
-            throw std::runtime_error("Process initialization error");
-        }
-
-        xdbg("Process Path='{}'", m_Path.string());
+        auto NativeFilePath = Value(Query<UNICODE_STRING>(PROCESSINFOCLASS::ProcessImageFileName));
+        m_NativePath        = std::wstring {NativeFilePath->Buffer};
     }
 }
 
@@ -532,12 +521,13 @@ Process::ReOpenProcessWith(const DWORD DesiredAccess)
     }
 
     //
-    // Affect the unique pointer (releasing the old one if existing) and update the mask
+    // Affect the unique pointer (releasing - and closing - the old one if existing) and update the mask
     //
     m_ProcessHandle           = UniqueHandle {hProcess};
     m_ProcessHandleAccessMask = NewAccessMask;
     return Ok(true);
 }
+
 
 Result<std::unique_ptr<u8[]>>
 Process::QueryInternal(const PROCESSINFOCLASS ProcessInformationClass, const usize InitialSize)

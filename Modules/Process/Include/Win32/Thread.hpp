@@ -84,6 +84,7 @@ public:
     Result<bool>
     Name(std::wstring_view NewName);
 
+
     ///
     /// @brief Update the thread handle with new access
     ///
@@ -139,9 +140,9 @@ public:
     ///
     /// @brief
     ///
-    /// @return Result<Thread>
+    /// @return Thread
     ///
-    static Thread
+    static PWNAPI Thread
     Current();
 
 private:
@@ -156,6 +157,7 @@ private:
     QueryInternal(const THREADINFOCLASS, const usize);
 
 
+private:
     u32 m_Tid {0};
     u32 m_Pid {0};
     PTEB m_Teb {nullptr};
