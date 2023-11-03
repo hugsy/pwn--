@@ -1,4 +1,4 @@
-#include "pwn.hpp"
+#include <pwn>
 using namespace pwn;
 
 #if PWN_BUILD_SHARED_LIB

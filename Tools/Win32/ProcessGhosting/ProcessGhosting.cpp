@@ -9,7 +9,7 @@
 /// @ref Gabriel Landau - https://www.elastic.co/blog/process-ghosting-a-new-executable-image-tampering-attack
 ///
 
-#include <pwn.hpp>
+#include <pwn>
 #include <stdexcept>
 using namespace pwn;
 

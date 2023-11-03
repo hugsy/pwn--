@@ -4,7 +4,7 @@ Namespace: `pwn::windows::alpc`
 
 ## Server
 ```cpp
-#include <pwn.hpp>
+#include <pwn>
 
 int wmain(int argc, wchar_t** argv)
 {
@@ -58,7 +58,7 @@ int wmain(int argc, wchar_t** argv)
 ## Client
 
 ```cpp
-#include <pwn.hpp>
+#include <pwn>
 
 int wmain(int argc, wchar_t** argv)
 {

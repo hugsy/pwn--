@@ -6,7 +6,7 @@ The most basic example for using `pwn++`.
 
 ```c++
 // 1. include the header
-#include <pwn.hpp>
+#include <pwn>
 // 2. invoke the namespace
 using namespace pwn;
 // 3. that's it!
