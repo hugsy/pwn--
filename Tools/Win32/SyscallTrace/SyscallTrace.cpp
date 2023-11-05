@@ -8,7 +8,7 @@
 /// @ref Alex Ionescu - Hooking Nirvana (https://github.com/ionescu007/HookingNirvana)
 ///
 
-#include <pwn.hpp>
+#include <pwn>
 using namespace pwn;
 
 EXTERN_C_START

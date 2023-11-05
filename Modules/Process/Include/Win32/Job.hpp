@@ -37,14 +37,32 @@ public:
         return m_Valid;
     }
 
-
-private:
     auto
     AddProcess(u32 ProcessId) -> Result<bool>;
 
+    ///
+    ///@brief Simple C++ friendly wrapper for `AddProcess`
+    ///
+    ///@param ProcessId
+    ///@return Job&
+    ///@throws `runtime_error` if adding process to the job failed
+    ///
+    Job&
+    operator+=(u32 ProcessId)
+    {
+        if ( Success(AddProcess(ProcessId)) )
+        {
+            return *this;
+        }
+
+        throw std::runtime_error("Error adding process to job");
+    }
+
+
+private:
     bool m_Valid {false};
     std::wstring m_Name {};
     UniqueHandle m_hJob {};
     std::vector<UniqueHandle> m_Handles {};
 };
-} // namespace Job
+} // namespace pwn::Job

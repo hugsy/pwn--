@@ -8,7 +8,7 @@ Requirements:
  - `PWN_DISASSEMBLE_ARM64` cmake flag to enable  [binja-arm64](https://github.com/Vector35/arch-arm64) for arm64
 
 ```cpp
-#include <pwn.hpp>
+#include <pwn>
 using namespace pwn;
 
 int wmain()

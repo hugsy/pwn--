@@ -11,8 +11,10 @@
 #include <filesystem>
 #include <iostream>
 
-#include "pwn.hpp"
+// clang-format off
+#include <pwn>
 using namespace pwn;
+// clang-format on
 
 auto
 wmain(_In_ int argc, _In_ const wchar_t** argv) -> int

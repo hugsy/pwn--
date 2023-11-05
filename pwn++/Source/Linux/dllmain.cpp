@@ -1,4 +1,4 @@
-#include "pwn.hpp"
+#include "pwn"
 
 
 static __attribute__((constructor)) void

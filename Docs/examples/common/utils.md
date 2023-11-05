@@ -90,7 +90,7 @@ int wmain()
 using `ExportImport` macro, then copy/paste the definition (from MSDN, ReactOS, Pinvoke, NirSoft, etc.)
 
 ```cpp
-#include <pwn.hpp>
+#include <pwn>
 
 ExportImport( \
     "ntdll.dll", \

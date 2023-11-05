@@ -6,7 +6,7 @@
 /// @brief Simple script using pwn++ to spawn a process reparented
 ///
 
-#include <pwn.hpp>
+#include <pwn>
 using namespace pwn;
 
 auto
