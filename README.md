@@ -26,7 +26,7 @@ include(FetchContent)
 FetchContent_Declare(
     pwn++
     GIT_REPOSITORY https://github.com/hugsy/pwn--.git
-    GIT_TAG main # or whatever other tag
+    GIT_TAG main # or whatever other tag or use releases (URL)
 )
 FetchContent_MakeAvailable(pwn++)
 ```
