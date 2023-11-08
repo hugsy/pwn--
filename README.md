@@ -39,7 +39,8 @@ A poor rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL in modern C++
 
 Because:
   - I wanted a quick way to bootstrap my low-level experiments
-  - it's unacceptable to struggle every time I need a `hexdump`-like function
+  - it's unacceptable to struggle to disassemble code, to cross-compile your exploit or simply to have `hexdump`-like function
+  - only C/C++ provides the real right way to write assembly code
   - modern C++ allows to do crazy useful offsec stuff, completely underused
   - I like writing code
 
