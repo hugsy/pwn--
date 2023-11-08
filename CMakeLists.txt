@@ -145,7 +145,7 @@ if(PWN_BUILD_TESTING)
 endif()
 
 if(PWN_BUILD_TOOLKIT)
-    find_package(ArgParse REQUIRED)
+    find_package(Argparse REQUIRED)
 
     if(WIN32)
         add_subdirectory(Tools/Win32)
