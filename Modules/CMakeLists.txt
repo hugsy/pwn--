@@ -22,7 +22,6 @@ message(STATUS "PWN_BUILD_TOOLKIT                      ${PWN_BUILD_TOOLKIT}")
 message(STATUS "PWN_BUILD_TESTING                      ${PWN_BUILD_TESTING}")
 message(STATUS "PWN_BUILD_DOCS                         ${PWN_BUILD_DOCS}")
 message(STATUS "PWN_INCLUDE_DISASSEMBLER               ${PWN_INCLUDE_DISASSEMBLER}")
-message(STATUS "PWN_ENABLE_LUA_BACKDOOR                ${PWN_ENABLE_LUA_BACKDOOR}")
 
 #
 # If `git` is found, declare the branch/commit hash for debugging

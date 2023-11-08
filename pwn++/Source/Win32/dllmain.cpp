@@ -10,28 +10,12 @@ OnAttachRoutine()
     // Initialize the RNG
     //
     utils::random::seed();
-
-#ifdef PWN_INCLUDE_BACKDOOR
-    //
-    // Start the backdoor thread
-    //
-    {
-        auto res = Backdoor::start();
-        if ( Failed(res) )
-        {
-            err(L"Backdoor initialization failed");
-        }
-    }
-#endif // PWN_INCLUDE_BACKDOOR
 }
 
 
 void
 OnDetachRoutine()
 {
-#ifdef PWN_INCLUDE_BACKDOOR
-    pwn::backdoor::Stop();
-#endif // PWN_INCLUDE_BACKDOOR
 }
 
 

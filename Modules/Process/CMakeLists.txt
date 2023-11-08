@@ -13,6 +13,8 @@ elseif("${CMAKE_GENERATOR_PLATFORM}" STREQUAL win32)
     set(ASM_DIR ${SOURCE_DIR}/Win32/asm/x86)
 elseif("${CMAKE_GENERATOR_PLATFORM}" STREQUAL arm64)
     set(ASM_DIR ${SOURCE_DIR}/Win32/asm/arm64)
+else()
+    message(FATAL_ERROR "Unknown arch ${CMAKE_GENERATOR_PLATFORM}")
 endif()
 
 if(WIN32)
