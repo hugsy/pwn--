@@ -9,7 +9,7 @@
 #ifdef PWN_INCLUDE_DISASSEMBLER
 
 #if defined(PWN_DISASSEMBLE_X86)
-#include <Zydis/Zydis.h>
+#include <Zydis.h>
 #endif // PWN_DISASSEMBLE_X86
 
 #if defined(PWN_DISASSEMBLE_ARM64)
