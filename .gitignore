@@ -1,8 +1,8 @@
+.vs
 .vscode
 Build*
 pwn++/Include/pwn_export.hpp
 pwn++/Include/constants.hpp
-pwn++/Include/pwn.hpp
 pwn++/Include/pwn
 Docs/conf/Doxyfile
 Docs/api/
