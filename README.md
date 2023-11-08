@@ -3,7 +3,7 @@
   <img src="https://i.imgur.com/39XyWFo.png" alt="logo" title="logo pwn++" width=35% />
 </p>
 
-<h2 align="center">pwn++</h2>
+<h2 align="center"><code>#include &lt;pwn&gt;</code></h2>
 
 <p align="center">
   <a href="https://hugsy.github.io/pwn--"><img alt="Docs" src="https://img.shields.io/badge/Docs-gh--pages-darkgreen"></a>
@@ -13,6 +13,25 @@
   <a href="https://github.com/hugsy/pwn--/actions?query=workflow%3A%22CI+Build+for+MSVC%22"><img alt="CI" src="https://github.com/hugsy/pwn--/workflows/CI%20Build%20for%20MSVC/badge.svg"></a>
 </p>
 
+## Quick start
+
+### Template
+
+Git-Clone the template in [`hugsy/template-pwn`](https://github.com/hugsy/pwn--template)
+
+### CMake
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(
+    Deps_Pwn
+    GIT_REPOSITORY https://github.com/hugsy/pwn--.git
+    GIT_TAG main # or whatever
+)
+FetchContent_MakeAvailable(Deps_Pwn)
+```
+
+## What is it?
 
 A poor rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL in modern C++, battery-included pwn kit for Windows (and a bit for Linux).
 
