@@ -103,15 +103,8 @@ if(PWN_DISASSEMBLE_X86)
 endif()
 
 if(PWN_DISASSEMBLE_ARM64)
-    option(BUILD_SHARED_LIBS "" OFF)
-    add_subdirectory(${PWNLIB_DEPS_DIR}/arch-arm64)
+    find_package(BinjaArm64 REQUIRED)
     set(PWN_INCLUDE_DISASSEMBLER TRUE)
-    add_library(PWN::Deps::BinjaArm64 ALIAS disass_arch_arm64)
-
-    install(TARGETS disass_arch_arm64 DESTINATION ${PROJECT_NAME}/Dependencies/Library)
-    install(DIRECTORY $<TARGET_PROPERTY:disass_arch_arm64,INTERFACE_DIRECTORIES> DESTINATION ${PROJECT_NAME}/Dependencies/Include)
-
-    # TODO replace with mainstream
 endif()
 
 if(WIN32)

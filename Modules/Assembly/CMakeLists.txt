@@ -23,8 +23,8 @@ if(PWN_INCLUDE_DISASSEMBLER)
 
     if(PWN_DISASSEMBLE_ARM64)
         target_compile_definitions(${PROJECT_NAME} PUBLIC PWN_DISASSEMBLE_ARM64)
-        target_include_directories(${PROJECT_NAME} PRIVATE $<TARGET_PROPERTY:PWN::Deps::BinjaArm64,INCLUDE_DIRECTORIES>)
-        target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Deps::BinjaArm64)
+        target_include_directories(${PROJECT_NAME} PRIVATE $<TARGET_PROPERTY:Deps_BinjaArm64,INCLUDE_DIRECTORIES>)
+        target_link_libraries(${PROJECT_NAME} PUBLIC Deps_BinjaArm64)
     endif(PWN_DISASSEMBLE_ARM64)
 endif(PWN_INCLUDE_DISASSEMBLER)
 

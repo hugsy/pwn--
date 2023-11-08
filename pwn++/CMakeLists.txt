@@ -22,7 +22,7 @@ else()
     add_library(${PROJECT_NAME} STATIC)
 endif()
 
-message(STATUS "Generating 'pwn.hpp'")
+message(STATUS "Generating pwn++ main header")
 list(TRANSFORM PWN_MODULES PREPEND PWN:: OUTPUT_VARIABLE MODULE_NAMESPACES)
 list(LENGTH MODULE_NAMESPACES PWN_MODULES_LENGTH)
 configure_file(${PROJECT_SOURCE_DIR}/pwn.hpp.in ${INTERFACE_DIR}/pwn NEWLINE_STYLE WIN32)
