@@ -24,11 +24,11 @@ Git-Clone the template in [`hugsy/template-pwn`](https://github.com/hugsy/pwn--t
 ```cmake
 include(FetchContent)
 FetchContent_Declare(
-    Deps_Pwn
+    pwn++
     GIT_REPOSITORY https://github.com/hugsy/pwn--.git
-    GIT_TAG main # or whatever
+    GIT_TAG main # or faster, use releases (URL)
 )
-FetchContent_MakeAvailable(Deps_Pwn)
+FetchContent_MakeAvailable(pwn++)
 ```
 
 ## What is it?
