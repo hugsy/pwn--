@@ -1,4 +1,4 @@
-#include <catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "Win32/Process.hpp"
 #include "Win32/System.hpp"

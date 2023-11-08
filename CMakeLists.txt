@@ -115,9 +115,8 @@ if(PWN_DISASSEMBLE_ARM64)
 endif()
 
 if(WIN32)
-    add_subdirectory(${PWNLIB_DEPS_DIR}/phnt)
-    add_library(PWN::Deps::PHNT ALIAS phnt)
-    install(DIRECTORY $<TARGET_PROPERTY:phnt,INTERFACE_DIRECTORIES> DESTINATION ${PROJECT_NAME}/Dependencies/Include)
+    find_package(PhNt REQUIRED)
+    install(DIRECTORY $<TARGET_PROPERTY:Deps_PhNt,INTERFACE_DIRECTORIES> DESTINATION ${PROJECT_NAME}/Dependencies/Include)
 endif(WIN32)
 
 # if(PWN_ENABLE_LUA_BACKDOOR)
@@ -146,17 +145,7 @@ endif()
 
 if(PWN_BUILD_TESTING)
     include(CTest)
-
-    add_library(Deps_Catch2 INTERFACE)
-    target_include_directories(Deps_Catch2 INTERFACE ${PWNLIB_DEPS_DIR}/Catch2)
-
-    if(WIN32)
-        target_compile_definitions(Deps_Catch2 INTERFACE CATCH_CONFIG_NO_WINDOWS_SEH)
-    else()
-        target_compile_definitions(Deps_Catch2 INTERFACE _GNU_SOURCE=1)
-    endif(WIN32)
-
-    add_library(PWN::Deps::Catch2 ALIAS Deps_Catch2)
+    find_package(Catch2 REQUIRED)
 endif()
 
 if(PWN_BUILD_TOOLKIT)

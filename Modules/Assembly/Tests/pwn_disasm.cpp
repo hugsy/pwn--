@@ -1,4 +1,4 @@
-#include <catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #if defined(PWN_INCLUDE_DISASSEMBLER)
 #include "Context.hpp"

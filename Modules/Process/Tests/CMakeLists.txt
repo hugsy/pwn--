@@ -10,7 +10,7 @@ list(APPEND SOURCE_FILES
 add_executable(${TEST_EXECUTABLE_NAME} ${SOURCE_FILES})
 add_executable(PWN::Tests::${PROJECT_NAME} ALIAS ${TEST_EXECUTABLE_NAME})
 add_dependencies(${TEST_EXECUTABLE_NAME} PWN::Deps::Catch2 PWN::${PROJECT_NAME} PWN::System)
-target_link_libraries(${TEST_EXECUTABLE_NAME} PUBLIC PWN::Deps::Catch2 PWN::${PROJECT_NAME} PWN::System PWN::FileSystem)
+target_link_libraries(${TEST_EXECUTABLE_NAME} PUBLIC Catch2::Catch2WithMain PWN::${PROJECT_NAME} PWN::System PWN::FileSystem)
 
 if(WIN32)
     target_link_options(${TEST_EXECUTABLE_NAME} PUBLIC /SUBSYSTEM:Console)
