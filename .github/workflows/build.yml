@@ -1,4 +1,4 @@
-name: CI Build for MSVC
+name: CI Build
 
 env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
