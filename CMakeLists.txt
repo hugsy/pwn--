@@ -24,7 +24,6 @@ option(PWN_DISASSEMBLE_X86 "Compile with Zydis disassembler support (X86/64 only
 option(PWN_DISASSEMBLE_ARM64 "Compile with BinaryNinja disassembler support (ARM64)" ON)
 
 option(PWN_BUILD_SHARED_LIBS "Build as a shared library" OFF)
-option(PWN_ENABLE_LUA_BACKDOOR "Enable Lua scripting for backdoor" OFF) # Deprecated, will be deleted soon
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     # pwn++ is NOT a top dir (i.e. build as dependency)
@@ -40,7 +39,6 @@ endif()
 
 set(PWNLIB_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
 
-# set(PWNLIB_DEPS_DIR ${PWNLIB_ROOT_DIR}/Deps)
 set(PWN_INCLUDE_DISASSEMBLER FALSE)
 set(CMAKE_INSTALL_LIBDIR Library)
 set(CMAKE_INSTALL_BINDIR Binary)
@@ -113,16 +111,6 @@ if(WIN32)
     install(DIRECTORY $<TARGET_PROPERTY:Deps_PhNt,INTERFACE_DIRECTORIES> DESTINATION ${PROJECT_NAME}/Dependencies/Include)
 endif(WIN32)
 
-# if(PWN_ENABLE_LUA_BACKDOOR)
-# option(BUILD_SHARED_LIBS "" OFF)
-# add_subdirectory(${PWNLIB_DEPS_DIR}/lua)
-# add_library(PWN::Deps::Lua ALIAS lua)
-
-# install(TARGETS lua DESTINATION ${PROJECT_NAME}/Dependencies/Library)
-# install(TARGETS lua-header DESTINATION ${PROJECT_NAME}/Dependencies/Include)
-
-# list(APPEND PWN_MODULES Backdoor)
-# endif()
 if(PWN_INCLUDE_DISASSEMBLER)
     list(APPEND PWN_MODULES Assembly)
 endif(PWN_INCLUDE_DISASSEMBLER)

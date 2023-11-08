@@ -26,7 +26,7 @@ include(FetchContent)
 FetchContent_Declare(
     pwn++
     GIT_REPOSITORY https://github.com/hugsy/pwn--.git
-    GIT_TAG main # or faster, use releases (URL)
+    GIT_TAG main # or whatever other tag or use releases (URL)
 )
 FetchContent_MakeAvailable(pwn++)
 ```
@@ -35,8 +35,15 @@ FetchContent_MakeAvailable(pwn++)
 
 A poor rewrite of my [PwnLib](https://github.com/hugsy/pwnlib) DLL in modern C++, battery-included pwn kit for Windows (and a bit for Linux).
 
-The idea is to provide in C on Windows the same kind of functionalities than [pwntools](https://github.com/Gallopsled/pwntools) does in Python on Linux.
-It's also a toy library meant for exploring Windows in a more friendly way. So if you're looking for years of poorly written C/C++ tangled with performant
-inefficient ways to explore Windows at low-level, go no further friend this library is for you.
+## Why?
+
+Because:
+  - I wanted a quick way to bootstrap my low-level experiments
+  - it's unacceptable to struggle to disassemble code, to cross-compile your exploit or simply to have `hexdump`-like function
+  - only C/C++ provides the real right way to write assembly code
+  - modern C++ allows to do crazy useful offsec stuff, completely underused
+  - I like writing code
+
+The idea is to provide in C on Windows the same kind of functionalities than [pwntools](https://github.com/Gallopsled/pwntools) does in Python on Linux. It's also a toy library meant for exploring Windows in a more friendly way. So if you're looking for years of poorly written C++ tangled with performant inefficient ways to experiment low-level, go no further friend this library is for you.
 
 _Note_: the original `PwnLib` was written around Windows 7 for feature testing. This is 100% Windows 10/11 focused, so expect things to go wrong if you use any other Windows version. Some stuff may also go wrong in x86. Better use 64. It's not a bug but a design choice 😋

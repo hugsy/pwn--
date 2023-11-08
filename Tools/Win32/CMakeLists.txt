@@ -16,9 +16,6 @@ set(
     ProcessGhosting
 )
 
-# if(PWN_INCLUDE_BACKDOOR)
-# set(WIN32_TOOLS ${WIN32_TOOLS} Backdoor)
-# endif(PWN_INCLUDE_BACKDOOR)
 foreach(TOOL_DIR ${WIN32_TOOLS})
     file(GLOB SOURCE_FILES ${PWNLIB_TOOLS_WIN32_DIR}/${TOOL_DIR}/*.cpp ${PWNLIB_TOOLS_WIN32_DIR}/${TOOL_DIR}/*.asm)
     add_executable(${TOOL_DIR} WIN32 ${SOURCE_FILES})

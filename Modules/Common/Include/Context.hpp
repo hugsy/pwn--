@@ -13,10 +13,6 @@ using namespace pwn;
 class GlobalContext
 {
 public:
-#ifdef PWN_INCLUDE_BACKDOOR
-    std::jthread m_backdoor_thread;
-    std::vector<std::shared_ptr<Backdoor::ThreadConfig>> m_backdoor_clients;
-#endif
     u64 CryptoSeed;
     std::mutex m_ConsoleMutex;
     std::mutex m_ConfigMutex;

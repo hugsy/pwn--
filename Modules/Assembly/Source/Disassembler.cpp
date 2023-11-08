@@ -223,6 +223,8 @@ Disassembler::Format(Instruction& insn, uptr Address)
         {
             return Err(ErrorCode::ExternalApiCallFailed);
         }
+
+        break;
     }
 #endif // PWN_DISASSEMBLE_X86
 
@@ -239,6 +241,8 @@ Disassembler::Format(Instruction& insn, uptr Address)
         {
             return Err(ErrorCode::ExternalApiCallFailed);
         }
+
+        break;
     }
 #endif // PWN_DISASSEMBLE_ARM64
 

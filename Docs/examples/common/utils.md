@@ -127,37 +127,3 @@ void wmain()
 }
 ```
 
-
-### Lua VM backdoor
-
-Namespace: `pwn::backdoor`
-
-The lib embeds a Lua VM (if compiled with the flag `PWN_ENABLE_LUA_BACKDOOR`) which allows to script your way into a remote process where the pwn++.dll is injected. On Windows it will use a Named Pipe (see tools/win32/Backdoor for a standalone example)
-
-```powershell
-> .\Backdoor.exe
-[DEBUG] {c:\temp\backdoor.cpp:645:wmain()} Starting as PID=15004
-[...]
-[DEBUG] {Z:\pwn++\src\pwn++\win32\backdoor.cpp:548:start()} Listening for connection on '\\.\pipe\WindowsBackupService_202004L_1932'
-[DEBUG] {Z:\pwn++\src\pwn++\win32\backdoor.cpp:253:WaitNextConnectionAsync()} Waiting for connection
-```
-
-Now you can use any client to connect and interact with the Named Pipe
-
-```lua
-> .\NamedPipe.exe '\\.\pipe\WindowsBackupService_202004L_1932'
->>> return pwn.version()
->> Sent 20 bytes
-<< Received 6 bytes
----
-0.1.3
----
->>> return pwn.process.pid()
->> Sent 24 bytes
-<< Received 6 bytes
----
-15004
----
->>>
-```
-

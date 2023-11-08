@@ -22,7 +22,11 @@ message(STATUS "PWN_BUILD_TOOLKIT                      ${PWN_BUILD_TOOLKIT}")
 message(STATUS "PWN_BUILD_TESTING                      ${PWN_BUILD_TESTING}")
 message(STATUS "PWN_BUILD_DOCS                         ${PWN_BUILD_DOCS}")
 message(STATUS "PWN_INCLUDE_DISASSEMBLER               ${PWN_INCLUDE_DISASSEMBLER}")
-message(STATUS "PWN_ENABLE_LUA_BACKDOOR                ${PWN_ENABLE_LUA_BACKDOOR}")
+
+if(PWN_INCLUDE_DISASSEMBLER)
+    message(STATUS "PWN_INCLUDE_DISASSEMBLER_X86                 ${PWN_DISASSEMBLE_X86}")
+    message(STATUS "PWN_INCLUDE_DISASSEMBLER_ARM64               ${PWN_DISASSEMBLE_ARM64}")
+endif()
 
 #
 # If `git` is found, declare the branch/commit hash for debugging
