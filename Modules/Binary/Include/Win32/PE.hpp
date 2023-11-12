@@ -101,7 +101,7 @@ public:
 
     struct PeExceptionTableEntry : IMAGE_RUNTIME_FUNCTION_ENTRY
     {
-#if defined(_ARM64_)
+#if defined(_ARM_) || defined(_ARM64_)
         DWORD EndAddress {};
 #endif
         usize Size;

@@ -35,3 +35,7 @@ Function Invoke-VisualStudio2022x64 {
 Function Invoke-VisualStudio2022arm64 {
     Invoke-CmdScript "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvarsamd64_arm64.bat"
 }
+
+Function Invoke-VisualStudio2022arm {
+    Invoke-CmdScript "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvarsamd64_arm.bat"
+}

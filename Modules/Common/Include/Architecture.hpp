@@ -100,11 +100,12 @@ struct Architecture
 ///
 ///@brief Supported architecture declarations
 ///
-static constexpr CMap<std::string_view, Architecture, 3> Architectures {
+static constexpr CMap<std::string_view, Architecture, 4> Architectures {
     {{
         {"x64"sv, {"X86_64"sv, ArchitectureType::x64, 8, Endianess::little}},
         {"x86"sv, {"X86_32"sv, ArchitectureType::x86, 4, Endianess::little}},
         {"arm64"sv, {"ARM_AARCH64"sv, ArchitectureType::arm64, 8, Endianess::little}},
+        {"arm"sv, {"ARM_AARCH64"sv, ArchitectureType::arm, 4, Endianess::little}},
     }},
 };
 

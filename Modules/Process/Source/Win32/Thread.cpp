@@ -24,13 +24,12 @@ constexpr int WINDOWS_VERSION_22H2 = 19045;
 
 EXTERN_C_START
 
-#ifndef _M_ARM64
-bool
-GetTeb(uptr* teb);
+#if defined(_ARM64_) || defined(_ARM_)
 
-usize
-GetTebLength();
-#else
+//
+// TODO those are not working yet
+//
+
 bool
 GetTeb(uptr* teb)
 {
@@ -42,6 +41,13 @@ GetTebLength()
 {
     return 0;
 }
+
+#else
+bool
+GetTeb(uptr* teb);
+
+usize
+GetTebLength();
 #endif // _M_ARM64
 EXTERN_C_END
 

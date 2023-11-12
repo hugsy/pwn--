@@ -17,7 +17,10 @@ if(WIN32)
     list(APPEND SOURCE_FILES
         ${SOURCE_DIR}/Win32/Symbols.cpp
     )
-    set(DEPS PWN::Common PWN::Network)
+    set(DEPS
+        PWN::Common
+        PWN::Network
+    )
 else()
     return()
 endif(WIN32)

@@ -45,11 +45,19 @@ if(WIN32)
 
     target_compile_options(${PROJECT_NAME}
         PUBLIC
+
         $<$<COMPILE_LANGUAGE:CXX>:
         /Zc:__cplusplus
-        $<$<NOT:$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>>:$<$<CONFIG:Debug>:/fsanitize=address>>
-        $<IF:$<CONFIG:Debug>,/sdl /WX /Gy /Gm- /permissive-,/WX /Zi /Zf /Gm /Gm- /permissive- >
+        /EHsc
+        $<IF:$<CONFIG:Debug>,
+        /sdl /WX /Gy /Gm- /permissive-,
+        /WX /Zi /Zf /Gm /Gm- /permissive-
+        >
         /diagnostics:caret /ZH:SHA_256
+
+        # ASAN only supported for Intel
+        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:$<$<CONFIG:Debug>:/fsanitize=address>>
+        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:$<$<CONFIG:Debug>:/fsanitize=address>>
         >
         PRIVATE
     )
@@ -60,8 +68,13 @@ if(WIN32)
     target_link_options(${PROJECT_NAME}
         PUBLIC
 
-        $<$<NOT:$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>>:$<$<CONFIG:Debug>:/InferAsanLibs>>
+        # Link ASAN for debug
+        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:$<$<CONFIG:Debug>:/InferAsanLibs>>
+        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:$<$<CONFIG:Debug>:/InferAsanLibs>>
+
+        # Fix issues with SAFESEH linking for 32b
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:/SAFESEH:NO>
+        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm>:/SAFESEH:NO>
     )
 
     target_link_libraries(${PROJECT_NAME}

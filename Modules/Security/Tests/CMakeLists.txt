@@ -13,6 +13,7 @@ target_link_libraries(${TEST_EXECUTABLE_NAME} PUBLIC Catch2::Catch2WithMain PWN:
 
 if(WIN32)
     target_link_options(${TEST_EXECUTABLE_NAME} PUBLIC /SUBSYSTEM:Console)
+    target_link_libraries(${TEST_EXECUTABLE_NAME} PUBLIC AdvApi32.lib)
 endif(WIN32)
 
 add_test(NAME ${TEST_EXECUTABLE_NAME} COMMAND $<TARGET_FILE:${TEST_EXECUTABLE_NAME}>)

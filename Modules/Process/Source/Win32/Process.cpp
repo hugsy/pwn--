@@ -702,7 +702,7 @@ AppContainer::AppContainer(
     // build the startup info
     //
     usize size = 0;
-    ::InitializeProcThreadAttributeList(nullptr, 1, 0, &size);
+    ::InitializeProcThreadAttributeList(nullptr, 1, 0, (PSIZE_T)&size);
     if ( size == 0u )
     {
         throw std::runtime_error("InitializeProcThreadAttributeList() failed");
@@ -711,7 +711,7 @@ AppContainer::AppContainer(
     m_StartupInfo.StartupInfo.cb  = sizeof(STARTUPINFOEX);
     m_StartupInfo.lpAttributeList = (LPPROC_THREAD_ATTRIBUTE_LIST)::new u8[size];
 
-    if ( ::InitializeProcThreadAttributeList(m_StartupInfo.lpAttributeList, 1, 0, &size) == 0 )
+    if ( ::InitializeProcThreadAttributeList(m_StartupInfo.lpAttributeList, 1, 0, (PSIZE_T)&size) == 0 )
     {
         throw std::runtime_error("InitializeProcThreadAttributeList() failed");
     }
