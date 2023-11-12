@@ -138,7 +138,7 @@ Base::SendAndReceive(HANDLE hSocket, Message& MsgIn)
         MsgIn.Get(),
         nullptr,
         reinterpret_cast<PPORT_MESSAGE>(lpRawMsgOut.get()),
-        &dwMsgOutLen,
+        (PSIZE_T)&dwMsgOutLen,
         nullptr,
         nullptr);
     if ( !NT_SUCCESS(Status) )

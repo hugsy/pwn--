@@ -20,7 +20,11 @@ add_dependencies(${PROJECT_NAME} PWN::Common PWN::System)
 add_library(PWN::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} ../System/Include PRIVATE ${HEADER_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC)
-target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common)
+target_link_libraries(${PROJECT_NAME}
+    PUBLIC
+    PWN::Common
+    Advapi32.lib
+)
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 

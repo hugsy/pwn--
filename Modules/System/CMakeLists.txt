@@ -27,6 +27,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEA
 target_compile_definitions(${PROJECT_NAME} PUBLIC)
 target_link_libraries(${PROJECT_NAME} PUBLIC ${DEPS})
 
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PUBLIC AdvApi32.lib)
+endif(WIN32)
+
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 
 if(PWN_BUILD_TESTING)

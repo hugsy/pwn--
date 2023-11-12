@@ -28,6 +28,8 @@ jobs:
           - {os: windows-latest,   arch: x86,      config: RelWithDebInfo,   build: full}
           - {os: windows-latest,   arch: arm64,    config: Debug,            build: full}
           - {os: windows-latest,   arch: arm64,    config: RelWithDebInfo,   build: full}
+          - {os: windows-latest,   arch: arm,      config: Debug,            build: full}
+          - {os: windows-latest,   arch: arm,      config: RelWithDebInfo,   build: full}
           - {os: ubuntu-latest,    arch: x64,      config: Debug,            build: full}
           - {os: ubuntu-latest,    arch: x64,      config: RelWithDebInfo,   build: full}
 

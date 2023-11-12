@@ -132,7 +132,7 @@ Memory::QueryInternal(
             MemoryInformationClass,
             Buffer.get(),
             Size,
-            &ReturnLength);
+            (PSIZE_T)&ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
             break;

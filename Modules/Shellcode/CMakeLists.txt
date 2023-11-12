@@ -14,6 +14,7 @@ if(WIN32)
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${SOURCE_DIR}/Win32/asm/x64/copy_system_token.asm>
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${SOURCE_DIR}/Win32/asm/x86/copy_system_token.asm>
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>:${SOURCE_DIR}/Win32/asm/arm64/copy_system_token.asm>
+        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm>:${SOURCE_DIR}/Win32/asm/arm/copy_system_token.asm>
     )
 else()
     return()

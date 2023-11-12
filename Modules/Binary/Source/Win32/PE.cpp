@@ -497,7 +497,7 @@ PE::FillException()
                 return;
             }
 
-#if defined(_ARM64_)
+#if defined(_ARM_) || defined(_ARM64_)
             // TODO adjust from `Flags` field value, based on `ARM64_FNPDATA_FLAGS`
             DWORD EndAddress {e.BeginAddress + e.FunctionLength};
 #else

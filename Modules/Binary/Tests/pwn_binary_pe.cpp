@@ -62,9 +62,9 @@ TEST_CASE("Native PE file parser", "[" NS "]")
         {
             REQUIRE(entry.BeginAddress != 0);
             REQUIRE(entry.EndAddress != 0);
-#ifndef _ARM64_
+#if !defined(_ARM64_) && !defined(_ARM_)
             REQUIRE(entry.UnwindInfoAddress != 0);
-#endif // _ARM64_
+#endif // !_ARM64_ && !_ARM_
         }
     }
 

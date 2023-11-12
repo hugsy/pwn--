@@ -27,13 +27,30 @@
 #endif
 
 
-EXTERN_C_START
+#if defined(_ARM_)
+EXTERN_C
+void
+CopySystemToken()
+{
+}
+
+EXTERN_C
+usize
+CopySystemTokenLength()
+{
+    return -1;
+}
+
+#else
+
+EXTERN_C
 void
 CopySystemToken();
 
+EXTERN_C
 usize
 CopySystemTokenLength();
-EXTERN_C_END
+#endif
 
 
 namespace pwn::Shellcode::Kernel

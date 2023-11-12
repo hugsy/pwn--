@@ -1,4 +1,5 @@
 if(NOT WIN32)
+    message(STATUS "The Registry module is only available for Windows")
     return()
 endif()
 
@@ -20,7 +21,7 @@ add_dependencies(${PROJECT_NAME} PWN::Common)
 add_library(PWN::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC)
-target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common)
+target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common AdvApi32.lib)
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 
