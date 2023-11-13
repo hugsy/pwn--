@@ -18,9 +18,16 @@ set(SOURCE_FILES
 #
 # Create and build the target static library
 #
-add_library(${PROJECT_NAME} STATIC)
+add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 add_library(PWN::Common ALIAS ${PROJECT_NAME})
-target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_FILES})
+
+target_sources(${PROJECT_NAME}
+    PRIVATE
+    FILE_SET CXX_MODULES FILES
+
+    ${INTERFACE_DIR}/Common.ixx
+    ${SOURCE_DIR}/Common.cxx
+)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
 
