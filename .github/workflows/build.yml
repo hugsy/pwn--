@@ -37,6 +37,7 @@ jobs:
     outputs:
       windows-latest-x64-full: ${{ join(steps.*.outputs.windows-latest-x64-full,'') }}
       windows-latest-x86-full: ${{ join(steps.*.outputs.windows-latest-x86-full,'') }}
+      windows-latest-arm-full: ${{ join(steps.*.outputs.windows-latest-arm-full,'') }}
       windows-latest-arm64-full: ${{ join(steps.*.outputs.windows-latest-arm64-full,'') }}
       ubuntu-latest-x64-full: ${{ join(steps.*.outputs.ubuntu-latest-x64-full,'') }}
       ubuntu-latest-x86-full: ${{ join(steps.*.outputs.ubuntu-latest-x86-full,'') }}
@@ -106,7 +107,7 @@ jobs:
         cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.variants.config }}
 
     - name: Run tests
-      if: matrix.variants.build == 'full' && matrix.variants.config == 'Debug'
+      if: matrix.variants.build == 'full' && matrix.variants.config == 'RelWithDebInfo' && ( matrix.variants.arch == 'x86'  || matrix.variants.arch == 'x64' )
       continue-on-error: true
       run: |
         cd build
@@ -173,6 +174,7 @@ jobs:
 
           ${{ needs.build.outputs.windows-latest-x64-full }}
           ${{ needs.build.outputs.windows-latest-x86-full }}
+          ${{ needs.build.outputs.windows-latest-arm-full }}
           ${{ needs.build.outputs.windows-latest-arm64-full }}
           ${{ needs.build.outputs.ubuntu-latest-x64-full }}
           ${{ needs.build.outputs.ubuntu-latest-x86-full }}
