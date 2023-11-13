@@ -114,9 +114,6 @@ using usize = std::size_t;
 using ssize = std::intptr_t;
 using uptr  = std::uintptr_t;
 
-#ifndef UnreferencedParameter
-#define UnreferencedParameter(x) ((void)(x))
-#endif // UnreferencedParameter
 
 using namespace std::literals::string_view_literals;
 using namespace std::literals::chrono_literals;
@@ -166,10 +163,7 @@ struct CMap
         {
             return itr->second;
         }
-        else
-        {
-            throw std::range_error("Not Found");
-        }
+        throw std::range_error("Not Found");
     }
 
     [[nodiscard]] constexpr Value
