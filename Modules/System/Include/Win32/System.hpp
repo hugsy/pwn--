@@ -44,7 +44,8 @@ PageSize() -> u32;
 ///@return u32
 ///
 u32
-ProcessId(const HANDLE hProcess);
+ProcessId(const HANDLE hProcess = ::GetCurrentProcess());
+
 
 ///
 ///@brief

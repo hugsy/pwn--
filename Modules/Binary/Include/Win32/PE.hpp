@@ -213,6 +213,14 @@ public:
         return m_PeHeader;
     }
 
+    uptr const
+    EntryPointAddress() const
+    {
+        auto const hdrs = Header();
+        return Is64b() ? std::get<PeHeader64>(hdrs).OptionalHeader.AddressOfEntryPoint :
+                         std::get<PeHeader32>(hdrs).OptionalHeader.AddressOfEntryPoint;
+    }
+
 
     std::vector<PeDataDirectory> const&
     DataDirectories() const

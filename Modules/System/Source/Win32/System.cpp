@@ -30,9 +30,14 @@ namespace pwn::System
 auto
 PageSize() -> u32
 {
-    SYSTEM_INFO siSysInfo {};
-    ::GetSystemInfo(&siSysInfo);
-    return siSysInfo.dwPageSize;
+    static u32 __page_size {};
+    if ( !__page_size ) [[unlikely]]
+    {
+        SYSTEM_INFO siSysInfo {};
+        ::GetSystemInfo(&siSysInfo);
+        __page_size = siSysInfo.dwPageSize;
+    }
+    return __page_size;
 }
 
 

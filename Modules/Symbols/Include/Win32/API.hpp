@@ -118,6 +118,19 @@ ExternalImport(
 
 ExternalImport(
     "ntdll.dll",
+    NtCreateProcess,
+    NTSTATUS,
+    _Out_ PHANDLE ProcessHandle,
+    _In_ ACCESS_MASK DesiredAccess,
+    _In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
+    _In_ HANDLE ParentProcess,
+    _In_ BOOLEAN InheritObjectTable,
+    _In_opt_ HANDLE SectionHandle,
+    _In_opt_ HANDLE DebugPort,
+    _In_opt_ HANDLE ExceptionPort);
+
+ExternalImport(
+    "ntdll.dll",
     NtCreateProcessEx,
     NTSTATUS,
     _Out_ PHANDLE ProcessHandle,
@@ -146,6 +159,20 @@ ExternalImport(
     _In_opt_ PUNICODE_STRING RuntimeData,
     _In_ ULONG Flags);
 
+
+ExternalImport(
+    "ntdll.dll",
+    NtCreateThread,
+    NTSTATUS,
+    _Out_ PHANDLE ThreadHandle,
+    _In_ ACCESS_MASK DesiredAccess,
+    _In_opt_ POBJECT_ATTRIBUTES ObjectAttributes,
+    _In_ HANDLE ProcessHandle,
+    _Out_ PCLIENT_ID ClientId,
+    _In_ PCONTEXT ThreadContext,
+    _In_ PINITIAL_TEB InitialTeb,
+    _In_ BOOLEAN CreateSuspended);
+
 ExternalImport(
     "ntdll.dll",
     NtCreateThreadEx,
@@ -173,6 +200,22 @@ ExternalImport(
     IN ULONG PageAttributess,
     IN ULONG SectionAttributes,
     IN HANDLE FileHandle OPTIONAL);
+
+
+ExternalImport(
+    "ntdll.dll",
+    NtCreateTransaction,
+    NTSTATUS,
+    PHANDLE TransactionHandle,
+    ACCESS_MASK DesiredAccess,
+    POBJECT_ATTRIBUTES ObjectAttributes,
+    LPGUID Uow,
+    HANDLE TmHandle,
+    ULONG CreateOptions,
+    ULONG IsolationLevel,
+    ULONG IsolationFlags,
+    PLARGE_INTEGER Timeout,
+    PUNICODE_STRING Description);
 
 ExternalImport(
     "ntdll.dll",

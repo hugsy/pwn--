@@ -94,9 +94,6 @@ Process::Process(u32 Pid) : m_ProcessId {Pid}
         throw std::runtime_error("Process initialization error");
     }
 
-    xdbg("Process handle with {}", ProcessAccessToString(m_ProcessHandleAccessMask).c_str());
-
-
     // Process PPID
     {
         auto BasicInfo    = Value(Query<PROCESS_BASIC_INFORMATION>(PROCESSINFOCLASS::ProcessBasicInformation));
@@ -107,7 +104,7 @@ Process::Process(u32 Pid) : m_ProcessId {Pid}
     // Full path
     {
         auto NativeFilePath = Value(Query<UNICODE_STRING>(PROCESSINFOCLASS::ProcessImageFileName));
-        m_NativePath        = std::wstring {NativeFilePath->Buffer};
+        m_NativePath        = (NativeFilePath->Length) ? std::wstring {NativeFilePath->Buffer} : std::wstring {L""};
     }
 }
 
@@ -115,7 +112,8 @@ Process::Process(u32 Pid) : m_ProcessId {Pid}
 Process::Process(HANDLE&& hProcess) : Process(::GetProcessId(hProcess))
 {
     m_ProcessHandle.reset(std::move(hProcess));
-    m_ProcessHandleAccessMask = PROCESS_ALL_ACCESS;
+    // TODO: fix by querying existing access
+    m_ProcessHandleAccessMask = PROCESS_QUERY_LIMITED_INFORMATION;
 }
 
 
@@ -525,6 +523,8 @@ Process::ReOpenProcessWith(const DWORD DesiredAccess)
     //
     m_ProcessHandle           = UniqueHandle {hProcess};
     m_ProcessHandleAccessMask = NewAccessMask;
+
+    xdbg("Process handle with {}", ProcessAccessToString(m_ProcessHandleAccessMask).c_str());
     return Ok(true);
 }
 

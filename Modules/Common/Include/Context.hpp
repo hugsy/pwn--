@@ -41,6 +41,11 @@ public:
             return;
         }
 
+        if constexpr ( std::is_same_v<T, ArchitectureType> )
+        {
+            SetArchitecture(std::format("{}", arg));
+            return;
+        }
         if constexpr ( std::is_same_v<T, Log::LogLevel> )
         {
             SetLogLevel(arg);

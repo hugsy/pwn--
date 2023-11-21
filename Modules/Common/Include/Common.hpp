@@ -33,10 +33,6 @@
 // clang-format on
 #pragma warning(pop)
 
-#ifndef UNREFERENCED_PARAMETER
-#define UNREFERENCED_PARAMETER(x) ((void)x)
-#endif // UNREFERENCED_PARAMETER
-
 #elif defined(PWN_BUILD_FOR_LINUX)
 
 //
@@ -62,11 +58,12 @@
 #define MAX_PATH 260
 #endif // MAX_PATH
 
+#endif // defined(PWN_BUILD_FOR_LINUX)
+
 #ifndef UNREFERENCED_PARAMETER
 #define UNREFERENCED_PARAMETER(x) ((void)x)
 #endif // UNREFERENCED_PARAMETER
 
-#endif // defined(PWN_BUILD_FOR_LINUX)
 
 #ifndef UnusedParameter
 #define UnusedParameter UNREFERENCED_PARAMETER
