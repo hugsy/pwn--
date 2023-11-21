@@ -1,15 +1,14 @@
 #include <pwn>
+
 using namespace pwn;
 
-#if PWN_BUILD_SHARED_LIB
-#ifdef PWN_BUILD_FOR_WINDOWS
 void
 OnAttachRoutine()
 {
     //
     // Initialize the RNG
     //
-    utils::random::seed();
+    Utils::Random::Seed();
 }
 
 
@@ -22,8 +21,8 @@ OnDetachRoutine()
 BOOL APIENTRY
 DllMain(_In_ HMODULE hModule, _In_ DWORD ul_reason_for_call, _In_ LPVOID lpReserved)
 {
-    UnreferencedParameter(hModule);
-    UnreferencedParameter(lpReserved);
+    UnusedParameter(hModule);
+    UnusedParameter(lpReserved);
 
     switch ( ul_reason_for_call )
     {
@@ -41,7 +40,3 @@ DllMain(_In_ HMODULE hModule, _In_ DWORD ul_reason_for_call, _In_ LPVOID lpReser
     }
     return true;
 }
-
-#endif // PWN_BUILD_FOR_WINDOWS
-
-#endif // PWN_BUILD_SHARED_LIB

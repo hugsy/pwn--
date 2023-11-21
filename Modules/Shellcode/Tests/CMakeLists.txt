@@ -3,6 +3,7 @@ set(TEST_EXECUTABLE_NAME tests_pwn_${PROJECT_NAME})
 list(APPEND SOURCE_FILES
 
     ${TEST_DIR}/main.cpp
+    ${TEST_DIR}/pwn_shellcode_pattern.cpp
 )
 
 add_executable(${TEST_EXECUTABLE_NAME} ${SOURCE_FILES})

