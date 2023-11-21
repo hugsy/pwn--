@@ -43,9 +43,10 @@ public:
 
         if constexpr ( std::is_same_v<T, ArchitectureType> )
         {
-            SetArchitecture(std::format("{}", arg));
+            SetArchitecture(arg);
             return;
         }
+
         if constexpr ( std::is_same_v<T, Log::LogLevel> )
         {
             SetLogLevel(arg);
@@ -70,7 +71,16 @@ public:
 
 private:
     ///
-    ///@brief Set the Architecture object
+    /// @brief Set the Architecture object
+    ///
+    /// @param arch
+    ///
+    void
+    SetArchitecture(ArchitectureType const& arch);
+
+
+    ///
+    ///@brief Set the Architecture object from a string
     ///
     ///@param type
     ///

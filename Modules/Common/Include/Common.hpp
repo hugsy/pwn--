@@ -144,7 +144,8 @@ constexpr_concat(std::string const& arg, Args... args)
 template<typename Key, typename Value, usize Size>
 struct CMap
 {
-    std::array<std::pair<Key, Value>, Size> data;
+    using CMapEntry = std::pair<Key, Value>;
+    std::array<CMapEntry, Size> data;
 
     [[nodiscard]] constexpr Value
     at(const Key& key) const

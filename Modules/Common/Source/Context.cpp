@@ -13,14 +13,20 @@ GlobalContext::GlobalContext()
     Set("x64");
 };
 
+void
+GlobalContext::SetArchitecture(ArchitectureType const& archtype)
+{
+    architecture = Architectures.at(archtype);
+}
 
 void
 GlobalContext::SetArchitecture(std::string_view const& type)
 {
-    architecture = Architecture::Find(type);
-    endianess    = architecture.endian;
-    ptrsize      = architecture.ptrsize;
-    dbg("Selecting '{}'", architecture);
+    auto arch    = Architecture::Find(type);
+    architecture = arch;
+    endianess    = arch.endian;
+    ptrsize      = arch.ptrsize;
+    dbg("Selecting '{}'", arch);
 }
 
 
