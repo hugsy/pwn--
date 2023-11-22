@@ -44,7 +44,8 @@ Architecture::Find(std::string_view const& sv)
         Architectures.data.cend(),
         [&](auto const& e)
         {
-            return e.second.name == sv;
+            return e.second.name == sv ||
+                   (std::find(e.second.aliases.begin(), e.second.aliases.end(), sv) != e.second.aliases.end());
         });
     if ( entry == Architectures.data.cend() )
     {
