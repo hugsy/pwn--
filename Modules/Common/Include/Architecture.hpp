@@ -61,6 +61,7 @@ struct Architecture
     ArchitectureType id {};
     usize ptrsize {};
     Endianess endian {};
+    std::array<std::string_view, 4> aliases {};
 
     auto
     operator<=>(Architecture const& other) const = default;
@@ -104,10 +105,24 @@ struct Architecture
 ///
 static constexpr CMap<ArchitectureType, Architecture, 4> Architectures {
     {{
-        {ArchitectureType::x64, {"X86_64"sv, ArchitectureType::x64, 8, Endianess::little}},
-        {ArchitectureType::x86, {"X86_32"sv, ArchitectureType::x86, 4, Endianess::little}},
-        {ArchitectureType::arm64, {"ARM_AARCH64"sv, ArchitectureType::arm64, 8, Endianess::little}},
-        {ArchitectureType::arm, {"ARM_AARCH64"sv, ArchitectureType::arm, 4, Endianess::little}},
+        {ArchitectureType::x64,
+         {"x64"sv,
+          ArchitectureType::x64,
+          8,
+          Endianess::little,
+          {
+              "x86-64"sv,
+          }}},
+        {ArchitectureType::x86,
+         {"x86"sv,
+          ArchitectureType::x86,
+          4,
+          Endianess::little,
+          {
+              "i386"sv,
+          }}},
+        {ArchitectureType::arm64, {"arm64"sv, ArchitectureType::arm64, 8, Endianess::little, {"aarch64"sv}}},
+        {ArchitectureType::arm, {"arm"sv, ArchitectureType::arm, 4, Endianess::little}},
     }},
 };
 

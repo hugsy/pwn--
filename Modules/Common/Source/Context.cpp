@@ -10,13 +10,17 @@ struct GlobalContext Context;
 GlobalContext::GlobalContext()
 {
     Utils::Random::Seed(std::chrono::system_clock::now().time_since_epoch().count());
-    Set("x64");
+    SetArchitecture(ArchitectureType::x64);
 };
 
 void
 GlobalContext::SetArchitecture(ArchitectureType const& archtype)
 {
-    architecture = Architectures.at(archtype);
+    auto arch    = Architectures.at(archtype);
+    architecture = arch;
+    endianess    = arch.endian;
+    ptrsize      = arch.ptrsize;
+    dbg("Selecting '{}'", arch);
 }
 
 void
