@@ -108,9 +108,8 @@ jobs:
 
     - name: Run tests
       if: matrix.variants.build == 'full' && matrix.variants.config == 'RelWithDebInfo' && ( matrix.variants.arch == 'x86'  || matrix.variants.arch == 'x64' )
-      continue-on-error: true
       run: |
-        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ matrix.variants.config }} -T test --test-dir ./build
+        ctest --parallel ${{ env.NB_CPU }} --progress --build-config ${{ matrix.variants.config }} -T test --test-dir ./build
 
     - name: Populate the successful output (Windows)
       id: output_success_win
