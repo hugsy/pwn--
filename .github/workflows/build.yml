@@ -7,9 +7,11 @@ env:
   VERBOSE: "1"
 
 on:
-  push:
   pull_request:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
