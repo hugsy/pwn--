@@ -66,7 +66,7 @@ operator""_GB(unsigned long long x) noexcept -> usize
 ///
 /// @brief Lightweight wrapper class to decode strings
 ///
-constexpr struct encoded_string
+struct encoded_string
 {
     const std::string m_str {};
     constexpr const std::string
