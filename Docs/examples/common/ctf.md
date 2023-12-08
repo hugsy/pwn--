@@ -8,16 +8,17 @@ Description: Some pwntools goodies
 ### Local processes
 
 ```cpp
-#include <pwn++\pwn.h>
+#include <pwn>
+using namespace pwn;
 
 void wmain()
 {
     namespace log = pwn::log;
-    namespace ctf = pwn::ctf;
-    namespace utils = pwn::utils;
+    namespace ctf = pwn::CTF;
+    namespace utils = pwn::Utils;
 
-    pwn::Context.set("x64");
-    pwn::Context.set(log::LogLevel::Debug);
+    pwn::Context.Set(ArchitectureType::x64);
+    pwn::Context.Set(log::LogLevel::Debug);
 
     {
         auto p = ctf::Process(L"python.exe -i");
@@ -37,16 +38,17 @@ void wmain()
 ### Remote processes
 
 ```cpp
-#include <pwn++\pwn.h>
+#include <pwn>
+using namespace pwn;
 
 void wmain()
 {
-    namespace log = pwn::log;
-    namespace ctf = pwn::ctf;
-    namespace utils = pwn::utils;
+    namespace log = pwn::Log;
+    namespace ctf = pwn::CTF;
+    namespace utils = pwn::Utils;
 
-    pwn::Context.set("x64");
-    pwn::Context.set(log::LogLevel::Debug);
+    pwn::Context.Set(ArchitectureType::x64);
+    pwn::Context.Set(Log::LogLevel::Debug);
 
     {
         auto io = ctf::Remote(L"target_vm", 1337);

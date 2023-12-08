@@ -2,8 +2,7 @@
 
 
 ```cpp
-#include <pwn++\pwn.h>
-
+#include <pwn>
 using namespace pwn;
 
 auto wmain() -> int
@@ -11,15 +10,15 @@ auto wmain() -> int
     auto const [major, minor] = pwn::VersionInfo;
     ok(L"Running pwn++ v{:d}.{:02d}", major, minor);
 
-    Context.set("x64");
+    Context.Set(ArchitectureType::x64);
     dbg(L"The default log_level is INFO, this message will not show!");
 
-    Context.set_log_level(log::LogLevel::Debug);
+    Context.Set(Log::LogLevel::Debug);
     dbg(L"Now it will!");
 
     try
     {
-        Context.set("whatever_arch_that_dont_exist");
+        Context.Set("whatever_arch_that_dont_exist");
     }
     catch(...)
     {

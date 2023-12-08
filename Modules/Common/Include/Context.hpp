@@ -31,12 +31,14 @@ public:
     {
         if constexpr ( std::is_same_v<T, std::string_view> )
         {
+            warn("Deprecated, prefer using ArchitectureType");
             SetArchitecture(arg);
             return;
         }
 
         if constexpr ( std::is_same_v<T, std::wstring_view> )
         {
+            warn("Deprecated, prefer using ArchitectureType");
             SetArchitecture(Utils::StringLib::To<std::string>(arg));
             return;
         }
@@ -62,16 +64,10 @@ public:
         throw new std::bad_typeid();
     }
 
-    void
-    Set(const char* arg)
-    {
-        return Set(std::string_view(arg));
-    }
-
 
 private:
     ///
-    /// @brief Set the Architecture object
+    /// @brief Set the Architecture for the global context
     ///
     /// @param arch
     ///
@@ -80,7 +76,7 @@ private:
 
 
     ///
-    ///@brief Set the Architecture object from a string
+    ///@brief Set the Architecture object from its name
     ///
     ///@param type
     ///
@@ -89,7 +85,8 @@ private:
 
 
     ///
-    ///@brief Set the Endianess object
+    ///@brief Force the endianess on the selected architecture. Note that this will impact function that automatically
+    /// collect context info to determine their behavior (for instance `Utils::Pack` etc.)
     ///
     ///@param end
     ///

@@ -16,7 +16,11 @@ GlobalContext::GlobalContext()
 void
 GlobalContext::SetArchitecture(ArchitectureType const& archtype)
 {
-    architecture = Architectures.at(archtype);
+    auto arch    = Architectures.at(archtype);
+    architecture = arch;
+    endianess    = arch.endian;
+    ptrsize      = arch.ptrsize;
+    dbg("Selecting '{}'", arch);
 }
 
 void
