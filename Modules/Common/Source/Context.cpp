@@ -10,7 +10,7 @@ struct GlobalContext Context;
 GlobalContext::GlobalContext()
 {
     Utils::Random::Seed(std::chrono::system_clock::now().time_since_epoch().count());
-    SetArchitecture(ArchitectureType::x64);
+    Set(ArchitectureType::x64);
 };
 
 void
