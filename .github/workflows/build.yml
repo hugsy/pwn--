@@ -54,6 +54,7 @@ jobs:
         echo "NB_CPU=$env:NUMBER_OF_PROCESSORS" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         Import-Module .\.github\Invoke-VisualStudio.ps1
         Invoke-VisualStudio2022${{ matrix.variants.arch }}
+        winget upgrade Kitware.CMake
 
     - name: Setup environment variables (Linux)
       if: matrix.variants.os == 'ubuntu-latest'
