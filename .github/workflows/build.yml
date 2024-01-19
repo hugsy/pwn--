@@ -109,7 +109,7 @@ jobs:
     - name: Initialize cmake (Linux)
       if: matrix.variants.os == 'ubuntu-latest'
       run: |
-        cmake -S . -B ./build ${{ env.CMAKE_FLAGS }} -G Ninja
+        cmake -S . -B ./build ${{ env.CMAKE_FLAGS }} -G Ninja -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_C_COMPILER=${CC}
 
     - name: Build pwn++ library
       run: |
