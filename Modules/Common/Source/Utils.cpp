@@ -209,7 +209,7 @@ Random::Next() -> u64
 
 
 auto
-Random::Next(u64 const max, u64 const min) noexcept -> u64
+Random::Next(u64 const min, u64 const max) noexcept -> u64
 {
     return (XorShift64() + min) % max;
 }
@@ -521,7 +521,7 @@ Pack::p8(u8 v, Endianess e)
 void
 Pause()
 {
-    dbg("Pausing, press enter to resume...");
+    info("Pausing, press enter to resume...");
     std::cin.get();
 }
 

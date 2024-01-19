@@ -16,7 +16,7 @@ TEST_CASE("Disassemble", "[Assembly]")
 
         // disassemble one insn (auto arch)
         {
-            Context.Set("x64");
+            Context.Set(ArchitectureType::x64);
             Assembly::Disassembler d;
 
             auto res = d.Disassemble(code);
@@ -65,7 +65,7 @@ TEST_CASE("Disassemble", "[Assembly]")
 
         // disassemble one insn
         {
-            Context.Set("x86");
+            Context.Set(ArchitectureType::x86);
             Assembly::Disassembler d;
 
             auto res = d.Disassemble(code);
@@ -98,7 +98,7 @@ TEST_CASE("Disassemble", "[Assembly]")
             code {0xc8, 0x18, 0x80, 0xd2, 0x01, 0xfd, 0x47, 0xd3, 0x20, 0xf8, 0x7f, 0xd3, 0xe2, 0x03, 0x1f, 0xaa};
 
         {
-            Context.Set("arm64");
+            Context.Set(ArchitectureType::arm64);
             Assembly::Disassembler d;
 
             auto res = d.Disassemble(code);
@@ -110,7 +110,7 @@ TEST_CASE("Disassemble", "[Assembly]")
 
 
         {
-            Context.Set("x64");
+            Context.Set(ArchitectureType::x64);
             auto a = Architecture::Find("arm64");
             auto d = Assembly::Disassembler(a);
 

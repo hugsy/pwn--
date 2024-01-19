@@ -12,7 +12,7 @@ using namespace pwn;
 auto
 wmain(const int argc, const wchar_t** argv) -> int
 {
-    Context.Set("x64");
+    Context.Set(ArchitectureType::x64);
     Context.LogLevel = Log::LogLevel::Debug;
 
     const auto target_process = (argc >= 2) ? std::wstring(argv[1]) : std::wstring(L"powershell.exe");

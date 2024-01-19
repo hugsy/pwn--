@@ -13,7 +13,6 @@ on:
     branches:
       - main
 
-
 jobs:
   build:
     name: "${{ matrix.variants.os }}/${{ matrix.variants.arch }}/${{ matrix.variants.config }}"
@@ -25,21 +24,21 @@ jobs:
       fail-fast: false
       matrix:
         variants:
-          - {os: windows-latest,   arch: x64,      config: Debug,            build: full}
+          # - {os: windows-latest,   arch: x64,      config: Debug,            build: full}
+          # - {os: windows-latest,   arch: win32,    config: Debug,            build: full}
+          # - {os: windows-latest,   arch: arm64,    config: Debug,            build: full}
+          # - {os: windows-latest,   arch: arm,      config: Debug,            build: full}
+          # - {os: ubuntu-latest,    arch: x64,      config: Debug,            build: full}
           - {os: windows-latest,   arch: x64,      config: RelWithDebInfo,   build: full}
-          - {os: windows-latest,   arch: x86,      config: Debug,            build: full}
-          - {os: windows-latest,   arch: x86,      config: RelWithDebInfo,   build: full}
-          - {os: windows-latest,   arch: arm64,    config: Debug,            build: full}
+          - {os: windows-latest,   arch: win32,    config: RelWithDebInfo,   build: full}
           - {os: windows-latest,   arch: arm64,    config: RelWithDebInfo,   build: full}
-          - {os: windows-latest,   arch: arm,      config: Debug,            build: full}
           - {os: windows-latest,   arch: arm,      config: RelWithDebInfo,   build: full}
-          - {os: ubuntu-latest,    arch: x64,      config: Debug,            build: full}
           - {os: ubuntu-latest,    arch: x64,      config: RelWithDebInfo,   build: full}
 
     runs-on: ${{ matrix.variants.os }}
     outputs:
       windows-latest-x64-full: ${{ join(steps.*.outputs.windows-latest-x64-full,'') }}
-      windows-latest-x86-full: ${{ join(steps.*.outputs.windows-latest-x86-full,'') }}
+      windows-latest-win32-full: ${{ join(steps.*.outputs.windows-latest-win32-full,'') }}
       windows-latest-arm-full: ${{ join(steps.*.outputs.windows-latest-arm-full,'') }}
       windows-latest-arm64-full: ${{ join(steps.*.outputs.windows-latest-arm64-full,'') }}
       ubuntu-latest-x64-full: ${{ join(steps.*.outputs.ubuntu-latest-x64-full,'') }}
@@ -99,13 +98,8 @@ jobs:
     - name: Build environment information
       run: env
 
-    - name: Initialize cmake (Windows/x86)
-      if: matrix.variants.os == 'windows-latest' && matrix.variants.arch == 'x86'
-      run: |
-        cmake -S . -B ./build -A win32 ${{ env.CMAKE_FLAGS }}
-
-    - name: Initialize cmake (Windows)
-      if: matrix.variants.os == 'windows-latest' && matrix.variants.arch != 'x86'
+    - name: Initialize cmake
+      if: matrix.variants.os == 'windows-latest'
       run: |
         cmake -S . -B ./build -A ${{ matrix.variants.arch }} ${{ env.CMAKE_FLAGS }}
 
@@ -122,9 +116,7 @@ jobs:
       if: matrix.variants.build == 'full' && matrix.variants.config == 'RelWithDebInfo' && ( matrix.variants.arch == 'x86'  || matrix.variants.arch == 'x64' )
       continue-on-error: true
       run: |
-        cd build
-        ctest --parallel ${{ env.NB_CPU }} --progress --extra-verbose --build-config ${{ matrix.variants.config }} -T test
-        cd ..
+        ctest --parallel ${{ env.NB_CPU }} --progress --build-config ${{ matrix.variants.config }} -T test --test-dir ./build
 
     - name: Populate the successful output (Windows)
       id: output_success_win
@@ -185,7 +177,7 @@ jobs:
           ● [Detail Page](${{ env.RUN_URL }})
 
           ${{ needs.build.outputs.windows-latest-x64-full }}
-          ${{ needs.build.outputs.windows-latest-x86-full }}
+          ${{ needs.build.outputs.windows-latest-win32-full }}
           ${{ needs.build.outputs.windows-latest-arm-full }}
           ${{ needs.build.outputs.windows-latest-arm64-full }}
           ${{ needs.build.outputs.ubuntu-latest-x64-full }}

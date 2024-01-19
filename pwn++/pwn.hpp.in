@@ -4,6 +4,7 @@
 #include "Common.hpp"
 #include "Architecture.hpp"
 #include "Log.hpp"
+#include "Literals.hpp"
 #include "Formatters.hpp"
 #include "Utils.hpp"
 #include "Handle.hpp"
