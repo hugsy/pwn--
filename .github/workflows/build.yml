@@ -7,9 +7,12 @@ env:
   VERBOSE: "1"
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
 
 jobs:
   build:
@@ -109,7 +112,7 @@ jobs:
     - name: Initialize cmake (Linux)
       if: matrix.variants.os == 'ubuntu-latest'
       run: |
-        cmake -S . -B ./build ${{ env.CMAKE_FLAGS }} -G Ninja -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_C_COMPILER=${CC}
+        cmake -S . -B ./build ${{ env.CMAKE_FLAGS }} -G Ninja -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_C_COMPILER=${CC} -DCMAKE_MAKE_PROGRAM=make
 
     - name: Build pwn++ library
       run: |
