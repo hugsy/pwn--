@@ -15,6 +15,17 @@ using namespace pwn;
 #endif // VARIABLE_ATTRIBUTE_NON_VOLATILE
 
 
+DWORD
+Test(PVOID Arg)
+{
+    while ( true )
+    {
+        ok("hello");
+        ::Sleep(1000);
+    }
+    return 0;
+}
+
 auto
 wmain(const int argc, const wchar_t** argv) -> int
 {
@@ -22,10 +33,41 @@ wmain(const int argc, const wchar_t** argv) -> int
 
     Context.Set(Log::LogLevel::Debug);
 
+    auto self = Process::Current();
+    self.ReOpenProcessWith(PROCESS_CREATE_PROCESS);
+    HANDLE h {};
+    auto st = Resolver::ntdll::NtCreateProcessEx(
+        &h,
+        PROCESS_ALL_ACCESS,
+        nullptr,
+        self.Handle(),
+        0,
+        nullptr,
+        nullptr,
+        nullptr,
+        false);
+    Log::ntperror("NtCreateProcess", st);
+
+    Process::Process child(std::move(h));
+    child.ReOpenProcessWith(
+        PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ);
+    ok("PID {} has {} threads", child.Id(), child.Threads().size());
+
+    DWORD tid {};
+    bool b1 = ::CreateRemoteThread(child.Handle(), nullptr, 0, (LPTHREAD_START_ROUTINE)Test, nullptr, 0, &tid);
+    if ( !b1 )
+    {
+        Log::perror("CreateRemoteThread");
+    }
+    else
+    {
+        ok("CreateRemoteThread returned {}", b1);
+    }
+
+
     //
     // Get the current process and its token
     //
-    auto self = Process::Current();
     Security::Token ProcessToken(self.Handle(), Security::Token::Granularity::Process);
     if ( Failed(ProcessToken.AddPrivilege(L"SeSystemEnvironmentPrivilege")) )
     {
@@ -56,7 +98,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     UNICODE_STRING UnlockIdName;
     ::RtlInitUnicodeString(&UnlockIdName, L"UnlockIDCopy");
 
-    Status = NtQuerySystemEnvironmentValueEx(
+    Status = Resolver::ntdll::NtQuerySystemEnvironmentValueEx(
         &UnlockIdName,
         (LPGUID)GuidUnlockId.data(),
         value.data(),

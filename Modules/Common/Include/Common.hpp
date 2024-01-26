@@ -33,10 +33,6 @@
 // clang-format on
 #pragma warning(pop)
 
-#ifndef UNREFERENCED_PARAMETER
-#define UNREFERENCED_PARAMETER(x) ((void)x)
-#endif // UNREFERENCED_PARAMETER
-
 #elif defined(PWN_BUILD_FOR_LINUX)
 
 //
@@ -62,11 +58,12 @@
 #define MAX_PATH 260
 #endif // MAX_PATH
 
+#endif // defined(PWN_BUILD_FOR_LINUX)
+
 #ifndef UNREFERENCED_PARAMETER
 #define UNREFERENCED_PARAMETER(x) ((void)x)
 #endif // UNREFERENCED_PARAMETER
 
-#endif // defined(PWN_BUILD_FOR_LINUX)
 
 #ifndef UnusedParameter
 #define UnusedParameter UNREFERENCED_PARAMETER
@@ -114,9 +111,6 @@ using usize = std::size_t;
 using ssize = std::intptr_t;
 using uptr  = std::uintptr_t;
 
-#ifndef UnreferencedParameter
-#define UnreferencedParameter(x) ((void)(x))
-#endif // UnreferencedParameter
 
 using namespace std::literals::string_view_literals;
 using namespace std::literals::chrono_literals;
@@ -150,7 +144,8 @@ constexpr_concat(std::string const& arg, Args... args)
 template<typename Key, typename Value, usize Size>
 struct CMap
 {
-    std::array<std::pair<Key, Value>, Size> data;
+    using CMapEntry = std::pair<Key, Value>;
+    std::array<CMapEntry, Size> data;
 
     [[nodiscard]] constexpr Value
     at(const Key& key) const
@@ -166,10 +161,7 @@ struct CMap
         {
             return itr->second;
         }
-        else
-        {
-            throw std::range_error("Not Found");
-        }
+        throw std::range_error("Not Found");
     }
 
     [[nodiscard]] constexpr Value

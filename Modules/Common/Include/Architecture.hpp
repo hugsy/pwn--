@@ -61,6 +61,7 @@ struct Architecture
     ArchitectureType id {};
     usize ptrsize {};
     Endianess endian {};
+    std::array<std::string_view, 4> aliases {};
 
     auto
     operator<=>(Architecture const& other) const = default;
@@ -87,25 +88,41 @@ struct Architecture
 
     ///
     ///@brief Find an architecture by name. The function will throw `std::range_error`
-    // if not found
+    // if not found.
     ///
-    ///@param sv
+    ///@param architecture_name
+    ///
     ///@return Architecture
+    ///@throw range_error if not found
     ///
-    static Architecture
-    Find(std::string_view const& sv);
+    static Architecture const&
+    Find(std::string_view const& architecture_name);
 };
 
 
 ///
 ///@brief Supported architecture declarations
 ///
-static constexpr CMap<std::string_view, Architecture, 4> Architectures {
+static constexpr CMap<ArchitectureType, Architecture, 4> Architectures {
     {{
-        {"x64"sv, {"X86_64"sv, ArchitectureType::x64, 8, Endianess::little}},
-        {"x86"sv, {"X86_32"sv, ArchitectureType::x86, 4, Endianess::little}},
-        {"arm64"sv, {"ARM_AARCH64"sv, ArchitectureType::arm64, 8, Endianess::little}},
-        {"arm"sv, {"ARM_AARCH64"sv, ArchitectureType::arm, 4, Endianess::little}},
+        {ArchitectureType::x64,
+         {"x64"sv,
+          ArchitectureType::x64,
+          8,
+          Endianess::little,
+          {
+              "x86-64"sv,
+          }}},
+        {ArchitectureType::x86,
+         {"x86"sv,
+          ArchitectureType::x86,
+          4,
+          Endianess::little,
+          {
+              "i386"sv,
+          }}},
+        {ArchitectureType::arm64, {"arm64"sv, ArchitectureType::arm64, 8, Endianess::little, {"aarch64"sv}}},
+        {ArchitectureType::arm, {"arm"sv, ArchitectureType::arm, 4, Endianess::little}},
     }},
 };
 

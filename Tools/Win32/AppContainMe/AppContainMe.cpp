@@ -27,7 +27,7 @@ wmain(_In_ int argc, _In_ const wchar_t** argv) -> int
         return EXIT_FAILURE;
     }
 
-    Context.Set("x64");
+    Context.Set(ArchitectureType::x64);
     Context.LogLevel = Log::LogLevel::Debug;
 
     const std::wstring containerName {L"appcontainer-" + Utils::Random::AlnumWideString(10)};

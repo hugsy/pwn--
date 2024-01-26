@@ -1,12 +1,12 @@
 enable_testing()
 set(TEST_EXECUTABLE_NAME tests_pwn_${PROJECT_NAME})
-list(APPEND SOURCE_FILES
+set(FILES
 
     ${TEST_DIR}/main.cpp
     ${TEST_DIR}/pwn_disasm.cpp
 )
 
-add_executable(${TEST_EXECUTABLE_NAME} ${SOURCE_FILES})
+add_executable(${TEST_EXECUTABLE_NAME} ${FILES})
 add_executable(PWN::Tests::${PROJECT_NAME} ALIAS ${TEST_EXECUTABLE_NAME})
 add_dependencies(${TEST_EXECUTABLE_NAME} PWN::Deps::Catch2 PWN::${PROJECT_NAME})
 target_link_libraries(${TEST_EXECUTABLE_NAME} PUBLIC Catch2::Catch2WithMain PWN::${PROJECT_NAME})

@@ -1,3 +1,5 @@
+include(FetchContent)
+
 FetchContent_Declare(
     Deps_PhNt
     GIT_REPOSITORY https://github.com/winsiderss/phnt.git

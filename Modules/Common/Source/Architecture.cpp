@@ -36,10 +36,22 @@ operator<<(std::wostream& wos, Endianess e)
 }
 
 
-Architecture
+const Architecture&
 Architecture::Find(std::string_view const& sv)
 {
-    return Architectures.at(sv);
+    auto entry = std::find_if(
+        Architectures.data.cbegin(),
+        Architectures.data.cend(),
+        [&](auto const& e)
+        {
+            return e.second.name == sv ||
+                   (std::find(e.second.aliases.begin(), e.second.aliases.end(), sv) != e.second.aliases.end());
+        });
+    if ( entry == Architectures.data.cend() )
+    {
+        throw std::range_error("Architecture not found");
+    }
+    return entry->second;
 }
 
 

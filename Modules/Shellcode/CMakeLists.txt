@@ -7,8 +7,12 @@ set(SOURCE_DIR ${PROJECT_DIR}/Source)
 set(HEADER_DIR ${SOURCE_DIR}/Include)
 set(TEST_DIR ${PROJECT_DIR}/Tests)
 
+set(SOURCE_FILES
+    ${SOURCE_DIR}/Pattern.cpp
+)
+
 if(WIN32)
-    set(SOURCE_FILES
+    list(APPEND SOURCE_FILES
         ${SOURCE_DIR}/Win32/Kernel.cpp
 
         $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},x64>:${SOURCE_DIR}/Win32/asm/x64/copy_system_token.asm>

@@ -10,17 +10,27 @@ struct GlobalContext Context;
 GlobalContext::GlobalContext()
 {
     Utils::Random::Seed(std::chrono::system_clock::now().time_since_epoch().count());
-    Set("x64");
+    Set(ArchitectureType::x64);
 };
 
+void
+GlobalContext::SetArchitecture(ArchitectureType const& archtype)
+{
+    auto arch    = Architectures.at(archtype);
+    architecture = arch;
+    endianess    = arch.endian;
+    ptrsize      = arch.ptrsize;
+    dbg("Selecting '{}'", arch);
+}
 
 void
 GlobalContext::SetArchitecture(std::string_view const& type)
 {
-    architecture = Architecture::Find(type);
-    endianess    = architecture.endian;
-    ptrsize      = architecture.ptrsize;
-    dbg("Selecting '{}'", architecture);
+    auto arch    = Architecture::Find(type);
+    architecture = arch;
+    endianess    = arch.endian;
+    ptrsize      = arch.ptrsize;
+    dbg("Selecting '{}'", arch);
 }
 
 
