@@ -1,5 +1,3 @@
-#include "Win32/Process.hpp"
-
 #include <accctrl.h>
 #include <aclapi.h>
 #include <psapi.h>
@@ -12,6 +10,7 @@
 #include "Log.hpp"
 #include "Utils.hpp"
 #include "Win32/API.hpp"
+#include "Win32/Process.hpp"
 #include "Win32/System.hpp"
 #include "Win32/Thread.hpp"
 
@@ -631,22 +630,44 @@ AppContainer::AppContainer(
     //
     // Get the SID
     //
-    PWSTR str;
-    ::ConvertSidToStringSid(m_AppContainerSid, &str);
-    m_SidAsString = str;
-    ::LocalFree(str);
+    m_SidAsString = [&]()
+    {
+        std::wstring sid;
+        PWSTR str;
+        if ( ::ConvertSidToStringSidW(m_AppContainerSid, &str) )
+        {
+            sid = str;
+            ::LocalFree(str);
+        }
+        return sid;
+    }();
+    if ( m_SidAsString.empty() )
+    {
+        throw std::runtime_error("Failed to get SID");
+    }
+
 
     dbg(L"sid={}", m_SidAsString.c_str());
 
     //
     // Get the folder path
     //
-    PWSTR path;
-    if ( SUCCEEDED(::GetAppContainerFolderPath(m_SidAsString.c_str(), &path)) )
+    m_FolderPath = [&]()
     {
-        m_FolderPath = path;
-        ::CoTaskMemFree(path);
+        std::wstring str;
+        PWSTR path;
+        if ( SUCCEEDED(::GetAppContainerFolderPath(m_SidAsString.c_str(), &path)) )
+        {
+            str = path;
+            ::CoTaskMemFree(path);
+        }
+        return str;
+    }();
+    if ( m_FolderPath.empty() )
+    {
+        throw std::runtime_error("Failed to determine folder path");
     }
+
 
     dbg(L"folder_path={}", m_FolderPath.c_str());
 
@@ -696,7 +717,6 @@ AppContainer::AppContainer(
                 dwNumberOfValidDesiredAttributes * sizeof(SID_AND_ATTRIBUTES));
         }
     }
-
 
     //
     // build the startup info
@@ -755,7 +775,6 @@ AppContainer::~AppContainer()
 }
 
 
-_Success_(return)
 auto
 AppContainer::AllowFileOrDirectory(_In_ const std::wstring& file_or_directory_name) -> bool
 {
@@ -763,7 +782,6 @@ AppContainer::AllowFileOrDirectory(_In_ const std::wstring& file_or_directory_na
 }
 
 
-_Success_(return)
 auto
 AppContainer::AllowRegistryKey(_In_ const std::wstring& regkey) -> bool
 {
@@ -771,7 +789,6 @@ AppContainer::AllowRegistryKey(_In_ const std::wstring& regkey) -> bool
 }
 
 
-_Success_(return)
 auto
 AppContainer::Spawn() -> bool
 {
@@ -804,7 +821,6 @@ AppContainer::Spawn() -> bool
 }
 
 
-_Success_(return)
 auto
 AppContainer::SetNamedObjectAccess(
     const std::wstring& ObjectName,
@@ -900,7 +916,6 @@ AppContainer::SetNamedObjectAccess(
 }
 
 
-_Success_(return)
 auto
 AppContainer::Join(_In_ const u32 dwTimeout) -> bool
 {
@@ -908,7 +923,6 @@ AppContainer::Join(_In_ const u32 dwTimeout) -> bool
 }
 
 
-_Success_(return)
 auto
 AppContainer::RestoreAcls() -> bool
 {
