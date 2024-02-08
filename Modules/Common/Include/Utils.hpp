@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <concepts>
 #include <filesystem>
 #include <optional>
