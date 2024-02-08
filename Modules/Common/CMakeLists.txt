@@ -21,7 +21,7 @@ set(SOURCE_FILES
 add_library(${PROJECT_NAME} STATIC)
 add_library(PWN::Common ALIAS ${PROJECT_NAME})
 target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_FILES})
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
 
 if(PWN_LOG_USE_COLOR)

@@ -20,8 +20,8 @@ foreach(TOOL_DIR ${WIN32_TOOLS})
     file(GLOB SOURCE_FILES ${PWNLIB_TOOLS_WIN32_DIR}/${TOOL_DIR}/*.cpp ${PWNLIB_TOOLS_WIN32_DIR}/${TOOL_DIR}/*.asm)
     add_executable(${TOOL_DIR} WIN32 ${SOURCE_FILES})
     add_dependencies(${TOOL_DIR} ${CMAKE_PROJECT_NAME})
-    target_compile_features(${TOOL_DIR} PUBLIC cxx_std_20)
-    set_target_properties(${TOOL_DIR} PROPERTIES CXX_STANDARD 20)
+    target_compile_features(${TOOL_DIR} PUBLIC cxx_std_23)
+    set_target_properties(${TOOL_DIR} PROPERTIES CXX_STANDARD 23)
 
     target_compile_definitions(${TOOL_DIR} PUBLIC PWN_BUILD_FOR_WINDOWS)
     target_compile_options(${TOOL_DIR}

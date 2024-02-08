@@ -272,29 +272,14 @@ Process::Kill()
 Result<std::vector<u32>>
 Processes()
 {
-    std::vector<u32> pids(1024);
-
-    for ( ;; )
+    auto res = System::Threads();
+    if ( Failed(res) )
     {
-        DWORD dwHintedSize {};
-        if ( ::EnumProcesses(reinterpret_cast<PDWORD>(pids.data()), pids.size() * sizeof(u32), &dwHintedSize) == 0 )
-        {
-            Log::perror("EnumProcesses() failed");
-            return Err(ErrorCode::ExternalApiCallFailed);
-        }
-
-        const usize HintedCount = dwHintedSize / sizeof(DWORD);
-
-        if ( HintedCount > pids.size() )
-        {
-            //
-            // The vector was too small, double the size
-            //
-            pids.resize(pids.size() * 2);
-        }
+        return Err(Error(res).Code);
     }
 
-    return Ok(std::move(pids));
+    auto pids = std::move(Value(res));
+    return Ok(std::move(std::views::keys(pids) | std::ranges::to<std::vector>()));
 }
 
 
