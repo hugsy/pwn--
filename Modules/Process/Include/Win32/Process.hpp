@@ -449,7 +449,7 @@ public:
     // ProcessToken& Token = m_Token;
 
     ///
-    ///@brief
+    ///@brief Returns a vector of the ThreadIDs of all threads in the current process
     ///
     ///@return std::vector<u32>
     ///

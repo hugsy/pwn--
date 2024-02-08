@@ -360,16 +360,18 @@ Process::IntegrityLevel()
 std::vector<u32>
 Process::Threads() const
 {
-    u32 const CurrentPid = m_ProcessId;
-    auto const ThreadIds = ValueOr(pwn::System::Threads(), {});
-    // TODO - use views
-    std::vector<u32> CurrentProcessThreads;
-    for ( auto const& [pid, tid] : ThreadIds )
+    u32 const CurrentPid       = m_ProcessId;
+    auto const SystemThreadIds = ValueOr(pwn::System::Threads(), {});
+
+    auto IsCurrentProcess = [CurrentPid](auto const& x)
     {
-        if ( pid == CurrentPid )
-        {
-            CurrentProcessThreads.push_back(tid);
-        }
+        return std::get<0>(x) == CurrentPid;
+    };
+
+    std::vector<u32> CurrentProcessThreads;
+    for ( auto const& [pid, tid] : SystemThreadIds | std::views::filter(IsCurrentProcess) )
+    {
+        CurrentProcessThreads.push_back(tid);
     }
     return CurrentProcessThreads;
 };

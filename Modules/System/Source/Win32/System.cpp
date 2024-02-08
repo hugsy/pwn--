@@ -265,36 +265,6 @@ Handles()
 }
 
 
-Result<std::vector<std::tuple<u32, u32>>>
-Threads()
-{
-    auto res = Query<SYSTEM_PROCESS_INFORMATION>(SYSTEM_INFORMATION_CLASS::SystemProcessInformation);
-    if ( Failed(res) )
-    {
-        return Err(ErrorCode::ExternalApiCallFailed);
-    }
-
-    std::vector<std::tuple<u32, u32>> tids {};
-
-    auto const spProcessInfo = Value(res);
-    for ( auto curProcInfo = spProcessInfo.get(); curProcInfo; curProcInfo += curProcInfo->NextEntryOffset )
-    {
-        std::for_each(
-            std::next(curProcInfo->Threads, 0),
-            std::next(curProcInfo->Threads, curProcInfo->NumberOfThreads),
-            [&tids](SYSTEM_THREAD_INFORMATION const& t)
-            {
-                tids.push_back({
-                    HandleToUlong(t.ClientId.UniqueProcess),
-                    HandleToUlong(t.ClientId.UniqueThread),
-                });
-            });
-    }
-
-    return Ok(tids);
-}
-
-
 std::experimental::generator<const SYSTEM_PROCESS_INFORMATION*>
 QuerySystemProcessInformation()
 {
@@ -311,6 +281,39 @@ QuerySystemProcessInformation()
     {
         co_yield curProcInfo;
     }
+}
+
+
+Result<std::vector<std::tuple<u32, u32>>>
+Threads()
+{
+    auto res = Query<SYSTEM_PROCESS_INFORMATION>(SYSTEM_INFORMATION_CLASS::SystemProcessInformation);
+    if ( Failed(res) )
+    {
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
+
+    auto IsValid = [](auto si)
+    {
+        return si != nullptr;
+    };
+
+    std::vector<std::tuple<u32, u32>> tids {};
+    for ( auto curProcInfo : QuerySystemProcessInformation() | std::views::take_while(IsValid) )
+    {
+        std::for_each(
+            std::next(curProcInfo->Threads, 0),
+            std::next(curProcInfo->Threads, curProcInfo->NumberOfThreads),
+            [&tids](SYSTEM_THREAD_INFORMATION const& t)
+            {
+                tids.push_back({
+                    HandleToUlong(t.ClientId.UniqueProcess),
+                    HandleToUlong(t.ClientId.UniqueThread),
+                });
+            });
+    }
+
+    return Ok(tids);
 }
 
 
