@@ -2,14 +2,15 @@
 #include "Handle.hpp"
 #include "Log.hpp"
 
-// EXTERN_C_START
+extern "C"
+{
 #include "mk_lib_crypto_hash_stream_md2.h"
 #include "mk_lib_crypto_hash_stream_md4.h"
 #include "mk_lib_crypto_hash_stream_md5.h"
 #include "mk_lib_crypto_hash_stream_sha1.h"
 #include "mk_lib_crypto_hash_stream_sha2_256.h"
 #include "mk_lib_crypto_hash_stream_sha2_512.h"
-// EXTERN_C_END
+}
 
 
 using namespace pwn;
