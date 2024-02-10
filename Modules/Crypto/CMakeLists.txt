@@ -1,8 +1,6 @@
 project(Crypto CXX)
 message(STATUS "Configuring module '${PROJECT_NAME}'")
 
-find_package(MkCLib REQUIRED)
-
 set(PROJECT_DIR ${PWNLIB_MODULE_DIR}/${PROJECT_NAME})
 set(INTERFACE_DIR ${PROJECT_DIR}/Include)
 set(SOURCE_DIR ${PROJECT_DIR}/Source)
@@ -16,11 +14,6 @@ add_library(PWN::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC)
 target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common PWN::Deps::MkClib::Crypto)
-
-if(WIN32)
-    target_link_libraries(${PROJECT_NAME} PUBLIC Bcrypt.lib)
-else()
-endif(WIN32)
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 

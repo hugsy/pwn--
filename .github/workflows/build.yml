@@ -79,6 +79,8 @@ jobs:
       shell: pwsh
       run: |
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
+        choco install gnuwin32-m4
+        choco install cmake --pre
 
     - name: Prepare Linux environment
       if: matrix.variants.os == 'ubuntu-latest'
