@@ -17,7 +17,11 @@
 
 ### Template
 
-Git-Clone the template in [`hugsy/template-pwn`](https://github.com/hugsy/pwn--template)
+Use Git to clone the template in [`hugsy/template-pwn`](https://github.com/hugsy/pwn--template)
+
+```console
+git clone https://github.com/hugsy/pwn--template MyProject
+```
 
 ### CMake
 
