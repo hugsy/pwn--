@@ -449,7 +449,7 @@ public:
     // ProcessToken& Token = m_Token;
 
     ///
-    ///@brief
+    ///@brief Returns a vector of the ThreadIDs of all threads in the current process
     ///
     ///@return std::vector<u32>
     ///
@@ -524,23 +524,18 @@ public:
 
     ~AppContainer();
 
-    _Success_(return)
     auto
     AllowFileOrDirectory(_In_ const std::wstring& file_or_directory_name) -> bool;
 
-    _Success_(return)
     auto
     AllowRegistryKey(_In_ const std::wstring& regkey) -> bool;
 
-    _Success_(return)
     auto
     Spawn() -> bool;
 
-    _Success_(return)
     auto
     RestoreAcls() -> bool;
 
-    _Success_(return)
     auto
     Join(_In_ u32 dwTimeout = INFINITE) -> bool;
 

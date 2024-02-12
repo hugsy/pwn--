@@ -1,5 +1,3 @@
-#include "Win32/Process.hpp"
-
 #include <accctrl.h>
 #include <aclapi.h>
 #include <psapi.h>
@@ -12,6 +10,7 @@
 #include "Log.hpp"
 #include "Utils.hpp"
 #include "Win32/API.hpp"
+#include "Win32/Process.hpp"
 #include "Win32/System.hpp"
 #include "Win32/Thread.hpp"
 
@@ -273,29 +272,14 @@ Process::Kill()
 Result<std::vector<u32>>
 Processes()
 {
-    std::vector<u32> pids(1024);
-
-    for ( ;; )
+    auto res = System::Threads();
+    if ( Failed(res) )
     {
-        DWORD dwHintedSize {};
-        if ( ::EnumProcesses(reinterpret_cast<PDWORD>(pids.data()), pids.size() * sizeof(u32), &dwHintedSize) == 0 )
-        {
-            Log::perror("EnumProcesses() failed");
-            return Err(ErrorCode::ExternalApiCallFailed);
-        }
-
-        const usize HintedCount = dwHintedSize / sizeof(DWORD);
-
-        if ( HintedCount > pids.size() )
-        {
-            //
-            // The vector was too small, double the size
-            //
-            pids.resize(pids.size() * 2);
-        }
+        return Err(Error(res).Code);
     }
 
-    return Ok(std::move(pids));
+    auto pids = std::move(Value(res));
+    return Ok(std::move(std::views::keys(pids) | std::ranges::to<std::vector>()));
 }
 
 
@@ -376,16 +360,18 @@ Process::IntegrityLevel()
 std::vector<u32>
 Process::Threads() const
 {
-    u32 const CurrentPid = m_ProcessId;
-    auto const ThreadIds = ValueOr(pwn::System::Threads(), {});
-    // TODO - use views
-    std::vector<u32> CurrentProcessThreads;
-    for ( auto const& [pid, tid] : ThreadIds )
+    u32 const CurrentPid       = m_ProcessId;
+    auto const SystemThreadIds = ValueOr(pwn::System::Threads(), {});
+
+    auto IsCurrentProcess = [CurrentPid](auto const& x)
     {
-        if ( pid == CurrentPid )
-        {
-            CurrentProcessThreads.push_back(tid);
-        }
+        return std::get<0>(x) == CurrentPid;
+    };
+
+    std::vector<u32> CurrentProcessThreads;
+    for ( auto const& [pid, tid] : SystemThreadIds | std::views::filter(IsCurrentProcess) )
+    {
+        CurrentProcessThreads.push_back(tid);
     }
     return CurrentProcessThreads;
 };
@@ -631,22 +617,44 @@ AppContainer::AppContainer(
     //
     // Get the SID
     //
-    PWSTR str;
-    ::ConvertSidToStringSid(m_AppContainerSid, &str);
-    m_SidAsString = str;
-    ::LocalFree(str);
+    m_SidAsString = [&]()
+    {
+        std::wstring sid;
+        PWSTR str;
+        if ( ::ConvertSidToStringSidW(m_AppContainerSid, &str) )
+        {
+            sid = str;
+            ::LocalFree(str);
+        }
+        return sid;
+    }();
+    if ( m_SidAsString.empty() )
+    {
+        throw std::runtime_error("Failed to get SID");
+    }
+
 
     dbg(L"sid={}", m_SidAsString.c_str());
 
     //
     // Get the folder path
     //
-    PWSTR path;
-    if ( SUCCEEDED(::GetAppContainerFolderPath(m_SidAsString.c_str(), &path)) )
+    m_FolderPath = [&]()
     {
-        m_FolderPath = path;
-        ::CoTaskMemFree(path);
+        std::wstring str;
+        PWSTR path;
+        if ( SUCCEEDED(::GetAppContainerFolderPath(m_SidAsString.c_str(), &path)) )
+        {
+            str = path;
+            ::CoTaskMemFree(path);
+        }
+        return str;
+    }();
+    if ( m_FolderPath.empty() )
+    {
+        throw std::runtime_error("Failed to determine folder path");
     }
+
 
     dbg(L"folder_path={}", m_FolderPath.c_str());
 
@@ -696,7 +704,6 @@ AppContainer::AppContainer(
                 dwNumberOfValidDesiredAttributes * sizeof(SID_AND_ATTRIBUTES));
         }
     }
-
 
     //
     // build the startup info
@@ -755,7 +762,6 @@ AppContainer::~AppContainer()
 }
 
 
-_Success_(return)
 auto
 AppContainer::AllowFileOrDirectory(_In_ const std::wstring& file_or_directory_name) -> bool
 {
@@ -763,7 +769,6 @@ AppContainer::AllowFileOrDirectory(_In_ const std::wstring& file_or_directory_na
 }
 
 
-_Success_(return)
 auto
 AppContainer::AllowRegistryKey(_In_ const std::wstring& regkey) -> bool
 {
@@ -771,7 +776,6 @@ AppContainer::AllowRegistryKey(_In_ const std::wstring& regkey) -> bool
 }
 
 
-_Success_(return)
 auto
 AppContainer::Spawn() -> bool
 {
@@ -804,7 +808,6 @@ AppContainer::Spawn() -> bool
 }
 
 
-_Success_(return)
 auto
 AppContainer::SetNamedObjectAccess(
     const std::wstring& ObjectName,
@@ -900,7 +903,6 @@ AppContainer::SetNamedObjectAccess(
 }
 
 
-_Success_(return)
 auto
 AppContainer::Join(_In_ const u32 dwTimeout) -> bool
 {
@@ -908,7 +910,6 @@ AppContainer::Join(_In_ const u32 dwTimeout) -> bool
 }
 
 
-_Success_(return)
 auto
 AppContainer::RestoreAcls() -> bool
 {

@@ -20,7 +20,6 @@ set(SOURCE_FILES
 #
 add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
 add_library(PWN::Common ALIAS ${PROJECT_NAME})
-
 target_sources(${PROJECT_NAME}
     PRIVATE
     FILE_SET CXX_MODULES FILES
@@ -28,7 +27,8 @@ target_sources(${PROJECT_NAME}
     ${INTERFACE_DIR}/Common.ixx
     ${SOURCE_DIR}/Common.cxx
 )
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
+
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
 
 if(PWN_LOG_USE_COLOR)

@@ -1,11 +1,10 @@
-#include "Win32/Thread.hpp"
-
-#include <tlhelp32.h>
+// #include <tlhelp32.h>
 
 #include "Handle.hpp"
 #include "Log.hpp"
 #include "Utils.hpp"
 #include "Win32/System.hpp"
+#include "Win32/Thread.hpp"
 
 constexpr int WINDOWS_VERSION_1507 = 10240;
 constexpr int WINDOWS_VERSION_1511 = 10586;
@@ -164,60 +163,19 @@ Thread::Name()
     //
     // Otherwise invoke NtQueryInformationThread(ThreadNameInformation)
     //
-    auto res = ReOpenThreadWith(THREAD_QUERY_LIMITED_INFORMATION);
-    if ( Failed(res) )
+    if ( Failed(ReOpenThreadWith(THREAD_QUERY_LIMITED_INFORMATION)) )
     {
         return Err(ErrorCode::PermissionDenied);
     }
 
-    NTSTATUS Status              = STATUS_UNSUCCESSFUL;
-    ULONG CurrentSize            = sizeof(UNICODE_STRING);
-    ULONG ReturnedSize           = 0;
-    std::unique_ptr<u8[]> Buffer = nullptr;
-
-    do
+    auto res = Query<THREAD_NAME_INFORMATION>(THREADINFOCLASS::ThreadNameInformation);
+    if ( Failed(res) )
     {
-        Buffer = std::make_unique<u8[]>(CurrentSize);
-        Status = ::NtQueryInformationThread(
-            m_ThreadHandle.get(),
-            ThreadNameInformation,
-            Buffer.get(),
-            CurrentSize,
-            &ReturnedSize);
+        return Err(ErrorCode::ExternalApiCallFailed);
+    }
 
-        if ( NT_SUCCESS(Status) )
-        {
-            //
-            // No name
-            //
-            if ( ReturnedSize == 0 )
-            {
-                return Ok(std::wstring {});
-            }
-
-            //
-            // Otherwise, a name was found
-            //
-            break;
-        }
-
-        //
-        // If there's a name, expect STATUS_BUFFER_TOO_SMALL
-        //
-        if ( Status != STATUS_BUFFER_TOO_SMALL )
-        {
-            Log::ntperror(L"NtQueryInformationThread(ThreadNameInformation)", Status);
-            return Err(ErrorCode::ExternalApiCallFailed);
-        }
-
-        CurrentSize = ReturnedSize;
-    } while ( true );
-
-    //
-    // Create a wstring from the UNICODE_STRING pointer
-    //
-    const PUNICODE_STRING usThreadName = reinterpret_cast<PUNICODE_STRING>(Buffer.get());
-    return Ok(std::wstring(usThreadName->Buffer, usThreadName->Length / sizeof(wchar_t)));
+    const std::unique_ptr<THREAD_NAME_INFORMATION> name = Value(std::move(res));
+    return Ok(std::wstring(name->ThreadName.Buffer, name->ThreadName.Length / sizeof(wchar_t)));
 }
 
 

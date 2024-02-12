@@ -1,11 +1,13 @@
-#include "Win32/System.hpp"
-
-#include <tlhelp32.h>
-
 #include <bitset>
+#include <experimental/generator>
+#include <iostream>
+#include <ranges>
+#include <span>
+#include <vector>
 
 #include "Handle.hpp"
 #include "Log.hpp"
+#include "Win32/System.hpp"
 
 
 #define SYSTEM_PROCESS_NAME L"System"
@@ -47,108 +49,41 @@ ProcessId(_In_ HANDLE hProcess) -> u32
     return (hProcess == GetCurrentProcess()) ? ::GetCurrentProcessId() : ::GetProcessId(hProcess);
 }
 
-
-auto
-ParentProcessId(const u32 dwProcessId) -> Result<u32>
-{
-    auto hProcessSnap = UniqueHandle {::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)};
-    if ( !hProcessSnap )
-    {
-        Log::perror(L"CreateToolhelp32Snapshot()");
-        return Err(ErrorCode::ExternalApiCallFailed);
-    }
-
-    PROCESSENTRY32 pe = {0};
-    pe.dwSize         = sizeof(PROCESSENTRY32);
-
-    if ( ::Process32First(hProcessSnap.get(), &pe) )
-    {
-        do
-        {
-            if ( pe.th32ProcessID == dwProcessId )
-            {
-                return Ok(static_cast<u32>(pe.th32ParentProcessID));
-            }
-        } while ( ::Process32NextW(hProcessSnap.get(), &pe) );
-    }
-
-    return Err(ErrorCode::NotFound);
-}
-
-
-auto
-PidOf(std::wstring_view const ProcessName) -> Result<std::vector<u32>>
-{
-    auto hProcessSnap = UniqueHandle(::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
-    if ( !hProcessSnap )
-    {
-        Log::perror(L"CreateToolhelp32Snapshot()");
-        return Err(ErrorCode::ExternalApiCallFailed);
-    }
-
-    std::vector<u32> pids {};
-
-    PROCESSENTRY32W pe32 = {0};
-    pe32.dwSize          = sizeof(PROCESSENTRY32W);
-
-    if ( ::Process32FirstW(hProcessSnap.get(), &pe32) == 0 )
-    {
-        Log::perror(L"Process32First()");
-        return Err(ErrorCode::ExternalApiCallFailed);
-    }
-
-    std::wstring targetProcessName = std::wstring {ProcessName};
-    std::transform(targetProcessName.begin(), targetProcessName.end(), targetProcessName.begin(), ::towlower);
-
-    do
-    {
-        auto hProcess = UniqueHandle {::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pe32.th32ProcessID)};
-        if ( !hProcess )
-        {
-            continue;
-        }
-
-        std::wstring currentProcessName {pe32.szExeFile};
-        std::transform(currentProcessName.begin(), currentProcessName.end(), currentProcessName.begin(), ::towlower);
-
-        if ( targetProcessName == currentProcessName )
-        {
-            pids.push_back(pe32.th32ProcessID);
-        }
-
-    } while ( ::Process32NextW(hProcessSnap.get(), &pe32) != 0 );
-
-    return Ok(pids);
-}
-
-
 auto
 ComputerName() -> const std::wstring
 {
-    u32 dwBufLen                                 = MAX_COMPUTERNAME_LENGTH;
-    wchar_t lpszBuf[MAX_COMPUTERNAME_LENGTH + 1] = {0};
-
-    if ( ::GetComputerName(lpszBuf, (LPDWORD)&dwBufLen) == 0 )
+    static std::wstring computername {};
+    if ( computername.empty() )
     {
-        // that case is weird enough it justifies throwing
-        throw std::runtime_error("GetComputerName() failed");
+        u32 dwBufLen                                 = MAX_COMPUTERNAME_LENGTH;
+        wchar_t lpszBuf[MAX_COMPUTERNAME_LENGTH + 1] = {0};
+        if ( ::GetComputerNameW(lpszBuf, (LPDWORD)&dwBufLen) == FALSE )
+        {
+            throw std::runtime_error("GetComputerName() failed");
+        }
+
+        computername = std::wstring {lpszBuf, dwBufLen};
     }
-    return std::wstring {lpszBuf};
+    return computername;
 }
 
 
 Result<std::wstring>
 UserName()
 {
-    wchar_t lpwsBuffer[UNLEN + 1] = {0};
-    u32 dwBufferSize              = UNLEN + 1;
-    if ( ::GetUserName((TCHAR*)lpwsBuffer, (LPDWORD)&dwBufferSize) == 0 )
+    static std::wstring username {};
+    if ( username.empty() )
     {
-        Log::perror(L"GetUserName()");
-        return Err(ErrorCode::ExternalApiCallFailed);
-    }
+        u32 dwBufferSize              = UNLEN + 1;
+        wchar_t lpwsBuffer[UNLEN + 1] = {0};
+        if ( ::GetUserNameW((WCHAR*)lpwsBuffer, (LPDWORD)&dwBufferSize) == 0 )
+        {
+            Log::perror(L"GetUserName()");
+            return Err(ErrorCode::ExternalApiCallFailed);
+        }
 
-    static auto username = std::wstring {lpwsBuffer};
+        username = std::wstring {lpwsBuffer, dwBufferSize};
+    }
     return username;
 }
 
@@ -330,39 +265,116 @@ Handles()
 }
 
 
+std::experimental::generator<const SYSTEM_PROCESS_INFORMATION*>
+QuerySystemProcessInformation()
+{
+    auto res = Query<SYSTEM_PROCESS_INFORMATION>(SYSTEM_INFORMATION_CLASS::SystemProcessInformation);
+    if ( Failed(res) )
+    {
+        co_yield nullptr;
+    }
+
+    auto spProcessInfo = Value(res);
+    for ( auto curProcInfo = spProcessInfo.get(); curProcInfo->NextEntryOffset;
+          curProcInfo =
+              reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>((uptr)curProcInfo + curProcInfo->NextEntryOffset) )
+    {
+        co_yield curProcInfo;
+    }
+}
+
+
 Result<std::vector<std::tuple<u32, u32>>>
 Threads()
 {
-    auto h = UniqueHandle {::CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0)};
-    if ( !h )
+    auto res = Query<SYSTEM_PROCESS_INFORMATION>(SYSTEM_INFORMATION_CLASS::SystemProcessInformation);
+    if ( Failed(res) )
     {
-        Log::perror(L"CreateToolhelp32Snapshot()");
         return Err(ErrorCode::ExternalApiCallFailed);
     }
 
-    std::vector<std::tuple<u32, u32>> tids;
-    THREADENTRY32 te = {.dwSize = sizeof(te)};
-
-    if ( ::Thread32First(h.get(), &te) )
+    auto IsValid = [](auto si)
     {
-        do
-        {
-            if ( !(te.dwSize >= FIELD_OFFSET(THREADENTRY32, th32OwnerProcessID) + sizeof(te.th32OwnerProcessID)) )
+        return si != nullptr;
+    };
+
+    std::vector<std::tuple<u32, u32>> tids {};
+    for ( auto curProcInfo : QuerySystemProcessInformation() | std::views::take_while(IsValid) )
+    {
+        std::for_each(
+            std::next(curProcInfo->Threads, 0),
+            std::next(curProcInfo->Threads, curProcInfo->NumberOfThreads),
+            [&tids](SYSTEM_THREAD_INFORMATION const& t)
             {
-                continue;
-            }
-
-            if ( !te.th32ThreadID )
-            {
-                continue;
-            }
-
-            tids.emplace_back(std::make_tuple((u32)te.th32OwnerProcessID, (u32)te.th32ThreadID));
-
-            te.dwSize = sizeof(te);
-        } while ( ::Thread32Next(h.get(), &te) );
+                tids.push_back({
+                    HandleToUlong(t.ClientId.UniqueProcess),
+                    HandleToUlong(t.ClientId.UniqueThread),
+                });
+            });
     }
 
     return Ok(tids);
 }
+
+
+auto
+ParentProcessId(const u32 dwProcessId) -> Result<u32>
+{
+    auto IsValid = [](auto si)
+    {
+        return si != nullptr;
+    };
+
+    auto MatchesProcessId = [dwProcessId](auto si)
+    {
+        return HandleToUlong(si->UniqueProcessId) == dwProcessId;
+    };
+
+    for ( auto curProcInfo :
+          QuerySystemProcessInformation() | std::views::take_while(IsValid) | std::views::filter(MatchesProcessId) )
+    {
+        return HandleToUlong(curProcInfo->InheritedFromUniqueProcessId);
+    }
+
+    return Err(ErrorCode::NotFound);
+}
+
+
+auto
+PidOf(std::wstring_view const ProcessName) -> Result<std::vector<u32>>
+{
+    const std::wstring targetProcessName = [&ProcessName]()
+    {
+        std::wstring str {ProcessName};
+        std::transform(str.begin(), str.end(), str.begin(), ::towlower);
+        return str;
+    }();
+
+    std::vector<u32> pids {};
+
+    auto IsValid = [](auto si)
+    {
+        return si != nullptr;
+    };
+
+    auto MatchesImageName = [&targetProcessName](auto si)
+    {
+        const std::wstring curProcName = [si]()
+        {
+            std::wstring str {si->ImageName.Buffer, si->ImageName.Length / sizeof(wchar_t)};
+            std::transform(str.begin(), str.end(), str.begin(), ::towlower);
+            return str;
+        }();
+        return curProcName == targetProcessName;
+    };
+
+    for ( auto curProcInfo :
+          QuerySystemProcessInformation() | std::views::take_while(IsValid) | std::views::filter(MatchesImageName) )
+    {
+        pids.push_back(HandleToULong(curProcInfo->UniqueProcessId));
+    }
+
+    return pids;
+}
+
 } // namespace pwn::System

@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.28)
-set(CMAKE_CXX_STANDARD 20)
+cmake_minimum_required(VERSION 3.26)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(VCPKG_MANIFEST_MODE OFF)
@@ -9,13 +9,13 @@ project(
     pwn++
     DESCRIPTION "A (toy) Windows & Linux pwn library to play with modern C++."
     HOMEPAGE_URL https://github.com/hugsy/pwn--
-    VERSION 0.1.3
+    VERSION 0.1.4
 )
 
 set(PROJECT_AUTHOR hugsy)
 set(PROJECT_LICENSE MIT)
 
-set(CXX_STANDARD 20)
+set(CXX_STANDARD 23)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
