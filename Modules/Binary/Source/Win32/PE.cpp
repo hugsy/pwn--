@@ -821,7 +821,7 @@ PE::FillDebug()
                 return "IMAGE_DEBUG_TYPE_REPRO"sv;
             case 17:
                 return "IMAGE_DEBUG_TYPE_EMBEDDEDPORTABLEPDB"sv;
-            case IMAGE_DEBUG_TYPE_SPGO:
+            case 18:
                 return "IMAGE_DEBUG_TYPE_SPGO"sv;
             case 19:
                 return "IMAGE_DEBUG_TYPE_SHA256"sv;
