@@ -2,7 +2,7 @@ include(FetchContent)
 
 FetchContent_Declare(
     Deps_Mk_Clib
-    GIT_REPOSITORY https://github.com/MarekKnapek/mk_clib
+    GIT_REPOSITORY https://github.com/hugsy/mk_clib
     GIT_TAG c967117af337a3326e607125314ca51458ddea84
 )
 FetchContent_MakeAvailable(Deps_Mk_Clib)
@@ -11,7 +11,12 @@ message(STATUS "Using MkCLib in '${deps_mk_clib_SOURCE_DIR}'")
 
 set(MK_CLIB_SOURCE_DIR ${deps_mk_clib_SOURCE_DIR}/mk_clib/src)
 
-find_program(M4_EXECUTABLE m4 HINTS "C:/Program Files (x86)/GnuWin32/bin")
+find_program(
+    M4_EXECUTABLE m4
+    HINTS
+        "C:/Program Files (x86)/GnuWin32/bin"
+        "/usr/bin"
+)
 if(NOT M4_EXECUTABLE)
     message(FATAL_ERROR "m4 macro processor not found")
 endif()
@@ -57,17 +62,32 @@ add_custom_target(
 )
 
 set(MK_CLIB_SOURCE_FILES
-    ${MK_CLIB_SOURCE_DIR}/mk_clib_app_crypt.c
-    ${MK_CLIB_SOURCE_DIR}/mk_clib_app_double_analyzer.c
-    ${MK_CLIB_SOURCE_DIR}/mk_clib_app_factorial.c
-    ${MK_CLIB_SOURCE_DIR}/mk_clib_app_float_analyzer.c
-    ${MK_CLIB_SOURCE_DIR}/mk_clib_app_flt.c
-    ${MK_CLIB_SOURCE_DIR}/mk_clib_app_fuzz.c
-    ${MK_CLIB_SOURCE_DIR}/mk_clib_app_hash.c
-    ${MK_CLIB_SOURCE_DIR}/mk_clib_app_info.c
-    ${MK_CLIB_SOURCE_DIR}/mk_clib_app_test.c
-    ${MK_CLIB_SOURCE_DIR}/mk_clib_fuzz.c
-    ${MK_CLIB_SOURCE_DIR}/mk_clib_test.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_clib_app_crypt.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_clib_app_double_analyzer.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_clib_app_factorial.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_clib_app_float_analyzer.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_clib_app_flt.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_clib_app_fuzz.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_clib_app_hash.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_clib_app_info.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_clib_app_test.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_clib_fuzz.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_clib_test.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_buffer_lang.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_cui_example.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_flt_fuzz.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_flt.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_mallocator_lang.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_sort_merge_fuzz.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint1024.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint128.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint16.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint256.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint32.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint512.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint64.c
+    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint8.c
     ${MK_CLIB_SOURCE_DIR}/mk_lang_alignof_test.c
     ${MK_CLIB_SOURCE_DIR}/mk_lang_bi_info.c
     ${MK_CLIB_SOURCE_DIR}/mk_lang_bi_test.c
@@ -108,17 +128,13 @@ set(MK_CLIB_SOURCE_FILES
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha0.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha1.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha1c.c
-    ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha1x86.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2_224.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2_256.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2_384.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2_512_224.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2_512_256.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2_512.c
-    ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2_base_32bit.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2_base_64bit.c
-    ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2c_base_32bit.c
-    ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2x86_base_32bit.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha3_224.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha3_256.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha3_384.c
@@ -151,7 +167,6 @@ set(MK_CLIB_SOURCE_FILES
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_stream_sha0.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_stream_sha1.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_stream_sha1c.c
-    ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_stream_sha1x86.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_stream_sha2_224.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_stream_sha2_256.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_stream_sha2_384.c
@@ -175,7 +190,6 @@ set(MK_CLIB_SOURCE_FILES
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf1_md5.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf1_sha1.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf1_sha1c.c
-    ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf1_sha1x86.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf1.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf2_blake2b_256.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf2_blake2b_384.c
@@ -191,7 +205,6 @@ set(MK_CLIB_SOURCE_FILES
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf2_sha0.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf2_sha1.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf2_sha1c.c
-    ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf2_sha1x86.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf2_sha2_224.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf2_sha2_256.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf2_sha2_384.c
@@ -225,7 +238,6 @@ set(MK_CLIB_SOURCE_FILES
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_mac_hmac_sha0.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_mac_hmac_sha1.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_mac_hmac_sha1c.c
-    ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_mac_hmac_sha1x86.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_mac_hmac_sha2_224.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_mac_hmac_sha2_256.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_mac_hmac_sha2_384.c
@@ -279,21 +291,15 @@ set(MK_CLIB_SOURCE_FILES
     ${MK_CLIB_SOURCE_DIR}/mk_lib_flt_analyzer_double.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_flt_analyzer_float.c
     ${MK_CLIB_SOURCE_DIR}/mk_lib_fmt.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_buffer_lang.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_cui_example.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_flt_fuzz.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_flt.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_mallocator_lang.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_sort_merge_fuzz.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint1024.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint128.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint16.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint256.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint32.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint512.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint64.c
-    ${MK_CLIB_SOURCE_DIR}/mk_sl_uint8.c
+
+    # ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2x86_base_32bit.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_mac_hmac_sha1x86.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_stream_sha1x86.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha1x86.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf1_sha1x86.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf2_sha1x86.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2c_base_32bit.c
+    # ${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2_base_32bit.c
 )
 
 if(WIN32)
@@ -308,7 +314,37 @@ endif(WIN32)
 add_library(Deps_Mk_Clib_Crypto STATIC ${MK_CLIB_SOURCE_FILES})
 target_include_directories(Deps_Mk_Clib_Crypto PUBLIC ${MK_CLIB_SOURCE_DIR})
 set_property(TARGET Deps_Mk_Clib_Crypto PROPERTY CXX_STANDARD 23)
-target_compile_definitions(Deps_Mk_Clib_Crypto PUBLIC mk_lang_jumbo_want=0)
+target_compile_definitions(
+    Deps_Mk_Clib_Crypto
+    PUBLIC mk_lang_jumbo_want=0
+    PRIVATE $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
+)
 target_compile_features(Deps_Mk_Clib_Crypto PUBLIC cxx_std_23)
 add_dependencies(Deps_Mk_Clib_Crypto Deps_Mk_Clib_Crypto_M4PreBuild)
 add_library(PWN::Deps::MkClib::Crypto ALIAS Deps_Mk_Clib_Crypto)
+
+if(WIN32)
+    target_compile_definitions(
+        Deps_Mk_Clib_Crypto
+        # PUBLIC
+        # __INTRIN_H_
+        PRIVATE
+        $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},arm64>:__INTRIN_H_ USE_SOFT_INTRINSICS>
+    )
+endif(WIN32)
+
+#
+# Architecture specific
+#
+# target_sources(
+#     Deps_Mk_Clib_Crypto
+#     PRIVATE
+#     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2x86_base_32bit.c>
+#     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_mac_hmac_sha1x86.c>
+#     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_stream_sha1x86.c>
+#     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha1x86.c>
+#     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf1_sha1x86.c>
+#     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_kdf_pbkdf2_sha1x86.c>
+#     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2c_base_32bit.c>
+#     $<$<STREQUAL:${CMAKE_GENERATOR_PLATFORM},win32>:${MK_CLIB_SOURCE_DIR}/mk_lib_crypto_hash_block_sha2_base_32bit.c>
+# )
