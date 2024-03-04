@@ -41,4 +41,30 @@ TEST_CASE("System queries", "[" NS "]")
         CHECK((((uptr)pInfo->Threads[0].StartAddress) & (1ull << 48)) != 0);
     }
 #endif
+
+    SECTION("PidOf")
+    {
+        u32 services_exe_pid = []()
+        {
+            auto res = System::PidOf(L"services.exe");
+            REQUIRE(Success(res));
+            auto pids = std::move(Value(res));
+            REQUIRE(pids.size() == 1);
+            return pids[0];
+        }();
+
+        u32 wininit_exe_pid = []()
+        {
+            auto res = System::PidOf(L"wininit.exe");
+            REQUIRE(Success(res));
+            auto pids = std::move(Value(res));
+            REQUIRE(pids.size() == 1);
+            return pids[0];
+        }();
+
+        auto res = System::ParentProcessId(services_exe_pid);
+        REQUIRE(Success(res));
+        u32 services_exe_ppid = Value(res);
+        CHECK(services_exe_ppid == wininit_exe_pid);
+    }
 }
