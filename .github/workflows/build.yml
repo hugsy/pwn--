@@ -103,7 +103,7 @@ jobs:
 
     - name: Build pwn++ library
       run: |
-        cmake --build ./build --verbose --parallel ${{ env.NB_CPU }} --config ${{ matrix.variants.config }}
+        cmake --build ./build --parallel ${{ env.NB_CPU }} --config ${{ matrix.variants.config }}
 
     - name: Run tests
       if: matrix.variants.build == 'full' && matrix.variants.config == 'RelWithDebInfo' && ( matrix.variants.arch == 'x86'  || matrix.variants.arch == 'x64' )
