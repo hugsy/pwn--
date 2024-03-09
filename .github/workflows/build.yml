@@ -18,26 +18,27 @@ jobs:
     env:
       CMAKE_FLAGS: '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON'
       NB_CPU: 1
+      VERBOSE: 1
 
     strategy:
       fail-fast: false
       matrix:
         variants:
-          - {os: windows-latest,   arch: x64,      config: RelWithDebInfo}
-          - {os: windows-latest,   arch: win32,    config: RelWithDebInfo}
-          - {os: windows-latest,   arch: arm64,    config: RelWithDebInfo}
-          - {os: windows-latest,   arch: arm,      config: RelWithDebInfo}
-          # - {os: ubuntu-latest,    arch: x64,      config: RelWithDebInfo} # runner fails for some reason, works fine locally: see https://github.com/actions/runner-images/discussions/7188
-          # - {os: ubuntu-latest,    arch: x86,      config: RelWithDebInfo}
+          - {os: windows-2022,   arch: x64,      config: RelWithDebInfo}
+          - {os: windows-2022,   arch: win32,    config: RelWithDebInfo}
+          - {os: windows-2022,   arch: arm64,    config: RelWithDebInfo}
+          - {os: windows-2022,   arch: arm,      config: RelWithDebInfo}
+          # - {os: ubuntu-2204,    arch: x64,      config: RelWithDebInfo} # runner fails for some reason, works fine locally: see https://github.com/actions/runner-images/discussions/7188
+          # - {os: ubuntu-2204,    arch: x86,      config: RelWithDebInfo}
 
     runs-on: ${{ matrix.variants.os }}
     outputs:
-      windows-latest-x64: ${{ join(steps.*.outputs.windows-latest-x64,'') }}
-      windows-latest-win32: ${{ join(steps.*.outputs.windows-latest-win32,'') }}
-      windows-latest-arm: ${{ join(steps.*.outputs.windows-latest-arm,'') }}
-      windows-latest-arm64: ${{ join(steps.*.outputs.windows-latest-arm64,'') }}
-      ubuntu-latest-x64: ${{ join(steps.*.outputs.ubuntu-latest-x64,'') }}
-      ubuntu-latest-x86: ${{ join(steps.*.outputs.ubuntu-latest-x86,'') }}
+      windows-2022-x64: ${{ join(steps.*.outputs.windows-2022-x64,'') }}
+      windows-2022-win32: ${{ join(steps.*.outputs.windows-2022-win32,'') }}
+      windows-2022-arm: ${{ join(steps.*.outputs.windows-2022-arm,'') }}
+      windows-2022-arm64: ${{ join(steps.*.outputs.windows-2022-arm64,'') }}
+      ubuntu-2204-x64: ${{ join(steps.*.outputs.ubuntu-2204-x64,'') }}
+      ubuntu-2204-x86: ${{ join(steps.*.outputs.ubuntu-2204-x86,'') }}
 
     steps:
     - uses: actions/checkout@v4
@@ -58,7 +59,7 @@ jobs:
         chmod +x /tmp/llvm.sh
         sudo /tmp/llvm.sh 17
         sudo apt update && sudo apt install -y cmake doxygen clang-17 libc++abi-17-dev libc++-17-dev llvm-17-dev nasm
-        # echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
+        echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
         echo "CC=clang-17" >> $GITHUB_ENV
         echo "CXX=clang++-17" >> $GITHUB_ENV
 
@@ -114,7 +115,6 @@ jobs:
       if: ${{ startsWith(matrix.variants.os, 'windows-') && failure() }}
       run: |
         echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=❌ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-        return -1
 
     - name: Populate the successful output (Linux)
       id: output_success_lin
@@ -127,7 +127,6 @@ jobs:
       if: ${{ startsWith(matrix.variants.os, 'ubuntu-') && failure() }}
       run: |
         echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=❌ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' >> ${GITHUB_OUTPUT}
-        exit 1
 
     - name: Install library
       run: |
@@ -140,7 +139,7 @@ jobs:
         path: artifact/
 
   notify:
-    runs-on: 'ubuntu-latest'
+    runs-on: 'ubuntu-2204'
     needs: build
     steps:
     - name: Send Discord notification
@@ -159,12 +158,12 @@ jobs:
           ● Branch [`${{ github.ref_name }}`](${{ env.BRANCH_URL }})
           ● [Detail Page](${{ env.RUN_URL }})
 
-          ${{ needs.build.outputs.windows-latest-x64 }}
-          ${{ needs.build.outputs.windows-latest-win32 }}
-          ${{ needs.build.outputs.windows-latest-arm }}
-          ${{ needs.build.outputs.windows-latest-arm64 }}
-          ${{ needs.build.outputs.ubuntu-latest-x64 }}
-          ${{ needs.build.outputs.ubuntu-latest-x86 }}
+          ${{ needs.build.outputs.windows-2022-x64 }}
+          ${{ needs.build.outputs.windows-2022-win32 }}
+          ${{ needs.build.outputs.windows-2022-arm }}
+          ${{ needs.build.outputs.windows-2022-arm64 }}
+          ${{ needs.build.outputs.ubuntu-2204-x64 }}
+          ${{ needs.build.outputs.ubuntu-2204-x86 }}
 
         color: 0x0000ff
         username: ${{ github.actor }} via GithubBot

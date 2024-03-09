@@ -18,6 +18,9 @@ jobs:
       actions: read
       contents: read
 
+    env:
+      NB_CPU: 1
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,11 +33,12 @@ jobs:
           choco install gnuwin32-m4
           Import-Module .\.github\Invoke-VisualStudio.ps1
           Invoke-VisualStudio2022x64
+          echo "NB_CPU=$env:NUMBER_OF_PROCESSORS" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Build
         run: |
           cmake -S . -B ./build -A x64  -DPWN_BUILD_TOOLKIT=OFF -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_BUILD_DOCS=OFF -DPWN_BUILD_TESTING=OFF -DPWN_LOG_USE_COLOR=OFF
-          cmake --build ./build --verbose --config Debug
+          cmake --build ./build --parallel ${{ env.NB_CPU }} --config Debug
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3
