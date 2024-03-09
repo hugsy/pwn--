@@ -20,24 +20,21 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          submodules: true
+        uses: actions/checkout@v4
 
       - name: Initialize
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
 
       - name: Setup
         run: |
           choco install gnuwin32-m4
-          choco install cmake --pre
+          Import-Module .\.github\Invoke-VisualStudio.ps1
+          Invoke-VisualStudio2022x64
 
       - name: Build
         run: |
-          Import-Module .\.github\Invoke-VisualStudio.ps1
-          Invoke-VisualStudio2022x64
           cmake -S . -B ./build -A x64  -DPWN_BUILD_TOOLKIT=OFF -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_BUILD_DOCS=OFF -DPWN_BUILD_TESTING=OFF -DPWN_LOG_USE_COLOR=OFF
           cmake --build ./build --verbose --config Debug
 
       - name: Analyze
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3

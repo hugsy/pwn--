@@ -44,9 +44,7 @@ jobs:
       ubuntu-latest-x86-full: ${{ join(steps.*.outputs.ubuntu-latest-x86-full,'') }}
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: true
+    - uses: actions/checkout@v4
 
     - name: Setup environment variables (Windows)
       if: matrix.variants.os == 'windows-latest'
@@ -79,7 +77,6 @@ jobs:
       run: |
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         choco install gnuwin32-m4
-        choco install cmake --pre
 
     - name: Prepare Linux environment
       if: matrix.variants.os == 'ubuntu-latest'
@@ -143,7 +140,7 @@ jobs:
 
     - name: Publish artifact
       if: matrix.variants.config == 'RelWithDebInfo'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ env.PROJECT_NAME }}_${{ matrix.variants.arch }}_${{ matrix.variants.os }}_${{ matrix.variants.config }}_${{ github.sha }}_${{ matrix.variants.build }}
         path: artifact/
