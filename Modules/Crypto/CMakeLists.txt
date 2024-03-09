@@ -7,19 +7,13 @@ set(SOURCE_DIR ${PROJECT_DIR}/Source)
 set(HEADER_DIR ${SOURCE_DIR}/Include)
 set(TEST_DIR ${PROJECT_DIR}/Tests)
 
-list(APPEND SOURCE_FILES ${SOURCE_DIR}/Crypto.cpp)
+list(APPEND PWN_CRYPTO_SOURCE_FILES ${SOURCE_DIR}/Crypto.cpp)
 
-add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})
-add_dependencies(${PROJECT_NAME} PWN::Common)
+add_library(${PROJECT_NAME} STATIC ${PWN_CRYPTO_SOURCE_FILES})
 add_library(PWN::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC)
-target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common)
-
-if(WIN32)
-    target_link_libraries(${PROJECT_NAME} PUBLIC Bcrypt.lib)
-else()
-endif(WIN32)
+target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common PWN::Deps::MkClib::Crypto)
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 

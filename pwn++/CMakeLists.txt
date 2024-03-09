@@ -21,7 +21,7 @@ set(INTERFACE_DIR ${PROJECT_SOURCE_DIR}/Include)
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source)
 set(HEADER_DIR ${SOURCE_DIR}/Include)
 
-if(PWN_BUILD_SHARED_LIBS)
+if(BUILD_SHARED_LIBS)
     add_library(${PROJECT_NAME} SHARED)
 else()
     add_library(${PROJECT_NAME} STATIC)

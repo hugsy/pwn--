@@ -1,8 +1,7 @@
-#include "Win32/PE.hpp"
-
 #include <memory>
 
 #include "Win32/FileSystem.hpp"
+#include "Win32/PE.hpp"
 
 
 namespace pwn::Binary
@@ -613,30 +612,29 @@ PE::FillRelocations()
                 switch ( Type )
                 {
                 case IMAGE_REL_BASED_ABSOLUTE:
-                    return "IMAGE_REL_BASED_ABSOLUTE";
+                    return "IMAGE_REL_BASED_ABSOLUTE"sv;
                 case IMAGE_REL_BASED_HIGH:
-                    return "IMAGE_REL_BASED_HIGH";
+                    return "IMAGE_REL_BASED_HIGH"sv;
                 case IMAGE_REL_BASED_LOW:
-                    return "IMAGE_REL_BASED_LOW";
+                    return "IMAGE_REL_BASED_LOW"sv;
                 case IMAGE_REL_BASED_HIGHLOW:
-                    return "IMAGE_REL_BASED_HIGHLOW";
+                    return "IMAGE_REL_BASED_HIGHLOW"sv;
                 case IMAGE_REL_BASED_HIGHADJ:
-                    return "IMAGE_REL_BASED_HIGHADJ";
+                    return "IMAGE_REL_BASED_HIGHADJ"sv;
                 case IMAGE_REL_BASED_MACHINE_SPECIFIC_5:
-                    return "IMAGE_REL_BASED_MACHINE_SPECIFIC_5";
+                    return "IMAGE_REL_BASED_MACHINE_SPECIFIC_5"sv;
                 case IMAGE_REL_BASED_RESERVED:
-                    return "IMAGE_REL_BASED_RESERVED";
+                    return "IMAGE_REL_BASED_RESERVED"sv;
                 case IMAGE_REL_BASED_MACHINE_SPECIFIC_7:
-                    return "IMAGE_REL_BASED_MACHINE_SPECIFIC_7";
+                    return "IMAGE_REL_BASED_MACHINE_SPECIFIC_7"sv;
                 case IMAGE_REL_BASED_MACHINE_SPECIFIC_8:
-                    return "IMAGE_REL_BASED_MACHINE_SPECIFIC_8";
+                    return "IMAGE_REL_BASED_MACHINE_SPECIFIC_8"sv;
                 case IMAGE_REL_BASED_MACHINE_SPECIFIC_9:
-                    return "IMAGE_REL_BASED_MACHINE_SPECIFIC_9";
+                    return "IMAGE_REL_BASED_MACHINE_SPECIFIC_9"sv;
                 case IMAGE_REL_BASED_DIR64:
-                    return "IMAGE_REL_BASED_DIR64";
-                default:
-                    return "";
+                    return "IMAGE_REL_BASED_DIR64"sv;
                 }
+                return ""sv;
             }();
             if ( TypeName.empty() )
             {
@@ -784,6 +782,9 @@ PE::FillDebug()
         {
             switch ( DebugEntry.Type )
             {
+            //
+            // Note: Those values are a mixed of SDK and PHNT
+            //
             case IMAGE_DEBUG_TYPE_UNKNOWN:
                 return "IMAGE_DEBUG_TYPE_UNKNOWN"sv;
             case IMAGE_DEBUG_TYPE_COFF:
@@ -827,10 +828,9 @@ PE::FillDebug()
             case IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS:
                 return "IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS"sv;
             case 21:
-                return "IMAGE_DEBUG_TYPE_EMBEDDEDPORTABLEPDB"sv;
-            default:
-                return ""sv;
+                return "IMAGE_DEBUG_TYPE_PERFMAP"sv;
             }
+            return ""sv;
         }();
         if ( DebugEntry.TypeName.empty() )
         {
@@ -920,8 +920,8 @@ PE::BuildDelayImportEntry(const IMAGE_DELAYLOAD_DESCRIPTOR* DelayImportDescripto
         T2 NewThunk {};
         ::memcpy(&NewThunk, CurrentThunk, sizeof(T1));
 
-        if ( (std::is_same<T2, PeThunkData64>::value && !IMAGE_SNAP_BY_ORDINAL64(CurrentThunk->u1.Ordinal)) ||
-             (std::is_same<T2, PeThunkData32>::value && !IMAGE_SNAP_BY_ORDINAL32(CurrentThunk->u1.Ordinal)) )
+        if ( (std::is_same_v<T2, PeThunkData64> && !IMAGE_SNAP_BY_ORDINAL64(CurrentThunk->u1.Ordinal)) ||
+             (std::is_same_v<T2, PeThunkData32> && !IMAGE_SNAP_BY_ORDINAL32(CurrentThunk->u1.Ordinal)) )
         {
             const PIMAGE_IMPORT_BY_NAME pfnName =
                 (PIMAGE_IMPORT_BY_NAME)GetDelayImportVa(CurrentThunk->u1.AddressOfData);

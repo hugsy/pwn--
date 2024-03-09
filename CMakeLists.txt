@@ -23,7 +23,8 @@ option(PWN_LOG_USE_COLOR "Use ANSI color codes in log messages" OFF)
 option(PWN_DISASSEMBLE_X86 "Compile with Zydis disassembler support (X86/64 only)" ON)
 option(PWN_DISASSEMBLE_ARM64 "Compile with BinaryNinja disassembler support (ARM64)" ON)
 
-option(PWN_BUILD_SHARED_LIBS "Build as a shared library" OFF)
+# Use CMake's `BUILD_SHARED_LIBS`
+# option(PWN_BUILD_SHARED_LIBS "Build as a shared library" OFF)
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     # pwn++ is NOT a top dir (i.e. build as dependency)
@@ -95,6 +96,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
 else()
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION True)
 endif()
+
+find_package(MkCLib REQUIRED)
 
 if(PWN_DISASSEMBLE_X86)
     find_package(Zydis REQUIRED)
