@@ -4,7 +4,6 @@ env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
   PROJECT_NAME: "pwn++"
   REPO: hugsy/pwn--
-  VERBOSE: "1"
 
 on:
   pull_request:
