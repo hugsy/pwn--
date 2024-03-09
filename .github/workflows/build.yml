@@ -140,32 +140,31 @@ jobs:
         name: ${{ env.PROJECT_NAME }}_${{ matrix.variants.arch }}_${{ matrix.variants.os }}_${{ matrix.variants.config }}_${{ github.sha }}_${{ matrix.variants.build }}
         path: artifact/
 
-  notify:
-    runs-on: ubuntu-2004
-    needs: build
-    steps:
-    - name: Send Discord notification
-      env:
-        COMMIT_URL: "https://github.com/${{ env.REPO }}/commit/${{ github.sha }}"
-        RUN_URL: "https://github.com/${{ env.REPO }}/actions/runs/${{ github.run_id }}"
-        BRANCH_URL: "https://github.com/${{ env.REPO }}/tree/${{ github.ref_name }}"
-        AUTHOR_URL: "https://github.com/${{ github.actor }}"
-      uses: sarisia/actions-status-discord@v1.10.0
-      with:
-        nodetail: true
-        title: 🚧 🚧 Summary of Build `${{ github.sha }}` for `${{ env.REPO }}` 🚧 🚧
-        description: |
-          [Job #${{ github.run_number }}](${{ env.RUN_URL }}): CI build `${{ github.sha }}` initiated by [${{ github.actor }}](${{ env.AUTHOR_URL }}):
-          ● Commit [${{ github.sha }}](${{ env.COMMIT_URL }})
-          ● Branch [`${{ github.ref_name }}`](${{ env.BRANCH_URL }})
-          ● [Detail Page](${{ env.RUN_URL }})
+  # notify:
+  #   runs-on: ubuntu-2204
+  #   needs: build
+  #   steps:
+  #   - name: Send Discord notification
+  #     env:
+  #       COMMIT_URL: "https://github.com/${{ env.REPO }}/commit/${{ github.sha }}"
+  #       RUN_URL: "https://github.com/${{ env.REPO }}/actions/runs/${{ github.run_id }}"
+  #       BRANCH_URL: "https://github.com/${{ env.REPO }}/tree/${{ github.ref_name }}"
+  #       AUTHOR_URL: "https://github.com/${{ github.actor }}"
+  #     uses: sarisia/actions-status-discord@v1.10.0
+  #     with:
+  #       nodetail: true
+  #       title: 🚧 🚧 Summary of Build `${{ github.sha }}` for `${{ env.REPO }}` 🚧 🚧
+  #       description: |
+  #         [Job #${{ github.run_number }}](${{ env.RUN_URL }}): CI build `${{ github.sha }}` initiated by [${{ github.actor }}](${{ env.AUTHOR_URL }}):
+  #         ● Commit [${{ github.sha }}](${{ env.COMMIT_URL }})
+  #         ● Branch [`${{ github.ref_name }}`](${{ env.BRANCH_URL }})
+  #         ● [Detail Page](${{ env.RUN_URL }})
 
-          ${{ needs.build.outputs.windows-2022-x64 }}
-          ${{ needs.build.outputs.windows-2022-win32 }}
-          ${{ needs.build.outputs.windows-2022-arm }}
-          ${{ needs.build.outputs.windows-2022-arm64 }}
+  #         ${{ needs.build.outputs.windows-2022-x64 }}
+  #         ${{ needs.build.outputs.windows-2022-win32 }}
+  #         ${{ needs.build.outputs.windows-2022-arm }}
+  #         ${{ needs.build.outputs.windows-2022-arm64 }}
 
-
-        color: 0x0000ff
-        username: ${{ github.actor }} via GithubBot
-        avatar_url: ${{ github.actor.avatar_url }}
+  #       color: 0x0000ff
+  #       username: ${{ github.actor }} via GithubBot
+  #       avatar_url: ${{ github.actor.avatar_url }}
