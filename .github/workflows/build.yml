@@ -58,7 +58,7 @@ jobs:
         chmod +x /tmp/llvm.sh
         sudo /tmp/llvm.sh 17
         sudo apt update && sudo apt install -y cmake doxygen clang-17 libc++abi-17-dev libc++-17-dev llvm-17-dev nasm
-        echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
+        # echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
         echo "CC=clang-17" >> $GITHUB_ENV
         echo "CXX=clang++-17" >> $GITHUB_ENV
 
