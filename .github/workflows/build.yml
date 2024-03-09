@@ -141,8 +141,8 @@ jobs:
         path: artifact/
 
   notify:
-    runs-on: 'ubuntu-2204'
-    # needs: build
+    runs-on: ubuntu-2004
+    needs: build
     steps:
     - name: Send Discord notification
       env:
@@ -159,6 +159,12 @@ jobs:
           ● Commit [${{ github.sha }}](${{ env.COMMIT_URL }})
           ● Branch [`${{ github.ref_name }}`](${{ env.BRANCH_URL }})
           ● [Detail Page](${{ env.RUN_URL }})
+
+          ${{ needs.build.outputs.windows-2022-x64 }}
+          ${{ needs.build.outputs.windows-2022-win32 }}
+          ${{ needs.build.outputs.windows-2022-arm }}
+          ${{ needs.build.outputs.windows-2022-arm64 }}
+
 
         color: 0x0000ff
         username: ${{ github.actor }} via GithubBot
