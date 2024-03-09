@@ -115,6 +115,7 @@ jobs:
       if: ${{ startsWith(matrix.variants.os, 'windows-') && failure() }}
       run: |
         echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}=❌ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        exit 0
 
     - name: Populate the successful output (Linux)
       id: output_success_lin
@@ -127,6 +128,7 @@ jobs:
       if: ${{ startsWith(matrix.variants.os, 'ubuntu-') && failure() }}
       run: |
         echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}=❌ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }}' >> ${GITHUB_OUTPUT}
+        exit 0
 
     - name: Install library
       run: |
