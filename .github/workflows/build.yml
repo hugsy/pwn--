@@ -108,25 +108,25 @@ jobs:
       id: output_success_win
       if: ${{ startsWith(matrix.variants.os, 'windows-') && success() }}
       run: |
-        echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=✅ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}=✅ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Populate the failure output (Windows)
       id: output_failure_win
       if: ${{ startsWith(matrix.variants.os, 'windows-') && failure() }}
       run: |
-        echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=❌ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}=❌ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Populate the successful output (Linux)
       id: output_success_lin
       if: ${{ startsWith(matrix.variants.os, 'ubuntu-') && success() }}
       run: |
-        echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=✅ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' >> ${GITHUB_OUTPUT}
+        echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}=✅ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' >> ${GITHUB_OUTPUT}
 
     - name: Populate the failure output (Linux)
       id: output_failure_lin
       if: ${{ startsWith(matrix.variants.os, 'ubuntu-') && failure() }}
       run: |
-        echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=❌ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' >> ${GITHUB_OUTPUT}
+        echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}=❌ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' >> ${GITHUB_OUTPUT}
 
     - name: Install library
       run: |
