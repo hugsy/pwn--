@@ -23,31 +23,27 @@ jobs:
       fail-fast: false
       matrix:
         variants:
-          # - {os: windows-latest,   arch: x64,      config: Debug,            build: full}
-          # - {os: windows-latest,   arch: win32,    config: Debug,            build: full}
-          # - {os: windows-latest,   arch: arm64,    config: Debug,            build: full}
-          # - {os: windows-latest,   arch: arm,      config: Debug,            build: full}
-          # - {os: ubuntu-latest,    arch: x64,      config: Debug,            build: full}
-          - {os: windows-latest,   arch: x64,      config: RelWithDebInfo,   build: full}
-          - {os: windows-latest,   arch: win32,    config: RelWithDebInfo,   build: full}
-          - {os: windows-latest,   arch: arm64,    config: RelWithDebInfo,   build: full}
-          - {os: windows-latest,   arch: arm,      config: RelWithDebInfo,   build: full}
-          - {os: ubuntu-latest,    arch: x64,      config: RelWithDebInfo,   build: full}
+          - {os: windows-latest,   arch: x64,      config: RelWithDebInfo}
+          - {os: windows-latest,   arch: win32,    config: RelWithDebInfo}
+          - {os: windows-latest,   arch: arm64,    config: RelWithDebInfo}
+          - {os: windows-latest,   arch: arm,      config: RelWithDebInfo}
+          # - {os: ubuntu-latest,    arch: x64,      config: RelWithDebInfo} # runner fails for some reason, works fine locally: see https://github.com/actions/runner-images/discussions/7188
+          # - {os: ubuntu-latest,    arch: x86,      config: RelWithDebInfo}
 
     runs-on: ${{ matrix.variants.os }}
     outputs:
-      windows-latest-x64-full: ${{ join(steps.*.outputs.windows-latest-x64-full,'') }}
-      windows-latest-win32-full: ${{ join(steps.*.outputs.windows-latest-win32-full,'') }}
-      windows-latest-arm-full: ${{ join(steps.*.outputs.windows-latest-arm-full,'') }}
-      windows-latest-arm64-full: ${{ join(steps.*.outputs.windows-latest-arm64-full,'') }}
-      ubuntu-latest-x64-full: ${{ join(steps.*.outputs.ubuntu-latest-x64-full,'') }}
-      ubuntu-latest-x86-full: ${{ join(steps.*.outputs.ubuntu-latest-x86-full,'') }}
+      windows-latest-x64: ${{ join(steps.*.outputs.windows-latest-x64,'') }}
+      windows-latest-win32: ${{ join(steps.*.outputs.windows-latest-win32,'') }}
+      windows-latest-arm: ${{ join(steps.*.outputs.windows-latest-arm,'') }}
+      windows-latest-arm64: ${{ join(steps.*.outputs.windows-latest-arm64,'') }}
+      ubuntu-latest-x64: ${{ join(steps.*.outputs.ubuntu-latest-x64,'') }}
+      ubuntu-latest-x86: ${{ join(steps.*.outputs.ubuntu-latest-x86,'') }}
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Setup environment variables (Windows)
-      if: matrix.variants.os == 'windows-latest'
+      if: startsWith(matrix.variants.os, 'windows-')
       shell: powershell
       run: |
         echo "NB_CPU=$env:NUMBER_OF_PROCESSORS" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -55,7 +51,7 @@ jobs:
         Invoke-VisualStudio2022${{ matrix.variants.arch }}
 
     - name: Setup environment variables (Linux)
-      if: matrix.variants.os == 'ubuntu-latest'
+      if: startsWith(matrix.variants.os, 'ubuntu-')
       run: |
         sudo apt remove llvm-* clang-* python3-lldb-* libunwind-* libc++abi1-* libc++1-*
         wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
@@ -72,14 +68,14 @@ jobs:
         mkdir artifact
 
     - name: Prepare Windows environment
-      if: matrix.variants.os == 'windows-latest'
+      if: startsWith(matrix.variants.os, 'windows-')
       shell: pwsh
       run: |
         New-Item -ItemType SymbolicLink -Target "..\pwn--" -Path "..\pwn++" -ErrorAction Continue
         choco install gnuwin32-m4
 
     - name: Prepare Linux environment
-      if: matrix.variants.os == 'ubuntu-latest'
+      if: startsWith(matrix.variants.os, 'ubuntu-')
       shell: bash
       run: |
         echo ln -s ../pwn++ ../pwn--
@@ -88,12 +84,12 @@ jobs:
       run: env
 
     - name: Initialize cmake
-      if: matrix.variants.os == 'windows-latest'
+      if: startsWith(matrix.variants.os, 'windows-')
       run: |
         cmake -S . -B ./build -A ${{ matrix.variants.arch }} ${{ env.CMAKE_FLAGS }}
 
     - name: Initialize cmake (Linux)
-      if: matrix.variants.os == 'ubuntu-latest'
+      if: startsWith(matrix.variants.os, 'ubuntu-')
       run: |
         cmake -S . -B ./build ${{ env.CMAKE_FLAGS }}
 
@@ -109,37 +105,35 @@ jobs:
 
     - name: Populate the successful output (Windows)
       id: output_success_win
-      if: ${{ matrix.variants.os == 'windows-latest' && success() }}
+      if: ${{ startsWith(matrix.variants.os, 'windows-') && success() }}
       run: |
         echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=✅ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
     - name: Populate the failure output (Windows)
       id: output_failure_win
-      if: ${{ matrix.variants.os == 'windows-latest' && failure() }}
+      if: ${{ startsWith(matrix.variants.os, 'windows-') && failure() }}
       run: |
         echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=❌ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         return -1
 
     - name: Populate the successful output (Linux)
       id: output_success_lin
-      if: ${{ matrix.variants.os == 'ubuntu-latest' && success() }}
+      if: ${{ startsWith(matrix.variants.os, 'ubuntu-') && success() }}
       run: |
         echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=✅ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' >> ${GITHUB_OUTPUT}
 
     - name: Populate the failure output (Linux)
       id: output_failure_lin
-      if: ${{ matrix.variants.os == 'ubuntu-latest' && failure() }}
+      if: ${{ startsWith(matrix.variants.os, 'ubuntu-') && failure() }}
       run: |
         echo '${{ matrix.variants.os }}-${{ matrix.variants.arch }}-${{ matrix.variants.build }}=❌ ${{ matrix.variants.os }} ➤ ${{ matrix.variants.arch }} ➤ ${{ matrix.variants.build }}' >> ${GITHUB_OUTPUT}
         exit 1
 
     - name: Install library
-      if: matrix.variants.config == 'RelWithDebInfo'
       run: |
         cmake --install ./build --config ${{ matrix.variants.config }} --prefix ./artifact --verbose
 
     - name: Publish artifact
-      if: matrix.variants.config == 'RelWithDebInfo'
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.PROJECT_NAME }}_${{ matrix.variants.arch }}_${{ matrix.variants.os }}_${{ matrix.variants.config }}_${{ github.sha }}_${{ matrix.variants.build }}
@@ -165,12 +159,12 @@ jobs:
           ● Branch [`${{ github.ref_name }}`](${{ env.BRANCH_URL }})
           ● [Detail Page](${{ env.RUN_URL }})
 
-          ${{ needs.build.outputs.windows-latest-x64-full }}
-          ${{ needs.build.outputs.windows-latest-win32-full }}
-          ${{ needs.build.outputs.windows-latest-arm-full }}
-          ${{ needs.build.outputs.windows-latest-arm64-full }}
-          ${{ needs.build.outputs.ubuntu-latest-x64-full }}
-          ${{ needs.build.outputs.ubuntu-latest-x86-full }}
+          ${{ needs.build.outputs.windows-latest-x64 }}
+          ${{ needs.build.outputs.windows-latest-win32 }}
+          ${{ needs.build.outputs.windows-latest-arm }}
+          ${{ needs.build.outputs.windows-latest-arm64 }}
+          ${{ needs.build.outputs.ubuntu-latest-x64 }}
+          ${{ needs.build.outputs.ubuntu-latest-x86 }}
 
         color: 0x0000ff
         username: ${{ github.actor }} via GithubBot
