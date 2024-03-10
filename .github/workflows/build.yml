@@ -96,8 +96,7 @@ jobs:
     - name: Initialize cmake (Linux)
       if: matrix.variants.os == 'ubuntu-latest'
       run: |
-        sudo apt install -y ninja-build
-        cmake -S . -B ./build ${{ env.CMAKE_FLAGS }} -G Ninja
+        cmake -S . -B ./build ${{ env.CMAKE_FLAGS }}
 
     - name: Build pwn++ library
       run: |
