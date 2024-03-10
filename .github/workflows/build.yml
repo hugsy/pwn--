@@ -64,13 +64,6 @@ jobs:
         wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
         chmod +x /tmp/llvm.sh
         sudo /tmp/llvm.sh 17
-        sudo apt remove --purge --auto-remove cmake
-        sudo apt install -y software-properties-common lsb-release
-        wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
-        sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
-        sudo apt update
-        sudo apt install kitware-archive-keyring
-        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6AF7F09730B3F0A4
         sudo apt update && sudo apt install -y cmake doxygen clang-17 libc++abi-17-dev libc++-17-dev llvm-17-dev nasm
         echo "NB_CPU=$(grep -c ^processor /proc/cpuinfo)" >> $GITHUB_ENV
         echo "CC=clang-17" >> $GITHUB_ENV
@@ -78,7 +71,6 @@ jobs:
 
     - name: Prepare common environment
       run: |
-        mkdir build
         mkdir artifact
 
     - name: Prepare Windows environment
