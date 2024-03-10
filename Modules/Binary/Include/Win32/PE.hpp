@@ -413,6 +413,8 @@ private:
     /// @return true
     /// @return false
     ///
+    /// @link https://github.com/dotnet/core/blob/main/Documentation/diagnostics/portable_pdb.md
+    ///
     bool
     FillDebug();
 

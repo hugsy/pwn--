@@ -17,7 +17,11 @@
 
 ### Template
 
-Git-Clone the template in [`hugsy/template-pwn`](https://github.com/hugsy/pwn--template)
+Use Git to clone the template in [`hugsy/template-pwn`](https://github.com/hugsy/pwn--template)
+
+```console
+git clone https://github.com/hugsy/pwn--template MyProject
+```
 
 ### CMake
 
@@ -47,3 +51,12 @@ Because:
 The idea is to provide in C on Windows the same kind of functionalities than [pwntools](https://github.com/Gallopsled/pwntools) does in Python on Linux. It's also a toy library meant for exploring Windows in a more friendly way. So if you're looking for years of poorly written C++ tangled with performant inefficient ways to experiment low-level, go no further friend this library is for you.
 
 _Note_: the original `PwnLib` was written around Windows 7 for feature testing. This is 100% Windows 10/11 focused, so expect things to go wrong if you use any other Windows version. Some stuff may also go wrong in x86. Better use 64. It's not a bug but a design choice 😋
+
+## Third-party libraries
+
+ - [ProcessHacker Native Headers](https://github.com/winsiderss/phnt.git) - Windows Internals structures
+ - [Zydis](https://github.com/zyantific/zydis) - X86/X64 Disassembler
+ - [Binary Ninja Arch-ARM64](https://github.com/Vector35/arch-arm64) - ARM64 Disassembler
+ - [Catch2](https://github.com/catchorg/Catch2) - Unit test suite
+ - [ArgParse](https://github.com/p-ranav/argparse) - Easy & portable command line parsing
+ - [MkClib](https://github.com/MarekKnapek/mk_clib) - Crypto

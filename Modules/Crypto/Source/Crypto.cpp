@@ -1,7 +1,17 @@
 #include "Crypto.hpp"
-
 #include "Handle.hpp"
 #include "Log.hpp"
+
+extern "C"
+{
+#include "mk_lib_crypto_hash_stream_md2.h"
+#include "mk_lib_crypto_hash_stream_md4.h"
+#include "mk_lib_crypto_hash_stream_md5.h"
+#include "mk_lib_crypto_hash_stream_sha1.h"
+#include "mk_lib_crypto_hash_stream_sha2_256.h"
+#include "mk_lib_crypto_hash_stream_sha2_512.h"
+}
+
 
 using namespace pwn;
 
@@ -42,184 +52,119 @@ constexpr u64 CRC64_VARIANT = 0xC96C5795D7870F42;
 
 
 u8
-Crypto::crc8(std::vector<u8> const& data)
+Crypto::CRC8(std::vector<u8> const& data)
 {
     return crc_base<u8>(data, CRC8_VARIANT);
 }
 
 
 u16
-Crypto::crc16(std::vector<u8> const& data)
+Crypto::CRC16(std::vector<u8> const& data)
 {
     return crc_base<u16>(data, CRC16_VARIANT);
 }
 
 
 u32
-Crypto::crc32(std::vector<u8> const& data)
+Crypto::CRC32(std::vector<u8> const& data)
 {
     return crc_base<u32>(data, CRC32_VARIANT);
 }
 
 
 u64
-Crypto::crc64(std::vector<u8> const& data)
+Crypto::CRC64(std::vector<u8> const& data)
 {
     return crc_base<u64>(data, CRC64_VARIANT);
 }
 
 
-#ifdef PWN_BUILD_FOR_WINDOWS
-#include <bcrypt.h>
-
-
-template<typename T>
-static T
-Hash(std::vector<u8> const& data, LPCWSTR const AlgoId)
+PWNAPI auto
+Crypto::MD2(std::vector<u8> const& data) -> std::array<u8, Crypto::MD2LEN>
 {
-    T out               = {};
-    const DWORD out_sz  = out.size() & 0xffffffff;
-    const DWORD data_sz = data.size() & 0xffffffff;
+    std::array<u8, Crypto::MD2LEN> hash {};
+    mk_lib_crypto_hash_stream_md2_t hasher {};
+    mk_lib_crypto_hash_block_md2_digest_t digest {};
 
-    BCRYPT_ALG_HANDLE hAlgorithm;
-    NTSTATUS Status = ::BCryptOpenAlgorithmProvider(&hAlgorithm, AlgoId, nullptr, 0);
-    if ( NT_SUCCESS(Status) )
-    {
-        BCRYPT_HASH_HANDLE hHash;
-        PUCHAR HashObject;
-        Status = ::BCryptCreateHash(hAlgorithm, &hHash, nullptr, 0, nullptr, 0, 0);
-        if ( NT_SUCCESS(Status) )
-        {
-            Status = ::BCryptHashData(hHash, (PUCHAR)data.data(), data_sz, 0);
-            if ( NT_SUCCESS(Status) )
-            {
-                ::BCryptFinishHash(hHash, &out[0], out_sz, 0);
-            }
-        }
-        ::BCryptCloseAlgorithmProvider(hAlgorithm, 0);
-    }
+    ::mk_lib_crypto_hash_stream_md2_init(&hasher);
+    ::mk_lib_crypto_hash_stream_md2_append(&hasher, data.data(), data.size());
+    ::mk_lib_crypto_hash_stream_md2_finish(&hasher, &digest);
 
-    return out;
+    ::memcpy(hash.data(), reinterpret_cast<u8*>(&digest), hash.size());
+    return hash;
 }
 
-std::array<u8, Crypto::MD5LEN>
-Crypto::md2(std::vector<u8> const& data)
+PWNAPI auto
+Crypto::MD4(std::vector<u8> const& data) -> std::array<u8, Crypto::MD4LEN>
 {
-    return Hash<std::array<u8, Crypto::MD5LEN>>(data, BCRYPT_MD2_ALGORITHM);
+    std::array<u8, Crypto::MD4LEN> hash {};
+    mk_lib_crypto_hash_stream_md4_t hasher {};
+    mk_lib_crypto_hash_block_md4_digest_t digest {};
+
+    ::mk_lib_crypto_hash_stream_md4_init(&hasher);
+    ::mk_lib_crypto_hash_stream_md4_append(&hasher, data.data(), data.size());
+    ::mk_lib_crypto_hash_stream_md4_finish(&hasher, &digest);
+
+    ::memcpy(hash.data(), reinterpret_cast<u8*>(&digest), hash.size());
+    return hash;
 }
 
-std::array<u8, Crypto::MD5LEN>
-Crypto::md4(std::vector<u8> const& data)
+PWNAPI auto
+Crypto::MD5(std::vector<u8> const& data) -> std::array<u8, Crypto::MD5LEN>
 {
-    return Hash<std::array<u8, Crypto::MD5LEN>>(data, BCRYPT_MD4_ALGORITHM);
+    std::array<u8, Crypto::MD5LEN> hash {};
+    mk_lib_crypto_hash_stream_md5_t hasher {};
+    mk_lib_crypto_hash_block_md5_digest_t digest {};
+
+    ::mk_lib_crypto_hash_stream_md5_init(&hasher);
+    ::mk_lib_crypto_hash_stream_md5_append(&hasher, data.data(), data.size());
+    ::mk_lib_crypto_hash_stream_md5_finish(&hasher, &digest);
+
+    ::memcpy(hash.data(), reinterpret_cast<u8*>(&digest), hash.size());
+    return hash;
 }
 
-std::array<u8, Crypto::MD5LEN>
-Crypto::md5(std::vector<u8> const& data)
+PWNAPI auto
+Crypto::SHA1(std::vector<u8> const& data) -> std::array<u8, Crypto::SHA1LEN>
 {
-    return Hash<std::array<u8, Crypto::MD5LEN>>(data, BCRYPT_MD5_ALGORITHM);
-}
-std::array<u8, Crypto::SHA1LEN>
-Crypto::sha1(std::vector<u8> const& data)
-{
-    return Hash<std::array<u8, Crypto::SHA1LEN>>(data, BCRYPT_SHA1_ALGORITHM);
-}
+    std::array<u8, Crypto::SHA1LEN> hash {};
+    mk_lib_crypto_hash_stream_sha1_t hasher {};
+    mk_lib_crypto_hash_block_sha1_digest_t digest {};
 
-std::array<u8, Crypto::SHA256LEN>
-Crypto::sha256(std::vector<u8> const& data)
-{
-    return Hash<std::array<u8, Crypto::SHA256LEN>>(data, BCRYPT_SHA256_ALGORITHM);
+    ::mk_lib_crypto_hash_stream_sha1_init(&hasher);
+    ::mk_lib_crypto_hash_stream_sha1_append(&hasher, data.data(), data.size());
+    ::mk_lib_crypto_hash_stream_sha1_finish(&hasher, &digest);
+
+    ::memcpy(hash.data(), reinterpret_cast<u8*>(&digest), hash.size());
+    return hash;
 }
 
-std::array<u8, Crypto::SHA512LEN>
-Crypto::sha512(std::vector<u8> const& data)
+PWNAPI auto
+Crypto::SHA256(std::vector<u8> const& data) -> std::array<u8, Crypto::SHA256LEN>
 {
-    return Hash<std::array<u8, Crypto::SHA512LEN>>(data, BCRYPT_SHA512_ALGORITHM);
+    std::array<u8, Crypto::SHA256LEN> hash {};
+    mk_lib_crypto_hash_stream_sha2_256_t hasher {};
+    mk_lib_crypto_hash_block_sha2_256_digest_t digest {};
+
+    ::mk_lib_crypto_hash_stream_sha2_256_init(&hasher);
+    ::mk_lib_crypto_hash_stream_sha2_256_append(&hasher, data.data(), data.size());
+    ::mk_lib_crypto_hash_stream_sha2_256_finish(&hasher, &digest);
+
+    ::memcpy(hash.data(), reinterpret_cast<u8*>(&digest), hash.size());
+    return hash;
 }
 
-template<typename T>
-static T
-Encrypt(std::array<u8, 32> const& Key, std::array<u8, 16> const& IV, std::vector<u8> Buffer)
+PWNAPI auto
+Crypto::SHA512(std::vector<u8> const& data) -> std::array<u8, Crypto::SHA512LEN>
 {
-    /*
-    BCRYPT_ALG_HANDLE hAlg = nullptr;
-    BCRYPT_KEY_HANDLE hKey = nullptr;
-    NTSTATUS Status        = STATUS_UNSUCCESSFUL;
+    std::array<u8, Crypto::SHA512LEN> hash {};
+    mk_lib_crypto_hash_stream_sha2_512_t hasher {};
+    mk_lib_crypto_hash_block_sha2_512_digest_t digest {};
 
-    if ( !NT_SUCCESS(status = ::BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_AES_ALGORITHM, NULL, 0)) )
-    {
-        std::cout << "**** Error 0x%x returned by BCryptOpenAlgorithmProvider\n" << status;
-        goto Cleanup;
-    }
+    ::mk_lib_crypto_hash_stream_sha2_512_init(&hasher);
+    ::mk_lib_crypto_hash_stream_sha2_512_append(&hasher, data.data(), data.size());
+    ::mk_lib_crypto_hash_stream_sha2_512_finish(&hasher, &digest);
 
-    // Generate a symmetric key
-    if ( !NT_SUCCESS(
-             status = BCryptGenerateSymmetricKey(hAlg, &hKey, NULL, 0, (PUCHAR) "password", sizeof("password"), 0)) )
-    {
-        std::cout << "**** Error 0x%x returned by BCryptGenerateSymmetricKey\n" << status;
-        goto Cleanup;
-    }
-
-    // Encrypt data
-    PUCHAR pbData       = (PUCHAR) "Hello World!";
-    ULONG cbData        = sizeof("Hello World!");
-    ULONG cbCipherText  = 0;
-    PUCHAR pbCipherText = NULL;
-
-    if ( !NT_SUCCESS(status = BCryptEncrypt(hKey, pbData, cbData, NULL, NULL, 0, NULL, 0, &cbCipherText, 0)) )
-    {
-        std::cout << "**** Error 0x%x returned by BCryptEncrypt\n" << status;
-        goto Cleanup;
-    }
-
-    pbCipherText = (PUCHAR)HeapAlloc(GetProcessHeap(), 0, cbCipherText);
-    if ( NULL == pbCipherText )
-    {
-        std::cout << "**** memory allocation failed\n";
-        goto Cleanup;
-    }
-
-    if ( !NT_SUCCESS(
-             status =
-                 BCryptEncrypt(hKey, pbData, cbData, NULL, NULL, 0, pbCipherText, cbCipherText, &cbCipherText, 0)) )
-    {
-        std::cout << "**** Error 0x%x returned by BCryptEncrypt\n" << status;
-        goto Cleanup;
-    }
-
-    if ( hAlg )
-    {
-        BCryptCloseAlgorithmProvider(hAlg, 0);
-    }
-
-    if ( hKey )
-    {
-        BCryptDestroyKey(hKey);
-    }
-
-    if ( pbCipherText )
-    {
-        HeapFree(GetProcessHeap(), 0, pbCipherText);
-        pbCipherText = NULL;
-        cbCipherText = 0;
-    }
-    */
-    T out;
-    return out;
+    ::memcpy(hash.data(), reinterpret_cast<u8*>(&digest), hash.size());
+    return hash;
 }
-
-
-Result<std::vector<u8>>
-EncryptAES256(std::array<u8, 32> const& Key, std::array<u8, 16> const& IV, std::vector<u8> Buffer)
-{
-    std::vector<u8> EncryptedBuffer;
-    return Ok(EncryptedBuffer);
-}
-
-#else
-
-//
-// TODO: make md/sha portable to linux too
-//
-
-#endif
