@@ -4,7 +4,6 @@ env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
   PROJECT_NAME: "pwn++"
   REPO: hugsy/pwn--
-  VERBOSE: "1"
 
 on:
   workflow_dispatch:
@@ -19,6 +18,7 @@ jobs:
     env:
       CMAKE_FLAGS: '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON'
       NB_CPU: 1
+      VERBOSE: 1
 
     strategy:
       fail-fast: false
