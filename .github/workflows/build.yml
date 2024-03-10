@@ -28,8 +28,8 @@ jobs:
           - {os: windows-2022,   arch: win32,    config: RelWithDebInfo}
           - {os: windows-2022,   arch: arm64,    config: RelWithDebInfo}
           - {os: windows-2022,   arch: arm,      config: RelWithDebInfo}
-          - {os: ubuntu-2204,    arch: x64,      config: RelWithDebInfo} # runner fails for some reason, works fine locally: see https://github.com/actions/runner-images/discussions/7188
-          - {os: ubuntu-2204,    arch: x86,      config: RelWithDebInfo}
+          - {os: ubuntu-22.04,    arch: x64,      config: RelWithDebInfo} # runner fails for some reason, works fine locally: see https://github.com/actions/runner-images/discussions/7188
+          - {os: ubuntu-22.04,    arch: x86,      config: RelWithDebInfo}
 
     runs-on: ${{ matrix.variants.os }}
     outputs:
@@ -37,8 +37,8 @@ jobs:
       windows-2022-win32: ${{ join(steps.*.outputs.windows-2022-win32,'') }}
       windows-2022-arm: ${{ join(steps.*.outputs.windows-2022-arm,'') }}
       windows-2022-arm64: ${{ join(steps.*.outputs.windows-2022-arm64,'') }}
-      ubuntu-2204-x64: ${{ join(steps.*.outputs.ubuntu-2204-x64,'') }}
-      ubuntu-2204-x86: ${{ join(steps.*.outputs.ubuntu-2204-x86,'') }}
+      ubuntu-22.04-x64: ${{ join(steps.*.outputs.ubuntu-22.04-x64,'') }}
+      ubuntu-22.04-x86: ${{ join(steps.*.outputs.ubuntu-22.04-x86,'') }}
 
     steps:
     - uses: actions/checkout@v4
@@ -153,7 +153,7 @@ jobs:
         path: artifact/
 
   # notify:
-  #   runs-on: ubuntu-2204
+  #   runs-on: ubuntu-22.04
   #   needs: build
   #   steps:
   #   - name: Send Discord notification
