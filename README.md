@@ -59,4 +59,4 @@ _Note_: the original `PwnLib` was written around Windows 7 for feature testing. 
  - [Binary Ninja Arch-ARM64](https://github.com/Vector35/arch-arm64) - ARM64 Disassembler
  - [Catch2](https://github.com/catchorg/Catch2) - Unit test suite
  - [ArgParse](https://github.com/p-ranav/argparse) - Easy & portable command line parsing
- - [MkClib](https://github.com/MarekKnapek/mk_clib) - Crypto
+ - [mk_clib](https://github.com/MarekKnapek/mk_clib) - Crypto
