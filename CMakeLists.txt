@@ -97,7 +97,7 @@ else()
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION True)
 endif()
 
-find_package(MkCLib REQUIRED)
+find_package(mk_clib REQUIRED)
 
 if(PWN_DISASSEMBLE_X86)
     find_package(Zydis REQUIRED)
