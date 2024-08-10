@@ -30,6 +30,7 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     # pwn++ is NOT a top dir (i.e. build as dependency)
     option(PWN_BUILD_TOOLKIT "Compile the executables of pwn++ toolkit" OFF)
     option(PWN_BUILD_TESTING "Compile the test suite" OFF)
+    option(PWN_BUILD_MODULE_CRYPTO "Compile the crypto module (requires m4)" OFF)
     option(PWN_BUILD_DOCS "Generate the Doxygen API files" OFF)
 else()
     # pwn++ is a top dir
@@ -51,21 +52,21 @@ if(WIN32)
         # Listed by dependency order
         Common
 
-        Crypto
-        Network
-        Symbols
-        System
-        Security
-        Registry
-        Service
-        Shellcode
+        # Crypto
+        # Network
+        # Symbols
+        # System
+        # Security
+        # Registry
+        # Service
+        # Shellcode
 
-        FileSystem
-        Process
-        Remote
+        # FileSystem
+        # Process
+        # Remote
 
-        Binary
-        CTF
+        # Binary
+        # CTF
 
         # TODO : ideas for future modules
         # - WTS
@@ -97,7 +98,9 @@ else()
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION True)
 endif()
 
-find_package(MkCLib REQUIRED)
+if(PWN_BUILD_MODULE_CRYPTO)
+    find_package(MkCLib REQUIRED)
+endif(PWN_BUILD_MODULE_CRYPTO)
 
 if(PWN_DISASSEMBLE_X86)
     find_package(Zydis REQUIRED)

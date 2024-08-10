@@ -8,11 +8,11 @@ set(HEADER_DIR ${SOURCE_DIR}/Include)
 
 set(SOURCE_FILES
 
-    ${SOURCE_DIR}/Architecture.cpp
-    ${SOURCE_DIR}/Context.cpp
-    ${SOURCE_DIR}/Error.cpp
-    ${SOURCE_DIR}/Log.cpp
-    ${SOURCE_DIR}/Utils.cpp
+    # ${SOURCE_DIR}/Architecture.cpp
+    # ${SOURCE_DIR}/Context.cpp
+    # ${SOURCE_DIR}/Error.cpp
+    # ${SOURCE_DIR}/Log.cpp
+    # ${SOURCE_DIR}/Utils.cpp
 )
 
 #
@@ -24,7 +24,7 @@ target_sources(${PROJECT_NAME}
     PRIVATE
     FILE_SET CXX_MODULES FILES
 
-    ${INTERFACE_DIR}/Common.ixx
+    # ${INTERFACE_DIR}/Common.ixx
     ${SOURCE_DIR}/Common.cxx
 )
 
