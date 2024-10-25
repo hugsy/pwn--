@@ -16,7 +16,7 @@ jobs:
   build:
     name: "${{ matrix.variants.os }}/${{ matrix.variants.arch }}/${{ matrix.variants.config }}"
     env:
-      CMAKE_FLAGS: '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON -DPWN_BUILD_CRYPTO=ON'
+      CMAKE_FLAGS: '-DPWN_BUILD_DOCS=OFF -DPWN_DISASSEMBLE_X86=ON -DPWN_DISASSEMBLE_ARM64=ON -DPWN_BUILD_TOOLKIT=ON -DPWN_BUILD_TESTING=ON'
       NB_CPU: 1
       VERBOSE: 1
 
@@ -24,10 +24,12 @@ jobs:
       fail-fast: false
       matrix:
         variants:
-          - {os: windows-2022,   arch: x64,      config: RelWithDebInfo}
-          - {os: windows-2022,   arch: win32,    config: RelWithDebInfo}
-          - {os: windows-2022,   arch: arm64,    config: RelWithDebInfo}
-          - {os: windows-2022,   arch: arm,      config: RelWithDebInfo}
+          - {os: windows-2022,   arch: x64,      config: RelWithDebInfo,  crypto: ON}
+          - {os: windows-2022,   arch: x64,      config: RelWithDebInfo,  crypto: OFF}
+          - {os: windows-2022,   arch: win32,    config: RelWithDebInfo,  crypto: ON}
+          - {os: windows-2022,   arch: win32,    config: RelWithDebInfo,  crypto: OFF}
+          - {os: windows-2022,   arch: arm64,    config: RelWithDebInfo,  crypto: ON}
+          - {os: windows-2022,   arch: arm,      config: RelWithDebInfo,  crypto: ON}
           # - {os: ubuntu-2204,    arch: x64,      config: RelWithDebInfo} # runner fails for some reason, works fine locally: see https://github.com/actions/runner-images/discussions/7188
           # - {os: ubuntu-2204,    arch: x86,      config: RelWithDebInfo}
 
@@ -87,12 +89,12 @@ jobs:
     - name: Initialize cmake
       if: startsWith(matrix.variants.os, 'windows-')
       run: |
-        cmake -S . -B ./build -A ${{ matrix.variants.arch }} ${{ env.CMAKE_FLAGS }}
+        cmake -S . -B ./build -A ${{ matrix.variants.arch }} ${{ env.CMAKE_FLAGS }} -DPWN_BUILD_CRYPTO=${{ matrix.variants.crypto }}
 
     - name: Initialize cmake (Linux)
       if: startsWith(matrix.variants.os, 'ubuntu-')
       run: |
-        cmake -S . -B ./build ${{ env.CMAKE_FLAGS }}
+        cmake -S . -B ./build ${{ env.CMAKE_FLAGS }} -DPWN_BUILD_CRYPTO=${{ matrix.variants.crypto }}
 
     - name: Build pwn++ library
       run: |
