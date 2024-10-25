@@ -1,4 +1,4 @@
-name: CI Build
+name: Build
 
 env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
@@ -138,7 +138,7 @@ jobs:
 
     - name: Publish artifact
       uses: actions/upload-artifact@v4
-      if: ${{ matrix.variants.crypto }} == 'ON'
+      if: ${{ matrix.variants.crypto == 'ON' }}
       with:
         name: ${{ env.PROJECT_NAME }}_${{ matrix.variants.arch }}_${{ matrix.variants.os }}_${{ matrix.variants.config }}_${{ github.sha }}_${{ matrix.variants.build }}
         path: artifact/
