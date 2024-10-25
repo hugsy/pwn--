@@ -10,7 +10,9 @@
 #include "Handle.hpp"
 #include "Context.hpp"
 
+#ifdef PWN_BUILD_CRYPTO
 #include "Crypto.hpp"
+#endif // PWN_BUILD_CRYPTO
 
 #ifdef PWN_INCLUDE_DISASSEMBLER
 #include "Disassembler.hpp"
