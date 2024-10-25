@@ -20,6 +20,7 @@ set(CXX_STANDARD 23)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 option(PWN_LOG_USE_COLOR "Use ANSI color codes in log messages" OFF)
+option(PWN_BUILD_CRYPTO "Build pwn++ with the crypto module (requires `m4`)" OFF)
 option(PWN_DISASSEMBLE_X86 "Compile with Zydis disassembler support (X86/64 only)" ON)
 option(PWN_DISASSEMBLE_ARM64 "Compile with BinaryNinja disassembler support (ARM64)" ON)
 
@@ -51,7 +52,7 @@ if(WIN32)
         # Listed by dependency order
         Common
 
-        Crypto
+#         Crypto
         Network
         Symbols
         System
@@ -77,7 +78,7 @@ else()
         # Listed by dependency order
         Common
 
-        Crypto
+  #      Crypto
         Network
         System
 
@@ -97,7 +98,10 @@ else()
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION True)
 endif()
 
-find_package(mk_clib REQUIRED)
+if(PWN_BUILD_CRYPTO)
+    find_package(mk_clib REQUIRED)
+    list(APPEND PWN_MODULES Crypto)
+endif(PWN_BUILD_CRYPTO)
 
 if(PWN_DISASSEMBLE_X86)
     find_package(Zydis REQUIRED)

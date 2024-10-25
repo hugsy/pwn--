@@ -37,7 +37,7 @@ jobs:
 
       - name: Build
         run: |
-          cmake -S . -B ./build -A x64  -DPWN_BUILD_TOOLKIT=OFF -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_BUILD_DOCS=OFF -DPWN_BUILD_TESTING=OFF -DPWN_LOG_USE_COLOR=OFF
+          cmake -S . -B ./build -A x64 -DPWN_BUILD_CRYPTO=ON -DPWN_BUILD_TOOLKIT=OFF -DPWN_INCLUDE_DISASSEMBLER=OFF -DPWN_BUILD_DOCS=OFF -DPWN_BUILD_TESTING=OFF -DPWN_LOG_USE_COLOR=OFF
           cmake --build ./build --parallel ${{ env.NB_CPU }} --config Debug
 
       - name: Analyze
