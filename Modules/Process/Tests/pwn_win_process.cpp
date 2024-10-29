@@ -151,3 +151,35 @@ TEST_CASE("Process Memory", "[" NS "]")
         // TODO
     }
 }
+
+
+TEST_CASE("Process Modules", "[" NS "]")
+{
+    SECTION("Local")
+    {
+        auto CurrentProcess = Process::Current();
+        auto mods           = CurrentProcess.Modules();
+        REQUIRE(Success(mods));
+
+        for ( auto const& mod : Value(mods) )
+        {
+            // Check betterer
+            CHECK((((uptr)mod.DllBase) & 0xfff) == 0);
+        }
+    }
+
+    SECTION("Remote")
+    {
+        auto values = Value(System::PidOf(L"explorer.exe"));
+        REQUIRE(values.size() > 0);
+
+        auto explorer = Process::Process(values[0]);
+        auto mods     = explorer.Modules();
+        REQUIRE(Success(mods));
+
+        for ( auto const& mod : Value(mods) )
+        {
+            CHECK((((uptr)mod.DllBase) & 0xfff) == 0);
+        }
+    }
+}
