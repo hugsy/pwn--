@@ -27,13 +27,6 @@ usize
 GetPebLength();
 EXTERN_C_END
 
-using CriticalSection = GenericHandle<
-    RTL_CRITICAL_SECTION,
-    [](auto p)
-    {
-        ::LeaveCriticalSection(p);
-    }>;
-
 
 namespace pwn::Process
 {
@@ -590,12 +583,12 @@ Process::EnumerateLocalModules()
 {
     std::vector<LDR_DATA_TABLE_ENTRY> res;
     auto peb = Peb();
-    CriticalSection csLoaderLock {[&]()
-                                  {
-                                      auto lock = peb->LoaderLock;
-                                      ::EnterCriticalSection(lock);
-                                      return lock;
-                                  }()};
+    UniqueCriticalSection csLoaderLock {[&]()
+                                        {
+                                            auto lock = peb->LoaderLock;
+                                            ::EnterCriticalSection(lock);
+                                            return lock;
+                                        }()};
 
     if ( !peb->Ldr->Initialized )
         return Ok(res);
