@@ -1,4 +1,4 @@
-name: CI Build
+name: Build
 
 env:
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
@@ -24,10 +24,12 @@ jobs:
       fail-fast: false
       matrix:
         variants:
-          - {os: windows-2022,   arch: x64,      config: RelWithDebInfo}
-          - {os: windows-2022,   arch: win32,    config: RelWithDebInfo}
-          - {os: windows-2022,   arch: arm64,    config: RelWithDebInfo}
-          - {os: windows-2022,   arch: arm,      config: RelWithDebInfo}
+          - {os: windows-2022,   arch: x64,      config: RelWithDebInfo,  crypto: ON}
+          - {os: windows-2022,   arch: x64,      config: RelWithDebInfo,  crypto: OFF}
+          - {os: windows-2022,   arch: win32,    config: RelWithDebInfo,  crypto: ON}
+          - {os: windows-2022,   arch: win32,    config: RelWithDebInfo,  crypto: OFF}
+          - {os: windows-2022,   arch: arm64,    config: RelWithDebInfo,  crypto: ON}
+          - {os: windows-2022,   arch: arm,      config: RelWithDebInfo,  crypto: ON}
           # - {os: ubuntu-2204,    arch: x64,      config: RelWithDebInfo} # runner fails for some reason, works fine locally: see https://github.com/actions/runner-images/discussions/7188
           # - {os: ubuntu-2204,    arch: x86,      config: RelWithDebInfo}
 
@@ -86,12 +88,12 @@ jobs:
     - name: Initialize cmake
       if: startsWith(matrix.variants.os, 'windows-')
       run: |
-        cmake -S . -B ./build -A ${{ matrix.variants.arch }} ${{ env.CMAKE_FLAGS }}
+        cmake -S . -B ./build -A ${{ matrix.variants.arch }} ${{ env.CMAKE_FLAGS }} -DPWN_BUILD_CRYPTO=${{ matrix.variants.crypto }}
 
     - name: Initialize cmake (Linux)
       if: startsWith(matrix.variants.os, 'ubuntu-')
       run: |
-        cmake -S . -B ./build ${{ env.CMAKE_FLAGS }}
+        cmake -S . -B ./build ${{ env.CMAKE_FLAGS }} -DPWN_BUILD_CRYPTO=${{ matrix.variants.crypto }}
 
     - name: Build pwn++ library
       run: |
@@ -135,6 +137,7 @@ jobs:
 
     - name: Publish artifact
       uses: actions/upload-artifact@v4
+      if: ${{ matrix.variants.crypto == 'ON' }}
       with:
         name: ${{ env.PROJECT_NAME }}_${{ matrix.variants.arch }}_${{ matrix.variants.os }}_${{ matrix.variants.config }}_${{ github.sha }}_${{ matrix.variants.build }}
         path: artifact/

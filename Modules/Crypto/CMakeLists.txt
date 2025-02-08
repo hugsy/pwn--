@@ -13,7 +13,7 @@ add_library(${PROJECT_NAME} STATIC ${PWN_CRYPTO_SOURCE_FILES})
 add_library(PWN::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INTERFACE_DIR} PRIVATE ${HEADER_DIR})
 target_compile_definitions(${PROJECT_NAME} PUBLIC)
-target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common PWN::Deps::MkClib::Crypto)
+target_link_libraries(${PROJECT_NAME} PUBLIC PWN::Common PWN::Deps::mk_clib::Crypto)
 
 install(DIRECTORY ${INTERFACE_DIR} DESTINATION ${CMAKE_PROJECT_NAME})
 
