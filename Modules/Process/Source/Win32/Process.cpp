@@ -1,3 +1,5 @@
+#include "Win32/Process.hpp"
+
 #include <accctrl.h>
 #include <aclapi.h>
 #include <psapi.h>
@@ -10,7 +12,6 @@
 #include "Log.hpp"
 #include "Utils.hpp"
 #include "Win32/API.hpp"
-#include "Win32/Process.hpp"
 #include "Win32/System.hpp"
 #include "Win32/Thread.hpp"
 
@@ -25,6 +26,13 @@ GetPeb(uptr* peb);
 usize
 GetPebLength();
 EXTERN_C_END
+
+using CriticalSection = GenericHandle<
+    RTL_CRITICAL_SECTION,
+    [](auto p)
+    {
+        ::LeaveCriticalSection(p);
+    }>;
 
 
 namespace pwn::Process
@@ -570,6 +578,71 @@ Process::QueryInternal(const PROCESSINFOCLASS ProcessInformationClass, const usi
     return Ok(std::move(Buffer));
 }
 
+Result<std::vector<LDR_DATA_TABLE_ENTRY>>
+Process::Modules()
+{
+    return IsRemote() ? EnumerateRemoteModules() : EnumerateLocalModules();
+}
+
+
+Result<std::vector<LDR_DATA_TABLE_ENTRY>>
+Process::EnumerateLocalModules()
+{
+    std::vector<LDR_DATA_TABLE_ENTRY> res;
+    auto peb = Peb();
+    CriticalSection csLoaderLock {[&]()
+                                  {
+                                      auto lock = peb->LoaderLock;
+                                      ::EnterCriticalSection(lock);
+                                      return lock;
+                                  }()};
+
+    if ( !peb->Ldr->Initialized )
+        return Ok(res);
+
+
+    auto head = &(peb->Ldr->InLoadOrderModuleList);
+
+    for ( auto cur = head; cur->Flink && cur->Flink != head; cur = cur->Flink )
+    {
+        auto ptr = CONTAINING_RECORD(cur, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
+
+        // HACK We copy for now because the module may have been unloaded by the time we access it
+        LDR_DATA_TABLE_ENTRY entry {};
+        ::memcpy(&entry, ptr, sizeof(LDR_DATA_TABLE_ENTRY));
+        res.emplace_back(entry);
+    }
+
+    return Ok(res);
+}
+
+Result<std::vector<LDR_DATA_TABLE_ENTRY>>
+Process::EnumerateRemoteModules()
+{
+    std::vector<LDR_DATA_TABLE_ENTRY> res;
+    auto ppeb    = Peb();
+    auto mem     = Memory(*this);
+    auto peb_buf = Value(mem.Read((uptr)ppeb, sizeof(PEB)));
+    auto peb     = reinterpret_cast<PPEB>(peb_buf.data());
+
+    auto ldr_buf = Value(mem.Read((uptr)peb->Ldr, sizeof(PEB_LDR_DATA)));
+    auto ldr     = reinterpret_cast<PPEB_LDR_DATA>(ldr_buf.data());
+    auto head    = &(ldr->InLoadOrderModuleList);
+
+    for ( auto cur = head; cur->Flink && cur->Flink != head; cur = cur->Flink )
+    {
+        LDR_DATA_TABLE_ENTRY entry {};
+        auto buf = Value(mem.Read(
+            (uptr)CONTAINING_RECORD(cur, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks),
+            sizeof(LDR_DATA_TABLE_ENTRY)));
+        ::memcpy(&entry, buf.data(), sizeof(LDR_DATA_TABLE_ENTRY));
+        res.emplace_back(entry);
+    }
+
+    return Ok(res);
+}
+
+
 #pragma endregion Process
 
 
@@ -632,7 +705,6 @@ AppContainer::AppContainer(
     {
         throw std::runtime_error("Failed to get SID");
     }
-
 
     dbg(L"sid={}", m_SidAsString.c_str());
 

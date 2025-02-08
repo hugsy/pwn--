@@ -138,8 +138,11 @@ enum class ErrorCode : uint32_t
     /// @brief Unexpected size comparison
     SizeMismatch,
 
-    /// @brief MalformedFile
+    /// @brief Malformed file
     MalformedFile,
+
+    /// @brief Malformed data
+    MalformedData,
 };
 
 

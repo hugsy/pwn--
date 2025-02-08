@@ -10,7 +10,7 @@
   <a href="https://discord.gg/5HmwPxy3HP"><img alt="Discord" src="https://img.shields.io/badge/Discord-BlahCats-yellow"></a>
   <a href="https://github.dev/hugsy/pwn--"><img alt="Read Code" src="https://img.shields.io/badge/Code-Read%20pwn++-brightgreen?logo=visualstudiocode"></a>
   <a href="https://open.vscode.dev/hugsy/pwn--"><img alt="Open in VSCode" src="https://img.shields.io/static/v1?logo=visualstudiocode&label=&message=Open%20in%20VSCode&labelColor=2c2c32&color=007acc&logoColor=007acc"></a>
-  <a href="https://github.com/hugsy/pwn--/actions?query=workflow%3A%22CI+Build+for+MSVC%22"><img alt="CI" src="https://github.com/hugsy/pwn--/workflows/CI%20Build%20for%20MSVC/badge.svg"></a>
+  <a href="https://github.com/hugsy/pwn--/actions?query=workflow%3A%22Build%22"><img alt="CI" src="https://github.com/hugsy/pwn--/workflows/Build/badge.svg"></a>
 </p>
 
 ## Quick start

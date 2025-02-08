@@ -413,8 +413,16 @@ public:
     ExecuteCallbacks();
 
 
-    // TODO:
-    // - modules
+    ///
+    /// @brief Enumerate the process modules
+    ///
+    /// @return Result<std::vector<LDR_DATA_TABLE_ENTRY>>
+    ///
+    Result<std::vector<LDR_DATA_TABLE_ENTRY>>
+    Modules();
+
+
+    // TODO (finish):
     // - inject
     // - hook
 
@@ -478,6 +486,11 @@ private: // Methods
     Result<std::unique_ptr<u8[]>>
     QueryInternal(const PROCESSINFOCLASS, const usize);
 
+    Result<std::vector<LDR_DATA_TABLE_ENTRY>>
+    EnumerateLocalModules();
+
+    Result<std::vector<LDR_DATA_TABLE_ENTRY>>
+    EnumerateRemoteModules();
 
 private: // Members
     u32 m_ProcessId {0};
