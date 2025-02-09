@@ -51,8 +51,6 @@ if(WIN32)
 
         # Listed by dependency order
         Common
-
-#         Crypto
         Network
         Symbols
         System
@@ -77,8 +75,6 @@ else()
 
         # Listed by dependency order
         Common
-
-  #      Crypto
         Network
         System
 

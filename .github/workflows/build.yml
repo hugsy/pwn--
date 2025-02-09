@@ -29,7 +29,7 @@ jobs:
           - {os: windows-2022,   arch: win32,    config: RelWithDebInfo,  crypto: ON}
           - {os: windows-2022,   arch: win32,    config: RelWithDebInfo,  crypto: OFF}
           - {os: windows-2022,   arch: arm64,    config: RelWithDebInfo,  crypto: ON}
-          - {os: windows-2022,   arch: arm,      config: RelWithDebInfo,  crypto: ON}
+          # - {os: windows-2022,   arch: arm,      config: RelWithDebInfo,  crypto: ON} # ARM not supported any longer
           # - {os: ubuntu-2204,    arch: x64,      config: RelWithDebInfo} # runner fails for some reason, works fine locally: see https://github.com/actions/runner-images/discussions/7188
           # - {os: ubuntu-2204,    arch: x86,      config: RelWithDebInfo}
 
