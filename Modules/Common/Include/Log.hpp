@@ -9,6 +9,7 @@
 #pragma once
 
 #include <format>
+#include <print>
 #include <source_location>
 #include <sstream>
 #include <string_view>
