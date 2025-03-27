@@ -148,14 +148,14 @@ Symbols::EnumerateModules()
     HANDLE hProcess = GetHandle();
     if ( !hProcess )
     {
-        return Err(ErrorCode::NotInitialized);
+        return Err(Error::NotInitialized);
     }
 
     std::vector<std::tuple<uptr, std::wstring>> Modules;
     if ( pwn::Resolver::dbghelp::SymEnumerateModulesW64(hProcess, &EnumerateModulesW64Cb, &Modules) == FALSE )
     {
         Log::perror(L"SymEnumerateModulesW64()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(Modules);
@@ -176,7 +176,7 @@ Symbols::EnumerateFromModule(std::wstring_view const ModulePath, std::wstring_vi
     HANDLE hProcess = GetHandle();
     if ( !hProcess )
     {
-        return Err(ErrorCode::NotInitialized);
+        return Err(Error::NotInitialized);
     }
 
     u64 BaseOfDll =
@@ -184,7 +184,7 @@ Symbols::EnumerateFromModule(std::wstring_view const ModulePath, std::wstring_vi
     if ( !BaseOfDll )
     {
         Log::perror(L"SymLoadModuleExW()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     std::vector<SymbolInfo> ModuleSymbolInfo;
@@ -192,7 +192,7 @@ Symbols::EnumerateFromModule(std::wstring_view const ModulePath, std::wstring_vi
          FALSE )
     {
         Log::perror(L"SymEnumSymbolsW()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(ModuleSymbolInfo);
@@ -205,7 +205,7 @@ Symbols::ResolveFromName(std::wstring_view const SymbolName)
     HANDLE hProcess = GetHandle();
     if ( !hProcess )
     {
-        return Err(ErrorCode::NotInitialized);
+        return Err(Error::NotInitialized);
     }
 
     auto pBuffer          = std::make_unique<u8[]>(sizeof(SYMBOL_INFOW) + MAX_SYM_NAME * sizeof(u16));
@@ -216,7 +216,7 @@ Symbols::ResolveFromName(std::wstring_view const SymbolName)
     if ( pwn::Resolver::dbghelp::SymFromNameW(hProcess, SymbolName.data(), pSymbol) == FALSE )
     {
         Log::perror(L"SymFromNameW()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok((uptr)pSymbol->Address);
@@ -229,7 +229,7 @@ Symbols::ResolveFromAddress(const uptr TargetAddress)
     HANDLE hProcess = GetHandle();
     if ( !hProcess )
     {
-        return Err(ErrorCode::NotInitialized);
+        return Err(Error::NotInitialized);
     }
 
     auto pBuffer          = std::make_unique<u8[]>(sizeof(SYMBOL_INFOW) + MAX_SYM_NAME * sizeof(u16));
@@ -240,7 +240,7 @@ Symbols::ResolveFromAddress(const uptr TargetAddress)
     if ( pwn::Resolver::dbghelp::SymFromAddrW(hProcess, TargetAddress, nullptr, pSymbol) == FALSE )
     {
         Log::perror(L"SymFromAddrW()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(pSymbol->Name);
@@ -252,7 +252,7 @@ Symbols::SetSymbolPath(std::wstring_view const NewSymbolPath)
     __SymbolPath = NewSymbolPath;
     if ( !__hProcess )
     {
-        return Err(ErrorCode::InitializationFailed);
+        return Err(Error::InitializationFailed);
     }
 
     PCWSTR SymPath = __SymbolPath.has_value() ? __SymbolPath.value().c_str() : nullptr;
@@ -264,7 +264,7 @@ Symbols::SetSymbolPath(std::wstring_view const NewSymbolPath)
     if ( pwn::Resolver::dbghelp::SymSetSearchPathW(__hProcess, SymPath) == FALSE )
     {
         Log::perror(L"SymSetSearchPath()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(true);
@@ -281,13 +281,13 @@ Symbols::DownloadModulePdbToDisk(std::string_view const ModuleNameWithExt)
     UniqueLibraryHandle hMod {::LoadLibraryExA(ModuleNameWithExt.data(), nullptr, LOAD_LIBRARY_AS_DATAFILE)};
     if ( !hMod )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     DebugInfoSection* dbg = GetModuleDebugInfo((uptr)(hMod.get()) & ~0x0f);
     if ( !dbg )
     {
-        return Err(ErrorCode::GenericError);
+        return Err(Error::GenericError);
     }
 
     //
@@ -351,12 +351,12 @@ Symbols::DownloadModulePdbToMemory(std::string_view const ModuleNameWithExt)
             nullptr));
         if ( !h )
         {
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         if ( ::ReadFile(h.get(), RawPdb.data(), RawPdbFileSize, nullptr, nullptr) == FALSE )
         {
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
     }
 

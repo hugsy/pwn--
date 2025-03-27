@@ -43,7 +43,7 @@ CTF::Process::send_internal(_In_ std::vector<u8> const& out)
     auto bSuccess = ::WriteFile(m_ParentPipeStdin, &out[0], out.size() & 0xffffffff, &bytesWritten, nullptr);
     if ( bSuccess == FALSE )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok((usize)bytesWritten);
@@ -63,7 +63,7 @@ CTF::Process::recv_internal(_In_ usize size)
     auto bSuccess = ::ReadFile(m_ParentPipeStdout, &out[0], size & 0xffffffff, &dwRead, nullptr);
     if ( bSuccess == FALSE )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
     out.resize(dwRead);
 
@@ -74,7 +74,7 @@ CTF::Process::recv_internal(_In_ usize size)
 Result<usize>
 CTF::Process::peek_internal()
 {
-    return Err(ErrorCode::NotImplementedError);
+    return Err(Error::NotImplementedError);
 }
 
 
@@ -96,7 +96,7 @@ CTF::Process::CreateInOutPipes()
     if ( !bSuccess )
     {
         err("CreatePipe() failed()");
-        return Err(ErrorCode::InitializationFailed);
+        return Err(Error::InitializationFailed);
     }
 
     //
@@ -108,7 +108,7 @@ CTF::Process::CreateInOutPipes()
     if ( !bSuccess )
     {
         err("SetHandleInformation(Child) failed");
-        return Err(ErrorCode::InitializationFailed);
+        return Err(Error::InitializationFailed);
     }
 
     //
@@ -120,7 +120,7 @@ CTF::Process::CreateInOutPipes()
     if ( !bSuccess )
     {
         err("SetHandleInformation(Parent) failed");
-        return Err(ErrorCode::InitializationFailed);
+        return Err(Error::InitializationFailed);
     }
 
     return Ok(bSuccess);
@@ -136,7 +136,7 @@ CTF::Process::Spawn(bool StartSuspended)
 
     if ( Failed(CreateInOutPipes()) )
     {
-        return Err(ErrorCode::InitializationFailed);
+        return Err(Error::InitializationFailed);
     }
 
     si.cb         = sizeof(STARTUPINFO);
@@ -160,7 +160,7 @@ CTF::Process::Spawn(bool StartSuspended)
                       reinterpret_cast<LPSTARTUPINFOW>(&si),
                       reinterpret_cast<LPPROCESS_INFORMATION>(&pi)) )
     {
-        return Err(ErrorCode::InitializationFailed);
+        return Err(Error::InitializationFailed);
     }
 
     ::CloseHandle(m_ChildPipeStdin);
@@ -176,7 +176,7 @@ CTF::Process::Spawn(bool StartSuspended)
     catch ( const std::exception& e )
     {
         err("Caught exception: ", e.what());
-        return Err(ErrorCode::InitializationFailed);
+        return Err(Error::InitializationFailed);
     }
 
     // unreachable

@@ -257,7 +257,7 @@ public:
     {
         if ( m_ParentProcessId <= 0 )
         {
-            return Err(ErrorCode::InvalidProcess);
+            return Err(Error::InvalidProcess);
         }
 
         return Ok(std::move(Process(m_ParentProcessId)));

@@ -342,7 +342,7 @@ Base64::Encode(const u8* in, const usize len) -> Result<std::string>
     };
 
     if ( in == nullptr || len == 0 )
-        return Err(ErrorCode::InvalidParameter);
+        return Err(Error::InvalidParameter);
 
     const usize elen   = encoded_size(len);
     auto output_buffer = std::make_unique<u8[]>(elen + 1);
@@ -400,16 +400,16 @@ Base64::Decode(std::string_view const& in) -> Result<std::vector<u8>>
     const usize outlen = decoded_size();
 
     if ( !len || !outlen )
-        return Err(ErrorCode::InvalidParameter);
+        return Err(Error::InvalidParameter);
 
     if ( len % 4 != 0 )
-        return Err(ErrorCode::ArithmeticError);
+        return Err(Error::ArithmeticError);
 
     for ( usize i = 0; i < len; i++ )
     {
         if ( is_valid_char(in.at(i)) == false )
         {
-            return Err(ErrorCode::IllegalValue);
+            return Err(Error::IllegalValue);
         }
     }
 
@@ -567,7 +567,7 @@ GetExecutableCharacteristics(fs::path const& FilePath)
         nullptr)};
     if ( !hFile )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     const u32 FileSize = ::GetFileSize(hFile.get(), nullptr);
@@ -575,7 +575,7 @@ GetExecutableCharacteristics(fs::path const& FilePath)
     auto hFileMap = UniqueHandle {::CreateFileMappingW(hFile.get(), nullptr, PAGE_READONLY, 0, 0, nullptr)};
     if ( !hFileMap )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     uptr pMappedData = (uptr)::MapViewOfFile(hFileMap.get(), FILE_MAP_READ, 0, 0, 0);
@@ -584,12 +584,12 @@ GetExecutableCharacteristics(fs::path const& FilePath)
 
     if ( pDosHeader->e_magic != IMAGE_DOS_SIGNATURE )
     {
-        return Err(ErrorCode::BadSignature);
+        return Err(Error::BadSignature);
     }
 
     if ( pDosHeader->e_lfanew >= FileSize )
     {
-        return Err(ErrorCode::ParsingError);
+        return Err(Error::ParsingError);
     }
 
 
@@ -597,7 +597,7 @@ GetExecutableCharacteristics(fs::path const& FilePath)
 
     if ( pPeHeader->Signature != IMAGE_NT_SIGNATURE )
     {
-        return Err(ErrorCode::ParsingError);
+        return Err(Error::ParsingError);
     }
 
     IMAGE_OPTIONAL_HEADER const& pOptionalHeader = pPeHeader->OptionalHeader;

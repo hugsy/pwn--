@@ -141,7 +141,7 @@ public:
 
         if ( Failed(ReOpenTokenWith(NewDesiredAccess)) )
         {
-            return Err(ErrorCode::PermissionDenied);
+            return Err(Error::PermissionDenied);
         }
 
         const NTSTATUS Status = ::NtSetInformationToken(
@@ -152,7 +152,7 @@ public:
         if ( !NT_SUCCESS(Status) )
         {
             Log::ntperror(L"NtSetInformationToken()", Status);
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
         return Ok(Status);
     }

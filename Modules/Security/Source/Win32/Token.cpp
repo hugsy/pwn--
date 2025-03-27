@@ -39,7 +39,7 @@ Token::ReOpenTokenWith(const DWORD DesiredAccess)
 
     if ( !bRes || !hToken )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     m_TokenHandle     = UniqueHandle {hToken};
@@ -59,13 +59,13 @@ Token::QueryInternal(const TOKEN_INFORMATION_CLASS TokenInformationClass, const 
 
     if ( Failed(ReOpenTokenWith(NewDesiredAccess)) )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     auto Buffer = std::make_unique<u8[]>(Size);
     if ( !Buffer )
     {
-        return Err(ErrorCode::AllocationError);
+        return Err(Error::AllocationError);
     }
 
     do
@@ -92,7 +92,7 @@ Token::QueryInternal(const TOKEN_INFORMATION_CLASS TokenInformationClass, const 
         }
 
         Log::ntperror(L"NtQueryInformationToken()", Status);
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
 
     } while ( true );
 
@@ -150,14 +150,14 @@ Token::AddPrivilege(std::wstring_view const& PrivilegeName)
 {
     if ( Failed(ReOpenTokenWith(TOKEN_ADJUST_PRIVILEGES)) )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     LUID Luid = {0};
 
     if ( ::LookupPrivilegeValueW(nullptr, PrivilegeName.data(), &Luid) == false )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     size_t nBufferSize                 = sizeof(TOKEN_PRIVILEGES) + 1 * sizeof(LUID_AND_ATTRIBUTES);
@@ -177,10 +177,10 @@ Token::AddPrivilege(std::wstring_view const& PrivilegeName)
     {
         if ( ::GetLastError() == ERROR_NOT_ALL_ASSIGNED )
         {
-            return Err(ErrorCode::PartialResult);
+            return Err(Error::PartialResult);
         }
 
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(true);
@@ -192,7 +192,7 @@ Token::HasPrivilege(std::wstring_view const& PrivilegeName)
 {
     if ( Failed(ReOpenTokenWith(TOKEN_ADJUST_PRIVILEGES)) )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     LUID_AND_ATTRIBUTES PrivAttr = {{0}};
@@ -201,7 +201,7 @@ Token::HasPrivilege(std::wstring_view const& PrivilegeName)
     if ( ::LookupPrivilegeValueW(nullptr, PrivilegeName.data(), &PrivAttr.Luid) == false )
     {
         Log::perror(L"LookupPrivilegeValue()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     PRIVILEGE_SET PrivSet  = {0};
@@ -212,7 +212,7 @@ Token::HasPrivilege(std::wstring_view const& PrivilegeName)
     if ( ::PrivilegeCheck(m_TokenHandle.get(), &PrivSet, &bHasPriv) == FALSE )
     {
         Log::perror(L"PrivilegeCheck()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(bHasPriv == TRUE);

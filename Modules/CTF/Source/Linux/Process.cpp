@@ -12,7 +12,7 @@ CTF::Process::send_internal(std::vector<u8> const& out)
     if ( res < 0 )
     {
         ::perror("write()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(static_cast<usize>(res));
@@ -28,7 +28,7 @@ CTF::Process::recv_internal(usize size)
     if ( res < 0 )
     {
         ::perror("read()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(std::move(out));

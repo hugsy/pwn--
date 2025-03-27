@@ -102,7 +102,7 @@ public:
             if ( Failed(res) )
             {
                 auto err = Error(res);
-                if ( err.Code == ErrorCode::NoMoreData )
+                if ( err.Code == Error::NoMoreData )
                 {
                     break;
                 }

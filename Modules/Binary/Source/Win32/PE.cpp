@@ -1,7 +1,8 @@
+#include "Win32/PE.hpp"
+
 #include <memory>
 
 #include "Win32/FileSystem.hpp"
-#include "Win32/PE.hpp"
 
 
 namespace pwn::Binary
@@ -242,7 +243,7 @@ PE::FindSection(Pred Condition)
     auto const& it = std::find_if(m_PeSections.cbegin(), m_PeSections.cend(), Condition);
     if ( it == m_PeSections.cend() )
     {
-        return Err(ErrorCode::NotFound);
+        return Err(Error::NotFound);
     }
     return Ok(*it);
 }
@@ -907,7 +908,7 @@ PE::BuildDelayImportEntry(const IMAGE_DELAYLOAD_DESCRIPTOR* DelayImportDescripto
     const char* DllName = (char*)GetDelayImportVa(DelayImportDescriptor->DllNameRVA);
     if ( !DllName )
     {
-        return Err(ErrorCode::MalformedFile);
+        return Err(Error::MalformedFile);
     }
 
     PE::PeDelayLoadDescriptor Entry {};
@@ -928,7 +929,7 @@ PE::BuildDelayImportEntry(const IMAGE_DELAYLOAD_DESCRIPTOR* DelayImportDescripto
 
             if ( !pfnName )
             {
-                return Err(ErrorCode::MalformedFile);
+                return Err(Error::MalformedFile);
             }
 
             NewThunk.Hint            = pfnName->Hint;

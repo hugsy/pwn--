@@ -69,13 +69,13 @@ File::Size()
 {
     if ( !m_hFile )
     {
-        return Err(ErrorCode::NotInitialized);
+        return Err(Error::NotInitialized);
     }
 
     LARGE_INTEGER FileSize {};
     if ( !::GetFileSizeEx(m_hFile.get(), &FileSize) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 #ifdef _WIN64
     return Ok((usize)FileSize.QuadPart);
@@ -118,7 +118,7 @@ File::ToBytes(uptr Offset, usize Size)
 {
     if ( !m_hFile )
     {
-        return Err(ErrorCode::NotInitialized);
+        return Err(Error::NotInitialized);
     }
 
     auto map = Map(PAGE_READONLY);
@@ -149,7 +149,7 @@ File::QueryInternal(const FILE_INFORMATION_CLASS FileInformationClass, const usi
     auto Buffer = ::LocalAlloc(LPTR, Size);
     if ( !Buffer )
     {
-        return Err(ErrorCode::AllocationError);
+        return Err(Error::AllocationError);
     }
 
     do
@@ -171,7 +171,7 @@ File::QueryInternal(const FILE_INFORMATION_CLASS FileInformationClass, const usi
         }
 
         Log::ntperror(L"NtQueryInformationFile()", Status);
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
 
     } while ( true );
 
@@ -194,7 +194,7 @@ File::SetInternal(
         FileInformationClass);
     if ( !NT_SUCCESS(Status) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(true);
@@ -206,7 +206,7 @@ File::ReOpenFileWith(const DWORD DesiredAccess, const DWORD DesiredShareMode, co
 {
     if ( !IsValid() )
     {
-        return Err(ErrorCode::InvalidState);
+        return Err(Error::InvalidState);
     }
 
     if ( (m_Access & DesiredAccess) == DesiredAccess )
@@ -220,7 +220,7 @@ File::ReOpenFileWith(const DWORD DesiredAccess, const DWORD DesiredShareMode, co
     const HANDLE hFile        = ::ReOpenFile(m_hFile.get(), NewAccessMask, NewShareMode, DesiredAttributes);
     if ( hFile == INVALID_HANDLE_VALUE )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     m_hFile      = UniqueHandle(hFile); // this will close the initial handle
@@ -238,7 +238,7 @@ File::Map(DWORD Protect, std::optional<std::wstring_view> Name)
     HANDLE h = {::CreateFileMappingW(m_hFile.get(), nullptr, Protect, 0, 0, Name.value_or(std::wstring {L""}).data())};
     if ( !h )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(UniqueHandle {h});
@@ -261,7 +261,7 @@ File::View(HANDLE hMap, DWORD Protect, uptr Offset, usize Size)
         Size);
     if ( !map )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(FileMapViewHandle {map});
@@ -281,7 +281,7 @@ Directory::Create(std::wstring_view& DirPath, bool IsTemporary) -> Result<std::w
             continue;
         }
 
-        return Err(ErrorCode::FilesystemError);
+        return Err(Error::FilesystemError);
     }
 
     if ( !IsTemporary )
@@ -295,7 +295,7 @@ Directory::Create(std::wstring_view& DirPath, bool IsTemporary) -> Result<std::w
         return Ok(TmpDir);
     }
 
-    return Err(ErrorCode::FilesystemError);
+    return Err(Error::FilesystemError);
 }
 
 
@@ -324,7 +324,7 @@ Directory::Watch(
     if ( !h )
     {
         Log::perror(L"CreateFileW()");
-        return Err(ErrorCode::FilesystemError);
+        return Err(Error::FilesystemError);
     }
 
     auto sz     = (DWORD)sizeof(FILE_NOTIFY_INFORMATION);
@@ -344,7 +344,7 @@ Directory::Watch(
              nullptr) == 0 )
     {
         Log::perror(L"ReadDirectoryChangesW()");
-        return Err(ErrorCode::FilesystemError);
+        return Err(Error::FilesystemError);
     }
 
     auto info = reinterpret_cast<PFILE_NOTIFY_INFORMATION>(buffer.get());
@@ -364,7 +364,7 @@ Symlink::CreateSymlink(const std::wstring_view& link, const std::wstring_view& t
 
     if ( !NT_SUCCESS(Resolver::ntdll::NtCreateSymbolicLinkObject(&hLink, SYMBOLIC_LINK_ALL_ACCESS, &oa, &target_name)) )
     {
-        return Err(ErrorCode::FilesystemError);
+        return Err(Error::FilesystemError);
     }
 
     dbg(L"created link '{}' to '{}' (h={})", link, target, hLink);
@@ -384,7 +384,7 @@ Symlink::OpenSymlink(const std::wstring_view& link) -> Result<UniqueHandle>
 
     if ( !NT_SUCCESS(NtOpenSymbolicLinkObject(&hLink, SYMBOLIC_LINK_ALL_ACCESS, &oa)) )
     {
-        return Err(ErrorCode::FilesystemError);
+        return Err(Error::FilesystemError);
     }
 
     dbg(L"opened link '{}' with handle={})\n", link, hLink);

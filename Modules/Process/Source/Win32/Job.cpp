@@ -11,13 +11,13 @@ Job::Job::AddProcess(u32 ProcessId) -> Result<bool>
     if ( !hProcess )
     {
         Log::perror(L"OpenProcess()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     if ( !::AssignProcessToJobObject(m_hJob.get(), hProcess.get()) )
     {
         Log::perror(L"AssignProcessToJobObject()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     m_Handles.push_back(std::move(hProcess));

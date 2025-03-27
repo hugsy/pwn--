@@ -1,3 +1,5 @@
+#include "Win32/Process.hpp"
+
 #include <accctrl.h>
 #include <aclapi.h>
 #include <psapi.h>
@@ -10,7 +12,6 @@
 #include "Log.hpp"
 #include "Utils.hpp"
 #include "Win32/API.hpp"
-#include "Win32/Process.hpp"
 #include "Win32/System.hpp"
 #include "Win32/Thread.hpp"
 
@@ -182,7 +183,7 @@ Process::Execute(uptr const CodePointer, usize const CodePointerSize)
     auto res = ProcessMemory.Allocate(AllocationSize, L"rwx");
     if ( Failed(res) )
     {
-        return Err(ErrorCode::AllocationError);
+        return Err(Error::AllocationError);
     }
 
     auto const Target = Value(res);
@@ -254,7 +255,7 @@ Process::Kill()
 {
     if ( Failed(ReOpenProcessWith(PROCESS_TERMINATE)) )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     dbg(L"Attempting to kill PID={})", m_ProcessId);
@@ -262,7 +263,7 @@ Process::Kill()
     if ( !bRes )
     {
         Log::perror(L"TerminateProcess()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(bRes);
@@ -300,7 +301,7 @@ Process::IntegrityLevel()
     auto hProcessHandle = UniqueHandle {::OpenProcess(PROCESS_QUERY_INFORMATION, false, m_ProcessId)};
     if ( !hProcessHandle )
     {
-        return Err(ErrorCode::InvalidProcess);
+        return Err(Error::InvalidProcess);
     }
 
     auto hProcessToken = UniqueHandle(
@@ -311,14 +312,14 @@ Process::IntegrityLevel()
         }());
     if ( !hProcessToken )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     DWORD dwLengthNeeded = 0;
     if ( (::GetTokenInformation(hProcessToken.get(), TokenIntegrityLevel, nullptr, 0, &dwLengthNeeded) == false) ||
          (::GetLastError() != ERROR_INSUFFICIENT_BUFFER) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     auto pTokenBuffer = std::make_unique<TOKEN_MANDATORY_LABEL[]>(dwLengthNeeded);
@@ -329,7 +330,7 @@ Process::IntegrityLevel()
              dwLengthNeeded,
              &dwLengthNeeded) == false )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     const u32 dwIntegrityLevel = *::GetSidSubAuthority(
@@ -383,7 +384,7 @@ Process::Thread(usize tid) const
     const auto it      = std::find(threads.cbegin(), threads.cend(), tid);
     if ( it == threads.cend() )
     {
-        return Err(ErrorCode::NotFound);
+        return Err(Error::NotFound);
     }
 
     return Ok(std::move(pwn::Process::Thread(tid)));
@@ -456,7 +457,7 @@ Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
              &pi) == FALSE )
     {
         Log::perror(L"CreateProcess()");
-        return Err(ErrorCode::RuntimeError);
+        return Err(Error::RuntimeError);
     }
 
     if ( hParentProcess )
@@ -474,7 +475,7 @@ Process::New(const std::wstring_view& CommandLine, const u32 ParentPid)
     auto p = Process(pi.dwProcessId, pi.hProcess);
     if ( !p.IsValid() )
     {
-        return Err(ErrorCode::AllocationError);
+        return Err(Error::AllocationError);
     }
     return Ok(std::move(p));
 }
@@ -501,7 +502,7 @@ Process::ReOpenProcessWith(const DWORD DesiredAccess)
     if ( hProcess == nullptr )
     {
         Log::perror(L"OpenProcess()");
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     //
@@ -523,7 +524,7 @@ Process::QueryInternal(const PROCESSINFOCLASS ProcessInformationClass, const usi
     auto Buffer = std::make_unique<u8[]>(Size);
     if ( !Buffer )
     {
-        return Err(ErrorCode::AllocationError);
+        return Err(Error::AllocationError);
     }
 
     do
@@ -563,7 +564,7 @@ Process::QueryInternal(const PROCESSINFOCLASS ProcessInformationClass, const usi
         }
 
         Log::ntperror(L"NtQueryInformationProcess()", Status);
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
 
     } while ( true );
 

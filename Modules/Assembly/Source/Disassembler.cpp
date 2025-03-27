@@ -2,6 +2,9 @@
 
 #ifdef PWN_INCLUDE_DISASSEMBLER
 
+#include <expected>
+#include <print>
+
 #include "Context.hpp"
 
 
@@ -91,7 +94,7 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
 {
     if ( !m_Valid )
     {
-        return Err(ErrorCode::NotInitialized);
+        return Err(Error::NotInitialized);
     }
 
     if ( bytes.data() != m_Buffer || bytes.size() != m_BufferSize )
@@ -103,18 +106,18 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
 
     if ( m_BufferSize < m_BufferOffset )
     {
-        return Err(ErrorCode::BufferTooSmall);
+        return Err(Error::BufferTooSmall);
     }
 
     usize Left = m_BufferSize - m_BufferOffset;
     if ( Left > m_BufferSize )
     {
-        return Err(ErrorCode::OverflowError);
+        return Err(Error::OverflowError);
     }
 
     if ( Left == 0 )
     {
-        return Err(ErrorCode::NoMoreData);
+        return Err(Error::NoMoreData);
     }
 
     Instruction insn {};
@@ -134,7 +137,7 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
                  &insn.o.x86.insn,
                  insn.o.x86.operands)) )
         {
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         assert(insn.o.x86.insn.length < sizeof(insn.bytes));
@@ -149,13 +152,13 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
     {
         if ( Left < 4 )
         {
-            return Err(ErrorCode::InvalidInput);
+            return Err(Error::InvalidInput);
         }
 
         const u32 insword = *((u32*)&bytes[m_BufferOffset]);
         if ( ::aarch64_decompose(insword, &insn.o.arm64, 0) != 0 )
         {
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         insn.length = sizeof(u32);
@@ -164,7 +167,7 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
 #endif // PWN_DISASSEMBLE_ARM64
 
     default:
-        return Err(ErrorCode::InvalidInput);
+        return Err(Error::InvalidInput);
     }
 
     m_BufferOffset += insn.length;
@@ -182,13 +185,12 @@ Disassembler::DisassembleAll(std::vector<u8> const& Bytes)
         auto res = Disassemble(Bytes);
         if ( Failed(res) )
         {
-            auto e = Error(res);
-            if ( e.Code == ErrorCode::NoMoreData )
+            if ( res.error() == Error::NoMoreData )
             {
                 break;
             }
 
-            return Err(e.Code);
+            return Err(res.error());
         }
 
         auto insn = Value(res);
@@ -221,7 +223,7 @@ Disassembler::Format(Instruction& insn, uptr Address)
                  Address,
                  ZYAN_NULL)) )
         {
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         break;
@@ -234,12 +236,12 @@ Disassembler::Format(Instruction& insn, uptr Address)
         // TODO: hack for now
         if ( ::aarch64_decompose(insn.o.arm64.insword, &insn.o.arm64, Address) != 0 )
         {
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         if ( ::aarch64_disassemble(&insn.o.arm64, buffer, sizeof(buffer)) != 0 )
         {
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         break;
@@ -247,7 +249,7 @@ Disassembler::Format(Instruction& insn, uptr Address)
 #endif // PWN_DISASSEMBLE_ARM64
 
     default:
-        return Err(ErrorCode::InvalidInput);
+        return Err(Error::InvalidInput);
     }
 
     return Ok(std::string(buffer));
@@ -287,11 +289,12 @@ Disassembler::Print(std::vector<u8> const& bytes, std::optional<Architecture> ar
         std::vector<Instruction> insns = Value(res);
         for ( auto& insn : insns )
         {
-            auto fmtInsn = dis.Format(insn, DefaultBaseAddress);
-            if ( Success(fmtInsn) )
-            {
-                std::cout << Value(fmtInsn) << std::endl;
-            }
+            dis.Format(insn, DefaultBaseAddress)
+                .and_then(
+                    [](auto const& insn)
+                    {
+                        std::println("{}", insn);
+                    });
         }
     }
 }

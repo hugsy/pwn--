@@ -247,7 +247,7 @@ public:
         if ( (hFile == INVALID_HANDLE_VALUE) ||
              (Disposition == OPEN_ALWAYS && ::GetLastError() != ERROR_ALREADY_EXISTS) )
         {
-            return Err(ErrorCode::FilesystemError);
+            return Err(Error::FilesystemError);
         }
 
         return Ok(hFile);

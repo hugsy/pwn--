@@ -66,14 +66,14 @@ CTF::Remote::send_internal(_In_ std::vector<u8> const& out)
 {
     if ( m_State != SocketState::Connected )
     {
-        return Err(ErrorCode::NotConnected);
+        return Err(Error::NotConnected);
     }
 
     auto res = ::send(m_Socket, reinterpret_cast<const char*>(&out[0]), out.size() & 0xffff, 0);
     if ( res == SOCKET_ERROR )
     {
         err(L"send() function: {#x}", ::WSAGetLastError());
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     dbg(L"sent {} bytes", out.size());
@@ -91,7 +91,7 @@ CTF::Remote::recv_internal(_In_ usize size = Net::Tube::PIPE_DEFAULT_SIZE)
 {
     if ( m_State != SocketState::Connected )
     {
-        return Err(ErrorCode::NotConnected);
+        return Err(Error::NotConnected);
     }
 
     std::vector<u8> cache_data;
@@ -140,10 +140,10 @@ CTF::Remote::recv_internal(_In_ usize size = Net::Tube::PIPE_DEFAULT_SIZE)
         {
         case WSAECONNABORTED:
         case WSAECONNRESET:
-            return Err(ErrorCode::ConnectionError, reason);
+            return Err(Error::ConnectionError, reason);
 
         default:
-            return Err(ErrorCode::ExternalApiCallFailed, reason);
+            return Err(Error::ExternalApiCallFailed, reason);
         }
     }
 
@@ -167,14 +167,14 @@ CTF::Remote::peek_internal()
 {
     if ( m_State != SocketState::Connected )
     {
-        return Err(ErrorCode::NotConnected);
+        return Err(Error::NotConnected);
     }
 
     auto buf  = std::make_unique<u8[]>(Net::Tube::PIPE_DEFAULT_SIZE);
     usize res = ::recv(m_Socket, reinterpret_cast<char*>(buf.get()), Net::Tube::PIPE_DEFAULT_SIZE, MSG_PEEK);
     if ( res == SOCKET_ERROR )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(res);
@@ -190,12 +190,12 @@ CTF::Remote::InitializeSocket() -> Result<bool>
     }
     else
     {
-        return Err(ErrorCode::InvalidParameter);
+        return Err(Error::InvalidParameter);
     }
 
     if ( m_Socket == INVALID_SOCKET )
     {
-        return Err(ErrorCode::InitializationFailed, ::WSAGetLastError());
+        return Err(Error::InitializationFailed, ::WSAGetLastError());
     }
 
     return Ok(true);
@@ -212,7 +212,7 @@ CTF::Remote::Connect() -> Result<bool>
 
     if ( m_State != SocketState::Initialized )
     {
-        return Err(ErrorCode::NotInitialized);
+        return Err(Error::NotInitialized);
     }
 
     //
@@ -220,7 +220,7 @@ CTF::Remote::Connect() -> Result<bool>
     //
     if ( Failed(InitializeSocket()) )
     {
-        return Err(ErrorCode::InitializationFailed);
+        return Err(Error::InitializationFailed);
     }
 
     //
@@ -233,7 +233,7 @@ CTF::Remote::Connect() -> Result<bool>
 
     if ( ::connect(m_Socket, (SOCKADDR*)&sin, sizeof(sin)) == SOCKET_ERROR )
     {
-        return Err(ErrorCode::ConnectionError, ::WSAGetLastError());
+        return Err(Error::ConnectionError, ::WSAGetLastError());
     }
 
     m_State = SocketState::Connected;
@@ -247,7 +247,7 @@ CTF::Remote::Disconnect() -> Result<bool>
 {
     if ( m_State != SocketState::Connected )
     {
-        return Err(ErrorCode::NotConnected);
+        return Err(Error::NotConnected);
     }
 
     auto bSuccess = (::closesocket(m_Socket) == SOCKET_ERROR);

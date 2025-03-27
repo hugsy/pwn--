@@ -1,3 +1,5 @@
+#include "Win32/System.hpp"
+
 #include <bitset>
 #include <experimental/generator>
 #include <iostream>
@@ -7,7 +9,6 @@
 
 #include "Handle.hpp"
 #include "Log.hpp"
-#include "Win32/System.hpp"
 
 
 #define SYSTEM_PROCESS_NAME L"System"
@@ -79,7 +80,7 @@ UserName()
         if ( ::GetUserNameW((WCHAR*)lpwsBuffer, (LPDWORD)&dwBufferSize) == 0 )
         {
             Log::perror(L"GetUserName()");
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         username = std::wstring {lpwsBuffer, dwBufferSize};
@@ -95,7 +96,7 @@ ModuleName(HMODULE hModule)
     if ( ::GetModuleFileName(hModule, lpwsBuffer, MAX_PATH) == 0u )
     {
         Log::perror(L"GetModuleFileName()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     static auto module_filename = std::wstring {lpwsBuffer};
@@ -134,7 +135,7 @@ details::QueryInternal(const SYSTEM_INFORMATION_CLASS SystemInformationClass, co
     if ( !Buffer )
     {
         Log::perror(L"LocalAlloc()");
-        return Err(ErrorCode::AllocationError);
+        return Err(Error::AllocationError);
     }
 
     do
@@ -165,7 +166,7 @@ details::QueryInternal(const SYSTEM_INFORMATION_CLASS SystemInformationClass, co
     } while ( true );
 
     ::LocalFree(Buffer);
-    return Err(ErrorCode::ExternalApiCallFailed);
+    return Err(Error::ExternalApiCallFailed);
 }
 
 Result<std::tuple<u8, u8, u8, u8, u8>>
@@ -180,7 +181,7 @@ ProcessorCount()
     if ( ::GetLastError() != ERROR_INSUFFICIENT_BUFFER )
     {
         Log::perror(L"GetLogicalProcessorInformation()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     const usize NbEntries = size / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
@@ -188,7 +189,7 @@ ProcessorCount()
     if ( ::GetLogicalProcessorInformation(ProcessorInfo.get(), &size) == FALSE )
     {
         Log::perror(L"GetLogicalProcessorInformation()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     std::for_each(
@@ -223,7 +224,7 @@ Modules()
     auto res = Query<RTL_PROCESS_MODULES>(SystemModuleInformation);
     if ( Failed(res) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     std::vector<RTL_PROCESS_MODULE_INFORMATION> Mods;
@@ -247,7 +248,7 @@ Handles()
     auto res = Query<SYSTEM_HANDLE_INFORMATION>(SystemHandleInformation);
     if ( Failed(res) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO> SystemHandles;
@@ -290,7 +291,7 @@ Threads()
     auto res = Query<SYSTEM_PROCESS_INFORMATION>(SYSTEM_INFORMATION_CLASS::SystemProcessInformation);
     if ( Failed(res) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     auto IsValid = [](auto si)
@@ -336,7 +337,7 @@ ParentProcessId(const u32 dwProcessId) -> Result<u32>
         return HandleToUlong(curProcInfo->InheritedFromUniqueProcessId);
     }
 
-    return Err(ErrorCode::NotFound);
+    return Err(Error::NotFound);
 }
 
 
