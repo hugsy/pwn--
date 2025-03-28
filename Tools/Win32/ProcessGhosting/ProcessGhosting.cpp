@@ -61,7 +61,7 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     uptr BaseAddress = 0;
     {
-        auto const FileSize = ValueOr<usize>(PayloadFile.Size(), 0);
+        auto const FileSize = PayloadFile.Size().value_or(0);
         auto hMap           = Value(PayloadFile.Map(PAGE_READONLY));
         auto hView          = Value(PayloadFile.View(hMap.get(), FILE_MAP_READ, 0, FileSize));
         DWORD bytesWritten {};

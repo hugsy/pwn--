@@ -175,10 +175,10 @@ Disassembler::Disassemble(std::vector<u8> const& bytes)
     return Ok(insn);
 }
 
-Result<std::vector<Instruction>>
+Result<Instructions>
 Disassembler::DisassembleAll(std::vector<u8> const& Bytes)
 {
-    std::vector<Instruction> insns;
+    Instructions insns;
 
     while ( true )
     {
@@ -193,7 +193,7 @@ Disassembler::DisassembleAll(std::vector<u8> const& Bytes)
             return Err(res.error());
         }
 
-        insns.emplace_back(Value(res));
+        insns.push_back(Value(res));
     }
 
     return Ok(insns);
@@ -283,18 +283,22 @@ Disassembler::Print(std::vector<u8> const& bytes, std::optional<Architecture> ar
     auto disArch = arch.value_or(Context.architecture);
     Disassembler dis {disArch};
     auto res = dis.DisassembleAll(bytes);
-    if ( Success(res) )
+    if ( Failed(res) )
     {
-        std::vector<Instruction> insns = Value(res);
-        for ( auto& insn : insns )
+        return;
+    }
+
+    std::vector<Instruction> insns = Value(res);
+    for ( auto& insn : insns )
+    {
+        auto res = dis.Format(insn, DefaultBaseAddress);
+        if ( Failed(res) )
         {
-            dis.Format(insn, DefaultBaseAddress)
-                .and_then(
-                    [](auto const& insn)
-                    {
-                        std::println("{}", insn);
-                    });
+            return;
         }
+
+        const auto insn = Value(res);
+        std::println("{}", insn);
     }
 }
 

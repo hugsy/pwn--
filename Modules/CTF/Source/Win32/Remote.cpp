@@ -140,10 +140,12 @@ CTF::Remote::recv_internal(_In_ usize size = Net::Tube::PIPE_DEFAULT_SIZE)
         {
         case WSAECONNABORTED:
         case WSAECONNRESET:
-            return Err(Error::ConnectionError, reason);
+            err("recv() failed, reason: {:x}", reason);
+            return Err(Error::ConnectionError);
 
         default:
-            return Err(Error::ExternalApiCallFailed, reason);
+            err("recv() failed, reason: {:x}", reason);
+            return Err(Error::ExternalApiCallFailed);
         }
     }
 
@@ -195,7 +197,7 @@ CTF::Remote::InitializeSocket() -> Result<bool>
 
     if ( m_Socket == INVALID_SOCKET )
     {
-        return Err(Error::InitializationFailed, ::WSAGetLastError());
+        return Err(Error::InitializationFailed);
     }
 
     return Ok(true);
@@ -233,7 +235,7 @@ CTF::Remote::Connect() -> Result<bool>
 
     if ( ::connect(m_Socket, (SOCKADDR*)&sin, sizeof(sin)) == SOCKET_ERROR )
     {
-        return Err(Error::ConnectionError, ::WSAGetLastError());
+        return Err(Error::ConnectionError);
     }
 
     m_State = SocketState::Connected;

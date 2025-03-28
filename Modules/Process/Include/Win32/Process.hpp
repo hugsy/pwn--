@@ -120,7 +120,7 @@ public:
         std::unique_ptr<T> TypedResult {(T*)RawResult.release()};
         return Ok(std::move(TypedResult));
         */
-        return QueryInternal(MemoryInformationClass, sizeof(T))
+        return QueryInternal(MemoryInformationClass, BaseAddress, sizeof(T))
             .and_then(
                 [](auto&& src) -> Result<std::unique_ptr<T>>
                 {
