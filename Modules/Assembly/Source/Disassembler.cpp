@@ -297,8 +297,7 @@ Disassembler::Print(std::vector<u8> const& bytes, std::optional<Architecture> ar
             return;
         }
 
-        const auto insn = Value(res);
-        std::println("{}", insn);
+        std::println("{}", Value(res));
     }
 }
 
