@@ -121,23 +121,20 @@ File::ToBytes(uptr Offset, usize Size)
         return Err(Error::NotInitialized);
     }
 
-    auto map = Map(PAGE_READONLY);
-    if ( Failed(map) )
+    auto hMap = UniqueHandle {::CreateFileMappingW(m_hFile.get(), nullptr, PAGE_READONLY, 0, 0, nullptr)};
+    if ( !hMap )
     {
         return Err(Error::ExternalApiCallFailed);
     }
 
-    auto hMap = UniqueHandle {Value(std::move(map))};
-    auto view = View(hMap.get(), FILE_MAP_READ, Offset, Size);
-    if ( Failed(view) )
+    auto hView = UniqueFileViewHandle {::MapViewOfFileEx(hMap.get(), FILE_MAP_READ, Offset, 0, Size, nullptr)};
+    if ( !hView )
     {
         return Err(Error::ExternalApiCallFailed);
     }
 
-    auto hView = Value(std::move(view));
     std::vector<u8> bytes(Size);
     ::memcpy(bytes.data(), hView.get(), bytes.size());
-
     return Ok(bytes);
 }
 
@@ -229,42 +226,6 @@ File::ReOpenFileWith(const DWORD DesiredAccess, const DWORD DesiredShareMode, co
     m_Attributes = NewAttributes;
 
     return Ok(true);
-}
-
-
-Result<UniqueHandle>
-File::Map(DWORD Protect, std::optional<std::wstring_view> Name)
-{
-    HANDLE h = {::CreateFileMappingW(m_hFile.get(), nullptr, Protect, 0, 0, Name.value_or(std::wstring {L""}).data())};
-    if ( !h )
-    {
-        return Err(Error::ExternalApiCallFailed);
-    }
-
-    return Ok(UniqueHandle {h});
-}
-
-
-Result<FileMapViewHandle>
-File::View(HANDLE hMap, DWORD Protect, uptr Offset, usize Size)
-{
-    Size       = (Size == (usize)-1) ? this->Size().value_or(0) : Size;
-    LPVOID map = ::MapViewOfFile(
-        hMap,
-        Protect,
-#ifdef _WIN64
-        Offset >> 32,
-#else
-        0,
-#endif
-        Offset & 0xffff'ffff,
-        Size);
-    if ( !map )
-    {
-        return Err(Error::ExternalApiCallFailed);
-    }
-
-    return Ok(FileMapViewHandle {map});
 }
 
 

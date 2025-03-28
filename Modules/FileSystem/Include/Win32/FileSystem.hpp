@@ -23,7 +23,8 @@ interesting locations from link target
 namespace pwn::FileSystem
 {
 
-using FileMapViewHandle = GenericHandle<void, ::UnmapViewOfFile>;
+using UniqueFileViewHandle = GenericHandle<void, ::UnmapViewOfFile>;
+
 
 class File
 {
@@ -95,32 +96,6 @@ public:
     ///
     Result<usize>
     Size();
-
-
-    ///
-    ///@brief Create a file mapping with the given protection
-    ///
-    ///@param Protect
-    ///@param Name (opt.)
-    ///@return Result<UniqueHandle>
-    ///
-    PWNAPI
-    Result<UniqueHandle>
-    Map(DWORD Protect, std::optional<std::wstring_view> Name = std::nullopt);
-
-
-    ///
-    ///@brief
-    ///
-    ///@param hFileMappingObject
-    ///@param Protect
-    ///@param Offset
-    ///@param Size
-    ///@return Result<FileMapViewHandle>
-    ///
-    PWNAPI
-    Result<FileMapViewHandle>
-    View(HANDLE hMap, DWORD Protect, uptr Offset = 0, usize Size = -1);
 
 
     ///

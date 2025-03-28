@@ -29,11 +29,14 @@ PE::PE(std::filesystem::path const& Path)
 
     auto PeFile     = FileSystem::File(std::move(hFile));
     const auto Size = PeFile.Size().value_or((usize)0);
-    const auto hMap = Value(PeFile.Map(PAGE_READONLY));
-    auto View       = Value(PeFile.View(hMap.get(), FILE_MAP_READ, 0, Size));
 
-    auto SpanView = std::span<u8> {(u8*)View.get(), Size};
-    if ( !ParsePeFromMemory(SpanView) )
+    auto hMap = UniqueHandle {::CreateFileMappingW(PeFile.Handle(), nullptr, PAGE_READONLY, 0, 0, nullptr)};
+    auto hView =
+        FileSystem::UniqueFileViewHandle {::MapViewOfFileEx(PeFile.Handle(), FILE_MAP_READ, 0, 0, Size, nullptr)};
+
+    auto SpanView = std::span<u8> {(u8*)hView.get(), Size};
+
+    if ( !hMap || !hView || !ParsePeFromMemory(SpanView) )
     {
         throw std::runtime_error("PE initialization failed");
     }

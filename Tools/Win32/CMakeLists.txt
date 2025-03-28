@@ -13,7 +13,7 @@ set(
     HexdumpFile
     LoadDriver
     ProcessReparent
-    # ProcessGhosting
+    ProcessGhosting
 )
 
 foreach(TOOL_DIR ${WIN32_TOOLS})
