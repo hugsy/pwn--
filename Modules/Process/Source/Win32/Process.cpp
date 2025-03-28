@@ -273,14 +273,11 @@ Process::Kill()
 Result<std::vector<u32>>
 Processes()
 {
-    auto res = System::Threads();
-    if ( Failed(res) )
-    {
-        return Err(Error(res).Code);
-    }
-
-    auto pids = std::move(Value(res));
-    return Ok(std::move(std::views::keys(pids) | std::ranges::to<std::vector>()));
+    return System::Threads().and_then(
+        [](auto&& pids) -> Result<std::vector<u32>>
+        {
+            return Ok(std::move(std::views::keys(pids) | std::ranges::to<std::vector>()));
+        });
 }
 
 
@@ -361,16 +358,22 @@ Process::IntegrityLevel()
 std::vector<u32>
 Process::Threads() const
 {
-    u32 const CurrentPid       = m_ProcessId;
-    auto const SystemThreadIds = ValueOr(pwn::System::Threads(), {});
+    u32 const CurrentPid = m_ProcessId;
 
-    auto IsCurrentProcess = [CurrentPid](auto const& x)
+    auto res = pwn::System::Threads();
+    if ( Failed(res) )
+    {
+        return {};
+    }
+
+    auto const SystemThreadIds = Value(res);
+    auto IsCurrentProcess      = [CurrentPid](auto const& x)
     {
         return std::get<0>(x) == CurrentPid;
     };
 
     std::vector<u32> CurrentProcessThreads;
-    for ( auto const& [pid, tid] : SystemThreadIds | std::views::filter(IsCurrentProcess) )
+    for ( auto const [pid, tid] : SystemThreadIds | std::views::filter(IsCurrentProcess) )
     {
         CurrentProcessThreads.push_back(tid);
     }

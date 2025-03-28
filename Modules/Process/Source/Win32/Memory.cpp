@@ -114,8 +114,7 @@ Memory::QueryInternal(
     const uptr BaseAddress,
     const usize InitialSize)
 {
-    ErrorCode ec = Error::UnknownError;
-    usize Size   = InitialSize;
+    usize Size = InitialSize;
 
     auto Buffer = std::make_unique<u8[]>(Size);
     if ( !Buffer )
@@ -156,10 +155,8 @@ Memory::QueryInternal(
         // If doing an iteration, the last address will be invalid
         // resulting in having STATUS_INVALID_PARAMETER. We just exit.
         //
-        ec = (Status == STATUS_INVALID_PARAMETER) ? Error::InvalidParameter : Error::PermissionDenied;
-
         Log::ntperror(L"NtQueryVirtualMemory()", Status);
-        return Err(ec);
+        return Err((Status == STATUS_INVALID_PARAMETER) ? Error::InvalidParameter : Error::PermissionDenied);
 
     } while ( true );
 
@@ -181,19 +178,18 @@ Memory::Regions()
         auto res = Query<MEMORY_BASIC_INFORMATION>(MEMORY_INFORMATION_CLASS::MemoryBasicInformation, CurrentAddress);
         if ( Failed(res) )
         {
-            auto err = Error(res);
-            if ( err == Error::InvalidParameter )
+            if ( res.error() == Error::InvalidParameter )
             {
                 break;
             }
 
-            return err;
+            return Err(res.error());
         }
 
         //
         // Save the region information
         //
-        auto CurrentMemoryRegion = Value(std::move(res));
+        auto CurrentMemoryRegion = Value(res);
         const usize RegionSize   = CurrentMemoryRegion->RegionSize;
         if ( CurrentMemoryRegion->AllocationBase != nullptr )
         {
@@ -220,7 +216,7 @@ Memory::Search(std::vector<u8> const& Pattern)
     auto res = Regions();
     if ( Failed(res) )
     {
-        return Error(res);
+        return Err(res.error());
     }
 
     std::vector<uptr> Matches;

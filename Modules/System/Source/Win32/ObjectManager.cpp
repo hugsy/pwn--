@@ -111,7 +111,7 @@ ObjectManager::FindBigPoolAddressesFromTag(const u32 Tag)
         return Err(Error::ExternalApiCallFailed);
     }
 
-    auto BigPoolInfo = Value(res);
+    auto BigPoolInfo = std::move(Value(res));
     if ( BigPoolInfo->Count == 0 )
     {
         return Err(Error::NotFound);

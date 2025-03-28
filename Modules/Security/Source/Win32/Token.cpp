@@ -110,14 +110,12 @@ Token::IsValid() const
 Result<bool>
 Token::IsElevated()
 {
-    auto res = Query<TOKEN_ELEVATION>(TokenElevation);
-    if ( Failed(res) )
-    {
-        return Error(res);
-    }
-
-    const auto info = Value(std::move(res));
-    return Ok(info->TokenIsElevated == 1);
+    return Query<TOKEN_ELEVATION>(TokenElevation)
+        .and_then(
+            [](std::unique_ptr<TOKEN_ELEVATION>&& info) -> Result<bool>
+            {
+                return Ok(info->TokenIsElevated == 1);
+            });
 }
 
 
@@ -130,7 +128,7 @@ Token::EnumeratePrivileges()
     auto res = Query<TOKEN_PRIVILEGES>(TokenPrivileges);
     if ( Failed(res) )
     {
-        return Error(res);
+        return Err(res.error());
     }
 
     const auto Privs           = Value(std::move(res));

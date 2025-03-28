@@ -140,7 +140,7 @@ enum class Error : uint32_t
 };
 
 ///
-///@brief The expected result type
+///@brief `Result` is an C++ equivalent to Rust's `Result` type
 ///
 ///@tparam T
 ///
@@ -148,13 +148,28 @@ template<typename T>
 using Result = std::expected<T, Error>;
 
 ///
-/// @brief
-///
+/// @brief The `Result` error type
 ///
 using Err = std::unexpected<Error>;
 
+///
+/// @brief The valid expected result to be similar with Rust's. Does nothing.
+///
 #define Ok
 
+///
+/// @brief  Determines whether a `Result` was successful
+/// Opposite of `Failed`
+///
 #define Success(res) (res.has_value())
+
+///
+/// @brief  Determines whether a `Result` failed
+/// Opposite of `Success`
+///
 #define Failed(res) (Success(res) == false)
-#define Value(res) (res.value())
+
+///
+/// @brief If successful, `Value` returns the success value as an xvalue
+///
+#define Value(res) (std::move(res.value()))

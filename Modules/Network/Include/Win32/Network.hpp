@@ -17,4 +17,4 @@ public:
     static Result<u64>
     DownloadFile(std::string_view const& url, std::filesystem::path const& local_path);
 };
-} // namespace Net
+} // namespace pwn::Net

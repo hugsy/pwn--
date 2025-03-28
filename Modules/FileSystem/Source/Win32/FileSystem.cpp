@@ -124,14 +124,14 @@ File::ToBytes(uptr Offset, usize Size)
     auto map = Map(PAGE_READONLY);
     if ( Failed(map) )
     {
-        return Error(map);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     auto hMap = UniqueHandle {Value(std::move(map))};
     auto view = View(hMap.get(), FILE_MAP_READ, Offset, Size);
     if ( Failed(view) )
     {
-        return Error(view);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     auto hView = Value(std::move(view));
@@ -248,7 +248,7 @@ File::Map(DWORD Protect, std::optional<std::wstring_view> Name)
 Result<FileMapViewHandle>
 File::View(HANDLE hMap, DWORD Protect, uptr Offset, usize Size)
 {
-    Size       = (Size == (usize)-1) ? ValueOr(this->Size(), (usize)0) : Size;
+    Size       = (Size == (usize)-1) ? this->Size().value_or(0) : Size;
     LPVOID map = ::MapViewOfFile(
         hMap,
         Protect,

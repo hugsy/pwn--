@@ -193,8 +193,7 @@ Disassembler::DisassembleAll(std::vector<u8> const& Bytes)
             return Err(res.error());
         }
 
-        auto insn = Value(res);
-        insns.push_back(std::move(insn));
+        insns.emplace_back(Value(res));
     }
 
     return Ok(insns);

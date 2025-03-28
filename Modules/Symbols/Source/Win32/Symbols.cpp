@@ -314,7 +314,7 @@ Symbols::DownloadModulePdbToDisk(std::string_view const ModuleNameWithExt)
     auto dlRes = Net::HTTP::DownloadFile(url.str(), ModulePathWithPdb);
     if ( Failed(dlRes) )
     {
-        return Error(dlRes);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(ModulePathWithPdb);
@@ -330,7 +330,7 @@ Symbols::DownloadModulePdbToMemory(std::string_view const ModuleNameWithExt)
     auto dlRes = Symbols::DownloadModulePdbToDisk(ModuleNameWithExt);
     if ( Failed(dlRes) )
     {
-        return Error(dlRes);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     std::filesystem::path const& ModulePathWithPdb = Value(dlRes);

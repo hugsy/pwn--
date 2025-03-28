@@ -21,14 +21,14 @@ PE::PE(uptr Offset, usize Size)
 
 PE::PE(std::filesystem::path const& Path)
 {
-    auto hFile = ValueOr(FileSystem::File::Open(Path.wstring(), L"r"), INVALID_HANDLE_VALUE);
+    auto hFile = FileSystem::File::Open(Path.wstring(), L"r").value_or(INVALID_HANDLE_VALUE);
     if ( hFile == INVALID_HANDLE_VALUE )
     {
         throw std::runtime_error("PE initialization failed");
     }
 
     auto PeFile     = FileSystem::File(std::move(hFile));
-    const auto Size = ValueOr(PeFile.Size(), (usize)0);
+    const auto Size = PeFile.Size().value_or((usize)0);
     const auto hMap = Value(PeFile.Map(PAGE_READONLY));
     auto View       = Value(PeFile.View(hMap.get(), FILE_MAP_READ, 0, Size));
 

@@ -24,7 +24,7 @@ TEST_CASE("Windows::Registry - Read Value", "[" NS "]")
                 L"RunAsPplButDontReallyExist");
 
             REQUIRE(Failed(res));
-            CHECK(Error(res).Code == Error::ExternalApiCallFailed);
+            CHECK(res.error() == Error::ExternalApiCallFailed);
         }
 
         // Bad value
@@ -35,7 +35,7 @@ TEST_CASE("Windows::Registry - Read Value", "[" NS "]")
                 L"RunAsPplButDontReallyExist");
 
             REQUIRE(Failed(res));
-            CHECK(Error(res).Code == Error::NotFound);
+            CHECK(res.error() == Error::NotFound);
         }
     }
 

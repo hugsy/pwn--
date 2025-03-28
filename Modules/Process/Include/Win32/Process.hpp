@@ -109,6 +109,7 @@ public:
     Result<std::unique_ptr<T>>
     Query(const MEMORY_INFORMATION_CLASS MemoryInformationClass, const uptr BaseAddress = nullptr)
     {
+        /*
         auto res = QueryInternal(MemoryInformationClass, BaseAddress, sizeof(T));
         if ( Failed(res) )
         {
@@ -118,6 +119,13 @@ public:
         auto RawResult = Value(std::move(res));
         std::unique_ptr<T> TypedResult {(T*)RawResult.release()};
         return Ok(std::move(TypedResult));
+        */
+        return QueryInternal(MemoryInformationClass, sizeof(T))
+            .and_then(
+                [](auto&& src) -> Result<std::unique_ptr<T>>
+                {
+                    return std::unique_ptr<T>(reinterpret_cast<T*>(src.release()));
+                });
     }
 
     ///
@@ -361,15 +369,23 @@ public:
     Result<std::unique_ptr<T>>
     Query(PROCESSINFOCLASS ProcessInformationClass)
     {
-        auto res = QueryInternal(ProcessInformationClass, sizeof(T));
-        if ( Failed(res) )
-        {
-            return Error(res);
-        }
+        return QueryInternal(ProcessInformationClass, sizeof(T))
+            .and_then(
+                [](auto&& src) -> Result<std::unique_ptr<T>>
+                {
+                    return std::unique_ptr<T>(reinterpret_cast<T*>(src.release()));
+                });
+        /*
+auto res = QueryInternal(ProcessInformationClass, sizeof(T));
+if ( Failed(res) )
+{
+    return Error(res);
+}
 
-        auto RawResult = Value(std::move(res));
-        std::unique_ptr<T> TypedResult {(T*)RawResult.release()};
-        return Ok(std::move(TypedResult));
+auto RawResult = Value(std::move(res));
+std::unique_ptr<T> TypedResult {(T*)RawResult.release()};
+return Ok(std::move(TypedResult));
+*/
     }
 
 

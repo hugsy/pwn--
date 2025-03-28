@@ -98,15 +98,23 @@ public:
     Result<std::unique_ptr<T>>
     Query(TOKEN_INFORMATION_CLASS TokenInformationClass)
     {
-        auto res = QueryInternal(TokenInformationClass, sizeof(T));
+        return QueryInternal(TokenInformationClass, sizeof(T))
+            .and_then(
+                [](auto&& info) -> Result<std::unique_ptr<T>>
+                {
+                    return std::unique_ptr<T>(reinterpret_cast<T*>(info.release()));
+                });
+        /*
+        auto res = QueryInternal(TokenInformationClass, sizeof(T)).and_then([](){});
         if ( Failed(res) )
         {
-            return Error(res);
+            return Err(res);
         }
 
         auto RawResult = Value(std::move(res));
         std::unique_ptr<T> TypedResult {(T*)RawResult.release()};
         return Ok(std::move(TypedResult));
+        */
     }
 
     ///
