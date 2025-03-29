@@ -1,7 +1,8 @@
+#include "Win32/PE.hpp"
+
 #include <memory>
 
 #include "Win32/FileSystem.hpp"
-#include "Win32/PE.hpp"
 
 
 namespace pwn::Binary
@@ -20,19 +21,22 @@ PE::PE(uptr Offset, usize Size)
 
 PE::PE(std::filesystem::path const& Path)
 {
-    auto hFile = ValueOr(FileSystem::File::Open(Path.wstring(), L"r"), INVALID_HANDLE_VALUE);
+    auto hFile = FileSystem::File::Open(Path.wstring(), L"r").value_or(INVALID_HANDLE_VALUE);
     if ( hFile == INVALID_HANDLE_VALUE )
     {
         throw std::runtime_error("PE initialization failed");
     }
 
     auto PeFile     = FileSystem::File(std::move(hFile));
-    const auto Size = ValueOr(PeFile.Size(), (usize)0);
-    const auto hMap = Value(PeFile.Map(PAGE_READONLY));
-    auto View       = Value(PeFile.View(hMap.get(), FILE_MAP_READ, 0, Size));
+    const auto Size = PeFile.Size().value_or((usize)0);
 
-    auto SpanView = std::span<u8> {(u8*)View.get(), Size};
-    if ( !ParsePeFromMemory(SpanView) )
+    auto hMap = UniqueHandle {::CreateFileMappingW(PeFile.Handle(), nullptr, PAGE_READONLY, 0, 0, nullptr)};
+    auto hView =
+        FileSystem::UniqueFileViewHandle {::MapViewOfFileEx(PeFile.Handle(), FILE_MAP_READ, 0, 0, Size, nullptr)};
+
+    auto SpanView = std::span<u8> {(u8*)hView.get(), Size};
+
+    if ( !hMap || !hView || !ParsePeFromMemory(SpanView) )
     {
         throw std::runtime_error("PE initialization failed");
     }
@@ -242,7 +246,7 @@ PE::FindSection(Pred Condition)
     auto const& it = std::find_if(m_PeSections.cbegin(), m_PeSections.cend(), Condition);
     if ( it == m_PeSections.cend() )
     {
-        return Err(ErrorCode::NotFound);
+        return Err(Error::NotFound);
     }
     return Ok(*it);
 }
@@ -907,7 +911,7 @@ PE::BuildDelayImportEntry(const IMAGE_DELAYLOAD_DESCRIPTOR* DelayImportDescripto
     const char* DllName = (char*)GetDelayImportVa(DelayImportDescriptor->DllNameRVA);
     if ( !DllName )
     {
-        return Err(ErrorCode::MalformedFile);
+        return Err(Error::MalformedFile);
     }
 
     PE::PeDelayLoadDescriptor Entry {};
@@ -928,7 +932,7 @@ PE::BuildDelayImportEntry(const IMAGE_DELAYLOAD_DESCRIPTOR* DelayImportDescripto
 
             if ( !pfnName )
             {
-                return Err(ErrorCode::MalformedFile);
+                return Err(Error::MalformedFile);
             }
 
             NewThunk.Hint            = pfnName->Hint;

@@ -1,10 +1,11 @@
 // #include <tlhelp32.h>
 
+#include "Win32/Thread.hpp"
+
 #include "Handle.hpp"
 #include "Log.hpp"
 #include "Utils.hpp"
 #include "Win32/System.hpp"
-#include "Win32/Thread.hpp"
 
 constexpr int WINDOWS_VERSION_1507 = 10240;
 constexpr int WINDOWS_VERSION_1511 = 10586;
@@ -138,7 +139,7 @@ Thread::ReOpenThreadWith(DWORD DesiredAccess)
     if ( hThread == nullptr )
     {
         Log::perror(L"OpenThread()");
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     m_ThreadHandle           = UniqueHandle {hThread};
@@ -157,7 +158,7 @@ Thread::Name()
     const auto BuildNumber = std::get<2>(Version);
     if ( BuildNumber < WINDOWS_VERSION_1607 )
     {
-        return Err(ErrorCode::BadVersion);
+        return Err(Error::BadVersion);
     }
 
     //
@@ -165,13 +166,13 @@ Thread::Name()
     //
     if ( Failed(ReOpenThreadWith(THREAD_QUERY_LIMITED_INFORMATION)) )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     auto res = Query<THREAD_NAME_INFORMATION>(THREADINFOCLASS::ThreadNameInformation);
     if ( Failed(res) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     const std::unique_ptr<THREAD_NAME_INFORMATION> name = Value(std::move(res));
@@ -190,7 +191,7 @@ Thread::Name(std::wstring_view name)
 
     if ( name.size() >= 0xffff )
     {
-        return Err(ErrorCode::BufferTooBig);
+        return Err(Error::BufferTooBig);
     }
 
     //
@@ -200,7 +201,7 @@ Thread::Name(std::wstring_view name)
     const auto BuildNumber = std::get<2>(Version);
     if ( BuildNumber < WINDOWS_VERSION_1607 )
     {
-        return Err(ErrorCode::BadVersion);
+        return Err(Error::BadVersion);
     }
 
     //
@@ -214,7 +215,7 @@ Thread::Name(std::wstring_view name)
     if ( !NT_SUCCESS(Status) )
     {
         Log::ntperror(L"NtSetInformationThread(ThreadNameInformation) failed", Status);
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
     return Ok(true);
 }
@@ -234,7 +235,7 @@ Thread::QueryInternal(const THREADINFOCLASS ThreadInformationClass, const usize 
     auto Buffer = std::make_unique<u8[]>(Size);
     if ( !Buffer )
     {
-        return Err(ErrorCode::AllocationError);
+        return Err(Error::AllocationError);
     }
 
     do
@@ -261,7 +262,7 @@ Thread::QueryInternal(const THREADINFOCLASS ThreadInformationClass, const usize 
         }
 
         Log::ntperror(L"NtQueryInformationThread()", Status);
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     } while ( true );
 
     return Ok(std::move(Buffer));

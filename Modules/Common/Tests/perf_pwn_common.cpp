@@ -14,7 +14,7 @@ TestFunc11(uint32_t i)
         return Ok(1);
     }
 
-    return Err(ErrorCode::RuntimeError);
+    return Err(Error::RuntimeError);
 }
 
 int
@@ -37,7 +37,7 @@ TestFunc21(uint32_t i)
         return Ok(std::move(std::vector<int> {1, 2, 3}));
     }
 
-    return Err(ErrorCode::RuntimeError);
+    return Err(Error::RuntimeError);
 }
 
 std::vector<int>

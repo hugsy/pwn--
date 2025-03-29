@@ -10,14 +10,24 @@ wmain(int argc, const wchar_t** argv) -> int
         return EXIT_FAILURE;
     }
 
-    auto hFile      = ValueOr<HANDLE>(FileSystem::File::Open(argv[1]), nullptr);
-    auto TargetFile = FileSystem::File(std::move(hFile));
-    auto sz         = ValueOr(TargetFile.Size(), (usize)0);
-    auto res        = TargetFile.ToBytes(0, sz);
-    if ( Success(res) )
+    auto hFile = FileSystem::File::Open(argv[1]).value_or(nullptr);
+    if ( !hFile )
     {
-        auto bytes = Value(std::move(res));
-        Utils::Hexdump(bytes);
+        return EXIT_FAILURE;
+    }
+
+    auto TargetFile = FileSystem::File(std::move(hFile));
+    auto sz         = TargetFile.Size().value_or((usize)0);
+    auto res        = TargetFile.ToBytes(0, sz).and_then(
+        [](auto&& bytes) -> Result<int>
+        {
+            Utils::Hexdump(bytes);
+            return Ok(0);
+        });
+
+    if ( Failed(res) )
+    {
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;

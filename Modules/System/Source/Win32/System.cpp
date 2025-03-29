@@ -1,3 +1,5 @@
+#include "Win32/System.hpp"
+
 #include <bitset>
 #include <experimental/generator>
 #include <iostream>
@@ -7,7 +9,6 @@
 
 #include "Handle.hpp"
 #include "Log.hpp"
-#include "Win32/System.hpp"
 
 
 #define SYSTEM_PROCESS_NAME L"System"
@@ -79,7 +80,7 @@ UserName()
         if ( ::GetUserNameW((WCHAR*)lpwsBuffer, (LPDWORD)&dwBufferSize) == 0 )
         {
             Log::perror(L"GetUserName()");
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         username = std::wstring {lpwsBuffer, dwBufferSize};
@@ -95,7 +96,7 @@ ModuleName(HMODULE hModule)
     if ( ::GetModuleFileName(hModule, lpwsBuffer, MAX_PATH) == 0u )
     {
         Log::perror(L"GetModuleFileName()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     static auto module_filename = std::wstring {lpwsBuffer};
@@ -124,22 +125,18 @@ WindowsVersion()
     return {VersionInformation.dwMajorVersion, VersionInformation.dwMinorVersion, VersionInformation.dwBuildNumber};
 }
 
-Result<PVOID>
+Result<std::unique_ptr<u8[]>>
 details::QueryInternal(const SYSTEM_INFORMATION_CLASS SystemInformationClass, const usize InitialSize)
 {
-    usize Size         = InitialSize;
-    ULONG ReturnLength = 0;
-    NTSTATUS Status    = STATUS_SUCCESS;
-    auto Buffer        = ::LocalAlloc(LPTR, Size);
-    if ( !Buffer )
-    {
-        Log::perror(L"LocalAlloc()");
-        return Err(ErrorCode::AllocationError);
-    }
+    usize Size                   = InitialSize;
+    ULONG ReturnLength           = 0;
+    NTSTATUS Status              = STATUS_SUCCESS;
+    std::unique_ptr<u8[]> Buffer = nullptr;
 
     do
     {
-        Status = ::NtQuerySystemInformation(SystemInformationClass, Buffer, Size, &ReturnLength);
+
+        Status = ::NtQuerySystemInformation(SystemInformationClass, Buffer.get(), Size, &ReturnLength);
         if ( NT_SUCCESS(Status) )
         {
             return Ok(Buffer);
@@ -151,21 +148,12 @@ details::QueryInternal(const SYSTEM_INFORMATION_CLASS SystemInformationClass, co
             break;
         }
 
-        HLOCAL NewBuffer = ::LocalReAlloc(Buffer, ReturnLength, LMEM_MOVEABLE | LMEM_ZEROINIT);
-        if ( NewBuffer )
-        {
-            Size   = ReturnLength;
-            Buffer = NewBuffer;
-            continue;
-        }
-
-        Log::perror(L"LocalReAlloc() failed");
-        break;
+        Buffer = std::make_unique<u8[]>(ReturnLength);
+        continue;
 
     } while ( true );
 
-    ::LocalFree(Buffer);
-    return Err(ErrorCode::ExternalApiCallFailed);
+    return Err(Error::ExternalApiCallFailed);
 }
 
 Result<std::tuple<u8, u8, u8, u8, u8>>
@@ -180,7 +168,7 @@ ProcessorCount()
     if ( ::GetLastError() != ERROR_INSUFFICIENT_BUFFER )
     {
         Log::perror(L"GetLogicalProcessorInformation()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     const usize NbEntries = size / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
@@ -188,7 +176,7 @@ ProcessorCount()
     if ( ::GetLogicalProcessorInformation(ProcessorInfo.get(), &size) == FALSE )
     {
         Log::perror(L"GetLogicalProcessorInformation()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     std::for_each(
@@ -223,11 +211,11 @@ Modules()
     auto res = Query<RTL_PROCESS_MODULES>(SystemModuleInformation);
     if ( Failed(res) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     std::vector<RTL_PROCESS_MODULE_INFORMATION> Mods;
-    auto ModInfo = Value(res);
+    auto ModInfo = std::move(Value(res));
 
     std::for_each(
         std::next(ModInfo->Modules, 0),
@@ -247,11 +235,11 @@ Handles()
     auto res = Query<SYSTEM_HANDLE_INFORMATION>(SystemHandleInformation);
     if ( Failed(res) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     std::vector<SYSTEM_HANDLE_TABLE_ENTRY_INFO> SystemHandles;
-    auto HandleInfo = Value(res);
+    auto HandleInfo = std::move(Value(res));
 
     std::for_each(
         std::next(HandleInfo->Handles, 0),
@@ -274,7 +262,7 @@ QuerySystemProcessInformation()
         co_yield nullptr;
     }
 
-    auto spProcessInfo = Value(res);
+    auto spProcessInfo = std::move(Value(res));
     for ( auto curProcInfo = spProcessInfo.get(); curProcInfo->NextEntryOffset;
           curProcInfo =
               reinterpret_cast<PSYSTEM_PROCESS_INFORMATION>((uptr)curProcInfo + curProcInfo->NextEntryOffset) )
@@ -290,7 +278,7 @@ Threads()
     auto res = Query<SYSTEM_PROCESS_INFORMATION>(SYSTEM_INFORMATION_CLASS::SystemProcessInformation);
     if ( Failed(res) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     auto IsValid = [](auto si)
@@ -336,7 +324,7 @@ ParentProcessId(const u32 dwProcessId) -> Result<u32>
         return HandleToUlong(curProcInfo->InheritedFromUniqueProcessId);
     }
 
-    return Err(ErrorCode::NotFound);
+    return Err(Error::NotFound);
 }
 
 

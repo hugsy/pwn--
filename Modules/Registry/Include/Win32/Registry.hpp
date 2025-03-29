@@ -87,7 +87,7 @@ public:
                             }()};
         if ( !hKey )
         {
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         T KeyValue;
@@ -142,13 +142,13 @@ public:
             break;
 
         case ERROR_MORE_DATA:
-            return Err(ErrorCode::BufferTooSmall);
+            return Err(Error::BufferTooSmall);
 
         case ERROR_FILE_NOT_FOUND:
-            return Err(ErrorCode::NotFound);
+            return Err(Error::NotFound);
 
         default:
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         return Ok(KeyValue);
@@ -245,7 +245,7 @@ public:
                             }()};
         if ( !hKey )
         {
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         if constexpr ( std::is_same_v<T, std::wstring> ) // REG_SZ
@@ -271,13 +271,13 @@ public:
             break;
 
         case ERROR_MORE_DATA:
-            return Err(ErrorCode::BufferTooSmall);
+            return Err(Error::BufferTooSmall);
 
         case ERROR_FILE_NOT_FOUND:
-            return Err(ErrorCode::NotFound);
+            return Err(Error::NotFound);
 
         default:
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         return Ok(KeyValue);
@@ -310,4 +310,4 @@ private:
 };
 
 
-} // namespace Registry
+} // namespace pwn::Registry

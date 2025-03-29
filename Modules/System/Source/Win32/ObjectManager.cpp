@@ -34,7 +34,7 @@ ObjectManager::EnumerateDirectory(std::wstring_view const& Root)
         if ( !NT_SUCCESS(Status) )
         {
             Log::ntperror(L"NtOpenDirectoryObject()", Status);
-            return Err(ErrorCode::InsufficientPrivilegeError);
+            return Err(Error::InsufficientPrivilegeError);
         }
 
         hDirectory = UniqueHandle {h};
@@ -60,13 +60,13 @@ ObjectManager::EnumerateDirectory(std::wstring_view const& Root)
         if ( Status != STATUS_BUFFER_TOO_SMALL )
         {
             Log::ntperror(L"NtQueryDirectoryObject()", Status);
-            return Err(ErrorCode::BufferTooSmall);
+            return Err(Error::BufferTooSmall);
         }
 
         auto Buffer = std::make_unique<u8[]>(RequiredLength);
         if ( !Buffer )
         {
-            return Err(ErrorCode::AllocationError);
+            return Err(Error::AllocationError);
         }
 
         auto pObjDirInfo = reinterpret_cast<POBJECT_DIRECTORY_INFORMATION>(Buffer.get());
@@ -82,7 +82,7 @@ ObjectManager::EnumerateDirectory(std::wstring_view const& Root)
         if ( !NT_SUCCESS(Status) )
         {
             Log::ntperror(L"NtQueryDirectoryObject()", Status);
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
 
         for ( ULONG i = 0; i < EnumerationContext; i++ )
@@ -108,13 +108,13 @@ ObjectManager::FindBigPoolAddressesFromTag(const u32 Tag)
     auto res = System::Query<SYSTEM_BIGPOOL_INFORMATION>(SystemBigPoolInformation);
     if ( Failed(res) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
-    auto BigPoolInfo = Value(res);
+    auto BigPoolInfo = std::move(Value(res));
     if ( BigPoolInfo->Count == 0 )
     {
-        return Err(ErrorCode::NotFound);
+        return Err(Error::NotFound);
     }
 
     std::vector<uptr> Pools;

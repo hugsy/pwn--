@@ -126,7 +126,7 @@ Base::SendAndReceive(HANDLE hSocket, Message& MsgIn)
 {
     if ( !m_Valid )
     {
-        return Err(ErrorCode::NotInitialized);
+        return Err(Error::NotInitialized);
     }
 
     usize dwMsgOutLen = 2048;
@@ -144,7 +144,7 @@ Base::SendAndReceive(HANDLE hSocket, Message& MsgIn)
     if ( !NT_SUCCESS(Status) )
     {
         Log::perror("NtAlpcSendWaitReceivePort()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     Message MsgOut(lpRawMsgOut.get(), dwMsgOutLen);
@@ -234,7 +234,7 @@ Server::Accept() -> Result<HANDLE>
     if ( !NT_SUCCESS(Status) )
     {
         Log::ntperror(L"NtAlpcSendWaitReceivePort()", Status);
-        return Err(ErrorCode::AlpcError);
+        return Err(Error::AlpcError);
     }
 
     Utils::Hexdump((PBYTE)&ConnectionRequestMsg.m_PortMessage, OriginalMsgSize);
@@ -245,7 +245,7 @@ Server::Accept() -> Result<HANDLE>
     if ( ConnectionRequestMsg.m_PortMessage.MessageId != LPC_CONNECTION_REQUEST )
     {
         err(L"Unexpected message type received: {}", ConnectionRequestMsg.m_PortMessage.MessageId);
-        return Err(ErrorCode::AlpcError);
+        return Err(Error::AlpcError);
     }
 
     Status = Resolver::ntdll::NtAlpcAcceptConnectPort(
@@ -261,7 +261,7 @@ Server::Accept() -> Result<HANDLE>
     if ( !NT_SUCCESS(Status) )
     {
         Log::ntperror(L"NtAlpcAcceptConnectPort()", Status);
-        return Err(ErrorCode::AlpcError);
+        return Err(Error::AlpcError);
     }
 
     dbg(L"alpc::server - created client handle {:p} for port '{}'", hAlpcClientSocket, m_PortName.c_str());

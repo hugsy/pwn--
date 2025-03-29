@@ -66,7 +66,7 @@ Tube::recvuntil(_In_ std::vector<u8> const& pattern)
             auto res = recv(Tube::PIPE_DEFAULT_SIZE);
             if ( Failed(res) )
             {
-                return Err(Error(res));
+                return Err(res.error());
             }
 
             std::vector<u8> const chunk = Value(res);
@@ -99,7 +99,7 @@ Tube::recvuntil(_In_ std::vector<u8> const& pattern)
     //
     // The loop was exited without the pattern being found, return an error
     //
-    return Err(ErrorCode::NotFound);
+    return Err(Error::NotFound);
 }
 
 

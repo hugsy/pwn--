@@ -53,7 +53,7 @@ CTF::Remote::Connect()
     if ( ::connect(m_Socket, (struct sockaddr*)&sin, sizeof(sin)) < 0 )
     {
         ::perror("connect()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     dbg("connected to {}:{}", host, m_Port);
@@ -71,7 +71,7 @@ CTF::Remote::Disconnect()
     if ( ::close(m_Socket) < 0 )
     {
         ::perror("closesocket()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     m_Socket = 0;
@@ -95,7 +95,7 @@ CTF::Remote::send_internal(_In_ std::vector<u8> const& out)
     if ( res < 0 )
     {
         ::perror("send()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     dbg(L"sent {} bytes", out.size());

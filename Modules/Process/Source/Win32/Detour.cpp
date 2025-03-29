@@ -49,7 +49,7 @@ Process::InsertCallback(std::function<void(PCONTEXT)> pFunction)
                  return std::addressof(fn) == std::addressof(pFunction);
              }) )
     {
-        return Err(ErrorCode::AlreadyExists);
+        return Err(Error::AlreadyExists);
     }
 
     //
@@ -79,7 +79,7 @@ Process::RemoveCallback(std::function<void(PCONTEXT)> pFunction)
 
     if ( it == m_HookCallbacks.cend() )
     {
-        return Err(ErrorCode::NotFound);
+        return Err(Error::NotFound);
     }
 
     //
@@ -146,7 +146,7 @@ Process::Hook(uptr Location)
                  return h.Location == Location;
              }) )
     {
-        return Err(ErrorCode::AlreadyExists);
+        return Err(Error::AlreadyExists);
     }
 
     //
@@ -155,7 +155,7 @@ Process::Hook(uptr Location)
     const usize len = GoToTrampolineLength();
     if ( !::VirtualLock((PVOID)Location, len) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     const std::vector<u8> Payload = Value(Memory.Read((uptr)std::addressof(GoToTrampoline), len));
@@ -191,7 +191,7 @@ Process::Unhook(uptr Location)
 
     if ( it == m_Hooks.cend() )
     {
-        return Err(ErrorCode::NotFound);
+        return Err(Error::NotFound);
     }
 
     //
@@ -201,7 +201,7 @@ Process::Unhook(uptr Location)
 
     if ( !::VirtualLock((PVOID)FoundHook.Location, FoundHook.OriginalBytes.size()) )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     Memory.Write(Location, FoundHook.OriginalBytes);

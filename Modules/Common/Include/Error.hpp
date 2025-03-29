@@ -4,22 +4,19 @@
 /// Error types can be specified in the signature as such
 /// Result<$anyType = int> MyFunction()
 /// {
-///   if( $bad_case ){ return Err(ErrorCode::RuntimeError); }
+///   if( $bad_case ){ return Err(Error::RuntimeError); }
 ///   return Ok(1)
 /// }
 ///
 #pragma once
 
 #include <cstdint>
-#include <iomanip>
-#include <iostream>
-#include <string_view>
-#include <variant>
+#include <expected>
 
 ///
 ///@brief Custom error codes
 ///
-enum class ErrorCode : uint32_t
+enum class Error : uint32_t
 {
     /// @brief Error code `UnknownError`
     UnknownError = 0,
@@ -142,138 +139,37 @@ enum class ErrorCode : uint32_t
     MalformedFile,
 };
 
-
 ///
-///@brief Templated return value for success cases
-///
-///@tparam T
-///
-template<typename T>
-constexpr auto
-Ok(T&& arg)
-{
-    return std::forward<T>(arg);
-}
-
-///
-/// @brief Templated return value for failure cases
-///
-struct Err
-{
-    ErrorCode Code {ErrorCode::UnknownError};
-    uint32_t LastError {0};
-
-    bool
-    operator==(const Err& rhs) const
-    {
-        return rhs.Code == this->Code && rhs.LastError == this->LastError;
-    }
-
-    bool
-    operator==(ErrorCode Code) const
-    {
-        return Code == this->Code;
-    }
-};
-
-
-///
-///@brief A Result is nothing more than a std::variant between some return value and an error object
+///@brief `Result` is an C++ equivalent to Rust's `Result` type
 ///
 ///@tparam T
 ///
 template<typename T>
-using Result = std::variant<T, Err>;
-
-
-///
-///@brief Determines whether the result is a failure. Opposite is `Success()`
-///
-///@tparam T
-///@param Res
-///@return true
-///@return false
-///
-template<typename T>
-constexpr bool
-Failed(Result<T> const& Res) noexcept
-{
-    return std::get_if<Err>(&Res) != nullptr;
-}
-
+using Result = std::expected<T, Error>;
 
 ///
-///@brief Determines whether the result is a success. Opposite is `Failed()`
+/// @brief The `Result` error type
 ///
-///@tparam T
-///@param Res
-///@return true
-///@return false
-///
-template<class T>
-constexpr bool
-Success(Result<T> const& Result) noexcept
-{
-    return !Failed(Result);
-}
-
+using Err = std::unexpected<Error>;
 
 ///
-///@brief Get the return value. This function will throw `std::bad_variant_access` if the parameter is not a success
-/// value
+/// @brief The valid expected result to be similar with Rust's. Does nothing.
 ///
-///@tparam T
-///@param SuccessResult
-///@return auto
-///
-template<typename T>
-T
-Value(Result<T>&& SuccessResult)
-{
-    return std::move(std::get<T>(SuccessResult));
-}
-
-template<typename T>
-T
-Value(Result<T>& SuccessResult)
-{
-    T copy = std::get<T>(SuccessResult);
-    return copy;
-}
+#define Ok
 
 ///
-///@brief Get the error object
+/// @brief  Determines whether a `Result` was successful
+/// Opposite of `Failed`
 ///
-///@tparam T
-///@param ErrorResult
-///@return auto
-///
-template<typename T>
-const Err&
-Error(Result<T> const& ErrorResult)
-{
-    return std::get<Err>(ErrorResult);
-}
-
+#define Success(res) (res.has_value())
 
 ///
-///@brief
+/// @brief  Determines whether a `Result` failed
+/// Opposite of `Success`
 ///
-///@tparam T
-///@param Result
-///@param AlternativeValue
-///@return T
-///
-template<typename T>
-T
-ValueOr(Result<T>&& Result, T AlternativeValue)
-{
-    return Success(Result) ? std::move(Value(Result)) : AlternativeValue;
-}
+#define Failed(res) (Success(res) == false)
 
-template<typename T>
-T
-ValueOr(Result<T>& Result, T AlternativeValue)
-{
-    return Success(Result) ? Value(Result) : AlternativeValue;
-}
+///
+/// @brief If successful, `Value` returns the success value as an xvalue
+///
+#define Value(res) (std::move(res.value()))

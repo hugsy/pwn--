@@ -26,7 +26,6 @@ option(PWN_DISASSEMBLE_ARM64 "Compile with BinaryNinja disassembler support (ARM
 
 # Use CMake's `BUILD_SHARED_LIBS`
 # option(PWN_BUILD_SHARED_LIBS "Build as a shared library" OFF)
-
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     # pwn++ is NOT a top dir (i.e. build as dependency)
     option(PWN_BUILD_TOOLKIT "Compile the executables of pwn++ toolkit" OFF)
@@ -52,6 +51,7 @@ if(WIN32)
 
         # Listed by dependency order
         Common
+
         # Crypto
         # Network
         # Symbols
@@ -77,7 +77,6 @@ else()
         # Listed by dependency order
         Common
 
-  #      Crypto
         Network
         System
 

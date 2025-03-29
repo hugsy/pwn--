@@ -43,6 +43,7 @@ struct Instruction
     uptr address;
 };
 
+using Instructions = std::vector<Instruction>;
 
 class Disassembler
 {
@@ -91,23 +92,23 @@ public:
     ///@return Result<std::vector<Instruction>>
     ///
     template<typename N>
-    Result<std::vector<Instruction>>
+    Result<Instructions>
     DisassembleUntil(std::vector<u8> const& Bytes, N Pred)
     {
-        std::vector<Instruction> insns;
+        Instructions insns;
 
         while ( true )
         {
             auto res = Disassemble(Bytes);
             if ( Failed(res) )
             {
-                auto err = Error(res);
-                if ( err.Code == ErrorCode::NoMoreData )
+                auto err = res.error();
+                if ( err == Error::NoMoreData )
                 {
                     break;
                 }
 
-                return err;
+                return Err(err);
             }
 
             auto insn = Value(res);
@@ -130,7 +131,7 @@ public:
     ///@param Bytes
     ///@return Result<std::vector<Instruction>>
     ///
-    Result<std::vector<Instruction>>
+    Result<Instructions>
     DisassembleAll(std::vector<u8> const& Bytes);
 
 

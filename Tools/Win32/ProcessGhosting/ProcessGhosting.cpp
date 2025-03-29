@@ -61,10 +61,24 @@ wmain(const int argc, const wchar_t** argv) -> int
     //
     uptr BaseAddress = 0;
     {
-        auto const FileSize = ValueOr<usize>(PayloadFile.Size(), 0);
-        auto hMap           = Value(PayloadFile.Map(PAGE_READONLY));
-        auto hView          = Value(PayloadFile.View(hMap.get(), FILE_MAP_READ, 0, FileSize));
+        auto const FileSize = PayloadFile.Size().value_or(0);
+        auto hMap = UniqueHandle {::CreateFileMappingW(PayloadFile.Handle(), nullptr, PAGE_READONLY, 0, 0, nullptr)};
+        if ( !hMap )
+        {
+            Log::perror("CreateFileMappingW");
+            return EXIT_FAILURE;
+        }
+
+        auto hView = FileSystem::UniqueFileViewHandle {
+            ::MapViewOfFileEx(PayloadFile.Handle(), FILE_MAP_READ, 0, 0, FileSize, nullptr)};
+        if ( !hView )
+        {
+            Log::perror("MapViewOfFileEx");
+            return EXIT_FAILURE;
+        }
+
         DWORD bytesWritten {};
+
         ::WriteFile(GhostFile.Handle(), hView.get(), FileSize, &bytesWritten, nullptr);
     }
 

@@ -39,7 +39,7 @@ Token::ReOpenTokenWith(const DWORD DesiredAccess)
 
     if ( !bRes || !hToken )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     m_TokenHandle     = UniqueHandle {hToken};
@@ -59,13 +59,13 @@ Token::QueryInternal(const TOKEN_INFORMATION_CLASS TokenInformationClass, const 
 
     if ( Failed(ReOpenTokenWith(NewDesiredAccess)) )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     auto Buffer = std::make_unique<u8[]>(Size);
     if ( !Buffer )
     {
-        return Err(ErrorCode::AllocationError);
+        return Err(Error::AllocationError);
     }
 
     do
@@ -92,7 +92,7 @@ Token::QueryInternal(const TOKEN_INFORMATION_CLASS TokenInformationClass, const 
         }
 
         Log::ntperror(L"NtQueryInformationToken()", Status);
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
 
     } while ( true );
 
@@ -110,14 +110,12 @@ Token::IsValid() const
 Result<bool>
 Token::IsElevated()
 {
-    auto res = Query<TOKEN_ELEVATION>(TokenElevation);
-    if ( Failed(res) )
-    {
-        return Error(res);
-    }
-
-    const auto info = Value(std::move(res));
-    return Ok(info->TokenIsElevated == 1);
+    return Query<TOKEN_ELEVATION>(TokenElevation)
+        .and_then(
+            [](std::unique_ptr<TOKEN_ELEVATION>&& info) -> Result<bool>
+            {
+                return Ok(info->TokenIsElevated == 1);
+            });
 }
 
 
@@ -130,7 +128,7 @@ Token::EnumeratePrivileges()
     auto res = Query<TOKEN_PRIVILEGES>(TokenPrivileges);
     if ( Failed(res) )
     {
-        return Error(res);
+        return Err(res.error());
     }
 
     const auto Privs           = Value(std::move(res));
@@ -150,14 +148,14 @@ Token::AddPrivilege(std::wstring_view const& PrivilegeName)
 {
     if ( Failed(ReOpenTokenWith(TOKEN_ADJUST_PRIVILEGES)) )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     LUID Luid = {0};
 
     if ( ::LookupPrivilegeValueW(nullptr, PrivilegeName.data(), &Luid) == false )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     size_t nBufferSize                 = sizeof(TOKEN_PRIVILEGES) + 1 * sizeof(LUID_AND_ATTRIBUTES);
@@ -177,10 +175,10 @@ Token::AddPrivilege(std::wstring_view const& PrivilegeName)
     {
         if ( ::GetLastError() == ERROR_NOT_ALL_ASSIGNED )
         {
-            return Err(ErrorCode::PartialResult);
+            return Err(Error::PartialResult);
         }
 
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(true);
@@ -192,7 +190,7 @@ Token::HasPrivilege(std::wstring_view const& PrivilegeName)
 {
     if ( Failed(ReOpenTokenWith(TOKEN_ADJUST_PRIVILEGES)) )
     {
-        return Err(ErrorCode::PermissionDenied);
+        return Err(Error::PermissionDenied);
     }
 
     LUID_AND_ATTRIBUTES PrivAttr = {{0}};
@@ -201,7 +199,7 @@ Token::HasPrivilege(std::wstring_view const& PrivilegeName)
     if ( ::LookupPrivilegeValueW(nullptr, PrivilegeName.data(), &PrivAttr.Luid) == false )
     {
         Log::perror(L"LookupPrivilegeValue()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     PRIVILEGE_SET PrivSet  = {0};
@@ -212,7 +210,7 @@ Token::HasPrivilege(std::wstring_view const& PrivilegeName)
     if ( ::PrivilegeCheck(m_TokenHandle.get(), &PrivSet, &bHasPriv) == FALSE )
     {
         Log::perror(L"PrivilegeCheck()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(bHasPriv == TRUE);

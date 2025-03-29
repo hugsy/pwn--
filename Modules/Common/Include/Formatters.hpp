@@ -30,10 +30,10 @@ struct std::formatter<std::wstring> : std::formatter<std::string>
 ///@tparam
 ///
 template<>
-struct std::formatter<Err, char> : std::formatter<std::string, char>
+struct std::formatter<Error, char> : std::formatter<std::string, char>
 {
     auto
-    format(Err const& err, std::format_context& ctx)
+    format(Error const& err, std::format_context& ctx)
     {
         std::stringstream os;
         // os << "Error("sv << err.Code << ")";

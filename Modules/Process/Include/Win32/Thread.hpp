@@ -114,15 +114,23 @@ public:
     Result<std::unique_ptr<T>>
     Query(THREADINFOCLASS ThreadInformationClass)
     {
+        /*
         auto res = QueryInternal(ThreadInformationClass, sizeof(T));
         if ( Failed(res) )
         {
-            return Error(res);
+            return Err(res);
         }
 
         auto RawResult = Value(std::move(res));
         std::unique_ptr<T> TypedResult {(T*)RawResult.release()};
         return Ok(std::move(TypedResult));
+        */
+        return QueryInternal(ThreadInformationClass, sizeof(T))
+            .and_then(
+                [](auto&& src) -> Result<std::unique_ptr<T>>
+                {
+                    return std::unique_ptr<T>(reinterpret_cast<T*>(src.release()));
+                });
     }
 
 

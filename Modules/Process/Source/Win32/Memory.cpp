@@ -23,7 +23,7 @@ Memory::Read(uptr const Address, usize Length)
     if ( ::ReadProcessMemory(m_Process.Handle(), reinterpret_cast<LPVOID>(Address), out.data(), Length, &NbByteRead) ==
          false )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     out.resize(NbByteRead);
@@ -50,7 +50,7 @@ Memory::Write(uptr const Address, std::vector<u8> data)
              &NbByteWritten) == false )
     {
         Log::perror("WriteProcessMemory");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(static_cast<usize>(NbByteWritten));
@@ -85,7 +85,7 @@ Memory::Allocate(const size_t Size, const wchar_t Permission[3], const uptr Forc
         flProtect ? flProtect : PAGE_GUARD);
     if ( buffer == 0u )
     {
-        return Err(ErrorCode::AllocationError);
+        return Err(Error::AllocationError);
     }
 
     if ( wipe )
@@ -102,7 +102,7 @@ Memory::Free(const uptr Address)
     if ( ::VirtualFreeEx(m_Process.Handle(), reinterpret_cast<LPVOID>(Address), 0, MEM_RELEASE) == 0 )
     {
         Log::perror(L"VirtualFreeEx");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok(true);
@@ -114,13 +114,12 @@ Memory::QueryInternal(
     const uptr BaseAddress,
     const usize InitialSize)
 {
-    ErrorCode ec = ErrorCode::UnknownError;
-    usize Size   = InitialSize;
+    usize Size = InitialSize;
 
     auto Buffer = std::make_unique<u8[]>(Size);
     if ( !Buffer )
     {
-        return Err(ErrorCode::AllocationError);
+        return Err(Error::AllocationError);
     }
 
     do
@@ -156,10 +155,8 @@ Memory::QueryInternal(
         // If doing an iteration, the last address will be invalid
         // resulting in having STATUS_INVALID_PARAMETER. We just exit.
         //
-        ec = (Status == STATUS_INVALID_PARAMETER) ? ErrorCode::InvalidParameter : ErrorCode::PermissionDenied;
-
         Log::ntperror(L"NtQueryVirtualMemory()", Status);
-        return Err(ec);
+        return Err((Status == STATUS_INVALID_PARAMETER) ? Error::InvalidParameter : Error::PermissionDenied);
 
     } while ( true );
 
@@ -181,19 +178,18 @@ Memory::Regions()
         auto res = Query<MEMORY_BASIC_INFORMATION>(MEMORY_INFORMATION_CLASS::MemoryBasicInformation, CurrentAddress);
         if ( Failed(res) )
         {
-            auto err = Error(res);
-            if ( err == ErrorCode::InvalidParameter )
+            if ( res.error() == Error::InvalidParameter )
             {
                 break;
             }
 
-            return err;
+            return Err(res.error());
         }
 
         //
         // Save the region information
         //
-        auto CurrentMemoryRegion = Value(std::move(res));
+        auto CurrentMemoryRegion = Value(res);
         const usize RegionSize   = CurrentMemoryRegion->RegionSize;
         if ( CurrentMemoryRegion->AllocationBase != nullptr )
         {
@@ -214,13 +210,13 @@ Memory::Search(std::vector<u8> const& Pattern)
 {
     if ( Pattern.empty() )
     {
-        return Err(ErrorCode::InvalidParameter);
+        return Err(Error::InvalidParameter);
     }
 
     auto res = Regions();
     if ( Failed(res) )
     {
-        return Error(res);
+        return Err(res.error());
     }
 
     std::vector<uptr> Matches;
