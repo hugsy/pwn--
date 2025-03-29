@@ -75,22 +75,22 @@ namespace pwn
 ///
 ///@brief
 ///
-export constexpr std::string_view LibraryName    = "@PWN_LIBRARY_NAME@";
+export constexpr std::string_view LibraryName    = "pwn++";
 
 ///
 ///@brief
 ///
-export constexpr std::string_view LibraryAuthor  = "@PWN_LIBRARY_AUTHOR@";
+export constexpr std::string_view LibraryAuthor  = "hugsy";
 
 ///
 ///@brief
 ///
-export constexpr std::string_view LibraryLicense = "@PWN_LIBRARY_LICENSE@";
+export constexpr std::string_view LibraryLicense = "MIT";
 
 ///
 ///@brief
 ///
-export constexpr std::string_view LibraryBanner = "@PWN_LIBRARY_NAME@" " v" "@PWN_LIBRARY_VERSION@" " - " "@PWN_LIBRARY_VERSION_RELEASE@";
+export constexpr std::string_view LibraryBanner = "pwn++" " v" "0.1.3" " - " "Standalone";
 // clang-format on
 
 ///
@@ -124,11 +124,11 @@ constexpr struct VersionType
     const std::string_view VersionString;
 } Version = {
     // clang-format off
-    @PWN_LIBRARY_VERSION_MAJOR@,
-    @PWN_LIBRARY_VERSION_MINOR@,
-    @PWN_LIBRARY_VERSION_PATCH@,
-    "@PWN_LIBRARY_VERSION_RELEASE@",
-    "@PWN_LIBRARY_VERSION@",
+    0,
+    1,
+    3,
+    "Standalone",
+    "0.1.3",
     // clang-format on
 };
 
@@ -148,8 +148,8 @@ constexpr struct HostInfo
     const std::string_view System;
 } Host {
     // clang-format off
-    "@PWN_BUILD_ARCHITECTURE@",
-    "@PWN_BUILD_OS@"
+    "AMD64",
+    "Windows"
     // clang-format on
 };
 // clang-format off
@@ -157,7 +157,7 @@ constexpr struct HostInfo
 ///
 ///@brief A list of all modules built with pwn++
 ///
-export constexpr std::array<std::string_view, @PWN_MODULES_LENGTH@> ModuleNames = {@PWN_MODULES_AS_STRING@};
+export constexpr std::array<std::string_view, 1> ModuleNames = {"Common",};
 // clang-format on
 
 } // namespace pwn

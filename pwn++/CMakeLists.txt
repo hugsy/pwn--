@@ -14,7 +14,7 @@ set(PWN_BUILD_OS ${CMAKE_SYSTEM_NAME})
 
 set(PWN_MODULES_AS_STRING "")
 foreach(MODULE ${PWN_MODULES})
-    set(PWN_MODULES_AS_STRING "L\"${MODULE}\",${PWN_MODULES_AS_STRING}")
+    set(PWN_MODULES_AS_STRING "\"${MODULE}\",${PWN_MODULES_AS_STRING}")
 endforeach()
 
 set(INTERFACE_DIR ${PROJECT_SOURCE_DIR}/Include)
@@ -30,10 +30,12 @@ endif()
 message(STATUS "Generating pwn++ main header")
 list(TRANSFORM PWN_MODULES PREPEND PWN:: OUTPUT_VARIABLE MODULE_NAMESPACES)
 list(LENGTH MODULE_NAMESPACES PWN_MODULES_LENGTH)
-configure_file(${PROJECT_SOURCE_DIR}/pwn.hpp.in ${INTERFACE_DIR}/pwn NEWLINE_STYLE WIN32)
+# configure_file(${PROJECT_SOURCE_DIR}/pwn.hpp.in ${INTERFACE_DIR}/pwn NEWLINE_STYLE WIN32)
+configure_file(${PROJECT_SOURCE_DIR}/pwn.hpp.in ${INTERFACE_DIR}/pwn.ixx NEWLINE_STYLE WIN32)
 
 if(MSVC)
     target_sources(${PROJECT_NAME} PRIVATE ${SOURCE_DIR}/Win32/dllmain.cpp)
+    target_sources(${PROJECT_NAME} PRIVATE FILE_SET CXX_MODULES FILES ${INTERFACE_DIR}/pwn.ixx)
 
     target_link_options(
         ${PROJECT_NAME}

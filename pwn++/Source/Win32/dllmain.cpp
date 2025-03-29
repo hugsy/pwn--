@@ -1,6 +1,9 @@
-#include <pwn>
+#include <windows.h>
+import pwn;
+import std;
 
-using namespace pwn;
+
+// using namespace pwn;
 
 void
 OnAttachRoutine()
@@ -8,7 +11,9 @@ OnAttachRoutine()
     //
     // Initialize the RNG
     //
-    Utils::Random::Seed();
+    // Utils::Random::Seed();
+    std::println("loading library {}, {}", pwn::LibraryName, pwn::LibraryBanner);
+    test();
 }
 
 
@@ -19,10 +24,10 @@ OnDetachRoutine()
 
 
 BOOL APIENTRY
-DllMain(_In_ HMODULE hModule, _In_ DWORD ul_reason_for_call, _In_ LPVOID lpReserved)
+DllMain(_In_ HMODULE /* hModule */, _In_ DWORD ul_reason_for_call, _In_ LPVOID /* lpReserved */)
 {
-    UnusedParameter(hModule);
-    UnusedParameter(lpReserved);
+    // UnusedParameter(hModule);
+    // UnusedParameter(lpReserved);
 
     switch ( ul_reason_for_call )
     {
