@@ -28,6 +28,7 @@ using UniqueHandle = GenericHandle<FILE, ::fclose>;
 #else
 using UniqueHandle        = GenericHandle<void, ::CloseHandle>;
 using UniqueLibraryHandle = GenericHandle<HINSTANCE__, ::FreeLibrary>;
+using UniqueAlloc         = GenericHandle<void, ::LocalFree>;
 #endif // __linux__
 
 using SharedHandle = std::shared_ptr<UniqueHandle>;

@@ -25,7 +25,7 @@ namespace details
 ///
 /// @return Result<PVOID>
 ///
-Result<PVOID>
+Result<std::unique_ptr<u8[]>>
 QueryInternal(const SYSTEM_INFORMATION_CLASS, const usize);
 } // namespace details
 
@@ -114,21 +114,15 @@ WindowsVersion();
 /// @return Result<std::shared_ptr<T>>
 ///
 template<class T>
-Result<std::shared_ptr<T>>
+Result<std::unique_ptr<T>>
 Query(SYSTEM_INFORMATION_CLASS SystemInformationClass)
 {
-    auto res = details::QueryInternal(SystemInformationClass, sizeof(T));
-    if ( Failed(res) )
-    {
-        return Error(res);
-    }
-
-    const auto p = reinterpret_cast<T*>(Value(res));
-    auto deleter = [](T* x)
-    {
-        ::LocalFree(x);
-    };
-    return Ok(std::shared_ptr<T>(p, deleter));
+    return details::QueryInternal(SystemInformationClass, sizeof(T))
+        .and_then(
+            [](auto&& src) -> Result<std::unique_ptr<T>>
+            {
+                return std::unique_ptr<T>(reinterpret_cast<T*>(src.release()));
+            });
 }
 
 

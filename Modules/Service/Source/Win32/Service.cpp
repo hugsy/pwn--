@@ -17,7 +17,7 @@ Service::Create(std::wstring_view const& ServiceName, std::wstring_view const& S
     if ( !hManager )
     {
         Log::perror(L"OpenSCManager()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     auto hService = ServiceHandle {::CreateServiceW(
@@ -37,7 +37,7 @@ Service::Create(std::wstring_view const& ServiceName, std::wstring_view const& S
     if ( !hService )
     {
         Log::perror(L"CreateService()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok((DWORD)ERROR_SUCCESS);
@@ -52,7 +52,7 @@ Service::Start(std::wstring_view const& ServiceName)
     if ( !hManager )
     {
         Log::perror(L"OpenSCManager()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
 
@@ -60,14 +60,14 @@ Service::Start(std::wstring_view const& ServiceName)
     if ( !hService )
     {
         Log::perror(L"OpenService()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
 
     if ( ::StartServiceW(hService.get(), 0, nullptr) == 0 )
     {
         Log::perror(L"StartService()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     return Ok((DWORD)ERROR_SUCCESS);
@@ -305,7 +305,7 @@ Service::List()
     if ( dwResult != ERROR_SUCCESS )
     {
         ::SetLastError(dwResult);
-        return Err(ErrorCode::ServiceError);
+        return Err(Error::ServiceError);
     }
 
     return Ok(services);
@@ -360,10 +360,10 @@ Service::IsRunning(const std::wstring_view& ServiceName)
     if ( dwResult != ERROR_SUCCESS )
     {
         ::SetLastError(dwResult);
-        return Err(ErrorCode::ServiceError);
+        return Err(Error::ServiceError);
     }
 
     return Ok(bRes);
 }
 
-} // namespace Services
+} // namespace pwn::Services

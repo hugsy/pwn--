@@ -16,124 +16,53 @@
 using namespace pwn;
 
 std::wstring_view PWNAPI
-FormatErrorCode(ErrorCode const& code)
+FormatErrorCode(Error const code)
 {
     switch ( code )
     // clang-format off
     {
-    case ErrorCode::UnknownError:                      return L"UnknownError";
-    case ErrorCode::GenericError:                      return L"GenericError";
-    case ErrorCode::RuntimeError:                      return L"RuntimeError";
-    case ErrorCode::InvalidProcess:                    return L"InvalidProcess";
-    case ErrorCode::InvalidThread:                     return L"InvalidThread";
-    case ErrorCode::InvalidObject:                     return L"InvalidObject";
-    case ErrorCode::InvalidInput:                      return L"InvalidInput";
-    case ErrorCode::InvalidParameter:                  return L"InvalidParameter";
-    case ErrorCode::InvalidState:                      return L"InvalidState";
-    case ErrorCode::PermissionDenied:                  return L"PermissionDenied";
-    case ErrorCode::InsufficientPrivilegeError:        return L"InsufficientPrivilegeError";
-    case ErrorCode::UnexpectedType:                    return L"UnexpectedType";
-    case ErrorCode::ArithmeticError:                   return L"ArithmeticError";
-    case ErrorCode::OverflowError:                     return L"OverflowError";
-    case ErrorCode::UnderflowError:                    return L"UnderflowError";
-    case ErrorCode::IllegalValue:                      return L"IllegalValue";
-    case ErrorCode::NotImplementedError:               return L"NotImplementedError";
-    case ErrorCode::PendingIoError:                    return L"PendingIoError";
-    case ErrorCode::ConnectionError:                   return L"ConnectionError";
-    case ErrorCode::TerminationError:                  return L"TerminationError";
-    case ErrorCode::AllocationError:                   return L"AllocationError";
-    case ErrorCode::ParsingError:                      return L"ParsingError";
-    case ErrorCode::BufferTooBig:                      return L"BufferTooBig";
-    case ErrorCode::BufferTooSmall:                    return L"BufferTooSmall";
-    case ErrorCode::NotInitialized:                    return L"NotInitialized";
-    case ErrorCode::InitializationFailed:              return L"InitializationFailed";
-    case ErrorCode::ServiceError:                      return L"ServiceError";
-    case ErrorCode::FilesystemError:                   return L"FilesystemError";
-    case ErrorCode::AlpcError:                         return L"AlpcError";
-    case ErrorCode::ExternalError:                     return L"ExternalError";
-    case ErrorCode::ExternalApiCallFailed:             return L"ExternalApiCallFailed";
-    case ErrorCode::NoMoreData:                        return L"NoMoreData";
-    case ErrorCode::PartialResult:                     return L"PartialResult";
-    case ErrorCode::BadVersion:                        return L"BadVersion";
-    case ErrorCode::BadSignature:                      return L"BadSignature";
-    case ErrorCode::NotFound:                          return L"NotFound";
-    case ErrorCode::NotConnected:                      return L"NotConnected";
-    case ErrorCode::AlreadyExists:                     return L"AlreadyExists";
-    case ErrorCode::SizeMismatch:                      return L"SizeMismatch";
-    case ErrorCode::MalformedFile:                     return L"MalformedFile";
+    case Error::UnknownError:                      return L"UnknownError"sv;
+    case Error::GenericError:                      return L"GenericError"sv;
+    case Error::RuntimeError:                      return L"RuntimeError"sv;
+    case Error::InvalidProcess:                    return L"InvalidProcess"sv;
+    case Error::InvalidThread:                     return L"InvalidThread"sv;
+    case Error::InvalidObject:                     return L"InvalidObject"sv;
+    case Error::InvalidInput:                      return L"InvalidInput"sv;
+    case Error::InvalidParameter:                  return L"InvalidParameter"sv;
+    case Error::InvalidState:                      return L"InvalidState"sv;
+    case Error::PermissionDenied:                  return L"PermissionDenied"sv;
+    case Error::InsufficientPrivilegeError:        return L"InsufficientPrivilegeError"sv;
+    case Error::UnexpectedType:                    return L"UnexpectedType"sv;
+    case Error::ArithmeticError:                   return L"ArithmeticError"sv;
+    case Error::OverflowError:                     return L"OverflowError"sv;
+    case Error::UnderflowError:                    return L"UnderflowError"sv;
+    case Error::IllegalValue:                      return L"IllegalValue"sv;
+    case Error::NotImplementedError:               return L"NotImplementedError"sv;
+    case Error::PendingIoError:                    return L"PendingIoError"sv;
+    case Error::ConnectionError:                   return L"ConnectionError"sv;
+    case Error::TerminationError:                  return L"TerminationError"sv;
+    case Error::AllocationError:                   return L"AllocationError"sv;
+    case Error::ParsingError:                      return L"ParsingError"sv;
+    case Error::BufferTooBig:                      return L"BufferTooBig"sv;
+    case Error::BufferTooSmall:                    return L"BufferTooSmall"sv;
+    case Error::NotInitialized:                    return L"NotInitialized"sv;
+    case Error::InitializationFailed:              return L"InitializationFailed"sv;
+    case Error::ServiceError:                      return L"ServiceError"sv;
+    case Error::FilesystemError:                   return L"FilesystemError"sv;
+    case Error::AlpcError:                         return L"AlpcError"sv;
+    case Error::ExternalError:                     return L"ExternalError"sv;
+    case Error::ExternalApiCallFailed:             return L"ExternalApiCallFailed"sv;
+    case Error::NoMoreData:                        return L"NoMoreData"sv;
+    case Error::PartialResult:                     return L"PartialResult"sv;
+    case Error::BadVersion:                        return L"BadVersion"sv;
+    case Error::BadSignature:                      return L"BadSignature"sv;
+    case Error::NotFound:                          return L"NotFound"sv;
+    case Error::NotConnected:                      return L"NotConnected"sv;
+    case Error::AlreadyExists:                     return L"AlreadyExists"sv;
+    case Error::SizeMismatch:                      return L"SizeMismatch"sv;
+    case Error::MalformedFile:                     return L"MalformedFile"sv;
     }
     // clang-format on
-    return L"";
+
+    throw std::runtime_error("unknown error type");
 }
-
-
-/*
-Err::Err(ErrorCode ec, uint32_t en) :
-#if defined(PWN_BUILD_FOR_WINDOWS)
-    ErrorType(ec, en ? en : ::GetLastError())
-#elif defined(PWN_BUILD_FOR_LINUX)
-    ErrorType(ec, en || errno)
-#else
-#error "noooope"
-#endif
-{
-#if defined(PWN_BUILD_FOR_WINDOWS)
-    std::wostringstream os;
-    os << *this << L" : " << this->Code();
-    if ( this->number )
-    {
-        os << L" - " << Log::FormatLastError(this->number);
-    }
-    os << std::endl;
-
-#elif defined(PWN_BUILD_FOR_LINUX)
-    std::ostringstream os;
-    os << *this << std::endl;
-#endif // PWN_BUILD_FOR_WINDOWS
-    err(os);
-}
-
-
-Err::Err(Err const& e) : Err(e.code, e.number)
-{
-}
-
-
-Err::Err(ErrorType const& e) : Err(e.code, e.number)
-{
-}
-
-std::wstring
-ErrorType::Code()
-{
-    return FormatErrorCode(this->code);
-}
-
-
-bool
-ErrorType::operator==(const ErrorType& rhs) const
-{
-    return this->code == rhs.code && this->number == rhs.number;
-}
-
-
-bool
-ErrorType::operator==(ErrorCode code) const
-{
-    return this->code == code;
-}
-
-
-bool
-Err::operator==(const Err& rhs) const
-{
-    return this->code == rhs.code;
-}
-
-
-bool
-Err::operator==(ErrorCode code) const
-{
-    return this->code == code;
-}
-*/

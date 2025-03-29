@@ -11,14 +11,14 @@ ThreadGroup::List()
 {
     if ( !m_Process )
     {
-        return Err(ErrorCode::NotInitialized);
+        return Err(Error::NotInitialized);
     }
 
     auto h = UniqueHandle {::CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0)};
     if ( !h )
     {
         Log::perror(L"CreateToolhelp32Snapshot()");
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     std::vector<u32> tids;

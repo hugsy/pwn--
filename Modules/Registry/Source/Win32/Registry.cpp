@@ -60,7 +60,7 @@ Registry::ListKeys(const HKEY hKeyRoot, std::wstring_view const& SubKey)
         }()};
     if ( !hKey )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     std::vector<std::wstring> Entries;
@@ -104,7 +104,7 @@ Registry::ListKeys(const HKEY hKeyRoot, std::wstring_view const& SubKey)
             break;
 
         default:
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
     }
 
@@ -127,7 +127,7 @@ Registry::ListValues(const HKEY hKeyRoot, std::wstring_view const& SubKey)
                         }()};
     if ( !hKey )
     {
-        return Err(ErrorCode::ExternalApiCallFailed);
+        return Err(Error::ExternalApiCallFailed);
     }
 
     std::vector<std::wstring> Entries;
@@ -171,7 +171,7 @@ Registry::ListValues(const HKEY hKeyRoot, std::wstring_view const& SubKey)
             break;
 
         default:
-            return Err(ErrorCode::ExternalApiCallFailed);
+            return Err(Error::ExternalApiCallFailed);
         }
     }
 
