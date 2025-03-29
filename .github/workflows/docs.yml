@@ -39,17 +39,14 @@ jobs:
 
       - name: Generate API
         run: |
-          mkdir build
           cmake -S . -B ./build ${{ env.CMAKE_FLAGS }}
           cmake --build ./build --verbose --target Doxygen --config Debug
 
       - name: Upload gh-pages artifact
-        if: ${{ github.ref_name }} == "dev"
         uses: actions/upload-pages-artifact@v3
         with:
           path: 'Docs'
 
       - name: Deploy to GitHub Pages
-        if: ${{ github.ref_name }} == "dev"
         id: deployment
         uses: actions/deploy-pages@v4
