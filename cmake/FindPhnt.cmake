@@ -3,7 +3,7 @@ include(FetchContent)
 FetchContent_Declare(
     Deps_PhNt
     GIT_REPOSITORY https://github.com/winsiderss/phnt.git
-    GIT_TAG 7c1adb8a7391939dfd684f27a37e31f18d303944
+    GIT_TAG fc1f96ee976635f51faa89896d1d805eb0586350
 )
 FetchContent_MakeAvailable(Deps_PhNt)
 
