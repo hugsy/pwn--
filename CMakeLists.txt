@@ -26,11 +26,11 @@ option(PWN_DISASSEMBLE_ARM64 "Compile with BinaryNinja disassembler support (ARM
 
 # Use CMake's `BUILD_SHARED_LIBS`
 # option(PWN_BUILD_SHARED_LIBS "Build as a shared library" OFF)
-
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     # pwn++ is NOT a top dir (i.e. build as dependency)
     option(PWN_BUILD_TOOLKIT "Compile the executables of pwn++ toolkit" OFF)
     option(PWN_BUILD_TESTING "Compile the test suite" OFF)
+    option(PWN_BUILD_MODULE_CRYPTO "Compile the crypto module (requires m4)" OFF)
     option(PWN_BUILD_DOCS "Generate the Doxygen API files" OFF)
 else()
     # pwn++ is a top dir
@@ -52,20 +52,20 @@ if(WIN32)
         # Listed by dependency order
         Common
 
-        Network
-        Symbols
-        System
-        Security
-        Registry
-        Service
-        Shellcode
+        # Crypto
+        # Network
+        # Symbols
+        # System
+        # Security
+        # Registry
+        # Service
+        # Shellcode
+        # FileSystem
+        # Process
+        # Remote
 
-        FileSystem
-        Process
-        Remote
-
-        Binary
-        CTF
+        # Binary
+        # CTF
 
         # TODO : ideas for future modules
         # - WTS
